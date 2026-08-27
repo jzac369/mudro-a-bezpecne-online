@@ -13,6 +13,7 @@
 <script defer src="../assets/firebase-config.js"></script>
 <script defer src="../data/workshops.js"></script>
 <script defer src="../data/course.js"></script>
+<script defer src="../assets/course-schema.js"></script>
 <style>
   html { font-size: 16px; } /* admin zóna má vlastnú, kompaktnejšiu mierku nezávislú od A+/A- účastníka */
   body { min-height: 100vh; }
@@ -119,6 +120,18 @@
     opacity:0; transform:translateY(-10px); transition:opacity .25s ease, transform .25s ease; pointer-events:none;
   }
   .new-reg-toast.show { opacity:1; transform:translateY(0); }
+  .course-slide-row {
+    display:flex; align-items:center; gap:.6rem; width:100%; text-align:left; background:none; border:none;
+    border-radius:8px; padding:.55rem .6rem; cursor:pointer; font:inherit; font-size:.88rem; color:var(--text);
+  }
+  .course-slide-row:hover { background: var(--surface-2); }
+  .course-slide-row.active { background: var(--accent-soft); font-weight:700; }
+  .course-slide-num {
+    display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; flex:none;
+    border-radius:50%; background: var(--surface-2); font-size:.75rem; font-weight:700; color:var(--text-mute);
+  }
+  .course-slide-row.active .course-slide-num { background: var(--ink); color:#fff; }
+  .course-slide-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -157,6 +170,10 @@
       <button data-section="workshopy" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         Workshopy
+      </button>
+      <button data-section="obsahkurzu" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h7"/></svg>
+        Obsah kurzu
       </button>
       <button data-section="spatnavazba" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8Z"/></svg>
@@ -295,6 +312,19 @@
         <div class="card">
           <p class="hint">Sem doplňte YouTube ID videa (časť z adresy za „v=“), odkaz na PDF brožúrku a odkaz na podpis lektora.</p>
           <div class="workshop-settings-grid" id="workshop-settings"></div>
+        </div>
+      </section>
+
+      <section class="dash-section" data-section="obsahkurzu">
+        <h1>Obsah interaktívneho kurzu</h1>
+        <p class="hint" style="margin-bottom:1.2rem;">Tu môžete upraviť texty ktorejkoľvek z 35 obrazoviek kurzu — nadpisy, otázky, texty kartičiek a podobne. Herné nastavenie (napr. ktorá odpoveď je správna) sa cez tento formulár meniť nedá.</p>
+        <div class="grid-2" style="align-items:start;gap:1.2rem;">
+          <div class="card" style="max-height:70vh;overflow-y:auto;">
+            <div id="course-slide-list"></div>
+          </div>
+          <div class="card" id="course-editor-card">
+            <p class="hint">Vyberte obrazovku vľavo.</p>
+          </div>
         </div>
       </section>
 
@@ -462,6 +492,115 @@ window.addEventListener("load", function () {
         }
       });
     });
+  }
+
+  // ---------- Obsah interaktívneho kurzu ----------
+  let courseContentCache = null; // { [slideId]: overrideDocData }
+  let activeCourseSlideId = null;
+
+  async function loadCourseContentCache() {
+    if (courseContentCache) return courseContentCache;
+    courseContentCache = {};
+    try {
+      const snap = await db.collection("courseContent").get();
+      snap.forEach((doc) => { courseContentCache[doc.id] = doc.data(); });
+    } catch (err) {
+      console.error("Nepodarilo sa načítať uložené texty kurzu:", err);
+    }
+    return courseContentCache;
+  }
+
+  async function renderCourseSlideList() {
+    const list = document.getElementById("course-slide-list");
+    if (!window.COURSE_SLIDES) {
+      list.innerHTML = "<p class='hint'>Dáta kurzu sa nepodarilo načítať.</p>";
+      return;
+    }
+    const cache = await loadCourseContentCache();
+    list.innerHTML = "";
+    window.COURSE_SLIDES.forEach((slide) => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "course-slide-row";
+      row.dataset.slideId = String(slide.id);
+      const edited = !!cache[String(slide.id)];
+      row.innerHTML =
+        "<span class='course-slide-num'>" + slide.id + "</span>" +
+        "<span class='course-slide-title'>" + slide.title + "</span>" +
+        (edited ? "<span class='chip good' style='margin-left:auto;'>upravené</span>" : "");
+      row.addEventListener("click", () => openCourseEditor(slide.id));
+      list.appendChild(row);
+    });
+  }
+
+  async function openCourseEditor(slideId) {
+    activeCourseSlideId = slideId;
+    document.querySelectorAll(".course-slide-row").forEach((r) => r.classList.toggle("active", Number(r.dataset.slideId) === slideId));
+
+    const editorCard = document.getElementById("course-editor-card");
+    editorCard.innerHTML = "<p class='hint'>Načítavam…</p>";
+
+    const defaultSlide = window.COURSE_SLIDES.find((s) => s.id === slideId);
+    if (!defaultSlide) { editorCard.innerHTML = "<p class='hint'>Obrazovka sa nenašla.</p>"; return; }
+
+    const cache = await loadCourseContentCache();
+    const effective = window.courseCloneSlide(defaultSlide);
+    const override = cache[String(slideId)];
+    if (override) window.courseApplyOverride(effective, override, effective.type);
+
+    const fields = window.courseCollectFields(effective, effective.type);
+
+    let html = "<h3>" + slideId + ". " + defaultSlide.title + "</h3>" +
+      "<p class='hint' style='margin-bottom:1rem;'>Typ obrazovky: " + effective.type + "</p>";
+    fields.forEach((f, i) => {
+      const val = (f.get() || "").toString();
+      const isLong = val.length > 60 || f.path.includes("body");
+      html +=
+        "<div class='field'><label>" + f.label + "</label>" +
+        (isLong
+          ? "<textarea data-field-i='" + i + "' rows='3' style='width:100%;font:inherit;padding:.7rem;border-radius:10px;border:2px solid var(--line);'>" + escapeHtml(val) + "</textarea>"
+          : "<input type='text' data-field-i='" + i + "' value='" + escapeHtml(val) + "'>") +
+        (f.hint ? "<p class='hint' style='margin-top:.3rem;'>" + f.hint + "</p>" : "") +
+        "</div>";
+    });
+    html +=
+      "<button class='btn btn-primary' id='course-save-btn' style='margin-top:.5rem;'>Uložiť</button> " +
+      "<button class='btn btn-secondary' id='course-reset-btn' style='margin-top:.5rem;'>Vrátiť pôvodný text</button>" +
+      "<p class='hint' id='course-save-status' style='margin-top:.6rem;'></p>";
+    editorCard.innerHTML = html;
+
+    document.getElementById("course-save-btn").addEventListener("click", async () => {
+      fields.forEach((f, i) => {
+        const inputEl = editorCard.querySelector("[data-field-i='" + i + "']");
+        f.set(inputEl.value);
+      });
+      const statusEl = document.getElementById("course-save-status");
+      try {
+        await db.collection("courseContent").doc(String(slideId)).set(effective, { merge: false });
+        courseContentCache[String(slideId)] = effective;
+        statusEl.textContent = "Uložené ✓";
+        renderCourseSlideList();
+      } catch (err) {
+        statusEl.textContent = "Chyba: " + err.message;
+      }
+    });
+
+    document.getElementById("course-reset-btn").addEventListener("click", async () => {
+      const statusEl = document.getElementById("course-save-status");
+      try {
+        await db.collection("courseContent").doc(String(slideId)).delete();
+        delete courseContentCache[String(slideId)];
+        statusEl.textContent = "Vrátené na pôvodný text ✓";
+        renderCourseSlideList();
+        openCourseEditor(slideId);
+      } catch (err) {
+        statusEl.textContent = "Chyba: " + err.message;
+      }
+    });
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
   // ---------- Spätná väzba ----------
@@ -935,6 +1074,7 @@ window.addEventListener("load", function () {
     document.getElementById("admin-email-label").textContent = user.email;
     loadWorkshopSettings();
     loadFeedback();
+    renderCourseSlideList();
     watchOrders();
   });
 });

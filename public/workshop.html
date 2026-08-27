@@ -12,6 +12,7 @@
 <script defer src="assets/firebase-config.js"></script>
 <script defer src="data/workshops.js"></script>
 <script defer src="data/course.js"></script>
+<script defer src="assets/course-schema.js"></script>
 <script defer src="assets/course.js"></script>
 <script defer src="assets/app.js"></script>
 <style>
@@ -747,7 +748,24 @@ function renderBudgetExercise(ex) {
 
       // Interaktívny kurz — pokračuje presne tam, kde senior naposledy skončil.
       try {
+        // Admin zóna vie prepísať texty jednotlivých obrazovok (courseContent) —
+        // pred spustením kurzu ich načítame a preložíme cez pôvodné dáta.
+        let courseSlides = window.COURSE_SLIDES;
+        try {
+          const overridesSnap = await state.db.collection("courseContent").get();
+          if (!overridesSnap.empty) {
+            courseSlides = window.COURSE_SLIDES.map((s) => window.courseCloneSlide(s));
+            overridesSnap.forEach((doc) => {
+              const slide = courseSlides.find((s) => String(s.id) === doc.id);
+              if (slide) window.courseApplyOverride(slide, doc.data(), slide.type);
+            });
+          }
+        } catch (err) {
+          console.error("Nepodarilo sa načítať úpravy textu kurzu:", err);
+        }
+
         state.course = window.initCourse(document.getElementById("course-root"), {
+          slides: courseSlides,
           finishLabel: "Pokračovať na cvičenia",
           onProgress: (index, done, stamps) => {
             saveProgress({ courseIndex: index, courseStamps: stamps, courseDone: done });

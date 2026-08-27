@@ -25,7 +25,7 @@
   function Course(root, hooks) {
     this.root = root;
     this.hooks = hooks || {};
-    this.slides = window.COURSE_SLIDES;
+    this.slides = this.hooks.slides || window.COURSE_SLIDES;
     this.stamps = window.COURSE_STAMPS || [];
     this.parts = window.COURSE_PARTS || [];
     this.index = 0;
