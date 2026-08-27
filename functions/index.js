@@ -40,6 +40,58 @@ const DEFAULT_SETTINGS = {
 
 const MAX_REMINDERS_PER_RUN = 50; // bezpečnostný strop na jedno spustenie
 
+const DEFAULT_CONSULTATION_SETTINGS = {
+  enabled: false,
+  price30: 15,
+  price60: 25,
+  meetingLink: "",
+  availability: [], // [{ weekday: 1-7 (1=pondelok), start:"09:00", end:"12:00" }]
+};
+
+async function getConsultationSettings() {
+  const snap = await db.collection("settings").doc("consultations").get();
+  return Object.assign({}, DEFAULT_CONSULTATION_SETTINGS, snap.exists ? snap.data() : {});
+}
+
+function weekdayOf(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const js = d.getDay(); // 0 = nedeľa
+  return js === 0 ? 7 : js;
+}
+
+function timeToMinutes(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(m) {
+  const h = Math.floor(m / 60), mm = m % 60;
+  return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+}
+
+/**
+ * Pre daný dátum a dĺžku konzultácie vypočíta voľné termíny z týždennej
+ * dostupnosti (availability) po odčítaní už existujúcich (nezrušených)
+ * rezervácií daného dňa.
+ */
+function computeFreeSlots(dateStr, durationMin, availability, existingBookings) {
+  const wd = weekdayOf(dateStr);
+  const windows = (availability || []).filter((a) => a.weekday === wd);
+  const busy = existingBookings.map((b) => ({ start: timeToMinutes(b.startTime), end: timeToMinutes(b.endTime) }));
+  const slots = [];
+  windows.forEach((w) => {
+    let cursor = timeToMinutes(w.start);
+    const end = timeToMinutes(w.end);
+    while (cursor + durationMin <= end) {
+      const slotEnd = cursor + durationMin;
+      const overlaps = busy.some((b) => cursor < b.end && slotEnd > b.start);
+      if (!overlaps) slots.push({ start: minutesToTime(cursor), end: minutesToTime(slotEnd) });
+      cursor += durationMin;
+    }
+  });
+  return slots;
+}
+
 async function getSettings() {
   const snap = await db.collection("settings").doc("general").get();
   return Object.assign({}, DEFAULT_SETTINGS, snap.exists ? snap.data() : {});
@@ -582,3 +634,120 @@ exports.notifyOfflineChatMessage = onDocumentCreated(
     });
   }
 );
+
+/**
+ * Vráti voľné termíny pre daný dátum a dĺžku konzultácie (30/60 min).
+ * Neprezrádza mená ani e-maily iných záujemcov — len obsadené časy.
+ */
+exports.getConsultationAvailability = onCall(async (request) => {
+  const { date, duration } = request.data || {};
+  const durationMin = Number(duration);
+  if (!date || ![30, 60].includes(durationMin)) {
+    throw new HttpsError("invalid-argument", "Zadaj dátum a dĺžku konzultácie (30 alebo 60 minút).");
+  }
+
+  const settings = await getConsultationSettings();
+  if (!settings.enabled) return { slots: [], price: 0, enabled: false };
+
+  const bookingsSnap = await db.collection("consultationBookings").where("date", "==", date).get();
+  const existing = bookingsSnap.docs.map((d) => d.data()).filter((b) => b.status !== "cancelled");
+
+  const slots = computeFreeSlots(date, durationMin, settings.availability, existing);
+  return { slots, price: durationMin === 30 ? settings.price30 : settings.price60, enabled: true };
+});
+
+/**
+ * Vytvorí rezerváciu konzultácie (stav "pending_payment", platba
+ * bankovým prevodom rovnako ako pri workshopoch). Pred zápisom znova
+ * overí, že si termín medzičasom neobsadil niekto iný.
+ */
+exports.bookConsultation = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+  const { name, email, duration, mode, date, startTime } = request.data || {};
+  const durationMin = Number(duration);
+  if (!name || !email || !date || !startTime || ![30, 60].includes(durationMin) || !["video", "audio"].includes(mode)) {
+    throw new HttpsError("invalid-argument", "Chýbajú alebo sú neplatné údaje objednávky.");
+  }
+
+  const settings = await getConsultationSettings();
+  if (!settings.enabled) throw new HttpsError("failed-precondition", "Konzultácie momentálne nie sú dostupné.");
+
+  const endTime = minutesToTime(timeToMinutes(startTime) + durationMin);
+
+  const bookingsSnap = await db.collection("consultationBookings").where("date", "==", date).get();
+  const existing = bookingsSnap.docs.map((d) => d.data()).filter((b) => b.status !== "cancelled");
+  const startMin = timeToMinutes(startTime), endMin = timeToMinutes(endTime);
+  const collision = existing.some((b) => startMin < timeToMinutes(b.endTime) && endMin > timeToMinutes(b.startTime));
+  if (collision) {
+    throw new HttpsError("already-exists", "Tento termín je už, žiaľ, obsadený. Vyberte prosím iný.");
+  }
+
+  const amount = durationMin === 30 ? settings.price30 : settings.price60;
+  const bookingRef = db.collection("consultationBookings").doc();
+  const variableSymbol = bookingRef.id.replace(/\D/g, "").slice(0, 10) || String(Date.now()).slice(-10);
+
+  await bookingRef.set({
+    name, email, duration: durationMin, mode, date, startTime, endTime,
+    amount, variableSymbol, status: "pending_payment",
+    createdAt: FieldValue.serverTimestamp(),
+  });
+
+  await sendCodeEmail({
+    to: email,
+    name,
+    codes: [],
+    workshopId: null,
+    messageOverride:
+      "Rezervovali ste konzultáciu (" + durationMin + " min, " + (mode === "video" ? "video" : "telefonicky") + ") na " + date + " o " + startTime + ". " +
+      "Prosím uhraďte " + amount + " € bankovým prevodom (variabilný symbol " + variableSymbol + "), termín potvrdíme po prijatí platby.",
+  });
+
+  return { bookingId: bookingRef.id, variableSymbol, amount, date, startTime, endTime };
+});
+
+/**
+ * Potvrdí prijatie platby za konzultáciu (admin) a pošle účastníkovi
+ * potvrdenie s odkazom na video/audio hovor.
+ */
+exports.markConsultationPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže potvrdiť platbu.");
+  }
+  const { bookingId } = request.data || {};
+  const ref = db.collection("consultationBookings").doc(bookingId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Rezervácia neexistuje.");
+  const b = snap.data();
+  if (b.status !== "pending_payment") {
+    throw new HttpsError("failed-precondition", "Táto rezervácia už bola spracovaná.");
+  }
+
+  await ref.update({ status: "confirmed", confirmedAt: FieldValue.serverTimestamp() });
+
+  const settings = await getConsultationSettings();
+  await sendCodeEmail({
+    to: b.email,
+    name: b.name,
+    codes: [],
+    workshopId: null,
+    messageOverride:
+      "Vaša konzultácia (" + b.duration + " min, " + (b.mode === "video" ? "video" : "telefonicky") + ") je potvrdená na " + b.date + " o " + b.startTime + "." +
+      (settings.meetingLink ? " Odkaz na hovor: " + settings.meetingLink : " V dohodnutom čase vás lektor bude kontaktovať priamo."),
+  });
+
+  return { ok: true };
+});
+
+/**
+ * Zrušenie rezervácie konzultácie administrátorom (napr. na žiadosť
+ * účastníka), aby sa termín znova uvoľnil pre iných záujemcov.
+ */
+exports.cancelConsultation = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže zrušiť rezerváciu.");
+  }
+  const { bookingId } = request.data || {};
+  await db.collection("consultationBookings").doc(bookingId).update({
+    status: "cancelled", cancelledAt: FieldValue.serverTimestamp(),
+  });
+  return { ok: true };
+});

@@ -152,6 +152,9 @@
   .chat-thread-bubble { max-width:75%; padding:.6rem .9rem; border-radius:12px; font-size:.92rem; }
   .chat-thread-bubble.visitor { align-self:flex-start; background:var(--surface-2); }
   .chat-thread-bubble.admin { align-self:flex-end; background:var(--ink); color:#fff; }
+  .avail-row { display:flex; align-items:center; gap:.8rem; padding:.5rem 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  .avail-row label.day-label { min-width:110px; font-weight:700; display:flex; align-items:center; gap:.5rem; }
+  .avail-row input[type="time"] { width:auto; padding:.4rem .6rem; }
 </style>
 </head>
 <body>
@@ -199,6 +202,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v12H7l-3 3V4Z"/></svg>
         Chat
         <span id="chat-nav-badge" class="chat-badge" style="display:none;"></span>
+      </button>
+      <button data-section="konzultacie" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+        Konzultácie
       </button>
       <button data-section="spatnavazba" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8Z"/></svg>
@@ -385,6 +392,29 @@
         </div>
       </section>
 
+      <section class="dash-section" data-section="konzultacie">
+        <h1>Konzultácie</h1>
+        <p class="hint" style="margin-bottom:1rem;">Cenu, dostupnosť a odkaz na hovor nastavíte v sekcii Nastavenia.</p>
+        <div class="card">
+          <div style="overflow-x:auto;">
+            <table class="dash">
+              <thead>
+                <tr>
+                  <th>Termín</th>
+                  <th>Dĺžka</th>
+                  <th>Spôsob</th>
+                  <th>Účastník</th>
+                  <th>Stav</th>
+                  <th>Suma</th>
+                  <th>Akcia</th>
+                </tr>
+              </thead>
+              <tbody id="consultations-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section class="dash-section" data-section="spatnavazba">
         <h1>Spätná väzba</h1>
         <div class="grid-2" style="margin-bottom:1.5rem;">
@@ -501,6 +531,34 @@
           <button class="btn btn-primary" type="submit">Uložiť všetky nastavenia</button>
           <p id="settings-result" class="hint" style="margin-top:1rem;"></p>
         </form>
+
+        <div class="card" style="margin-top:1.5rem;">
+          <h2>Konzultácie s lektorom</h2>
+          <form id="consult-settings-form">
+            <div class="field">
+              <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="k-enabled" style="width:auto;"> Umožniť rezerváciu konzultácií</label>
+            </div>
+            <div class="workshop-settings-grid">
+              <div class="field">
+                <label for="k-price30">Cena za 30 minút (€)</label>
+                <input type="number" id="k-price30" min="0" value="15">
+              </div>
+              <div class="field">
+                <label for="k-price60">Cena za 60 minút (€)</label>
+                <input type="number" id="k-price60" min="0" value="25">
+              </div>
+              <div class="field">
+                <label for="k-link">Odkaz na video hovor (napr. Google Meet/Jitsi)</label>
+                <input type="text" id="k-link" placeholder="https://meet.google.com/…">
+                <p class="hint">Rovnaký odkaz sa pošle v e-maile pri každom potvrdení termínu.</p>
+              </div>
+            </div>
+            <h3 style="margin:1.2rem 0 .6rem;">Týždenná dostupnosť</h3>
+            <div id="availability-grid"></div>
+            <button class="btn btn-primary" type="submit" style="margin-top:1rem;">Uložiť nastavenia konzultácií</button>
+            <p id="consult-settings-result" class="hint" style="margin-top:.6rem;"></p>
+          </form>
+        </div>
 
         <div class="card" style="margin-top:1.5rem;">
           <h2>Administrátorské účty</h2>
@@ -999,6 +1057,138 @@ window.addEventListener("load", function () {
       chatData.status = newStatus;
       openChatThread(chatId, chatData);
     });
+  }
+
+  // ---------- Konzultácie ----------
+  const WEEKDAY_LABELS = ["", "Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok", "Sobota", "Nedeľa"];
+
+  function renderAvailabilityGrid(availability) {
+    const grid = document.getElementById("availability-grid");
+    grid.innerHTML = "";
+    for (let wd = 1; wd <= 7; wd++) {
+      const existing = (availability || []).find((a) => a.weekday === wd);
+      const row = document.createElement("div");
+      row.className = "avail-row";
+      row.dataset.weekday = wd;
+      row.innerHTML =
+        "<label class='day-label'><input type='checkbox' class='avail-active' style='width:auto;' " + (existing ? "checked" : "") + "> " + WEEKDAY_LABELS[wd] + "</label>" +
+        "<input type='time' class='avail-start' value='" + (existing ? existing.start : "09:00") + "'>" +
+        "<span>–</span>" +
+        "<input type='time' class='avail-end' value='" + (existing ? existing.end : "15:00") + "'>";
+      grid.appendChild(row);
+    }
+  }
+
+  function readAvailabilityGrid() {
+    const rows = document.querySelectorAll("#availability-grid .avail-row");
+    const availability = [];
+    rows.forEach((row) => {
+      if (row.querySelector(".avail-active").checked) {
+        availability.push({
+          weekday: Number(row.dataset.weekday),
+          start: row.querySelector(".avail-start").value,
+          end: row.querySelector(".avail-end").value,
+        });
+      }
+    });
+    return availability;
+  }
+
+  async function loadConsultationSettings() {
+    renderAvailabilityGrid([]);
+    try {
+      const snap = await db.collection("settings").doc("consultations").get();
+      const data = snap.exists ? snap.data() : {};
+      document.getElementById("k-enabled").checked = !!data.enabled;
+      document.getElementById("k-price30").value = data.price30 ?? 15;
+      document.getElementById("k-price60").value = data.price60 ?? 25;
+      document.getElementById("k-link").value = data.meetingLink || "";
+      renderAvailabilityGrid(data.availability || []);
+    } catch (err) {
+      console.error("Nepodarilo sa načítať nastavenia konzultácií:", err);
+    }
+  }
+
+  document.getElementById("consult-settings-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const resultEl = document.getElementById("consult-settings-result");
+    const patch = {
+      enabled: document.getElementById("k-enabled").checked,
+      price30: Number(document.getElementById("k-price30").value) || 0,
+      price60: Number(document.getElementById("k-price60").value) || 0,
+      meetingLink: document.getElementById("k-link").value.trim(),
+      availability: readAvailabilityGrid(),
+    };
+    try {
+      await db.collection("settings").doc("consultations").set(patch, { merge: true });
+      resultEl.textContent = "Uložené ✓";
+    } catch (err) {
+      resultEl.textContent = "Chyba: " + err.message;
+    }
+  });
+
+  async function loadConsultationBookings() {
+    const tbody = document.getElementById("consultations-body");
+    tbody.innerHTML = "<tr><td colspan='7' class='hint'>Načítavam…</td></tr>";
+    try {
+      const snap = await db.collection("consultationBookings").orderBy("date", "desc").limit(200).get();
+      tbody.innerHTML = "";
+      if (snap.empty) {
+        tbody.innerHTML = "<tr><td colspan='7' class='hint'>Zatiaľ žiadne rezervácie.</td></tr>";
+        return;
+      }
+      snap.forEach((doc) => {
+        const b = doc.data();
+        const statusChip = b.status === "confirmed" ? '<span class="chip good">Potvrdené</span>'
+          : b.status === "cancelled" ? '<span class="chip warn">Zrušené</span>'
+          : '<span class="chip warn">Čaká na úhradu</span>';
+        const actions = b.status === "pending_payment"
+          ? "<button class='btn btn-secondary' data-consult-paid='" + doc.id + "'>Označiť ako uhradené</button> " +
+            "<button class='btn btn-secondary' data-consult-cancel='" + doc.id + "'>Zrušiť</button>"
+          : b.status === "confirmed"
+            ? "<button class='btn btn-secondary' data-consult-cancel='" + doc.id + "'>Zrušiť</button>"
+            : "—";
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + escapeHtml(b.date) + " " + escapeHtml(b.startTime) + "</td>" +
+          "<td>" + b.duration + " min</td>" +
+          "<td>" + (b.mode === "video" ? "Video" : "Telefonicky") + "</td>" +
+          "<td>" + escapeHtml(b.name) + "<br><span class='hint'>" + escapeHtml(b.email) + "</span></td>" +
+          "<td>" + statusChip + "</td>" +
+          "<td>" + b.amount + " €</td>" +
+          "<td>" + actions + "</td>";
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll("[data-consult-paid]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          try {
+            await functions.httpsCallable("markConsultationPaid")({ bookingId: btn.dataset.consultPaid });
+            loadConsultationBookings();
+          } catch (err) {
+            alert("Nepodarilo sa potvrdiť platbu: " + err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+      tbody.querySelectorAll("[data-consult-cancel]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Naozaj zrušiť túto rezerváciu?")) return;
+          btn.disabled = true;
+          try {
+            await functions.httpsCallable("cancelConsultation")({ bookingId: btn.dataset.consultCancel });
+            loadConsultationBookings();
+          } catch (err) {
+            alert("Nepodarilo sa zrušiť rezerváciu: " + err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      tbody.innerHTML = "<tr><td colspan='7' class='hint'>Zoznam sa nepodarilo načítať.</td></tr>";
+      console.error(err);
+    }
   }
 
   // ---------- Spätná väzba ----------
@@ -1574,6 +1764,8 @@ window.addEventListener("load", function () {
     loadGeneralSettings().then(watchOrders);
     startPresenceHeartbeat();
     watchChats();
+    loadConsultationSettings();
+    loadConsultationBookings();
   });
 });
 </script>

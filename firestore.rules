@@ -99,5 +99,12 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Rezervácie konzultácií — zapisujú výhradne Cloud Functions
+    // (getConsultationAvailability/bookConsultation), číta administrátor.
+    match /consultationBookings/{bookingId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
   }
 }

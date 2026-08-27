@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konzultácia s lektorom — Múdro a Bezpečne Online</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+<style>
+  .duration-row, .mode-row { display: flex; gap: .8rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+  .choice-btn {
+    background: var(--surface); border: 2px solid var(--line); border-radius: 12px; padding: .9rem 1.2rem;
+    cursor: pointer; font: inherit; font-weight: 700; font-size: 1rem; color: var(--text);
+  }
+  .choice-btn.selected { border-color: var(--ink); background: var(--surface-2); }
+  .day-row { display: flex; gap: .6rem; overflow-x: auto; padding-bottom: .5rem; margin-bottom: 1.2rem; }
+  .day-btn {
+    flex: none; min-width: 78px; background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
+    padding: .7rem .5rem; text-align: center; cursor: pointer; font: inherit;
+  }
+  .day-btn .dow { font-size: .78rem; color: var(--text-mute); font-weight: 700; }
+  .day-btn .num { font-size: 1.2rem; font-weight: 700; margin-top: .2rem; }
+  .day-btn.selected { border-color: var(--ink); background: var(--surface-2); }
+  .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: .6rem; margin-bottom: 1.2rem; }
+  .slot-btn { background: var(--surface); border: 2px solid var(--line); border-radius: 10px; padding: .6rem; cursor: pointer; font: inherit; font-weight: 700; }
+  .slot-btn.selected { border-color: var(--good); background: var(--good-bg); color: var(--good); }
+  .price-tag { font-size: 1.3rem; font-weight: 700; color: var(--ink); margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Múdro a Bezpečne Online
+    </a>
+    <div class="text-tools">
+      <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+      <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+    </div>
+  </div>
+</header>
+
+<main class="container" style="max-width:680px;padding-top:2.5rem;padding-bottom:4rem;">
+  <h1>Osobná konzultácia s lektorom</h1>
+  <p>Potrebujete poradiť pri konkrétnom probléme — podozrivý e-mail, nastavenie telefónu, otázka k umelej
+    inteligencii? Dohodnite si krátky video alebo telefonický hovor priamo s lektorom.</p>
+
+  <div id="unavailable-notice" class="card" style="display:none;">
+    <p>Konzultácie momentálne nie sú k dispozícii. Skúste to prosím neskôr, alebo nás kontaktujte cez
+      <a href="caste-otazky.html">Časté otázky</a>.</p>
+  </div>
+
+  <div id="booking-flow" style="display:none;">
+    <div class="card" style="margin-bottom:1.4rem;">
+      <h2 style="margin-bottom:.8rem;">1. Dĺžka konzultácie</h2>
+      <div class="duration-row">
+        <button type="button" class="choice-btn" data-duration="30">30 minút</button>
+        <button type="button" class="choice-btn" data-duration="60">60 minút</button>
+      </div>
+      <p class="price-tag" id="price-tag" style="display:none;"></p>
+
+      <h2 style="margin-bottom:.8rem;">2. Spôsob</h2>
+      <div class="mode-row">
+        <button type="button" class="choice-btn selected" data-mode="video">Video hovor</button>
+        <button type="button" class="choice-btn" data-mode="audio">Telefonicky</button>
+      </div>
+    </div>
+
+    <div class="card" id="calendar-card" style="margin-bottom:1.4rem;display:none;">
+      <h2 style="margin-bottom:.8rem;">3. Vyberte deň</h2>
+      <div class="day-row" id="day-row"></div>
+      <div id="slot-wrap">
+        <p class="hint" id="slot-hint">Najprv vyberte deň.</p>
+        <div class="slot-grid" id="slot-grid"></div>
+      </div>
+    </div>
+
+    <form class="card" id="contact-form" style="display:none;">
+      <h2 style="margin-bottom:.8rem;">4. Vaše údaje</h2>
+      <div class="field">
+        <label for="c-name">Meno a priezvisko</label>
+        <input type="text" id="c-name" required>
+      </div>
+      <div class="field">
+        <label for="c-email">E-mail</label>
+        <input type="email" id="c-email" required>
+        <p class="hint">Na tento e-mail príde platobný pokyn aj potvrdenie termínu.</p>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Rezervovať termín</button>
+      <p id="booking-error" class="hint" style="color:var(--warn);display:none;"></p>
+    </form>
+  </div>
+
+  <div id="booking-confirmed" class="card" style="display:none;">
+    <span class="chip warn" style="margin-bottom:1rem;">Čaká na úhradu</span>
+    <h2>Termín je pre vás rezervovaný</h2>
+    <p id="confirm-details"></p>
+    <table style="width:100%;border-collapse:collapse;margin:1.2rem 0;">
+      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Suma</td><td style="padding:.4rem 0;font-weight:700;" id="confirm-amount"></td></tr>
+      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Číslo účtu (IBAN)</td><td style="padding:.4rem 0;font-weight:700;">SK50 8330 0000 0025 0342 5536 <span class="hint" style="font-weight:400;">(Fio banka)</span></td></tr>
+      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Variabilný symbol</td><td style="padding:.4rem 0;font-weight:700;" id="confirm-vs"></td></tr>
+    </table>
+    <p class="hint">Po prijatí platby vám termín potvrdíme e-mailom spolu s odkazom na hovor.</p>
+    <a class="btn btn-secondary btn-block" style="text-decoration:none;margin-top:1rem;" href="index.html">Späť na úvodnú stránku</a>
+  </div>
+</main>
+
+<a class="help-fab" href="tel:+421900000000">
+  <svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M12 5a7 7 0 0 1 7 7c0 4-3 6-3 8H8c0-2-3-4-3-8a7 7 0 0 1 7-7Z"/><path d="M10 20h4"/></svg>
+  Potrebujem pomoc
+</a>
+
+<script>
+  const DOW = ["Ne", "Po", "Ut", "St", "Št", "Pi", "So"];
+  const state = { duration: null, mode: "video", date: null, startTime: null, endTime: null, price: 0 };
+
+  function fmtDate(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  window.addEventListener("load", async () => {
+    const getAvailability = firebase.app().functions("europe-west1").httpsCallable("getConsultationAvailability");
+    const bookConsultation = firebase.app().functions("europe-west1").httpsCallable("bookConsultation");
+
+    // Zistíme, či sú konzultácie vôbec zapnuté (skúšobným dopytom na dnešný dátum).
+    let enabled = false;
+    try {
+      const probe = await getAvailability({ date: fmtDate(new Date()), duration: 30 });
+      enabled = probe.data.enabled !== false;
+    } catch (err) {
+      console.error("Nepodarilo sa zistiť dostupnosť konzultácií:", err);
+    }
+    if (!enabled) {
+      document.getElementById("unavailable-notice").style.display = "block";
+      return;
+    }
+    document.getElementById("booking-flow").style.display = "block";
+
+    // Kalendár — najbližších 21 dní.
+    const dayRow = document.getElementById("day-row");
+    for (let i = 0; i < 21; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "day-btn";
+      btn.dataset.date = fmtDate(d);
+      btn.innerHTML = "<div class='dow'>" + DOW[d.getDay()] + "</div><div class='num'>" + d.getDate() + ".&nbsp;" + (d.getMonth() + 1) + ".</div>";
+      btn.addEventListener("click", () => selectDay(btn.dataset.date, btn));
+      dayRow.appendChild(btn);
+    }
+
+    document.querySelectorAll("[data-duration]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-duration]").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        state.duration = Number(btn.dataset.duration);
+        document.getElementById("calendar-card").style.display = "block";
+        if (state.date) selectDay(state.date, document.querySelector(".day-btn[data-date='" + state.date + "']"));
+      });
+    });
+    document.querySelectorAll("[data-mode]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-mode]").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        state.mode = btn.dataset.mode;
+      });
+    });
+
+    async function selectDay(dateStr, btnEl) {
+      state.date = dateStr;
+      state.startTime = null;
+      document.querySelectorAll(".day-btn").forEach((b) => b.classList.remove("selected"));
+      if (btnEl) btnEl.classList.add("selected");
+      document.getElementById("contact-form").style.display = "none";
+      const slotGrid = document.getElementById("slot-grid");
+      const slotHint = document.getElementById("slot-hint");
+      if (!state.duration) {
+        slotHint.textContent = "Najprv vyberte dĺžku konzultácie vyššie.";
+        slotGrid.innerHTML = "";
+        return;
+      }
+      slotHint.textContent = "Načítavam voľné termíny…";
+      slotGrid.innerHTML = "";
+      try {
+        const res = await getAvailability({ date: dateStr, duration: state.duration });
+        document.getElementById("price-tag").style.display = "block";
+        document.getElementById("price-tag").textContent = "Cena: " + res.data.price + " €";
+        state.price = res.data.price;
+        if (res.data.slots.length === 0) {
+          slotHint.textContent = "V tento deň už nie sú žiadne voľné termíny. Skúste iný deň.";
+          return;
+        }
+        slotHint.textContent = "Vyberte čas:";
+        res.data.slots.forEach((s) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "slot-btn";
+          b.textContent = s.start;
+          b.addEventListener("click", () => {
+            document.querySelectorAll(".slot-btn").forEach((x) => x.classList.remove("selected"));
+            b.classList.add("selected");
+            state.startTime = s.start;
+            state.endTime = s.end;
+            document.getElementById("contact-form").style.display = "block";
+          });
+          slotGrid.appendChild(b);
+        });
+      } catch (err) {
+        slotHint.textContent = "Termíny sa nepodarilo načítať. Skúste to prosím znova.";
+        console.error(err);
+      }
+    }
+
+    document.getElementById("contact-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("c-name").value.trim();
+      const email = document.getElementById("c-email").value.trim();
+      const errorEl = document.getElementById("booking-error");
+      errorEl.style.display = "none";
+      try {
+        const res = await bookConsultation({ name, email, duration: state.duration, mode: state.mode, date: state.date, startTime: state.startTime });
+        document.getElementById("booking-flow").style.display = "none";
+        document.getElementById("booking-confirmed").style.display = "block";
+        document.getElementById("confirm-details").textContent =
+          "Termín: " + res.data.date + " o " + res.data.startTime + " (" + state.duration + " min, " + (state.mode === "video" ? "video hovor" : "telefonicky") + ").";
+        document.getElementById("confirm-amount").textContent = res.data.amount + " €";
+        document.getElementById("confirm-vs").textContent = res.data.variableSymbol;
+      } catch (err) {
+        errorEl.textContent = err.message && err.message.includes("obsadený")
+          ? "Tento termín si medzičasom niekto zarezervoval. Vyberte prosím iný."
+          : "Rezerváciu sa nepodarilo vytvoriť. Skúste to prosím znova.";
+        errorEl.style.display = "block";
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
