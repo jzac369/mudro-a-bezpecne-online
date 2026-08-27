@@ -8,3 +8,9 @@ ui-debug.log
 .env
 .env.*
 public/assets/firebase-config.local.js
+
+# Service-account kľúče sa nikdy necommitujú
+*serviceAccountKey*.json
+*-firebase-adminsdk-*.json
+functions/scripts/*.key.json
+functions/scripts/admin-key.json
