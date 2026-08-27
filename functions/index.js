@@ -464,14 +464,20 @@ async function sendCodeEmail({ to, name, codes, workshopId, messageOverride }) {
     console.error("EmailJS odoslanie zlyhalo:", err);
   }
 
-  await db.collection("mail").add({
-    to,
-    code: primaryCode,
-    codes,
-    workshopId,
-    status,
-    createdAt: FieldValue.serverTimestamp(),
-  });
+  try {
+    await db.collection("mail").add({
+      to,
+      code: primaryCode,
+      codes,
+      workshopId,
+      status,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    // sendCodeEmail je zámerne "best-effort" a nesmie zhodiť volajúcu funkciu —
+    // aj keby zápis logu zlyhal, e-mail sa už mohol odoslať.
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
 }
 
 /**
@@ -709,32 +715,46 @@ exports.bookConsultation = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (req
  * potvrdenie s odkazom na video/audio hovor.
  */
 exports.markConsultationPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
-  if (request.auth?.token?.admin !== true) {
-    throw new HttpsError("permission-denied", "Len administrátor môže potvrdiť platbu.");
+  try {
+    if (request.auth?.token?.admin !== true) {
+      throw new HttpsError("permission-denied", "Len administrátor môže potvrdiť platbu.");
+    }
+    const { bookingId } = request.data || {};
+    if (!bookingId || typeof bookingId !== "string") {
+      throw new HttpsError("invalid-argument", "Chýba identifikátor rezervácie.");
+    }
+    const ref = db.collection("consultationBookings").doc(bookingId);
+    const snap = await ref.get();
+    if (!snap.exists) throw new HttpsError("not-found", "Rezervácia neexistuje.");
+    const b = snap.data();
+    if (b.status !== "pending_payment") {
+      throw new HttpsError("failed-precondition", "Táto rezervácia už bola spracovaná.");
+    }
+
+    await ref.update({ status: "confirmed", confirmedAt: FieldValue.serverTimestamp() });
+
+    const settings = await getConsultationSettings();
+    try {
+      await sendCodeEmail({
+        to: b.email,
+        name: b.name,
+        codes: [],
+        workshopId: null,
+        messageOverride:
+          "Vaša konzultácia (" + b.duration + " min, " + (b.mode === "video" ? "video" : "telefonicky") + ") je potvrdená na " + b.date + " o " + b.startTime + "." +
+          (settings.meetingLink ? " Odkaz na hovor: " + settings.meetingLink : " V dohodnutom čase vás lektor bude kontaktovať priamo."),
+      });
+    } catch (emailErr) {
+      // Platba je potvrdená aj keby zlyhalo odoslanie e-mailu — nechceme to celé zablokovať.
+      console.error("markConsultationPaid: odoslanie potvrdzujúceho e-mailu zlyhalo", emailErr && emailErr.stack ? emailErr.stack : emailErr);
+    }
+
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof HttpsError) throw err;
+    console.error("markConsultationPaid zlyhalo:", err && err.stack ? err.stack : err);
+    throw new HttpsError("internal", "Nastala neočakávaná chyba: " + (err && err.message ? err.message : String(err)));
   }
-  const { bookingId } = request.data || {};
-  const ref = db.collection("consultationBookings").doc(bookingId);
-  const snap = await ref.get();
-  if (!snap.exists) throw new HttpsError("not-found", "Rezervácia neexistuje.");
-  const b = snap.data();
-  if (b.status !== "pending_payment") {
-    throw new HttpsError("failed-precondition", "Táto rezervácia už bola spracovaná.");
-  }
-
-  await ref.update({ status: "confirmed", confirmedAt: FieldValue.serverTimestamp() });
-
-  const settings = await getConsultationSettings();
-  await sendCodeEmail({
-    to: b.email,
-    name: b.name,
-    codes: [],
-    workshopId: null,
-    messageOverride:
-      "Vaša konzultácia (" + b.duration + " min, " + (b.mode === "video" ? "video" : "telefonicky") + ") je potvrdená na " + b.date + " o " + b.startTime + "." +
-      (settings.meetingLink ? " Odkaz na hovor: " + settings.meetingLink : " V dohodnutom čase vás lektor bude kontaktovať priamo."),
-  });
-
-  return { ok: true };
 });
 
 /**
