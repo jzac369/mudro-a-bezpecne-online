@@ -13,13 +13,20 @@
 <script defer src="data/workshops.js"></script>
 <script defer src="assets/app.js"></script>
 <style>
-  .stepper { display:flex; gap:.5rem; flex-wrap:wrap; margin:1.5rem 0 2rem; }
+  .stepper { display:flex; gap:.5rem; flex-wrap:wrap; margin:1.2rem 0 .8rem; }
   .stepper button {
+    display:flex; align-items:center; gap:.4rem;
     background: var(--surface); border: 2px solid var(--line); color: var(--text-mute);
     padding: .6rem 1rem; border-radius: 999px; font-size: .95rem; cursor:pointer;
   }
   .stepper button.active { border-color: var(--ink); color: var(--ink); background: var(--surface-2); }
   .stepper button.done { border-color: var(--good); color: var(--good); }
+  .stepper button .check { display:none; width:15px; height:15px; }
+  .stepper button.done .check { display:inline; }
+  .progress-wrap { margin:1rem 0 .4rem; }
+  .progress-bar-bg { width:100%; height:10px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
+  .progress-bar-fill { height:100%; background:var(--good); border-radius:999px; transition:width .3s ease; }
+  .progress-label { font-size:.85rem; color:var(--text-mute); margin-top:.35rem; }
   .step-panel { display:none; }
   .step-panel.active { display:block; }
   .video-wrap { position:relative; padding-top:56.25%; border-radius:14px; overflow:hidden; background:#000; }
@@ -29,6 +36,20 @@
   .quiz-option input { width:auto; margin-top:.2rem; }
   .feedback-ok { color: var(--good); font-weight:700; }
   .feedback-bad { color: var(--warn); font-weight:700; }
+  .continue-banner {
+    display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+    background: var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:.9rem 1.1rem; margin-bottom:1.2rem;
+  }
+  .save-toast {
+    position:fixed; bottom:1.4rem; left:50%; transform:translateX(-50%) translateY(20px);
+    background: var(--ink); color:#fff; padding:.6rem 1.1rem; border-radius:999px; font-size:.9rem;
+    opacity:0; transition:opacity .25s ease, transform .25s ease; z-index:50; pointer-events:none;
+  }
+  .save-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .star-row { display:flex; gap:.4rem; margin:.6rem 0 1rem; }
+  .star-row button { background:none; border:none; cursor:pointer; padding:0; font-size:2rem; line-height:1; color:var(--line); }
+  .star-row button.filled { color:var(--accent,#c17a2e); }
+  .cert-preview { border:1px solid var(--line); border-radius:10px; max-width:100%; margin:1rem 0; display:block; }
 </style>
 </head>
 <body>
@@ -49,13 +70,36 @@
 
 <main class="container" style="padding-top:2rem;padding-bottom:5rem;max-width:820px;">
   <p id="welcome" class="hint"></p>
+  <p id="last-login" class="hint"></p>
   <h1 id="workshop-title">Načítavam workshop…</h1>
 
+  <div class="progress-wrap">
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-label" id="progress-label"></div>
+  </div>
+
+  <div id="continue-banner" class="continue-banner" style="display:none;">
+    <span id="continue-text"></span>
+    <button class="btn btn-primary" id="continue-btn" style="padding:.5rem 1rem;font-size:.9rem;">Pokračovať</button>
+  </div>
+
   <nav class="stepper" id="stepper" aria-label="Kroky workshopu">
-    <button data-step="video">1 · Video</button>
-    <button data-step="cvicenia">2 · Cvičenia</button>
-    <button data-step="kviz">3 · Kvíz</button>
-    <button data-step="brozurka">4 · Brožúrka</button>
+    <button data-step="video">
+      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      1 · Video
+    </button>
+    <button data-step="cvicenia">
+      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      2 · Cvičenia
+    </button>
+    <button data-step="kviz">
+      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      3 · Kvíz
+    </button>
+    <button data-step="brozurka">
+      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      4 · Brožúrka
+    </button>
   </nav>
 
   <section class="card step-panel" data-panel="video">
@@ -74,14 +118,35 @@
   <section class="card step-panel" data-panel="kviz">
     <h2>Výstupný kvíz</h2>
     <div id="quiz-body"></div>
+    <div id="cert-area" style="display:none;margin-top:1.5rem;">
+      <h3>Váš certifikát</h3>
+      <img id="cert-preview" class="cert-preview" alt="Náhľad certifikátu o absolvovaní">
+      <a class="btn btn-primary" id="cert-download" download="certifikat.png" style="text-decoration:none;display:inline-block;">Stiahnuť certifikát (PNG)</a>
+    </div>
   </section>
 
   <section class="card step-panel" data-panel="brozurka">
     <h2>Brožúrka na stiahnutie</h2>
-    <p>Brožúrku si môžete prelistovať priamo tu, alebo si ju stiahnuť do počítača či tabletu.</p>
+    <p>Brožúrku si môžete prelistovať priamo tu, alebo si ju stiahnuť do počítača či tabletu. Po prvom otvorení zostane dostupná aj bez internetu.</p>
     <iframe id="brochure-frame" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;"></iframe>
     <a class="btn btn-primary" id="brochure-download" style="margin-top:1rem;display:inline-block;text-decoration:none;" download>Stiahnuť brožúrku (PDF)</a>
   </section>
+
+  <section class="card" style="margin-top:1.5rem;" id="feedback-card">
+    <h2>Ako sa vám workshop páčil?</h2>
+    <div class="star-row" id="star-row">
+      <button type="button" data-star="1">★</button>
+      <button type="button" data-star="2">★</button>
+      <button type="button" data-star="3">★</button>
+      <button type="button" data-star="4">★</button>
+      <button type="button" data-star="5">★</button>
+    </div>
+    <textarea id="feedback-comment" rows="3" style="width:100%;font:inherit;padding:.8rem;border-radius:10px;border:2px solid var(--line);" placeholder="Chcete nám niečo odkázať? (nepovinné)"></textarea>
+    <button class="btn btn-primary" id="feedback-submit" style="margin-top:1rem;">Odoslať hodnotenie</button>
+    <p id="feedback-thanks" class="hint" style="display:none;">Ďakujeme za spätnú väzbu!</p>
+  </section>
+
+  <p style="margin-top:2rem;"><a href="caste-otazky.html">Časté otázky a pomoc</a></p>
 </main>
 
 <a class="help-fab" href="tel:+421900000000">
@@ -89,20 +154,43 @@
   Potrebujem pomoc
 </a>
 
+<div class="save-toast" id="save-toast">Uložené ✓</div>
+
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 (function () {
   const STEPS = ["video", "cvicenia", "kviz", "brozurka"];
-  const state = { workshop: null, workshopId: null, codeId: null, db: null, ytPlayer: null, sessionRef: null, sessionStart: null };
+  const state = {
+    workshop: null, workshopId: null, codeId: null, db: null, ytPlayer: null,
+    sessionRef: null, sessionStart: null, doneSteps: new Set(), quizAnswers: [],
+  };
+
+  function showSavedToast() {
+    const t = document.getElementById("save-toast");
+    t.classList.add("show");
+    clearTimeout(showSavedToast._timer);
+    showSavedToast._timer = setTimeout(() => t.classList.remove("show"), 1600);
+  }
+
+  function updateProgressBar() {
+    const pct = Math.round((state.doneSteps.size / STEPS.length) * 100);
+    document.getElementById("progress-fill").style.width = pct + "%";
+    document.getElementById("progress-label").textContent =
+      state.doneSteps.size + " zo " + STEPS.length + " krokov hotových (" + pct + " %)";
+  }
 
   function setActiveStep(step) {
     document.querySelectorAll(".stepper button").forEach((b) => b.classList.toggle("active", b.dataset.step === step));
     document.querySelectorAll(".step-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === step));
     history.replaceState(null, "", "?w=" + state.workshopId + "&step=" + step);
+    saveProgress({ currentStep: step });
   }
 
   function markStepDone(step) {
+    state.doneSteps.add(step);
     document.querySelector('.stepper button[data-step="' + step + '"]').classList.add("done");
+    updateProgressBar();
+    saveProgress({ completedSteps: Array.from(state.doneSteps) });
   }
 
   async function saveProgress(patch) {
@@ -111,6 +199,7 @@
       Object.assign({ workshopId: state.workshopId, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, patch),
       { merge: true }
     );
+    showSavedToast();
   }
 
   function renderExercise() {
@@ -121,14 +210,72 @@
       '<textarea rows="4" style="width:100%;font:inherit;padding:.8rem;border-radius:10px;border:2px solid var(--line);" placeholder="Sem napíšte svoju odpoveď…"></textarea>';
   }
 
-  function renderQuiz() {
-    const quiz = state.workshop.quiz;
-    const body = document.getElementById("quiz-body");
-    const answers = new Array(quiz.questions.length).fill(null);
+  function drawCertificate(participantName) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1000;
+    canvas.height = 700;
+    const ctx = canvas.getContext("2d");
 
-    body.innerHTML = quiz.questions
-      .map(
-        (q, qi) =>
+    ctx.fillStyle = "#f6f3ec";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#c17a2e";
+    ctx.lineWidth = 10;
+    ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+    ctx.strokeStyle = "#1f3a3d";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#1f3a3d";
+    ctx.font = "bold 30px Georgia, serif";
+    ctx.fillText("CERTIFIKÁT O ABSOLVOVANÍ", canvas.width / 2, 170);
+
+    ctx.font = "20px Georgia, serif";
+    ctx.fillStyle = "#5c5749";
+    ctx.fillText("Múdro a Bezpečne Online", canvas.width / 2, 210);
+
+    ctx.font = "italic 22px Georgia, serif";
+    ctx.fillText("Tento certifikát potvrdzuje, že", canvas.width / 2, 300);
+
+    ctx.font = "bold 44px Georgia, serif";
+    ctx.fillStyle = "#c17a2e";
+    ctx.fillText(participantName, canvas.width / 2, 370);
+
+    ctx.font = "22px Georgia, serif";
+    ctx.fillStyle = "#1f3a3d";
+    ctx.fillText("úspešne absolvoval(a) workshop", canvas.width / 2, 430);
+
+    ctx.font = "bold 28px Georgia, serif";
+    ctx.fillText(state.workshop.title, canvas.width / 2, 470);
+
+    ctx.font = "18px Georgia, serif";
+    ctx.fillStyle = "#5c5749";
+    const dateStr = new Date().toLocaleDateString("sk-SK", { year: "numeric", month: "long", day: "numeric" });
+    ctx.fillText(dateStr, canvas.width / 2, 560);
+
+    return canvas.toDataURL("image/png");
+  }
+
+  function showCertificate(participantName) {
+    const dataUrl = drawCertificate(participantName);
+    document.getElementById("cert-preview").src = dataUrl;
+    document.getElementById("cert-download").href = dataUrl;
+    document.getElementById("cert-area").style.display = "block";
+  }
+
+  function renderQuiz(subsetIndexes) {
+    const allQuestions = state.workshop.quiz.questions;
+    const indexes = subsetIndexes || allQuestions.map((_, i) => i);
+    if (state.quizAnswers.length !== allQuestions.length) {
+      state.quizAnswers = new Array(allQuestions.length).fill(null);
+    }
+    const body = document.getElementById("quiz-body");
+    document.getElementById("cert-area").style.display = "none";
+
+    body.innerHTML = indexes
+      .map((qi) => {
+        const q = allQuestions[qi];
+        return (
           "<div style='margin-bottom:1.6rem;'><p style='font-weight:700;'>" + (qi + 1) + ". " + q.question + "</p>" +
           q.options
             .map(
@@ -138,9 +285,10 @@
             )
             .join("") +
           "</div>"
-      )
+        );
+      })
       .join("") +
-      '<button class="btn btn-primary" id="quiz-submit">Odovzdať kvíz</button>' +
+      '<button class="btn btn-primary" id="quiz-submit">' + (subsetIndexes ? "Odovzdať opravené odpovede" : "Odovzdať kvíz") + "</button>" +
       '<p id="quiz-result" class="hint" style="margin-top:1rem;"></p>';
 
     body.addEventListener("change", (e) => {
@@ -148,31 +296,46 @@
       const qi = e.target.name.replace("q", "");
       document.querySelectorAll('.quiz-option[data-q="' + qi + '"]').forEach((el) => el.classList.remove("selected"));
       e.target.closest(".quiz-option").classList.add("selected");
-      answers[Number(qi)] = Number(e.target.value);
+      state.quizAnswers[Number(qi)] = Number(e.target.value);
     });
 
     document.getElementById("quiz-submit").addEventListener("click", async () => {
-      const correct = quiz.questions.filter((q, i) => answers[i] === q.correctIndex).length;
-      const total = quiz.questions.length;
-      const passed = correct >= Math.min(quiz.passScore, total);
+      const total = allQuestions.length;
+      const correct = allQuestions.filter((q, i) => state.quizAnswers[i] === q.correctIndex).length;
+      const passed = correct >= Math.min(state.workshop.quiz.passScore, total);
+      const wrongIndexes = allQuestions.map((q, i) => i).filter((i) => state.quizAnswers[i] !== allQuestions[i].correctIndex);
       const resultEl = document.getElementById("quiz-result");
+
+      const participantName = sessionStorage.getItem("mbo_participant_name") || "Účastník workshopu";
+
       resultEl.innerHTML =
-        '<span class="' + (passed ? "feedback-ok" : "feedback-bad") + '">Správne odpovede: ' + correct + " / " + total + "</span>" +
-        (passed
-          ? "<br>Výborne, workshop ste úspešne dokončili! Certifikát o absolvovaní vám čoskoro pribudne v tejto sekcii."
-          : "<br>Skúste si kvíz zopakovať — v prípade potreby si video znova pozrite v kroku 1.");
+        '<span class="' + (passed ? "feedback-ok" : "feedback-bad") + '">Správne odpovede: ' + correct + " / " + total + "</span>";
+
+      if (passed) {
+        resultEl.innerHTML += "<br>Výborne, workshop ste úspešne dokončili!";
+        showCertificate(participantName);
+      } else {
+        resultEl.innerHTML += "<br>Ešte to nie je ono — skúste si zopakovať len otázky, ktoré neboli správne.";
+        const retryBtn = document.createElement("button");
+        retryBtn.className = "btn btn-secondary";
+        retryBtn.style.marginTop = ".8rem";
+        retryBtn.textContent = "Zopakovať nesprávne otázky (" + wrongIndexes.length + ")";
+        retryBtn.addEventListener("click", () => renderQuiz(wrongIndexes));
+        resultEl.appendChild(document.createElement("br"));
+        resultEl.appendChild(retryBtn);
+      }
 
       await state.db.collection("quizResults").add({
         codeId: state.codeId,
         workshopId: state.workshopId,
-        answers,
+        answers: state.quizAnswers,
         score: correct,
         total,
         passed,
         completedAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
       await saveProgress({ quizCompleted: true, quizScore: correct, quizPassed: passed });
-      markStepDone("kviz");
+      if (passed) markStepDone("kviz");
     });
   }
 
@@ -199,6 +362,27 @@
     if (window.YT && window.YT.Player) window.onYouTubeIframeAPIReady();
   }
 
+  async function showLastLogin() {
+    try {
+      const snap = await state.db
+        .collection("sessions")
+        .where("codeId", "==", state.codeId)
+        .orderBy("loginAt", "desc")
+        .limit(1)
+        .get();
+      if (!snap.empty) {
+        const s = snap.docs[0].data();
+        if (s.loginAt) {
+          const d = s.loginAt.toDate();
+          document.getElementById("last-login").textContent =
+            "Naposledy ste boli prihlásený(á) " + d.toLocaleDateString("sk-SK") + " o " + d.toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" }) + ".";
+        }
+      }
+    } catch (err) {
+      console.error("Nepodarilo sa načítať poslednú reláciu:", err);
+    }
+  }
+
   async function startSession() {
     const ref = await state.db.collection("sessions").add({
       codeId: state.codeId,
@@ -223,8 +407,46 @@
     location.href = "index.html?odhlaseny=" + encodeURIComponent(reason || "manual");
   }
 
+  function setupFeedback() {
+    const key = "mbo_feedback_" + state.codeId;
+    if (localStorage.getItem(key)) {
+      document.getElementById("feedback-card").style.display = "none";
+      return;
+    }
+    let rating = 0;
+    const stars = document.querySelectorAll("#star-row button");
+    stars.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        rating = Number(btn.dataset.star);
+        stars.forEach((b) => b.classList.toggle("filled", Number(b.dataset.star) <= rating));
+      });
+    });
+    document.getElementById("feedback-submit").addEventListener("click", async () => {
+      if (!rating) return;
+      await state.db.collection("feedback").add({
+        codeId: state.codeId,
+        workshopId: state.workshopId,
+        rating,
+        comment: document.getElementById("feedback-comment").value.trim(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      localStorage.setItem(key, "1");
+      document.getElementById("star-row").style.display = "none";
+      document.getElementById("feedback-comment").style.display = "none";
+      document.getElementById("feedback-submit").style.display = "none";
+      document.getElementById("feedback-thanks").style.display = "block";
+    });
+  }
+
+  function registerServiceWorker() {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch((err) => console.error("Service worker sa nepodarilo zaregistrovať:", err));
+    }
+  }
+
   window.addEventListener("load", () => {
     state.db = firebase.firestore();
+    registerServiceWorker();
 
     firebase.auth().onAuthStateChanged(async (user) => {
       if (!user) {
@@ -234,11 +456,19 @@
       const tokenResult = await user.getIdTokenResult();
       state.codeId = tokenResult.claims.codeId;
       state.workshopId = new URLSearchParams(location.search).get("w") || tokenResult.claims.workshopId;
-      state.workshop = window.WORKSHOPS[state.workshopId];
+      state.workshop = window.WORKSHOPS[state.workshopId] ? Object.assign({}, window.WORKSHOPS[state.workshopId]) : null;
 
       if (!state.workshop) {
         document.getElementById("workshop-title").textContent = "Workshop sa nenašiel.";
         return;
+      }
+
+      // Admin v admin zóne vie upraviť video/brožúrku/cenu/názov — tie majú prednosť.
+      try {
+        const wSnap = await state.db.collection("workshops").doc(state.workshopId).get();
+        if (wSnap.exists) Object.assign(state.workshop, wSnap.data());
+      } catch (err) {
+        console.error("Nepodarilo sa načítať nastavenia workshopu:", err);
       }
 
       document.getElementById("workshop-name").textContent = state.workshop.title;
@@ -251,6 +481,7 @@
 
       renderExercise();
       renderQuiz();
+      setupFeedback();
       try {
         initVideo();
       } catch (err) {
@@ -271,8 +502,41 @@
       });
       document.getElementById("logout-btn").addEventListener("click", () => doLogout("manual"));
 
-      const initialStep = new URLSearchParams(location.search).get("step") || "video";
-      setActiveStep(STEPS.includes(initialStep) ? initialStep : "video");
+      // Postup a krok, kde účastník naposledy skončil.
+      let progressData = null;
+      try {
+        const progressSnap = await state.db.collection("progress").doc(state.codeId).get();
+        if (progressSnap.exists) progressData = progressSnap.data();
+      } catch (err) {
+        console.error("Nepodarilo sa načítať postup:", err);
+      }
+      if (progressData && Array.isArray(progressData.completedSteps)) {
+        progressData.completedSteps.forEach((s) => {
+          if (STEPS.includes(s)) {
+            state.doneSteps.add(s);
+            const btn = document.querySelector('.stepper button[data-step="' + s + '"]');
+            if (btn) btn.classList.add("done");
+          }
+        });
+      }
+      updateProgressBar();
+
+      const urlStep = new URLSearchParams(location.search).get("step");
+      const stepNames = { video: "Video", cvicenia: "Cvičenia", kviz: "Kvíz", brozurka: "Brožúrka" };
+      if (!urlStep && progressData && progressData.currentStep && STEPS.includes(progressData.currentStep) && progressData.currentStep !== "video") {
+        document.getElementById("continue-text").textContent =
+          "Naposledy ste skončili v kroku „" + stepNames[progressData.currentStep] + "“.";
+        document.getElementById("continue-banner").style.display = "flex";
+        document.getElementById("continue-btn").addEventListener("click", () => {
+          document.getElementById("continue-banner").style.display = "none";
+          setActiveStep(progressData.currentStep);
+        });
+        setActiveStep("video");
+      } else {
+        setActiveStep(STEPS.includes(urlStep) ? urlStep : "video");
+      }
+
+      showLastLogin();
 
       await startSession();
       MBO.startInactivityWatch(doLogout);

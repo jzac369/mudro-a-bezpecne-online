@@ -195,6 +195,30 @@ exports.resendCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) 
 });
 
 /**
+ * Vytvorí nový administrátorský účet (alebo povýši existujúci) —
+ * volateľné iba existujúcim administrátorom.
+ */
+exports.createAdmin = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže pridávať ďalších administrátorov.");
+  }
+  const { email, password } = request.data || {};
+  if (!email || !password || password.length < 6) {
+    throw new HttpsError("invalid-argument", "Zadaj e-mail a heslo (aspoň 6 znakov).");
+  }
+
+  let user;
+  try {
+    user = await getAuth().getUserByEmail(email);
+  } catch (err) {
+    user = await getAuth().createUser({ email, password });
+  }
+  await getAuth().setCustomUserClaims(user.uid, { admin: true });
+
+  return { uid: user.uid };
+});
+
+/**
  * Odoslanie e-mailu s prístupovým kódom cez EmailJS REST API (server-side,
  * súkromný kľúč nikdy neopustí Cloud Function).
  */

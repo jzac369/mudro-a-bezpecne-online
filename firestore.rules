@@ -30,7 +30,8 @@ service cloud.firestore {
 
     match /accessCodes/{codeId} {
       allow read: if isAdmin() || isOwnCode(codeId);
-      allow write: if false; // len Cloud Functions cez Admin SDK
+      allow create, delete: if false; // len Cloud Functions cez Admin SDK
+      allow update: if isAdmin(); // napr. deaktivácia kódu z admin zóny
     }
 
     match /progress/{codeId} {
@@ -49,6 +50,12 @@ service cloud.firestore {
       allow create: if isOwnCode(request.resource.data.codeId);
       allow update: if isOwnCode(resource.data.codeId);
       allow delete: if false;
+    }
+
+    match /feedback/{feedbackId} {
+      allow read: if isAdmin();
+      allow create: if isOwnCode(request.resource.data.codeId);
+      allow update, delete: if false;
     }
   }
 }
