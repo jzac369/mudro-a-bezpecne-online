@@ -640,10 +640,15 @@ function renderBudgetExercise(ex) {
     state.db = firebase.firestore();
     registerServiceWorker();
 
-    // Počkáme, kým Firebase obnovy session z IndexedDB — inak onAuthStateChanged
-    // hneď vystreľuje null a presmeruje pred tým, ako je stav obnovený.
-    await firebase.auth().authStateReady();
-    const user = firebase.auth().currentUser;
+    // Počkáme na prvé vyhodnotenie auth stavu (compat SDK nemá authStateReady()) —
+    // inak by sa nám mohol objaviť krátky "null" hneď na začiatku, kým sa
+    // relácia z IndexedDB ešte len obnovuje, a hneď by nás odhlásilo.
+    const user = await new Promise((resolve) => {
+      const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
+        unsubscribe();
+        resolve(u);
+      });
+    });
     if (!user) {
       location.href = "prihlasenie.html";
       return;
