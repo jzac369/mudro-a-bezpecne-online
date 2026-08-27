@@ -12,6 +12,72 @@
 <script defer src="assets/firebase-config.js"></script>
 <script defer src="assets/app.js"></script>
 <script defer src="assets/chat-widget.js"></script>
+<style>
+  .btn-outline {
+    background: none; border: 2px solid var(--ink); color: var(--ink); border-radius: 999px;
+    padding: .75rem 1.4rem; font-weight: 700; text-decoration: none; display: inline-flex;
+    align-items: center; gap: .5rem;
+  }
+  .btn-outline:hover { background: var(--surface-2); }
+
+  .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 2.5rem; align-items: center; padding: 2.5rem 0 3rem; }
+  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+  .hero h1 { font-size: 2.3rem; line-height: 1.2; }
+  .hero h1 .accent { color: var(--accent); }
+  .hero-art { position: relative; }
+  .hero-badge {
+    position: absolute; bottom: -1rem; left: -1rem; background: var(--surface); border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: .9rem 1.2rem; display: flex; align-items: center; gap: .6rem;
+    font-weight: 700; font-size: .88rem; max-width: 190px;
+  }
+  .hero-badge svg { flex: none; width: 26px; height: 26px; color: var(--good); }
+  @media (max-width: 900px) { .hero-badge { position: static; margin-top: 1rem; max-width: none; } }
+
+  .feature-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; margin: 2.5rem 0; }
+  @media (max-width: 800px) { .feature-row { grid-template-columns: repeat(2, 1fr); } }
+  .feature-item { text-align: center; padding: 1rem; }
+  .feature-item .ic {
+    width: 52px; height: 52px; border-radius: 50%; background: var(--surface-2); color: var(--ink);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto .7rem;
+  }
+  .feature-item h3 { font-size: 1rem; margin-bottom: .2rem; }
+  .feature-item p { font-size: .85rem; color: var(--text-mute); margin: 0; }
+
+  .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.6rem; }
+  .course-card-illust { border-radius: 14px; overflow: hidden; margin-bottom: 1rem; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+  .course-list { list-style: none; padding: 0; margin: .8rem 0 1.2rem; }
+  .course-list li { display: flex; gap: .5rem; align-items: flex-start; margin-bottom: .5rem; font-size: .94rem; }
+  .course-list svg { flex: none; width: 18px; height: 18px; color: var(--good); margin-top: .15rem; }
+
+  .testi-section { margin: 3.5rem 0; text-align: center; }
+  .testi-section h2 { display: inline-flex; align-items: center; gap: .5rem; }
+  .testi-track { display: flex; gap: 1.2rem; overflow-x: auto; scroll-snap-type: x mandatory; padding: 1.5rem 0; }
+  .testi-card {
+    flex: 0 0 auto; width: min(300px, 85vw); scroll-snap-align: start; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; text-align: left;
+  }
+  .testi-avatar {
+    width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 1.1rem; margin-bottom: .8rem;
+  }
+  .testi-quote { font-size: .92rem; margin-bottom: .9rem; }
+  .testi-name { font-weight: 700; font-size: .88rem; }
+  .testi-dots { display: flex; justify-content: center; gap: .5rem; margin-top: .5rem; }
+  .testi-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: inline-block; }
+  .testi-dots span.active { background: var(--ink); }
+
+  .steps-row { display: flex; align-items: flex-start; gap: .5rem; overflow-x: auto; padding: 1.5rem 0; }
+  .step-item { flex: 1 1 0; min-width: 130px; text-align: center; padding: 0 .4rem; }
+  .step-item .num {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto .6rem;
+  }
+  .step-item .ic { color: var(--accent); margin-bottom: .4rem; }
+  .step-item h3 { font-size: .92rem; margin-bottom: .2rem; }
+  .step-item p { font-size: .8rem; color: var(--text-mute); margin: 0; }
+  .step-arrow { flex: 0 0 auto; color: var(--line); margin-top: 1rem; }
+  @media (max-width: 800px) { .step-arrow { display: none; } .steps-row { flex-wrap: wrap; } }
+</style>
 </head>
 <body>
 
@@ -24,43 +90,115 @@
     <div class="text-tools" aria-label="Veľkosť textu">
       <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
       <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
-      <a class="btn btn-secondary" href="prihlasenie.html" style="text-decoration:none;">Mám kód, chcem sa prihlásiť</a>
+      <a class="btn-outline" href="prihlasenie.html">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        Mám kód, chcem sa prihlásiť
+      </a>
     </div>
   </div>
 </header>
 
-<main class="container" style="padding-top:2.5rem;padding-bottom:4rem;">
-  <section style="max-width:640px;margin-bottom:3rem;">
-    <h1>Dva jednoduché online workshopy, ktoré vás ochránia a povzbudia</h1>
-    <p>Pozriete si krátke video, vyskúšate si to na jednoduchých cvičeniach a na
-      záver si overíte, ako to zvládate. Bez zbytočných tlačidiel a bez potreby
-      vytvárať si heslo — stačí meno a prístupový kód, ktorý dostanete po úhrade.</p>
+<main class="container" style="padding-bottom:4rem;">
+
+  <section class="hero">
+    <div>
+      <h1>Jednoduché online kurzy, ktoré vám pomôžu cítiť sa <span class="accent">bezpečnejšie a istejšie</span> v digitálnom svete</h1>
+      <p style="font-size:1.05rem;color:var(--text-mute);">Zrozumiteľné videá, praktické cvičenia a podpora krok za krokom.
+        Bez technického žargónu. Vhodné aj pre úplných začiatočníkov.</p>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.4rem;">
+        <a class="btn btn-primary" style="text-decoration:none;" href="#kurzy">Vybrať si kurz</a>
+        <a class="btn-outline" href="prihlasenie.html">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          Mám kód, chcem sa prihlásiť
+        </a>
+      </div>
+    </div>
+    <div class="hero-art">
+      <svg viewBox="0 0 400 300" style="width:100%;border-radius:20px;background:var(--accent-soft);">
+        <circle cx="150" cy="140" r="70" fill="var(--surface)"/>
+        <circle cx="270" cy="140" r="70" fill="var(--surface)"/>
+        <rect x="165" y="120" width="70" height="95" rx="10" fill="var(--ink)"/>
+        <rect x="172" y="130" width="56" height="65" rx="3" fill="var(--accent-soft)"/>
+        <circle cx="150" cy="95" r="32" fill="#e7c9a3"/>
+        <circle cx="270" cy="95" r="32" fill="#d9b98c"/>
+        <rect x="120" y="120" width="60" height="80" rx="24" fill="var(--good)"/>
+        <rect x="240" y="120" width="60" height="80" rx="24" fill="var(--warn)"/>
+      </svg>
+      <div class="hero-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+        Bezpečne na internete každý deň
+      </div>
+    </div>
   </section>
 
-  <section aria-label="Ponuka workshopov">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.6rem;">
+  <section class="feature-row">
+    <div class="feature-item">
+      <div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <h3>Bez hesla</h3>
+      <p>Prihlasujete sa menom a kódom</p>
+    </div>
+    <div class="feature-item">
+      <div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 6"/></svg></div>
+      <h3>Jednoduché kroky</h3>
+      <p>Všetko vysvetlené krok za krokom</p>
+    </div>
+    <div class="feature-item">
+      <div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="18" cy="9" r="2.6"/><path d="M15.5 20a5 5 0 0 1 6.8-4.7"/></svg></div>
+      <h3>Vhodné pre seniorov</h3>
+      <p>Pomaly, zrozumiteľne a s trpezlivosťou</p>
+    </div>
+    <div class="feature-item">
+      <div class="ic"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 12.8 6.5 21l5.5-3 5.5 3-1.7-8.2"/></svg></div>
+      <h3>Certifikát a brožúra</h3>
+      <p>Na záver získate certifikát aj brožúru</p>
+    </div>
+  </section>
+
+  <section aria-label="Ponuka workshopov" id="kurzy">
+    <div class="course-grid">
 
       <article class="card" id="card-bezpecne-financie">
-        <span class="chip good" style="margin-bottom:.8rem;">Bezpečnosť</span>
+        <div class="course-card-illust" style="background:var(--good-bg);">
+          <svg viewBox="0 0 100 100" width="88" height="88"><path d="M50 8 L82 20 V48 C82 70 68 84 50 92 C32 84 18 70 18 48 V20 Z" fill="var(--good)"/><path d="M50 14 L76 24 V48 C76 66 64 78 50 85 C36 78 24 66 24 48 V24 Z" fill="var(--surface)"/><path d="M38 50 L47 60 L64 40" stroke="var(--good)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="chip good" style="margin-bottom:.6rem;">Bezpečnosť</span>
         <h2>Ako nenaletieť podvodníkom</h2>
         <p style="color:var(--text-mute);font-weight:700;margin-top:-.6rem;">Bezpečné financie aj s pomocou umelej inteligencie</p>
-        <p>Rozpoznajte podvodné telefonáty, e-maily a správy skôr, než príde o peniaze
-          vaša rodina alebo vy sami. Naučíme vás jednoduché kroky na overenie.</p>
+        <ul class="course-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Rozpoznáte podvodné telefonáty, e-maily a správy</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Ochránite peniaze svoje aj svojej rodiny</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Jednoduché kroky na overenie každej situácie</li>
+        </ul>
         <p id="price-bezpecne-financie" style="font-size:1.3rem;font-weight:700;color:var(--ink);">19 €</p>
-        <a class="btn btn-primary btn-block" style="text-decoration:none;" href="objednavka.html?w=bezpecne-financie">Chcem sa prihlásiť na workshop</a>
+        <a class="btn btn-primary btn-block" style="text-decoration:none;" href="objednavka.html?w=bezpecne-financie">Zobraziť kurz →</a>
       </article>
 
       <article class="card" id="card-zaciname-s-ai">
-        <span class="chip warn" style="margin-bottom:.8rem;">Umelá inteligencia</span>
+        <div class="course-card-illust" style="background:var(--accent-soft);">
+          <svg viewBox="0 0 100 100" width="88" height="88"><path d="M50 10 C30 10 22 26 26 40 C18 44 16 56 24 64 C22 74 30 84 42 82 C46 90 58 90 62 82 C74 84 82 74 80 64 C88 56 86 44 78 40 C82 26 70 10 50 10 Z" fill="var(--accent)"/><path d="M50 16 V84" stroke="var(--surface)" stroke-width="3"/><text x="63" y="56" font-family="Arial" font-size="22" font-weight="700" fill="var(--surface)" text-anchor="middle">AI</text></svg>
+        </div>
+        <span class="chip warn" style="margin-bottom:.6rem;">Umelá inteligencia</span>
         <h2>Začíname s umelou inteligenciou</h2>
         <p style="color:var(--text-mute);font-weight:700;margin-top:-.6rem;">Prvé kroky s AI asistentom bez obáv</p>
-        <p>Zrozumiteľne si vysvetlíme, čo AI vie a nevie, a vyskúšate si prvý
-          rozhovor s AI asistentom — krok za krokom, bez technického žargónu.</p>
+        <ul class="course-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Zistíte, čo AI vie a čo nie</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Vyskúšate si prvý rozhovor s AI asistentom</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Bez technického žargónu a zložitého nastavovania</li>
+        </ul>
         <p id="price-zaciname-s-ai" style="font-size:1.3rem;font-weight:700;color:var(--ink);">19 €</p>
-        <a class="btn btn-primary btn-block" style="text-decoration:none;" href="objednavka.html?w=zaciname-s-ai">Chcem sa prihlásiť na workshop</a>
+        <a class="btn btn-primary btn-block" style="text-decoration:none;background:var(--accent);" href="objednavka.html?w=zaciname-s-ai">Zobraziť kurz →</a>
       </article>
 
     </div>
+  </section>
+
+  <section class="testi-section" id="testi-section" style="display:none;">
+    <h2>
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--warn)" stroke-width="2"><path d="M20.8 8.6c0 5-8.8 10-8.8 10s-8.8-5-8.8-10a4.6 4.6 0 0 1 8.8-2 4.6 4.6 0 0 1 8.8 2Z"/></svg>
+      Prečo si kurz obľúbili seniori
+    </h2>
+    <div class="testi-track" id="testi-track"></div>
+    <div class="testi-dots" id="testi-dots"></div>
   </section>
 
   <section style="margin-top:2.5rem;max-width:640px;">
@@ -72,15 +210,39 @@
     </div>
   </section>
 
-  <section style="margin-top:2.5rem;max-width:640px;">
-    <h2>Ako to funguje</h2>
-    <ol style="padding-left:1.3rem;">
-      <li>Vyberiete si workshop a zadáte meno a e-mail.</li>
-      <li>Uhradíte bankovým prevodom podľa pokynov v e-maile (platba kartou pribudne čoskoro).</li>
-      <li>Po spárovaní platby vám príde e-mailom 6-miestny prístupový kód.</li>
-      <li>Na stránke <a href="prihlasenie.html">Prihlásenie</a> zadáte meno a kód — bez hesla.</li>
-      <li>Pozriete video, vyskúšate cvičenia, na záver kvíz a stiahnete si brožúrku aj certifikát.</li>
-    </ol>
+  <section style="margin-top:3rem;">
+    <h2 style="text-align:center;">Ako to funguje</h2>
+    <div class="steps-row">
+      <div class="step-item">
+        <div class="num">1</div>
+        <h3>Vyberiete si kurz</h3>
+        <p>Zvoľte si tému, ktorá vás zaujíma.</p>
+      </div>
+      <svg class="step-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      <div class="step-item">
+        <div class="num">2</div>
+        <h3>Uhradíte kurz</h3>
+        <p>Platba kartou alebo bankovým prevodom.</p>
+      </div>
+      <svg class="step-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      <div class="step-item">
+        <div class="num">3</div>
+        <h3>Dostanete kód e-mailom</h3>
+        <p>Do pár hodín vám príde 6-miestny prístupový kód.</p>
+      </div>
+      <svg class="step-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      <div class="step-item">
+        <div class="num">4</div>
+        <h3>Prihlásite sa menom a kódom</h3>
+        <p>Jednoducho, bez hesla a bezpečne.</p>
+      </div>
+      <svg class="step-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+      <div class="step-item">
+        <div class="num">5</div>
+        <h3>Pozeráte a učíte sa</h3>
+        <p>Videá, cvičenia a na záver certifikát a brožúra.</p>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -90,6 +252,39 @@
 </a>
 
 <script>
+  const AVATAR_COLORS = ["#2f6b6e", "#c17a2e", "#2f6b49", "#9c4a1f", "#3d5457"];
+
+  function renderTestimonials(items) {
+    if (!items.length) return;
+    const section = document.getElementById("testi-section");
+    const track = document.getElementById("testi-track");
+    const dots = document.getElementById("testi-dots");
+    section.style.display = "block";
+    items.forEach((t, i) => {
+      const initial = (t.name || "?").trim().charAt(0).toUpperCase();
+      const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
+      const card = document.createElement("div");
+      card.className = "testi-card";
+      card.innerHTML =
+        "<div class='testi-avatar' style='background:" + color + ";'>" + initial + "</div>" +
+        "<p class='testi-quote'>„" + escapeHtml(t.quote || "") + "“</p>" +
+        "<p class='testi-name'>" + escapeHtml(t.name || "") + (t.age ? ", " + escapeHtml(String(t.age)) + " rokov" : "") + "</p>";
+      track.appendChild(card);
+      const dot = document.createElement("span");
+      if (i === 0) dot.className = "active";
+      dots.appendChild(dot);
+    });
+    const dotEls = dots.querySelectorAll("span");
+    track.addEventListener("scroll", () => {
+      const idx = Math.round(track.scrollLeft / track.firstChild.offsetWidth);
+      dotEls.forEach((d, i) => d.classList.toggle("active", i === idx));
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
   window.addEventListener("load", async () => {
     if (!window.firebase || !window.FIREBASE_CONFIG) return;
     const db = firebase.firestore();
@@ -133,6 +328,14 @@
       } catch (err) {
         console.error("Nepodarilo sa načítať cenu workshopu " + id, err);
       }
+    }
+
+    try {
+      const testiSnap = await db.collection("testimonials").orderBy("order", "asc").get();
+      const items = testiSnap.docs.map((d) => d.data()).filter((t) => t.active !== false);
+      renderTestimonials(items);
+    } catch (err) {
+      console.error("Nepodarilo sa načítať referencie:", err);
     }
   });
 </script>

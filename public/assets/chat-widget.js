@@ -50,6 +50,12 @@
       }
       .mbo-chat-dot.show { display: block; }
       .help-fab { position: fixed; }
+      .mbo-chat-typing { padding: 0 1.2rem .6rem; font-size: .82rem; color: var(--text-mute); font-style: italic; }
+      #mbo-chat-end {
+        display: block; width: 100%; background: none; border: none; border-top: 1px solid var(--line);
+        color: var(--text-mute); font: inherit; font-size: .82rem; padding: .6rem; cursor: pointer; text-align: center;
+      }
+      #mbo-chat-end:hover { color: var(--warn); }
     `;
     document.head.appendChild(style);
   }
@@ -60,11 +66,13 @@
       "<div class='mbo-chat-head'><h3>Potrebujem pomoc</h3><button type='button' class='mbo-chat-close' aria-label='Zavrieť'>&times;</button></div>" +
       "<div class='mbo-chat-status' id='mbo-chat-status'></div>" +
       "<div class='mbo-chat-body' id='mbo-chat-body'></div>" +
+      "<div class='mbo-chat-typing' id='mbo-chat-typing' style='display:none;'>Lektor píše…</div>" +
       "<div class='mbo-chat-form' id='mbo-chat-form'></div>" +
       "<div class='mbo-chat-send-row' id='mbo-chat-send-row' style='display:none;'>" +
       "<input type='text' id='mbo-chat-input' placeholder='Napíšte správu…'>" +
       "<button type='button' class='btn btn-primary' id='mbo-chat-send' style='padding:.6rem 1rem;'>Odoslať</button>" +
-      "</div>";
+      "</div>" +
+      "<button type='button' id='mbo-chat-end' style='display:none;'>Ukončiť konverzáciu</button>";
     document.body.appendChild(panel);
     return panel;
   }
@@ -87,7 +95,6 @@
     injectStyles();
     const panel = buildPanel();
     const dot = el("span", "mbo-chat-dot");
-    fab.style.position = "relative";
     fab.appendChild(dot);
 
     const statusEl = panel.querySelector("#mbo-chat-status");
@@ -101,7 +108,10 @@
     let db = null;
     let adminOnline = false;
     let unsubscribeMessages = null;
+    let unsubscribeChatDoc = null;
     let currentChatId = localStorage.getItem(STORAGE_CHAT_ID) || null;
+    const typingEl = panel.querySelector("#mbo-chat-typing");
+    const endBtn = panel.querySelector("#mbo-chat-end");
 
     async function ensureAuth() {
       if (firebase.auth().currentUser) return firebase.auth().currentUser;
@@ -191,6 +201,7 @@
     function openThread() {
       sendRow.style.display = "flex";
       formWrap.style.display = "none";
+      endBtn.style.display = "block";
       if (unsubscribeMessages) unsubscribeMessages();
       unsubscribeMessages = db.collection("chats").doc(currentChatId).collection("messages")
         .orderBy("createdAt", "asc")
@@ -209,7 +220,34 @@
             dot.classList.toggle("show", !panel.classList.contains("open") && lastAdminTs > lastSeen);
           }
         });
+
+      if (unsubscribeChatDoc) unsubscribeChatDoc();
+      unsubscribeChatDoc = db.collection("chats").doc(currentChatId).onSnapshot((doc) => {
+        const c = doc.data();
+        if (!c) return;
+        typingEl.style.display = c.adminTyping ? "block" : "none";
+        if (c.status === "closed") {
+          endBtn.textContent = "Konverzácia je ukončená — napísať znova";
+        } else {
+          endBtn.textContent = "Ukončiť konverzáciu";
+        }
+      });
     }
+
+    endBtn.addEventListener("click", async () => {
+      if (!currentChatId) return;
+      if (endBtn.textContent.indexOf("napísať znova") !== -1) {
+        // Konverzácia už bola ukončená — začneme celkom novú.
+        localStorage.removeItem(STORAGE_CHAT_ID);
+        currentChatId = null;
+        if (unsubscribeMessages) unsubscribeMessages();
+        if (unsubscribeChatDoc) unsubscribeChatDoc();
+        renderStartForm();
+        return;
+      }
+      if (!confirm("Naozaj chcete ukončiť túto konverzáciu?")) return;
+      await db.collection("chats").doc(currentChatId).update({ status: "closed" });
+    });
 
     function escapeHtml(s) {
       return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

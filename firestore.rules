@@ -28,6 +28,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Referencie/testimonials na úvodnej stránke — verejne čitateľné,
+    // upravuje len administrátor (bez fotiek, len meno/vek/citát).
+    match /testimonials/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Textové úpravy obrazoviek interaktívneho kurzu (nastavené v admin zóne).
     // Číta ktokoľvek prihlásený (účastník workshopu), zapisuje len administrátor.
     match /courseContent/{slideId} {

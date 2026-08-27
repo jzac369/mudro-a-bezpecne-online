@@ -207,6 +207,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
         Konzultácie
       </button>
+      <button data-section="referencie" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m20.8 8.6c0 5-8.8 10-8.8 10s-8.8-5-8.8-10a4.6 4.6 0 0 1 8.8-2 4.6 4.6 0 0 1 8.8 2Z"/></svg>
+        Referencie
+      </button>
       <button data-section="spatnavazba" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8Z"/></svg>
         Spätná väzba
@@ -412,6 +416,46 @@
               <tbody id="consultations-body"></tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <section class="dash-section" data-section="referencie">
+        <h1>Referencie na úvodnej stránke</h1>
+        <p class="hint" style="margin-bottom:1rem;">Zobrazujú sa v karuseli "Prečo si kurz obľúbili seniori". Zámerne bez fotiek — namiesto nich sa zobrazí farebný krúžok s iniciálou mena.</p>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 id="testi-form-title">Pridať referenciu</h2>
+          <form id="testi-form">
+            <input type="hidden" id="t-id">
+            <div class="workshop-settings-grid">
+              <div class="field">
+                <label for="t-name">Meno</label>
+                <input type="text" id="t-name" required placeholder="napr. Mária">
+              </div>
+              <div class="field">
+                <label for="t-age">Vek (nepovinné)</label>
+                <input type="number" id="t-age" min="1" placeholder="napr. 67">
+              </div>
+              <div class="field">
+                <label for="t-order">Poradie zobrazenia</label>
+                <input type="number" id="t-order" value="0">
+              </div>
+            </div>
+            <div class="field">
+              <label for="t-quote">Citát</label>
+              <textarea id="t-quote" rows="2" required style="width:100%;font:inherit;padding:.7rem;border-radius:10px;border:2px solid var(--line);"></textarea>
+            </div>
+            <div class="field">
+              <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="t-active" style="width:auto;" checked> Zobrazovať na webe</label>
+            </div>
+            <button class="btn btn-primary" type="submit" id="testi-submit-btn">Pridať referenciu</button>
+            <button class="btn btn-secondary" type="button" id="testi-cancel-btn" style="display:none;">Zrušiť úpravu</button>
+            <p id="testi-result" class="hint" style="margin-top:.6rem;"></p>
+          </form>
+        </div>
+
+        <div class="card">
+          <div id="testi-list"></div>
         </div>
       </section>
 
@@ -1037,16 +1081,27 @@ window.addEventListener("load", function () {
       bodyEl.scrollTop = bodyEl.scrollHeight;
     });
 
+    let typingTimeout = null;
+    const replyInputEl = card.querySelector("#chat-reply-input");
+    replyInputEl.addEventListener("input", () => {
+      db.collection("chats").doc(chatId).update({ adminTyping: true }).catch(() => {});
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        db.collection("chats").doc(chatId).update({ adminTyping: false }).catch(() => {});
+      }, 2500);
+    });
+
     const sendReply = async () => {
       const input = card.querySelector("#chat-reply-input");
       const text = input.value.trim();
       if (!text) return;
       input.value = "";
+      clearTimeout(typingTimeout);
       await db.collection("chats").doc(chatId).collection("messages").add({
         sender: "admin", text, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
       await db.collection("chats").doc(chatId).update({
-        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(), lastMessageBy: "admin", status: "open",
+        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(), lastMessageBy: "admin", status: "open", adminTyping: false,
       });
     };
     card.querySelector("#chat-reply-send").addEventListener("click", sendReply);
@@ -1190,6 +1245,96 @@ window.addEventListener("load", function () {
       console.error(err);
     }
   }
+
+  // ---------- Referencie (testimonials) ----------
+  async function loadTestimonials() {
+    const list = document.getElementById("testi-list");
+    list.innerHTML = "<p class='hint'>Načítavam…</p>";
+    try {
+      const snap = await db.collection("testimonials").orderBy("order", "asc").get();
+      if (snap.empty) {
+        list.innerHTML = "<p class='hint'>Zatiaľ žiadne referencie.</p>";
+        return;
+      }
+      list.innerHTML = "";
+      snap.forEach((doc) => {
+        const t = doc.data();
+        const row = document.createElement("div");
+        row.className = "session-row";
+        row.style.alignItems = "flex-start";
+        row.innerHTML =
+          "<div><strong>" + escapeHtml(t.name || "") + (t.age ? ", " + t.age : "") + "</strong>" +
+          (t.active === false ? " <span class='chip warn' style='font-size:.7rem;'>skryté</span>" : "") +
+          "<div class='hint' style='margin-top:.2rem;max-width:480px;'>„" + escapeHtml(t.quote || "") + "“</div></div>" +
+          "<div class='row-actions'><button class='btn btn-secondary' data-testi-edit='" + doc.id + "'>Upraviť</button>" +
+          "<button class='btn btn-secondary' data-testi-delete='" + doc.id + "'>Vymazať</button></div>";
+        list.appendChild(row);
+      });
+
+      list.querySelectorAll("[data-testi-edit]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const snap = await db.collection("testimonials").doc(btn.dataset.testiEdit).get();
+          if (!snap.exists) return;
+          const t = snap.data();
+          document.getElementById("t-id").value = snap.id;
+          document.getElementById("t-name").value = t.name || "";
+          document.getElementById("t-age").value = t.age || "";
+          document.getElementById("t-order").value = t.order ?? 0;
+          document.getElementById("t-quote").value = t.quote || "";
+          document.getElementById("t-active").checked = t.active !== false;
+          document.getElementById("testi-form-title").textContent = "Upraviť referenciu";
+          document.getElementById("testi-submit-btn").textContent = "Uložiť zmeny";
+          document.getElementById("testi-cancel-btn").style.display = "inline-block";
+          document.getElementById("testi-form").scrollIntoView({ behavior: "smooth" });
+        });
+      });
+      list.querySelectorAll("[data-testi-delete]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Naozaj vymazať túto referenciu?")) return;
+          await db.collection("testimonials").doc(btn.dataset.testiDelete).delete();
+          loadTestimonials();
+        });
+      });
+    } catch (err) {
+      list.innerHTML = "<p class='hint'>Zoznam sa nepodarilo načítať.</p>";
+      console.error(err);
+    }
+  }
+
+  function resetTestiForm() {
+    document.getElementById("testi-form").reset();
+    document.getElementById("t-id").value = "";
+    document.getElementById("t-active").checked = true;
+    document.getElementById("testi-form-title").textContent = "Pridať referenciu";
+    document.getElementById("testi-submit-btn").textContent = "Pridať referenciu";
+    document.getElementById("testi-cancel-btn").style.display = "none";
+  }
+  document.getElementById("testi-cancel-btn").addEventListener("click", resetTestiForm);
+
+  document.getElementById("testi-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const resultEl = document.getElementById("testi-result");
+    const id = document.getElementById("t-id").value;
+    const data = {
+      name: document.getElementById("t-name").value.trim(),
+      age: document.getElementById("t-age").value ? Number(document.getElementById("t-age").value) : null,
+      order: Number(document.getElementById("t-order").value) || 0,
+      quote: document.getElementById("t-quote").value.trim(),
+      active: document.getElementById("t-active").checked,
+    };
+    try {
+      if (id) {
+        await db.collection("testimonials").doc(id).set(data, { merge: true });
+      } else {
+        await db.collection("testimonials").add(data);
+      }
+      resultEl.textContent = "Uložené ✓";
+      resetTestiForm();
+      loadTestimonials();
+    } catch (err) {
+      resultEl.textContent = "Chyba: " + err.message;
+    }
+  });
 
   // ---------- Spätná väzba ----------
   async function loadFeedback() {
@@ -1766,6 +1911,7 @@ window.addEventListener("load", function () {
     watchChats();
     loadConsultationSettings();
     loadConsultationBookings();
+    loadTestimonials();
   });
 });
 </script>
