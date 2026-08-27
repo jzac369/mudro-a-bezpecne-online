@@ -290,13 +290,14 @@
             <table class="dash" id="orders-table">
               <thead>
                 <tr>
+                  <th>Kód</th>
                   <th data-sort="name">Účastník <span class="arrow"></span></th>
                   <th data-sort="workshopId">Workshop <span class="arrow"></span></th>
                   <th data-sort="status">Stav <span class="arrow"></span></th>
-                  <th>Kód</th>
                   <th data-sort="timeSpentSec">Čas strávený <span class="arrow"></span></th>
                   <th>Postup kurzu</th>
                   <th>Kvíz</th>
+                  <th>Poznámka</th>
                   <th>Akcia</th>
                 </tr>
               </thead>
@@ -348,6 +349,18 @@
 
       <section class="dash-section" data-section="nastavenia">
         <h1>Nastavenia</h1>
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2>Automatické odhlásenie</h2>
+          <p class="hint" style="margin-bottom:1rem;">Po koľkých minútach neaktivity sa účastník automaticky odhlási z workshopu (video sa do tohto počítania nezapočítava).</p>
+          <form id="settings-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
+            <div class="field" style="max-width:200px;">
+              <label for="s-inactivity">Doba neaktivity (minúty)</label>
+              <input type="number" id="s-inactivity" min="1" max="60" value="5">
+            </div>
+            <button class="btn btn-primary" type="submit">Uložiť</button>
+          </form>
+          <p id="settings-result" class="hint" style="margin-top:1rem;"></p>
+        </div>
         <div class="card">
           <h2>Administrátorské účty</h2>
           <form id="admin-add-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
@@ -434,6 +447,29 @@ window.addEventListener("load", function () {
     }
   });
 
+  // ---------- Všeobecné nastavenia platformy (settings/general) ----------
+  async function loadGeneralSettings() {
+    try {
+      const snap = await db.collection("settings").doc("general").get();
+      const data = snap.exists ? snap.data() : {};
+      document.getElementById("s-inactivity").value = data.inactivityMinutes || 5;
+    } catch (err) {
+      console.error("Nepodarilo sa načítať nastavenia:", err);
+    }
+  }
+
+  document.getElementById("settings-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const resultEl = document.getElementById("settings-result");
+    const minutes = Number(document.getElementById("s-inactivity").value) || 5;
+    try {
+      await db.collection("settings").doc("general").set({ inactivityMinutes: minutes }, { merge: true });
+      resultEl.textContent = "Uložené ✓";
+    } catch (err) {
+      resultEl.textContent = "Chyba: " + err.message;
+    }
+  });
+
   // ---------- Ďalší admin účet ----------
   document.getElementById("admin-add-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -467,6 +503,8 @@ window.addEventListener("load", function () {
         '<div class="field"><label>Názov</label><input type="text" data-f="title" value="' + (data.title || local.title || "") + '"></div>' +
         '<div class="field"><label>Podnadpis</label><input type="text" data-f="subtitle" value="' + (data.subtitle || local.subtitle || "") + '"></div>' +
         '<div class="field"><label>Cena (€)</label><input type="number" data-f="price" value="' + (data.price ?? local.price ?? 19) + '"></div>' +
+        '<div class="field"><label>Pôvodná cena (€) — zobrazí sa preškrtnutá, marketingový efekt</label><input type="number" data-f="originalPrice" value="' + (data.originalPrice ?? "") + '" placeholder="napr. 29"></div>' +
+        '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="showOriginalPrice" style="width:auto;" ' + (data.showOriginalPrice ? "checked" : "") + '> Zobrazovať pôvodnú cenu na webe</label></div>' +
         '<div class="field"><label>YouTube ID videa</label><input type="text" data-f="youtubeId" value="' + (data.youtubeId || "") + '" placeholder="napr. dQw4w9WgXcQ"></div>' +
         '<div class="field"><label>Odkaz na PDF brožúrku</label><input type="text" data-f="brochureUrl" value="' + (data.brochureUrl || "") + '" placeholder="https://…"></div>' +
         '<div class="field"><label>Odkaz na podpis lektora (PNG, priehľadné pozadie)</label><input type="text" data-f="lecturerSignatureUrl" value="' + (data.lecturerSignatureUrl || "") + '" placeholder="https://…"></div>' +
@@ -481,7 +519,11 @@ window.addEventListener("load", function () {
         const id = btn.dataset.save;
         const patch = {};
         wrap.querySelectorAll("[data-f]").forEach((input) => {
-          patch[input.dataset.f] = input.dataset.f === "price" ? Number(input.value) : input.value.trim();
+          const isNumeric = input.dataset.f === "price" || input.dataset.f === "originalPrice";
+          patch[input.dataset.f] = isNumeric ? (input.value === "" ? null : Number(input.value)) : input.value.trim();
+        });
+        wrap.querySelectorAll("[data-f-bool]").forEach((input) => {
+          patch[input.dataset.fBool] = input.checked;
         });
         const statusEl = wrap.querySelector("[data-status]");
         try {
@@ -749,8 +791,14 @@ window.addEventListener("load", function () {
     });
 
     const detailBody = overlay.querySelector("#detail-body");
+
+    const regLine =
+      "<h3 style='margin-top:1rem;'>Registrácia a platba</h3>" +
+      "<div class='session-row'><span>Zaregistroval(a) sa</span><span>" + (order.createdAt ? order.createdAt.toDate().toLocaleString("sk-SK") : "—") + "</span></div>" +
+      "<div class='session-row'><span>Uhradil(a)</span><span>" + (order.paidAt ? order.paidAt.toDate().toLocaleString("sk-SK") : (order.status === "pending_payment" ? "zatiaľ neuhradené" : "—")) + "</span></div>";
+
     if (!codeId) {
-      detailBody.innerHTML = "<p class='hint'>Kód zatiaľ nebol vydaný.</p>";
+      detailBody.innerHTML = regLine + "<p class='hint' style='margin-top:1rem;'>Prístupový kód zatiaľ nebol vydaný.</p>";
       return;
     }
 
@@ -760,7 +808,8 @@ window.addEventListener("load", function () {
       db.collection("progress").doc(codeId).get(),
     ]);
 
-    let html = "<h3 style='margin-top:1rem;'>Interaktívny kurz</h3>";
+    let html = regLine;
+    html += "<h3 style='margin-top:1.4rem;'>Interaktívny kurz</h3>";
     if (progressSnap.exists && Number.isInteger(progressSnap.data().courseIndex)) {
       const pdata = progressSnap.data();
       const COURSE_TOTAL = (window.COURSE_SLIDES && window.COURSE_SLIDES.length) || 35;
@@ -777,11 +826,20 @@ window.addEventListener("load", function () {
     if (sessionsSnap.empty) {
       html += "<p class='hint'>Zatiaľ sa neprihlásil(a).</p>";
     } else {
+      const reasonLabels = { manual: "odhlásil(a) sa sám/sama", neaktivita: "automaticky pre neaktivitu", zatvorenie_okna: "zatvoril(a) okno" };
       sessionsSnap.forEach((doc) => {
         const s = doc.data();
         const login = s.loginAt ? s.loginAt.toDate().toLocaleString("sk-SK") : "—";
+        const logout = s.logoutAt ? s.logoutAt.toDate().toLocaleString("sk-SK") : null;
         const dur = s.durationSec ? Math.round(s.durationSec / 60) + " min" : "prebieha";
-        html += "<div class='session-row'><span>" + login + "</span><span>" + dur + "</span></div>";
+        const reason = s.reason ? " · " + (reasonLabels[s.reason] || s.reason) : "";
+        const place = [s.ip, s.country].filter(Boolean).join(" · ") || "—";
+        html +=
+          "<div class='session-row' style='flex-direction:column;align-items:flex-start;gap:.2rem;padding:.6rem 0;'>" +
+          "<div style='display:flex;justify-content:space-between;width:100%;'><strong>Prihlásenie: " + login + "</strong><span class='chip " + (logout ? "good" : "warn") + "'>" + dur + "</span></div>" +
+          "<div class='hint'>" + (logout ? "Odhlásenie: " + logout + reason : "Relácia stále beží") + "</div>" +
+          "<div class='hint'>IP / krajina: " + place + "</div>" +
+          "</div>";
       });
     }
 
@@ -927,7 +985,6 @@ window.addEventListener("load", function () {
       if (codeId) {
         actionCell =
           '<div class="row-actions">' +
-          '<span class="mono">' + codeId + (codeActive ? "" : " (deaktivovaný)") + "</span>" +
           '<a class="btn btn-secondary" href="mailto:' + order.email + '">E-mail</a>' +
           '<button class="btn btn-secondary" data-resend="' + order.email + '">Poslať znova</button>' +
           '<button class="btn btn-secondary" data-toggle-code="' + codeId + '" data-active="' + codeActive + '">' + (codeActive ? "Deaktivovať" : "Aktivovať") + "</button>" +
@@ -945,17 +1002,27 @@ window.addEventListener("load", function () {
       const tr = document.createElement("tr");
       if (isStale) tr.classList.add("stale");
       tr.innerHTML =
+        "<td>" + (codeId ? "<span class='mono'>" + codeId + (codeActive ? "" : " (deakt.)") + "</span>" : "—") + "</td>" +
         "<td>" + order.name + "<br><span class='hint'>" + order.email + "</span></td>" +
         "<td>" + workshopTitle(order.workshopId) + "</td>" +
         "<td>" + statusChip + "</td>" +
-        "<td>" + (codeId || "—") + "</td>" +
         "<td>" + timeSpent + "</td>" +
         "<td>" + progressPct + "</td>" +
         "<td>" + quizCell + "</td>" +
+        "<td><input type='text' class='note-input' data-note-order='" + doc.id + "' value='" + (order.adminNote || "").replace(/'/g, "&#39;") + "' placeholder='Poznámka…' style='width:140px;font-size:.85rem;padding:.4rem .5rem;'></td>" +
         "<td>" + actionCell + "</td>";
       tr.addEventListener("click", (e) => {
-        if (e.target.closest("button, a")) return;
+        if (e.target.closest("button, a, input")) return;
         openDetail(order, doc.id, codeId);
+      });
+      const noteInput = tr.querySelector("[data-note-order]");
+      let noteTimer = null;
+      noteInput.addEventListener("click", (e) => e.stopPropagation());
+      noteInput.addEventListener("input", () => {
+        clearTimeout(noteTimer);
+        noteTimer = setTimeout(() => {
+          db.collection("orders").doc(doc.id).set({ adminNote: noteInput.value }, { merge: true }).catch((err) => console.error("Nepodarilo sa uložiť poznámku:", err));
+        }, 700);
       });
       tbody.appendChild(tr);
     });
@@ -1075,6 +1142,7 @@ window.addEventListener("load", function () {
     loadWorkshopSettings();
     loadFeedback();
     renderCourseSlideList();
+    loadGeneralSettings();
     watchOrders();
   });
 });

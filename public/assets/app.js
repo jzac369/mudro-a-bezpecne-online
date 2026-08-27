@@ -46,7 +46,10 @@ const MBO = {
   _logoutTimer: null,
   _modalEl: null,
 
-  startInactivityWatch(onLogout) {
+  startInactivityWatch(onLogout, limitMinutes) {
+    if (limitMinutes && Number(limitMinutes) > 0) {
+      this.INACTIVITY_LIMIT_MS = Number(limitMinutes) * 60 * 1000;
+    }
     const reset = () => this._resetTimers(onLogout);
     ["mousemove", "mousedown", "keydown", "scroll", "touchstart"].forEach((evt) =>
       window.addEventListener(evt, reset, { passive: true })

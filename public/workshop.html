@@ -586,13 +586,30 @@ function renderBudgetExercise(ex) {
     }
   }
 
+  async function lookupIpCountry() {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) return {};
+      const data = await res.json();
+      return { ip: data.ip || null, country: data.country_name || null };
+    } catch (err) {
+      return {}; // best-effort — nikdy neblokuje prihlásenie
+    }
+  }
+
   async function startSession() {
+    const geo = await lookupIpCountry();
     const ref = await state.db.collection("sessions").add({
       codeId: state.codeId,
       workshopId: state.workshopId,
       loginAt: firebase.firestore.FieldValue.serverTimestamp(),
       durationSec: 0,
       reason: null,
+      ip: geo.ip || null,
+      country: geo.country || null,
     });
     state.sessionRef = ref;
     state.sessionStart = Date.now();
@@ -800,7 +817,16 @@ function renderBudgetExercise(ex) {
       showLastLogin();
 
       await startSession();
-      MBO.startInactivityWatch(doLogout);
+      let inactivityMinutes = 5;
+      try {
+        const settingsSnap = await state.db.collection("settings").doc("general").get();
+        if (settingsSnap.exists && settingsSnap.data().inactivityMinutes) {
+          inactivityMinutes = settingsSnap.data().inactivityMinutes;
+        }
+      } catch (err) {
+        console.error("Nepodarilo sa načítať nastavenia neaktivity:", err);
+      }
+      MBO.startInactivityWatch(doLogout, inactivityMinutes);
       window.addEventListener("beforeunload", () => endSession("zatvorenie_okna"));
     })();
   });

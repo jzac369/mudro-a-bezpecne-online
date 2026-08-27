@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script defer src="assets/firebase-config.js"></script>
 <script defer src="assets/app.js"></script>
 </head>
@@ -43,7 +44,7 @@
         <p style="color:var(--text-mute);font-weight:700;margin-top:-.6rem;">Bezpečné financie aj s pomocou umelej inteligencie</p>
         <p>Rozpoznajte podvodné telefonáty, e-maily a správy skôr, než príde o peniaze
           vaša rodina alebo vy sami. Naučíme vás jednoduché kroky na overenie.</p>
-        <p style="font-size:1.3rem;font-weight:700;color:var(--ink);">19 €</p>
+        <p id="price-bezpecne-financie" style="font-size:1.3rem;font-weight:700;color:var(--ink);">19 €</p>
         <a class="btn btn-primary btn-block" style="text-decoration:none;" href="objednavka.html?w=bezpecne-financie">Chcem sa prihlásiť na workshop</a>
       </article>
 
@@ -53,7 +54,7 @@
         <p style="color:var(--text-mute);font-weight:700;margin-top:-.6rem;">Prvé kroky s AI asistentom bez obáv</p>
         <p>Zrozumiteľne si vysvetlíme, čo AI vie a nevie, a vyskúšate si prvý
           rozhovor s AI asistentom — krok za krokom, bez technického žargónu.</p>
-        <p style="font-size:1.3rem;font-weight:700;color:var(--ink);">19 €</p>
+        <p id="price-zaciname-s-ai" style="font-size:1.3rem;font-weight:700;color:var(--ink);">19 €</p>
         <a class="btn btn-primary btn-block" style="text-decoration:none;" href="objednavka.html?w=zaciname-s-ai">Chcem sa prihlásiť na workshop</a>
       </article>
 
@@ -76,6 +77,31 @@
   <svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M12 5a7 7 0 0 1 7 7c0 4-3 6-3 8H8c0-2-3-4-3-8a7 7 0 0 1 7-7Z"/><path d="M10 20h4"/></svg>
   Potrebujem pomoc
 </a>
+
+<script>
+  window.addEventListener("load", async () => {
+    if (!window.firebase || !window.FIREBASE_CONFIG) return;
+    const db = firebase.firestore();
+    for (const id of ["bezpecne-financie", "zaciname-s-ai"]) {
+      try {
+        const snap = await db.collection("workshops").doc(id).get();
+        if (!snap.exists) continue;
+        const data = snap.data();
+        const el = document.getElementById("price-" + id);
+        if (!el || data.price === undefined || data.price === null) continue;
+        if (data.showOriginalPrice && data.originalPrice) {
+          el.innerHTML =
+            "<span style='text-decoration:line-through;color:var(--text-mute);font-weight:400;font-size:.85em;margin-right:.5rem;'>" + data.originalPrice + " €</span>" +
+            "<span style='font-size:1.25em;'>" + data.price + " €</span>";
+        } else {
+          el.textContent = data.price + " €";
+        }
+      } catch (err) {
+        console.error("Nepodarilo sa načítať cenu workshopu " + id, err);
+      }
+    }
+  });
+</script>
 
 </body>
 </html>

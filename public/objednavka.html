@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="assets/styles.css">
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script defer src="assets/firebase-config.js"></script>
 <script defer src="data/workshops.js"></script>
 <script defer src="assets/app.js"></script>
@@ -68,15 +69,39 @@
   const params = new URLSearchParams(location.search);
   const workshopId = params.get("w");
 
-  window.addEventListener("load", () => {
+  window.addEventListener("load", async () => {
     const workshop = window.WORKSHOPS && window.WORKSHOPS[workshopId];
     if (!workshop) {
       document.getElementById("workshop-title").textContent = "Workshop sa nenašiel";
       document.getElementById("order-form").style.display = "none";
       return;
     }
+
+    // Admin vie v admin zóne prepísať cenu (aj pôvodnú, preškrtnutú) — má prednosť.
+    try {
+      const db = firebase.firestore();
+      const snap = await db.collection("workshops").doc(workshopId).get();
+      if (snap.exists) {
+        const overrides = snap.data();
+        Object.keys(overrides).forEach((k) => {
+          if (overrides[k] !== "" && overrides[k] !== null && overrides[k] !== undefined) workshop[k] = overrides[k];
+        });
+        if (workshop.price !== undefined) workshop.priceLabel = workshop.price + " €";
+      }
+    } catch (err) {
+      console.error("Nepodarilo sa načítať cenu workshopu:", err);
+    }
+
     document.getElementById("workshop-title").textContent = workshop.title;
-    document.getElementById("workshop-price").textContent = workshop.subtitle + " · " + workshop.priceLabel;
+    const priceEl = document.getElementById("workshop-price");
+    if (workshop.showOriginalPrice && workshop.originalPrice) {
+      priceEl.innerHTML =
+        workshop.subtitle + " · " +
+        "<span style='text-decoration:line-through;color:var(--text-mute);font-weight:400;'>" + workshop.originalPrice + " €</span> " +
+        "<strong style='font-size:1.2em;'>" + workshop.priceLabel + "</strong>";
+    } else {
+      priceEl.textContent = workshop.subtitle + " · " + workshop.priceLabel;
+    }
 
     document.getElementById("order-form").addEventListener("submit", async (e) => {
       e.preventDefault();
