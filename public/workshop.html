@@ -11,6 +11,8 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script defer src="assets/firebase-config.js"></script>
 <script defer src="data/workshops.js"></script>
+<script defer src="data/course.js"></script>
+<script defer src="assets/course.js"></script>
 <script defer src="assets/app.js"></script>
 <style>
   .stepper { display:flex; gap:.5rem; flex-wrap:wrap; margin:1.2rem 0 .8rem; }
@@ -88,17 +90,21 @@
       <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
       1 · Video
     </button>
+    <button data-step="kurz">
+      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      2 · Interaktívny kurz
+    </button>
     <button data-step="cvicenia">
       <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
-      2 · Cvičenia
+      3 · Cvičenia
     </button>
     <button data-step="kviz">
       <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
-      3 · Kvíz
+      4 · Kvíz
     </button>
     <button data-step="brozurka">
       <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
-      4 · Brožúrka
+      5 · Brožúrka
     </button>
   </nav>
 
@@ -107,6 +113,10 @@
     <div class="video-wrap"><div id="yt-player"></div></div>
     <p class="hint">Video môžete kedykoľvek pozastaviť — vaše miesto si zapamätáme.</p>
     <button class="btn btn-primary" id="video-done-btn" style="margin-top:1rem;">Video som pozrel(a), pokračovať na cvičenia</button>
+  </section>
+
+  <section class="step-panel" data-panel="kurz">
+    <div id="course-root"></div>
   </section>
 
   <section class="card step-panel" data-panel="cvicenia">
@@ -159,9 +169,9 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 (function () {
-  const STEPS = ["video", "cvicenia", "kviz", "brozurka"];
+  const STEPS = ["video", "kurz", "cvicenia", "kviz", "brozurka"];
   const state = {
-    workshop: null, workshopId: null, codeId: null, db: null, ytPlayer: null,
+    workshop: null, workshopId: null, codeId: null, db: null, ytPlayer: null, course: null,
     sessionRef: null, sessionStart: null, doneSteps: new Set(), quizAnswers: [],
   };
 
@@ -708,7 +718,7 @@ function renderBudgetExercise(ex) {
       });
       document.getElementById("video-done-btn").addEventListener("click", () => {
         markStepDone("video");
-        setActiveStep("cvicenia");
+        setActiveStep("kurz");
       });
       document.getElementById("exercise-done-btn").addEventListener("click", () => {
         markStepDone("cvicenia");
@@ -735,8 +745,27 @@ function renderBudgetExercise(ex) {
       }
       updateProgressBar();
 
+      // Interaktívny kurz — pokračuje presne tam, kde senior naposledy skončil.
+      try {
+        state.course = window.initCourse(document.getElementById("course-root"), {
+          finishLabel: "Pokračovať na cvičenia",
+          onProgress: (index, done, stamps) => {
+            saveProgress({ courseIndex: index, courseStamps: stamps, courseDone: done });
+          },
+          onFinish: () => {
+            markStepDone("kurz");
+            setActiveStep("cvicenia");
+          },
+        });
+        const savedIndex = progressData && Number.isInteger(progressData.courseIndex) ? progressData.courseIndex : 0;
+        const savedStamps = (progressData && Array.isArray(progressData.courseStamps)) ? progressData.courseStamps : [];
+        state.course.start(savedIndex, savedStamps);
+      } catch (err) {
+        console.error("Kurz sa nepodarilo inicializovať:", err);
+      }
+
       const urlStep = new URLSearchParams(location.search).get("step");
-      const stepNames = { video: "Video", cvicenia: "Cvičenia", kviz: "Kvíz", brozurka: "Brožúrka" };
+      const stepNames = { video: "Video", kurz: "Interaktívny kurz", cvicenia: "Cvičenia", kviz: "Kvíz", brozurka: "Brožúrka" };
       if (!urlStep && progressData && progressData.currentStep && STEPS.includes(progressData.currentStep) && progressData.currentStep !== "video") {
         document.getElementById("continue-text").textContent =
           "Naposledy ste skončili v kroku „" + stepNames[progressData.currentStep] + "“.";

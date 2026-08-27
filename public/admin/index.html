@@ -12,6 +12,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
 <script defer src="../assets/firebase-config.js"></script>
 <script defer src="../data/workshops.js"></script>
+<script defer src="../data/course.js"></script>
 <style>
   html { font-size: 16px; } /* admin zóna má vlastnú, kompaktnejšiu mierku nezávislú od A+/A- účastníka */
   body { min-height: 100vh; }
@@ -277,7 +278,7 @@
                   <th data-sort="status">Stav <span class="arrow"></span></th>
                   <th>Kód</th>
                   <th data-sort="timeSpentSec">Čas strávený <span class="arrow"></span></th>
-                  <th>Postup</th>
+                  <th>Postup kurzu</th>
                   <th>Kvíz</th>
                   <th>Akcia</th>
                 </tr>
@@ -614,12 +615,26 @@ window.addEventListener("load", function () {
       return;
     }
 
-    const [sessionsSnap, quizSnap] = await Promise.all([
+    const [sessionsSnap, quizSnap, progressSnap] = await Promise.all([
       db.collection("sessions").where("codeId", "==", codeId).orderBy("loginAt", "desc").limit(20).get(),
       db.collection("quizResults").where("codeId", "==", codeId).orderBy("completedAt", "desc").limit(10).get(),
+      db.collection("progress").doc(codeId).get(),
     ]);
 
-    let html = "<h3 style='margin-top:1rem;'>História relácií</h3>";
+    let html = "<h3 style='margin-top:1rem;'>Interaktívny kurz</h3>";
+    if (progressSnap.exists && Number.isInteger(progressSnap.data().courseIndex)) {
+      const pdata = progressSnap.data();
+      const COURSE_TOTAL = (window.COURSE_SLIDES && window.COURSE_SLIDES.length) || 35;
+      const reached = pdata.courseIndex + 1;
+      const stampCount = Array.isArray(pdata.courseStamps) ? pdata.courseStamps.length : 0;
+      html += "<div class='session-row'><span>" +
+        (pdata.courseDone ? "Kurz dokončený" : "Obrazovka " + reached + " z " + COURSE_TOTAL) +
+        "</span><span class='chip " + (pdata.courseDone ? "good" : "warn") + "'>" + stampCount + " / 4 pečate</span></div>";
+    } else {
+      html += "<p class='hint'>Kurz zatiaľ nezačal(a).</p>";
+    }
+
+    html += "<h3 style='margin-top:1.4rem;'>História relácií</h3>";
     if (sessionsSnap.empty) {
       html += "<p class='hint'>Zatiaľ sa neprihlásil(a).</p>";
     } else {
@@ -718,7 +733,17 @@ window.addEventListener("load", function () {
 
           const progressSnap = await db.collection("progress").doc(codeId).get();
           if (progressSnap.exists) {
-            progressPct = progressSnap.data().quizCompleted ? "100 %" : "prebieha";
+            const pdata = progressSnap.data();
+            const COURSE_TOTAL = (window.COURSE_SLIDES && window.COURSE_SLIDES.length) || 35;
+            if (Number.isInteger(pdata.courseIndex)) {
+              const reached = pdata.courseIndex + 1;
+              const coursePct = Math.round((reached / COURSE_TOTAL) * 100);
+              progressPct = pdata.courseDone
+                ? '<span class="chip good">Kurz dokončený</span>'
+                : '<span class="chip warn">Kurz ' + reached + '/' + COURSE_TOTAL + ' (' + coursePct + ' %)</span>';
+            } else {
+              progressPct = pdata.quizCompleted ? "100 %" : "prebieha";
+            }
           }
 
           const quizSnap = await db.collection("quizResults").where("codeId", "==", codeId).orderBy("completedAt", "desc").limit(1).get();
