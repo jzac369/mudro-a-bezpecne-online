@@ -118,11 +118,31 @@ exports.generateCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request
     throw new HttpsError("invalid-argument", "Chýba workshop alebo meno účastníka.");
   }
 
+  const workshopSnap = await db.collection("workshops").doc(workshopId).get();
+  const amount = workshopSnap.exists ? workshopSnap.data().price || 0 : 0;
+
+  // Vytvoríme aj objednávku, aby sa ručne vygenerovaný kód zobrazil
+  // v admin zóne v Registráciách rovnako ako bežná (uhradená) rezervácia.
+  const orderRef = db.collection("orders").doc();
+  const now = FieldValue.serverTimestamp();
+  await orderRef.set({
+    name: participantName,
+    email: email || "",
+    workshopId,
+    amount,
+    variableSymbol: null,
+    status: "code_sent",
+    createdAt: now,
+    paidAt: now,
+    codeIssuedAt: now,
+    manual: true,
+  });
+
   const code = await issueUniqueCode();
   await db.collection("accessCodes").doc(code).set({
     code,
     workshopId,
-    orderId: null,
+    orderId: orderRef.id,
     participantName,
     createdAt: FieldValue.serverTimestamp(),
     active: true,
