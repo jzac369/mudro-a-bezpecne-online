@@ -342,7 +342,7 @@
     const status = el("p", "course-hint", "Spojené: 0 z " + slide.pairs.length);
 
     const leftEls = slide.pairs.map((p, i) => {
-      const e2 = el("div", "course-match-item", p.text);
+      const e2 = el("div", "course-match-item", p.left);
       e2.dataset.i = i;
       e2.addEventListener("click", () => {
         if (e2.classList.contains("solved")) return;
