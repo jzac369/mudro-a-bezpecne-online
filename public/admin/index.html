@@ -159,26 +159,30 @@ window.addEventListener("load", function () {
 
       let codeId = null, timeSpent = "—", progressPct = "—", quizCell = "—";
 
-      const codeSnap = await db.collection("accessCodes").where("orderId", "==", doc.id).limit(1).get();
-      if (!codeSnap.empty) {
-        codeId = codeSnap.docs[0].id;
-        const sessionsSnap = await db.collection("sessions").where("codeId", "==", codeId).get();
-        const totalSec = sessionsSnap.docs.reduce((sum, s) => sum + (s.data().durationSec || 0), 0);
-        timeSpent = totalSec > 0 ? Math.round(totalSec / 60) + " min" : "0 min";
+      try {
+        const codeSnap = await db.collection("accessCodes").where("orderId", "==", doc.id).limit(1).get();
+        if (!codeSnap.empty) {
+          codeId = codeSnap.docs[0].id;
+          const sessionsSnap = await db.collection("sessions").where("codeId", "==", codeId).get();
+          const totalSec = sessionsSnap.docs.reduce((sum, s) => sum + (s.data().durationSec || 0), 0);
+          timeSpent = totalSec > 0 ? Math.round(totalSec / 60) + " min" : "0 min";
 
-        const progressSnap = await db.collection("progress").doc(codeId).get();
-        if (progressSnap.exists) {
-          progressPct = progressSnap.data().quizCompleted ? "100 %" : "prebieha";
-        }
+          const progressSnap = await db.collection("progress").doc(codeId).get();
+          if (progressSnap.exists) {
+            progressPct = progressSnap.data().quizCompleted ? "100 %" : "prebieha";
+          }
 
-        const quizSnap = await db.collection("quizResults").where("codeId", "==", codeId).orderBy("completedAt", "desc").limit(1).get();
-        if (!quizSnap.empty) {
-          const q = quizSnap.docs[0].data();
-          completed += q.passed ? 1 : 0;
-          quizCell = q.passed
-            ? '<span class="chip good">Dokončený · ' + q.score + "/" + q.total + "</span>"
-            : '<span class="chip warn">Nedokončený</span>';
+          const quizSnap = await db.collection("quizResults").where("codeId", "==", codeId).orderBy("completedAt", "desc").limit(1).get();
+          if (!quizSnap.empty) {
+            const q = quizSnap.docs[0].data();
+            completed += q.passed ? 1 : 0;
+            quizCell = q.passed
+              ? '<span class="chip good">Dokončený · ' + q.score + "/" + q.total + "</span>"
+              : '<span class="chip warn">Nedokončený</span>';
+          }
         }
+      } catch (err) {
+        console.error("Nepodarilo sa načítať detail objednávky " + doc.id, err);
       }
 
       const statusChip =
