@@ -177,6 +177,11 @@
   }
 
   function initVideo() {
+    if (!state.workshop.youtubeId || state.workshop.youtubeId.startsWith("PLACEHOLDER")) {
+      document.getElementById("yt-player").outerHTML =
+        '<p style="color:#fff;padding:2rem;text-align:center;">Video sa čoskoro pridá.</p>';
+      return;
+    }
     window.onYouTubeIframeAPIReady = () => {
       state.ytPlayer = new YT.Player("yt-player", {
         videoId: state.workshop.youtubeId,
@@ -246,7 +251,11 @@
 
       renderExercise();
       renderQuiz();
-      initVideo();
+      try {
+        initVideo();
+      } catch (err) {
+        console.error("Video sa nepodarilo inicializovať:", err);
+      }
 
       document.getElementById("stepper").addEventListener("click", (e) => {
         const btn = e.target.closest("button[data-step]");
