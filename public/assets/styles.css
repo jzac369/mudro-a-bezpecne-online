@@ -202,3 +202,22 @@ label {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* Responzivita pre tablet a mobil */
+@media (max-width: 720px) {
+  .container { padding: 0 1.1rem; }
+  h1 { font-size: 1.55rem; }
+  h2 { font-size: 1.25rem; }
+  .card { padding: 1.2rem; }
+  button, .btn { padding: .8rem 1.2rem; font-size: 1rem; }
+  .help-fab {
+    right: .8rem; bottom: .8rem; padding: .8rem 1rem; font-size: .9rem;
+  }
+  table { font-size: .85rem; }
+}
+
+@media (max-width: 480px) {
+  html { font-size: calc(16.5px * var(--font-scale)); }
+  .topbar .container { gap: .6rem; }
+  .brand { font-size: 1rem; }
+}
