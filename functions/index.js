@@ -3,11 +3,17 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
+const { defineSecret } = require("firebase-functions/params");
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
 initializeApp();
 const db = getFirestore();
+
+const EMAILJS_PRIVATE_KEY = defineSecret("EMAILJS_PRIVATE_KEY");
+const EMAILJS_SERVICE_ID = "service_qnxes8j";
+const EMAILJS_TEMPLATE_ID = "template_aspeze7";
+const EMAILJS_PUBLIC_KEY = "eOd4Q1os_TN-pSs2S";
 
 // Písmená bez I/O — vylúčené kvôli zámene s 1/0 pri prepise kódu z papiera.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -65,7 +71,7 @@ exports.createOrder = onCall(async (request) => {
  * Volané z admin zóny (ručné spárovanie prevodu) alebo z platobného
  * webhooku (fáza 2 — platba kartou).
  */
-exports.markOrderPaid = onCall(async (request) => {
+exports.markOrderPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže potvrdiť platbu.");
   }
@@ -103,7 +109,7 @@ exports.markOrderPaid = onCall(async (request) => {
  * Ručné vygenerovanie kódu z admin zóny (darčekové poukazy, opravy,
  * testovanie) — bez naviazania na objednávku.
  */
-exports.generateCode = onCall(async (request) => {
+exports.generateCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže generovať kódy.");
   }
@@ -160,7 +166,7 @@ exports.verifyCode = onCall(async (request) => {
  * Odpoveď je zámerne rovnaká pri úspechu aj neúspechu, aby sa cez formulár
  * nedalo zisťovať, ktoré e-maily sú v systéme zaregistrované.
  */
-exports.resendCode = onCall(async (request) => {
+exports.resendCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
   const { email } = request.data || {};
   if (!email) throw new HttpsError("invalid-argument", "Zadaj e-mail.");
 
@@ -189,15 +195,52 @@ exports.resendCode = onCall(async (request) => {
 });
 
 /**
- * Odoslanie e-mailu s kódom. Zatiaľ len zapisuje do `mail` kolekcie —
- * po nasadení "Trigger Email" rozšírenia alebo iného poskytovateľa
- * (napr. Resend) sa tu doplní skutočné odoslanie.
+ * Odoslanie e-mailu s prístupovým kódom cez EmailJS REST API (server-side,
+ * súkromný kľúč nikdy neopustí Cloud Function).
  */
 async function sendCodeEmail({ to, name, code, workshopId }) {
+  let workshopTitle = workshopId;
+  try {
+    const workshopSnap = await db.collection("workshops").doc(workshopId).get();
+    if (workshopSnap.exists) workshopTitle = workshopSnap.data().title || workshopId;
+  } catch (err) {
+    console.error("Nepodarilo sa načítať názov workshopu pre e-mail:", err);
+  }
+
+  let status = "sent";
+  try {
+    const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        accessToken: EMAILJS_PRIVATE_KEY.value(),
+        template_params: {
+          to_email: to,
+          to_name: name,
+          name,
+          email: to,
+          code,
+          workshop_title: workshopTitle,
+        },
+      }),
+    });
+    if (!res.ok) {
+      status = "failed";
+      console.error("EmailJS odoslanie zlyhalo:", res.status, await res.text());
+    }
+  } catch (err) {
+    status = "failed";
+    console.error("EmailJS odoslanie zlyhalo:", err);
+  }
+
   await db.collection("mail").add({
     to,
-    template: "access_code",
-    data: { name, code, workshopId },
+    code,
+    workshopId,
+    status,
     createdAt: FieldValue.serverTimestamp(),
   });
 }
