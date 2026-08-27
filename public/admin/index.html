@@ -340,10 +340,14 @@
 
 <script>
 window.addEventListener("load", function () {
-  firebase.initializeApp(window.FIREBASE_CONFIG);
-  const db = firebase.firestore();
-  const auth = firebase.auth();
-  const functions = firebase.app().functions("europe-west1");
+  // Samostatná Firebase app inštancia ("admin"), aby prihlásenie admina
+  // nezdieľalo úložisko relácie s prihlásením účastníka na workshop.html —
+  // inak by prihlásenie v jednej záložke odhlásilo tú druhú (obe bežia
+  // na rovnakej doméne a zdieľali by rovnaký "[DEFAULT]" auth kľúč).
+  const adminApp = firebase.initializeApp(window.FIREBASE_CONFIG, "admin");
+  const db = adminApp.firestore();
+  const auth = adminApp.auth();
+  const functions = adminApp.functions("europe-west1");
   const workshopTitle = (id) => (window.WORKSHOPS[id] ? window.WORKSHOPS[id].title : id);
   const WORKSHOP_IDS = ["bezpecne-financie", "zaciname-s-ai"];
 
