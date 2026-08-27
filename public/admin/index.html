@@ -429,6 +429,30 @@
             </div>
           </div>
 
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h2>E-mailové pripomienky</h2>
+            <p class="hint" style="margin-bottom:1rem;">Automaticky sa spúšťajú raz denne o 8:00. Každému účastníkovi sa pošle najviac jedna pripomienka daného typu.</p>
+            <div class="workshop-settings-grid">
+              <div class="field">
+                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-remind-neverlogged" style="width:auto;"> Pripomienka tým, čo sa nikdy neprihlásili</label>
+                <label for="s-remind-neverlogged-days" style="margin-top:.6rem;">Po koľkých dňoch od vydania kódu</label>
+                <input type="number" id="s-remind-neverlogged-days" min="1" value="3">
+              </div>
+              <div class="field">
+                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-remind-unfinished" style="width:auto;"> Pripomienka nedokončeného kurzu</label>
+                <label for="s-remind-unfinished-days" style="margin-top:.6rem;">Po koľkých dňoch od vydania kódu</label>
+                <input type="number" id="s-remind-unfinished-days" min="1" value="7">
+              </div>
+              <div class="field">
+                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-remind-stale" style="width:auto;"> Denný súhrn neuhradených objednávok e-mailom</label>
+                <label for="s-notify-email" style="margin-top:.6rem;">E-mail administrátora pre súhrn</label>
+                <input type="email" id="s-notify-email" placeholder="admin@digistart.sk">
+              </div>
+            </div>
+            <button class="btn btn-secondary" type="button" id="run-reminders-now" style="margin-top:1rem;">Spustiť pripomienky teraz</button>
+            <p id="reminders-result" class="hint" style="margin-top:.6rem;"></p>
+          </div>
+
           <button class="btn btn-primary" type="submit">Uložiť všetky nastavenia</button>
           <p id="settings-result" class="hint" style="margin-top:1rem;"></p>
         </form>
@@ -539,6 +563,12 @@ window.addEventListener("load", function () {
       document.getElementById("s-stale-days").value = data.staleOrderDays ?? 3;
       document.getElementById("s-maintenance").checked = !!data.maintenanceMode;
       document.getElementById("s-email-msg").value = data.emailCustomMessage || "";
+      document.getElementById("s-remind-neverlogged").checked = !!data.remindNeverLoggedEnabled;
+      document.getElementById("s-remind-neverlogged-days").value = data.remindNeverLoggedDays ?? 3;
+      document.getElementById("s-remind-unfinished").checked = !!data.remindUnfinishedEnabled;
+      document.getElementById("s-remind-unfinished-days").value = data.remindUnfinishedDays ?? 7;
+      document.getElementById("s-remind-stale").checked = !!data.staleOrderEmailEnabled;
+      document.getElementById("s-notify-email").value = data.notifyEmail || "";
     } catch (err) {
       console.error("Nepodarilo sa načítať nastavenia:", err);
     }
@@ -560,6 +590,12 @@ window.addEventListener("load", function () {
       staleOrderDays: Number(document.getElementById("s-stale-days").value) || 3,
       maintenanceMode: document.getElementById("s-maintenance").checked,
       emailCustomMessage: document.getElementById("s-email-msg").value.trim(),
+      remindNeverLoggedEnabled: document.getElementById("s-remind-neverlogged").checked,
+      remindNeverLoggedDays: Number(document.getElementById("s-remind-neverlogged-days").value) || 3,
+      remindUnfinishedEnabled: document.getElementById("s-remind-unfinished").checked,
+      remindUnfinishedDays: Number(document.getElementById("s-remind-unfinished-days").value) || 7,
+      staleOrderEmailEnabled: document.getElementById("s-remind-stale").checked,
+      notifyEmail: document.getElementById("s-notify-email").value.trim(),
     };
     try {
       await db.collection("settings").doc("general").set(patch, { merge: true });
@@ -567,6 +603,26 @@ window.addEventListener("load", function () {
       resultEl.textContent = "Uložené ✓";
     } catch (err) {
       resultEl.textContent = "Chyba: " + err.message;
+    }
+  });
+
+  document.getElementById("run-reminders-now").addEventListener("click", async () => {
+    const btn = document.getElementById("run-reminders-now");
+    const resultEl = document.getElementById("reminders-result");
+    btn.disabled = true;
+    resultEl.textContent = "Spúšťam…";
+    try {
+      const runRemindersNow = functions.httpsCallable("runRemindersNow");
+      const res = await runRemindersNow();
+      const r = res.data;
+      resultEl.textContent =
+        "Hotovo — odoslané: " + r.neverLoggedSent + "× „nikdy sa neprihlásili“, " +
+        r.unfinishedSent + "× „nedokončený kurz“" +
+        (r.staleDigestSent ? ", súhrn o " + r.staleCount + " neuhradených objednávkach" : "") + ".";
+    } catch (err) {
+      resultEl.textContent = "Chyba: " + err.message;
+    } finally {
+      btn.disabled = false;
     }
   });
 

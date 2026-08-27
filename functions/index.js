@@ -2,6 +2,7 @@ const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
 
@@ -27,7 +28,16 @@ const DEFAULT_SETTINGS = {
   couponActive: false,
   groupDiscountMinSize: 0, // 0 = vypnuté
   groupDiscountPercent: 0,
+  staleOrderDays: 3,
+  remindNeverLoggedEnabled: false,
+  remindNeverLoggedDays: 3,
+  remindUnfinishedEnabled: false,
+  remindUnfinishedDays: 7,
+  staleOrderEmailEnabled: false,
+  notifyEmail: "",
 };
+
+const MAX_REMINDERS_PER_RUN = 50; // bezpečnostný strop na jedno spustenie
 
 async function getSettings() {
   const snap = await db.collection("settings").doc("general").get();
@@ -347,25 +357,29 @@ exports.createAdmin = onCall(async (request) => {
  * skupinovej objednávke) cez EmailJS REST API (server-side, súkromný
  * kľúč nikdy neopustí Cloud Function).
  */
-async function sendCodeEmail({ to, name, codes, workshopId }) {
-  let workshopTitle = workshopId;
-  try {
-    const workshopSnap = await db.collection("workshops").doc(workshopId).get();
-    if (workshopSnap.exists) workshopTitle = workshopSnap.data().title || workshopId;
-  } catch (err) {
-    console.error("Nepodarilo sa načítať názov workshopu pre e-mail:", err);
+async function sendCodeEmail({ to, name, codes, workshopId, messageOverride }) {
+  let workshopTitle = workshopId || "";
+  if (workshopId) {
+    try {
+      const workshopSnap = await db.collection("workshops").doc(workshopId).get();
+      if (workshopSnap.exists) workshopTitle = workshopSnap.data().title || workshopId;
+    } catch (err) {
+      console.error("Nepodarilo sa načítať názov workshopu pre e-mail:", err);
+    }
   }
 
-  let customMessage = "";
-  try {
-    const settings = await getSettings();
-    customMessage = settings.emailCustomMessage || "";
-  } catch (err) {
-    console.error("Nepodarilo sa načítať vlastnú správu pre e-mail:", err);
+  let customMessage = messageOverride || "";
+  if (!messageOverride) {
+    try {
+      const settings = await getSettings();
+      customMessage = settings.emailCustomMessage || "";
+    } catch (err) {
+      console.error("Nepodarilo sa načítať vlastnú správu pre e-mail:", err);
+    }
   }
 
   const codeList = codes.join(", ");
-  const primaryCode = codes[0];
+  const primaryCode = codes[0] || "";
 
   let status = "sent";
   try {
@@ -406,3 +420,129 @@ async function sendCodeEmail({ to, name, codes, workshopId }) {
     createdAt: FieldValue.serverTimestamp(),
   });
 }
+
+/**
+ * Prejde aktívne prístupové kódy a pošle e-mailové pripomienky:
+ * 1) tým, čo majú platný kód, ale nikdy sa neprihlásili,
+ * 2) tým, čo sa prihlásili, ale nedokončili kurz (neprešli kvízom),
+ * a administrátorovi pošle denný súhrn neuhradených objednávok.
+ * Každej pripomienke sa pošle len JEDEN e-mail (značka *ReminderSentAt
+ * na accessCodes dokumente zabráni opakovanému odosielaniu).
+ */
+async function runReminderSweep() {
+  const settings = await getSettings();
+  const now = Date.now();
+  const day = 24 * 3600 * 1000;
+  const result = { neverLoggedSent: 0, unfinishedSent: 0, staleDigestSent: false, staleCount: 0 };
+
+  if (settings.remindNeverLoggedEnabled || settings.remindUnfinishedEnabled) {
+    const codesSnap = await db.collection("accessCodes").where("active", "==", true).get();
+
+    for (const doc of codesSnap.docs) {
+      if (result.neverLoggedSent + result.unfinishedSent >= MAX_REMINDERS_PER_RUN) break;
+      const c = doc.data();
+      if (!c.createdAt) continue;
+      const age = now - c.createdAt.toDate().getTime();
+
+      const sessionsSnap = await db.collection("sessions").where("codeId", "==", doc.id).limit(1).get();
+      const hasLoggedIn = !sessionsSnap.empty;
+
+      // 1) Nikdy sa neprihlásil.
+      if (settings.remindNeverLoggedEnabled && !hasLoggedIn && !c.neverLoggedReminderSentAt &&
+          age >= (settings.remindNeverLoggedDays || 3) * day) {
+        const email = await lookupOrderEmail(c.orderId);
+        if (email) {
+          await sendCodeEmail({
+            to: email,
+            name: c.firstName || c.participantName || "",
+            codes: [c.code || doc.id],
+            workshopId: c.workshopId,
+            messageOverride: "Všimli sme si, že ste sa zatiaľ neprihlásili do svojho workshopu. Váš prístupový kód je stále platný — stačí ísť na stránku Prihlásenie a zadať meno a kód.",
+          });
+          await doc.ref.update({ neverLoggedReminderSentAt: FieldValue.serverTimestamp() });
+          result.neverLoggedSent++;
+        }
+        continue;
+      }
+
+      // 2) Prihlásil sa, ale kurz nedokončil.
+      if (settings.remindUnfinishedEnabled && hasLoggedIn && !c.unfinishedReminderSentAt &&
+          age >= (settings.remindUnfinishedDays || 7) * day) {
+        const quizSnap = await db.collection("quizResults").where("codeId", "==", doc.id).get();
+        const passed = quizSnap.docs.some((q) => q.data().passed === true);
+        if (!passed) {
+          const email = await lookupOrderEmail(c.orderId);
+          if (email) {
+            await sendCodeEmail({
+              to: email,
+              name: c.firstName || c.participantName || "",
+              codes: [c.code || doc.id],
+              workshopId: c.workshopId,
+              messageOverride: "Váš workshop čaká na dokončenie — zostáva vám už len záverečný kvíz a certifikát. Prihláste sa rovnakým kódom a pokračujte presne tam, kde ste skončili.",
+            });
+            await doc.ref.update({ unfinishedReminderSentAt: FieldValue.serverTimestamp() });
+            result.unfinishedSent++;
+          }
+        }
+      }
+    }
+  }
+
+  if (settings.staleOrderEmailEnabled && settings.notifyEmail) {
+    const staleDays = settings.staleOrderDays || 3;
+    const ordersSnap = await db.collection("orders").where("status", "==", "pending_payment").get();
+    const stale = ordersSnap.docs
+      .map((d) => d.data())
+      .filter((o) => o.createdAt && (now - o.createdAt.toDate().getTime()) > staleDays * day);
+
+    if (stale.length > 0) {
+      const lines = stale.map((o) =>
+        "- " + (o.name || "") + " (" + o.email + "), VS " + (o.variableSymbol || "—") + ", " + (o.amount || 0) + " €"
+      );
+      await sendCodeEmail({
+        to: settings.notifyEmail,
+        name: "Admin",
+        codes: [],
+        workshopId: null,
+        messageOverride: "Máte " + stale.length + " neuhradených objednávok starších ako " + staleDays + " dní:\n" + lines.join("\n"),
+      });
+      result.staleDigestSent = true;
+      result.staleCount = stale.length;
+    }
+  }
+
+  return result;
+}
+
+async function lookupOrderEmail(orderId) {
+  if (!orderId) return null;
+  try {
+    const orderSnap = await db.collection("orders").doc(orderId).get();
+    return orderSnap.exists ? orderSnap.data().email : null;
+  } catch (err) {
+    console.error("Nepodarilo sa nájsť e-mail k objednávke " + orderId, err);
+    return null;
+  }
+}
+
+/**
+ * Denné automatické spustenie pripomienok (08:00 SEČ/SELČ).
+ */
+exports.dailyReminders = onSchedule(
+  { schedule: "every day 08:00", timeZone: "Europe/Bratislava", secrets: [EMAILJS_PRIVATE_KEY] },
+  async () => {
+    const result = await runReminderSweep();
+    console.log("Denné pripomienky dokončené:", JSON.stringify(result));
+  }
+);
+
+/**
+ * Ručné spustenie tej istej logiky z admin zóny (tlačidlo "Spustiť teraz") —
+ * užitočné na okamžité odoslanie aj na overenie, že nastavenia fungujú.
+ */
+exports.runRemindersNow = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže spustiť pripomienky ručne.");
+  }
+  return await runReminderSweep();
+});
