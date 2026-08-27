@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin zóna — Múdro a Bezpečne Online</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="../assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="../assets/firebase-config.js"></script>
+<script defer src="../data/workshops.js"></script>
+<style>
+  table.dash { width:100%; border-collapse:collapse; font-size:.92rem; }
+  table.dash th { text-align:left; padding:.6rem; color:var(--text-mute); font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--line); }
+  table.dash td { padding:.6rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  .summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin:1.5rem 0; }
+  .summary-card .num { font-size:1.7rem; font-weight:700; color:var(--ink); }
+  .summary-card .label { color:var(--text-mute); font-size:.85rem; }
+  .toolbar { display:flex; gap:.8rem; flex-wrap:wrap; align-items:end; margin-bottom:1.2rem; }
+  .toolbar .field { margin-bottom:0; min-width:180px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <span class="brand">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Admin — Múdro a Bezpečne Online
+    </span>
+    <button class="btn btn-secondary" id="logout-btn" style="display:none;">Odhlásiť sa</button>
+  </div>
+</header>
+
+<main class="container" style="padding-top:2rem;padding-bottom:4rem;">
+
+  <div id="login-view" class="card" style="max-width:420px;">
+    <h1>Prihlásenie administrátora</h1>
+    <form id="admin-login-form">
+      <div class="field"><label for="a-email">E-mail</label><input type="email" id="a-email" required></div>
+      <div class="field"><label for="a-pass">Heslo</label><input type="password" id="a-pass" required></div>
+      <button class="btn btn-primary btn-block" type="submit">Prihlásiť sa</button>
+      <p id="admin-login-error" class="hint" style="color:var(--warn);display:none;"></p>
+    </form>
+  </div>
+
+  <div id="dashboard-view" style="display:none;">
+    <div class="summary-grid">
+      <div class="card summary-card"><div class="num" id="sum-total">0</div><div class="label">Registrácií spolu</div></div>
+      <div class="card summary-card"><div class="num" id="sum-paid">0</div><div class="label">Uhradených</div></div>
+      <div class="card summary-card"><div class="num" id="sum-completed">0</div><div class="label">Dokončených kvízom</div></div>
+      <div class="card summary-card"><div class="num" id="sum-revenue">0 €</div><div class="label">Tržby</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.5rem;">
+      <h2>Vygenerovať prístupový kód ručne</h2>
+      <form id="generate-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
+        <div class="field" style="flex:1;min-width:160px;">
+          <label for="g-name">Meno účastníka</label><input type="text" id="g-name" required>
+        </div>
+        <div class="field" style="flex:1;min-width:160px;">
+          <label for="g-email">E-mail (nepovinné)</label><input type="email" id="g-email">
+        </div>
+        <div class="field" style="min-width:200px;">
+          <label for="g-workshop">Workshop</label>
+          <select id="g-workshop">
+            <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
+            <option value="zaciname-s-ai">Začíname s umelou inteligenciou</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Vygenerovať kód</button>
+      </form>
+      <p id="generate-result" class="hint" style="margin-top:1rem;"></p>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2 style="margin:0;">Registrácie</h2>
+        <div style="flex:1;"></div>
+        <div class="field">
+          <label for="filter-status">Stav</label>
+          <select id="filter-status">
+            <option value="">Všetky</option>
+            <option value="pending_payment">Čaká na úhradu</option>
+            <option value="code_sent">Kód odoslaný</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" id="export-csv">Export CSV</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="dash" id="orders-table">
+          <thead>
+            <tr>
+              <th>Účastník</th><th>Workshop</th><th>Stav</th><th>Kód</th>
+              <th>Čas strávený</th><th>Postup</th><th>Kvíz</th><th>Akcia</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+  const workshopTitle = (id) => (window.WORKSHOPS[id] ? window.WORKSHOPS[id].title : id);
+
+  document.getElementById("admin-login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("a-email").value.trim();
+    const pass = document.getElementById("a-pass").value;
+    const errorEl = document.getElementById("admin-login-error");
+    try {
+      await auth.signInWithEmailAndPassword(email, pass);
+    } catch (err) {
+      errorEl.textContent = "Nesprávny e-mail alebo heslo.";
+      errorEl.style.display = "block";
+    }
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", () => auth.signOut());
+
+  document.getElementById("generate-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const generateCode = firebase.functions().httpsCallable("generateCode");
+    const resultEl = document.getElementById("generate-result");
+    try {
+      const res = await generateCode({
+        participantName: document.getElementById("g-name").value.trim(),
+        email: document.getElementById("g-email").value.trim() || null,
+        workshopId: document.getElementById("g-workshop").value,
+      });
+      resultEl.textContent = "Vygenerovaný kód: " + res.data.code;
+    } catch (err) {
+      resultEl.textContent = "Kód sa nepodarilo vygenerovať: " + err.message;
+    }
+  });
+
+  async function loadOrders() {
+    const statusFilter = document.getElementById("filter-status").value;
+    let query = db.collection("orders").orderBy("createdAt", "desc").limit(200);
+    const snap = await query.get();
+    const tbody = document.getElementById("orders-body");
+    tbody.innerHTML = "";
+
+    let paid = 0, revenue = 0, completed = 0;
+
+    for (const doc of snap.docs) {
+      const order = doc.data();
+      if (statusFilter && order.status !== statusFilter) continue;
+      if (order.status !== "pending_payment") { paid++; revenue += order.amount || 0; }
+
+      let codeId = null, timeSpent = "—", progressPct = "—", quizCell = "—";
+
+      const codeSnap = await db.collection("accessCodes").where("orderId", "==", doc.id).limit(1).get();
+      if (!codeSnap.empty) {
+        codeId = codeSnap.docs[0].id;
+        const sessionsSnap = await db.collection("sessions").where("codeId", "==", codeId).get();
+        const totalSec = sessionsSnap.docs.reduce((sum, s) => sum + (s.data().durationSec || 0), 0);
+        timeSpent = totalSec > 0 ? Math.round(totalSec / 60) + " min" : "0 min";
+
+        const progressSnap = await db.collection("progress").doc(codeId).get();
+        if (progressSnap.exists) {
+          progressPct = progressSnap.data().quizCompleted ? "100 %" : "prebieha";
+        }
+
+        const quizSnap = await db.collection("quizResults").where("codeId", "==", codeId).orderBy("completedAt", "desc").limit(1).get();
+        if (!quizSnap.empty) {
+          const q = quizSnap.docs[0].data();
+          completed += q.passed ? 1 : 0;
+          quizCell = q.passed
+            ? '<span class="chip good">Dokončený · ' + q.score + "/" + q.total + "</span>"
+            : '<span class="chip warn">Nedokončený</span>';
+        }
+      }
+
+      const statusChip =
+        order.status === "pending_payment"
+          ? '<span class="chip warn">Čaká na úhradu</span>'
+          : '<span class="chip good">Uhradené</span>';
+
+      const actionCell = codeId
+        ? '<span class="mono">' + codeId + "</span>"
+        : order.status === "pending_payment"
+        ? '<button class="btn btn-secondary" data-mark-paid="' + doc.id + '" style="padding:.4rem .8rem;font-size:.85rem;">Označiť ako uhradené</button>'
+        : "—";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td>" + order.name + "<br><span class='hint'>" + order.email + "</span></td>" +
+        "<td>" + workshopTitle(order.workshopId) + "</td>" +
+        "<td>" + statusChip + "</td>" +
+        "<td>" + (codeId || "—") + "</td>" +
+        "<td>" + timeSpent + "</td>" +
+        "<td>" + progressPct + "</td>" +
+        "<td>" + quizCell + "</td>" +
+        "<td>" + actionCell + "</td>";
+      tbody.appendChild(tr);
+    }
+
+    document.getElementById("sum-total").textContent = snap.size;
+    document.getElementById("sum-paid").textContent = paid;
+    document.getElementById("sum-completed").textContent = completed;
+    document.getElementById("sum-revenue").textContent = revenue + " €";
+
+    tbody.querySelectorAll("[data-mark-paid]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        btn.textContent = "Spracúvam…";
+        try {
+          const markOrderPaid = firebase.functions().httpsCallable("markOrderPaid");
+          await markOrderPaid({ orderId: btn.dataset.markPaid });
+          loadOrders();
+        } catch (err) {
+          btn.disabled = false;
+          btn.textContent = "Chyba, skúsiť znova";
+        }
+      });
+    });
+  }
+
+  document.getElementById("filter-status").addEventListener("change", loadOrders);
+
+  document.getElementById("export-csv").addEventListener("click", async () => {
+    const snap = await db.collection("orders").orderBy("createdAt", "desc").get();
+    const rows = [["Meno", "E-mail", "Workshop", "Stav", "Suma"]];
+    snap.forEach((doc) => {
+      const o = doc.data();
+      rows.push([o.name, o.email, workshopTitle(o.workshopId), o.status, o.amount]);
+    });
+    const csv = rows.map((r) => r.map((v) => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "registracie.csv";
+    a.click();
+  });
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      document.getElementById("login-view").style.display = "block";
+      document.getElementById("dashboard-view").style.display = "none";
+      document.getElementById("logout-btn").style.display = "none";
+      return;
+    }
+    const token = await user.getIdTokenResult();
+    if (token.claims.admin !== true) {
+      document.getElementById("admin-login-error").textContent = "Tento účet nemá administrátorské práva.";
+      document.getElementById("admin-login-error").style.display = "block";
+      await auth.signOut();
+      return;
+    }
+    document.getElementById("login-view").style.display = "none";
+    document.getElementById("dashboard-view").style.display = "block";
+    document.getElementById("logout-btn").style.display = "inline-flex";
+    loadOrders();
+  });
+})();
+</script>
+
+</body>
+</html>

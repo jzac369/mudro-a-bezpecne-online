@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Múdro a Bezpečne Online — workshopy pre seniorov</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Múdro a Bezpečne Online
+    </a>
+    <div class="text-tools" aria-label="Veľkosť textu">
+      <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+      <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+      <a class="btn btn-secondary" href="prihlasenie.html" style="text-decoration:none;">Mám kód, chcem sa prihlásiť</a>
+    </div>
+  </div>
+</header>
+
+<main class="container" style="padding-top:2.5rem;padding-bottom:4rem;">
+  <section style="max-width:640px;margin-bottom:3rem;">
+    <h1>Dva jednoduché online workshopy, ktoré vás ochránia a povzbudia</h1>
+    <p>Pozriete si krátke video, vyskúšate si to na jednoduchých cvičeniach a na
+      záver si overíte, ako to zvládate. Bez zbytočných tlačidiel a bez potreby
+      vytvárať si heslo — stačí meno a prístupový kód, ktorý dostanete po úhrade.</p>
+  </section>
+
+  <section aria-label="Ponuka workshopov">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.6rem;">
+
+      <article class="card">
+        <span class="chip good" style="margin-bottom:.8rem;">Bezpečnosť</span>
+        <h2>Ako nenaletieť podvodníkom</h2>
+        <p style="color:var(--text-mute);font-weight:700;margin-top:-.6rem;">Bezpečné financie aj s pomocou umelej inteligencie</p>
+        <p>Rozpoznajte podvodné telefonáty, e-maily a správy skôr, než príde o peniaze
+          vaša rodina alebo vy sami. Naučíme vás jednoduché kroky na overenie.</p>
+        <p style="font-size:1.3rem;font-weight:700;color:var(--ink);">19 €</p>
+        <a class="btn btn-primary btn-block" style="text-decoration:none;" href="objednavka.html?w=bezpecne-financie">Chcem sa prihlásiť na workshop</a>
+      </article>
+
+      <article class="card">
+        <span class="chip warn" style="margin-bottom:.8rem;">Umelá inteligencia</span>
+        <h2>Začíname s umelou inteligenciou</h2>
+        <p style="color:var(--text-mute);font-weight:700;margin-top:-.6rem;">Prvé kroky s AI asistentom bez obáv</p>
+        <p>Zrozumiteľne si vysvetlíme, čo AI vie a nevie, a vyskúšate si prvý
+          rozhovor s AI asistentom — krok za krokom, bez technického žargónu.</p>
+        <p style="font-size:1.3rem;font-weight:700;color:var(--ink);">19 €</p>
+        <a class="btn btn-primary btn-block" style="text-decoration:none;" href="objednavka.html?w=zaciname-s-ai">Chcem sa prihlásiť na workshop</a>
+      </article>
+
+    </div>
+  </section>
+
+  <section style="margin-top:3rem;max-width:640px;">
+    <h2>Ako to funguje</h2>
+    <ol style="padding-left:1.3rem;">
+      <li>Vyberiete si workshop a zadáte meno a e-mail.</li>
+      <li>Uhradíte bankovým prevodom podľa pokynov v e-maile (platba kartou pribudne čoskoro).</li>
+      <li>Po spárovaní platby vám príde e-mailom 6-miestny prístupový kód.</li>
+      <li>Na stránke <a href="prihlasenie.html">Prihlásenie</a> zadáte meno a kód — bez hesla.</li>
+      <li>Pozriete video, vyskúšate cvičenia, na záver kvíz a stiahnete si brožúrku aj certifikát.</li>
+    </ol>
+  </section>
+</main>
+
+<a class="help-fab" href="tel:+421900000000">
+  <svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M12 5a7 7 0 0 1 7 7c0 4-3 6-3 8H8c0-2-3-4-3-8a7 7 0 0 1 7-7Z"/><path d="M10 20h4"/></svg>
+  Potrebujem pomoc
+</a>
+
+</body>
+</html>

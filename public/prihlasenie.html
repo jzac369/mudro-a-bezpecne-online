@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prihlásenie — Múdro a Bezpečne Online</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Múdro a Bezpečne Online
+    </a>
+    <div class="text-tools">
+      <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+      <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+    </div>
+  </div>
+</header>
+
+<main class="container" style="max-width:520px;padding-top:3rem;padding-bottom:4rem;">
+  <h1>Prihlásenie do workshopu</h1>
+  <p>Zadajte meno a 6-miestny kód, ktorý ste dostali e-mailom. Heslo nepotrebujete.</p>
+
+  <form class="card" id="login-form">
+    <div class="field">
+      <label for="name">Vaše meno</label>
+      <input type="text" id="name" required autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="code">Prístupový kód</label>
+      <input type="text" id="code" required maxlength="6" autocapitalize="characters"
+        style="letter-spacing:.3em;text-transform:uppercase;font-weight:700;text-align:center;font-size:1.4rem;"
+        placeholder="XXXXXX">
+    </div>
+    <button class="btn btn-primary btn-block" type="submit">Vstúpiť do workshopu</button>
+    <p id="login-error" class="hint" style="color:var(--warn);display:none;"></p>
+  </form>
+
+  <p style="margin-top:1.2rem;text-align:center;">
+    <a href="stratenykod.html">Nemôžem nájsť svoj kód</a>
+  </p>
+</main>
+
+<a class="help-fab" href="tel:+421900000000">
+  <svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M12 5a7 7 0 0 1 7 7c0 4-3 6-3 8H8c0-2-3-4-3-8a7 7 0 0 1 7-7Z"/><path d="M10 20h4"/></svg>
+  Potrebujem pomoc
+</a>
+
+<script>
+  document.getElementById("code").addEventListener("input", (e) => {
+    e.target.value = e.target.value.toUpperCase();
+  });
+
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const code = document.getElementById("code").value.trim().toUpperCase();
+    const errorEl = document.getElementById("login-error");
+    errorEl.style.display = "none";
+
+    try {
+      const verifyCode = firebase.functions().httpsCallable("verifyCode");
+      const result = await verifyCode({ name, code });
+      await firebase.auth().signInWithCustomToken(result.data.token);
+      sessionStorage.setItem("mbo_participant_name", result.data.participantName);
+      location.href = "workshop.html?w=" + encodeURIComponent(result.data.workshopId);
+    } catch (err) {
+      errorEl.textContent = "Meno alebo kód nesedí. Skontrolujte prosím veľké/malé písmená a skúste znova.";
+      errorEl.style.display = "block";
+    }
+  });
+</script>
+
+</body>
+</html>

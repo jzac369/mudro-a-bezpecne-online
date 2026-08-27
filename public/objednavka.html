@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Objednávka workshopu — Múdro a Bezpečne Online</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="data/workshops.js"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Múdro a Bezpečne Online
+    </a>
+    <div class="text-tools">
+      <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+      <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+    </div>
+  </div>
+</header>
+
+<main class="container" style="max-width:600px;padding-top:2.5rem;padding-bottom:4rem;">
+
+  <div id="step-form">
+    <h1 id="workshop-title">Objednávka workshopu</h1>
+    <p id="workshop-price" class="lead"></p>
+
+    <form class="card" id="order-form">
+      <div class="field">
+        <label for="name">Vaše meno a priezvisko</label>
+        <input type="text" id="name" name="name" required autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="email">Váš e-mail</label>
+        <input type="email" id="email" name="email" required autocomplete="email">
+        <p class="hint">Na tento e-mail príde platobný pokyn aj prístupový kód.</p>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Pokračovať k platbe</button>
+      <p id="form-error" class="hint" style="color:var(--warn);display:none;"></p>
+    </form>
+  </div>
+
+  <div id="step-payment" class="card" style="display:none;">
+    <span class="chip warn" style="margin-bottom:1rem;">Čaká na úhradu</span>
+    <h1>Posledný krok — úhrada prevodom</h1>
+    <p>Prosím, odošlite platbu na nasledujúci účet. Po prijatí platby vám do
+      e-mailu pošleme 6-miestny prístupový kód.</p>
+    <table style="width:100%;border-collapse:collapse;margin:1.2rem 0;">
+      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Suma</td><td style="padding:.4rem 0;font-weight:700;" id="pay-amount"></td></tr>
+      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Číslo účtu (IBAN)</td><td style="padding:.4rem 0;font-weight:700;">SK00 0000 0000 0000 0000 0000</td></tr>
+      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Variabilný symbol</td><td style="padding:.4rem 0;font-weight:700;" id="pay-vs"></td></tr>
+    </table>
+    <p class="hint">Variabilný symbol nám pomáha nájsť vašu platbu rýchlejšie — nezabudnite ho prosím uviesť.</p>
+    <a class="btn btn-secondary btn-block" style="text-decoration:none;margin-top:1rem;" href="index.html">Späť na úvodnú stránku</a>
+  </div>
+
+</main>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const workshopId = params.get("w");
+
+  window.addEventListener("load", () => {
+    const workshop = window.WORKSHOPS && window.WORKSHOPS[workshopId];
+    if (!workshop) {
+      document.getElementById("workshop-title").textContent = "Workshop sa nenašiel";
+      document.getElementById("order-form").style.display = "none";
+      return;
+    }
+    document.getElementById("workshop-title").textContent = workshop.title;
+    document.getElementById("workshop-price").textContent = workshop.subtitle + " · " + workshop.priceLabel;
+
+    document.getElementById("order-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const errorEl = document.getElementById("form-error");
+      errorEl.style.display = "none";
+
+      try {
+        const createOrder = firebase.functions().httpsCallable("createOrder");
+        const result = await createOrder({ name, email, workshopId });
+        document.getElementById("pay-amount").textContent = workshop.priceLabel;
+        document.getElementById("pay-vs").textContent = result.data.variableSymbol;
+        document.getElementById("step-form").style.display = "none";
+        document.getElementById("step-payment").style.display = "block";
+      } catch (err) {
+        errorEl.textContent = "Objednávku sa nepodarilo vytvoriť. Skúste to prosím znova alebo nám zavolajte.";
+        errorEl.style.display = "block";
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

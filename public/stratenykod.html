@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stratený kód — Múdro a Bezpečne Online</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Múdro a Bezpečne Online
+    </a>
+  </div>
+</header>
+
+<main class="container" style="max-width:520px;padding-top:3rem;padding-bottom:4rem;">
+  <h1>Nemôžete nájsť svoj kód?</h1>
+  <p>Zadajte e-mail, ktorý ste použili pri objednávke — pošleme vám kód znova.</p>
+
+  <form class="card" id="resend-form">
+    <div class="field">
+      <label for="email">Váš e-mail</label>
+      <input type="email" id="email" required autocomplete="email">
+    </div>
+    <button class="btn btn-primary btn-block" type="submit">Poslať kód znova</button>
+  </form>
+
+  <div id="confirm" class="card" style="display:none;margin-top:1rem;">
+    <p style="margin:0;">Ak sa e-mail nachádza v našom systéme, kód naň príde do niekoľkých minút.
+      Skontrolujte prosím aj priečinok nevyžiadanej pošty (spam).</p>
+  </div>
+
+  <p style="margin-top:1.2rem;text-align:center;">
+    <a href="prihlasenie.html">Späť na prihlásenie</a>
+  </p>
+</main>
+
+<script>
+  document.getElementById("resend-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const resendCode = firebase.functions().httpsCallable("resendCode");
+    try { await resendCode({ email }); } catch (err) { /* zámerne mlčíme, viď funkcia resendCode */ }
+    document.getElementById("resend-form").style.display = "none";
+    document.getElementById("confirm").style.display = "block";
+  });
+</script>
+
+</body>
+</html>
