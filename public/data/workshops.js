@@ -10,43 +10,80 @@ window.WORKSHOPS = {
     price: 19,
     priceLabel: "19 €",
     description:
-      "Naučíme sa rozpoznať podvodné telefonáty, e-maily a SMS správy, " +
-      "overiť si podozrivú výzvu skôr, než pošleme peniaze, a ukážeme, " +
-      "ako môže umelá inteligencia pomôcť odhaliť podvod.",
+      "Naučíme sa rozpoznať podvodný e-mail, telefonát „z banky“, zázračnú " +
+      "investíciu aj poplašnú správu zo sociálnych sietí — a ukážeme si, " +
+      "ako nám pri tom všetkom môže pomôcť umelá inteligencia ako „druhý názor na počkanie“.",
     youtubeId: "PLACEHOLDER_VIDEO_ID_1",
     brochureUrl: "assets/brozurky/bezpecne-financie.pdf",
     exercises: [
       {
-        id: "rozpoznaj-email",
-        title: "Rozpoznaj podvodný e-mail",
+        id: "domaci-rozpocet",
+        type: "budget",
+        title: "Cvičenie A · Domáci rozpočet s pomocou AI",
         prompt:
-          "Pozri si e-mail nižšie a rozhodni, či ide o podvod, alebo o " +
-          "skutočnú správu od banky.",
+          "Vyplňte tabuľku vašich mesačných príjmov a výdavkov — sumy môžu byť aj " +
+          "približné alebo vymyslené, ide len o nácvik. Potom skúste sformulovať " +
+          "otázku pre AI, presne ako v ukážke v brožúrke: „Spočítaj moje príjmy a " +
+          "výdavky. Je môj rozpočet vyrovnaný? Ktoré výdavky by som mohol znížiť?“",
+        incomeLabels: ["Dôchodok", "Iný príjem (brigáda, prenájom…)"],
+        expenseLabels: [
+          "Bývanie (nájom, energie, voda)",
+          "Potraviny a drogéria",
+          "Lieky a zdravie",
+          "Telefón, televízia, internet",
+          "Doprava",
+          "Ostatné (darčeky, koníčky…)",
+        ],
+      },
+      {
+        id: "lov-na-podvody",
+        type: "spot-the-scam",
+        title: "Cvičenie B · Lov na podvody",
+        prompt:
+          "Prečítajte si tri správy nižšie. Skúste sami rozhodnúť, či ide o podvod " +
+          "a prečo — potom kliknutím zobrazte riešenie.",
+        messages: [
+          {
+            label: "Správa č. 1 – SMS",
+            text: "„Slovenska posta: Vas balik #SK29174 caka na dorucenie. Uhradte colny poplatok 2,10 EUR: http://sk-posta.delivery-pay.com“",
+            answer: "Podvod (smishing) — podozrivá, neoficiálna adresa odkazu a malá „súrna“ platba, ktorá má uspať pozornosť.",
+          },
+          {
+            label: "Správa č. 2 – e-mail",
+            text: "„Vážený zákazník, Vaša platba za elektrinu neprešla. Aby sme predišli odpojeniu do 48 hodín, aktualizujte platobné údaje: kliknite TU. Váš dodávateľ energie.“",
+            answer: "Podvod (phishing) — vyvoláva strach z odpojenia a tlačí na rýchle kliknutie na odkaz.",
+          },
+          {
+            label: "Správa č. 3 – WhatsApp",
+            text: "„Ahoj mami, pokazil sa mi telefón, píšem z nového čísla. Súrne potrebujem zaplatiť faktúru, pošleš mi 380 € na tento účet? Neskôr ti vrátim. Nevolaj, nefunguje mi mikrofón.“",
+            answer: "Podvod („nové číslo“) — zámerne bráni telefonickému overeniu, na ktoré by ste inak siahli ako prví.",
+          },
+        ],
       },
     ],
     quiz: {
       passScore: 14,
       questions: [
-        { question: "Zavolá vám niekto, kto tvrdí, že je z banky, a žiada okamžite nahlásiť PIN kód. Čo urobíte?", options: ["Nahlásim PIN, veď to znie dôveryhodne", "Zložím a zavolám späť na oficiálne číslo banky z karty alebo výpisu", "Pošlem PIN cez SMS, nech je to rýchlejšie"], correctIndex: 1 },
-        { question: "Príde vám e-mail, že ste vyhrali veľkú sumu peňazí, ale musíte najprv zaplatiť „poplatok“. Čo to najčastejšie je?", options: ["Bežná výhra v súťaži", "Podvod (nikdy neplatíte za to, aby ste dostali výhru)", "Chyba banky"], correctIndex: 1 },
-        { question: "Aké informácie by ste NIKDY nemali diktovať po telefóne cudziemu volajúcemu?", options: ["Meno a priezvisko", "PIN, heslo alebo celé číslo karty", "Mesto, v ktorom bývate"], correctIndex: 1 },
-        { question: "Vnúčik vám zavolá a povie, že má problém a potrebuje peniaze hneď, nemá čas vysvetľovať. Čo je najbezpečnejšie?", options: ["Pošlem peniaze okamžite, veď je to rodina", "Zavesím a zavolám vnukovi na jeho bežné číslo, aby som si to overil(a)", "Pošlem polovicu sumy"], correctIndex: 1 },
-        { question: "Čo je „phishing“?", options: ["Druh rybolovu", "Podvodná snaha vylákať vaše heslá alebo údaje falošným e-mailom či stránkou", "Bezpečný spôsob platby"], correctIndex: 1 },
-        { question: "Dostanete SMS: „Vaša zásielka čaká, kliknite tu a zaplaťte 1 €.“ Čo je najbezpečnejšie?", options: ["Kliknúť a rýchlo zaplatiť", "Neklikať a overiť si zásielku priamo na stránke pošty/kuriéra", "Preposlať SMS známym"], correctIndex: 1 },
-        { question: "Ako spoznáte podozrivú webovú adresu (URL)?", options: ["Je vždy krátka", "Má preklepy, čudné znaky alebo nesedí s názvom firmy", "Je vždy napísaná veľkými písmenami"], correctIndex: 1 },
-        { question: "Volajúci sa vydáva za políciu a žiada, aby ste peniaze „preniesli na bezpečný účet“. Čo urobíte?", options: ["Uposlúchnem, polícia má vždy pravdu", "Zložím telefón a sám(sama) zavolám na 158", "Pošlem peniaze poštou"], correctIndex: 1 },
-        { question: "Prečo je nebezpečné klikať na odkazy v neznámych e-mailoch?", options: ["Môžu viesť na podvodnú stránku alebo stiahnuť škodlivý súbor", "Spomalia internet", "Nie je to nebezpečné"], correctIndex: 0 },
-        { question: "Čo znamená, že platba je „nezvratná“?", options: ["Dá sa kedykoľvek vrátiť", "Peniaze sa po odoslaní už väčšinou nedajú jednoducho stiahnuť späť", "Platí to len pre platby kartou"], correctIndex: 1 },
-        { question: "Ako môže umelá inteligencia pomôcť pri odhaľovaní podvodov?", options: ["Vie napísať dôveryhodne znejúci text, ktorým dokáže podvodník oklamať", "AI podvody úplne vylúčila", "AI sa v podvodoch nepoužíva"], correctIndex: 0 },
-        { question: "Ak si nie ste istý(á), či je hovor alebo správa podvod, čo je najlepšie?", options: ["Reagovať čo najrýchlejšie", "Poradiť sa s rodinou alebo si to overiť na oficiálnom čísle/stránke", "Ignorovať a vymazať bez rozmýšľania"], correctIndex: 1 },
-        { question: "Čo je „falošný hlas AI“ (deepfake hlas)?", options: ["Umelo vytvorený hlas, ktorý znie ako known osoba, no v skutočnosti ňou nie je", "Porucha telefónu", "Staré nahrávky z rádia"], correctIndex: 0 },
-        { question: "Prečo je vhodné mať s rodinou dohodnuté „bezpečné heslo“ pre núdzové situácie?", options: ["Aby ste overili, že volajúci je naozaj váš príbuzný", "Nie je to potrebné", "Slúži len na hry"], correctIndex: 0 },
-        { question: "Podvodník tvrdí, že musíte konať „ihneď, inak príde o účet“. Prečo na to podvodníci tlačia?", options: ["Aby ste sa nestihli poradiť alebo overiť si to", "Aby vám ušetrili čas", "Nemá to žiadny dôvod"], correctIndex: 0 },
-        { question: "Je bezpečné nainštalovať si aplikáciu na „vzdialenú pomoc“, o ktorú vás požiada neznámy volajúci?", options: ["Áno, vždy pomáha rýchlejšie vyriešiť problém", "Nie, môže tak získať prístup k vášmu počítaču a peniazom", "Len ak je aplikácia farebná"], correctIndex: 1 },
-        { question: "Čo robiť, ak ste už omylom poslali peniaze podvodníkovi?", options: ["Nič, je už neskoro", "Čo najskôr kontaktovať banku a nahlásiť to polícii", "Počkať týždeň a uvidieť, čo sa stane"], correctIndex: 1 },
-        { question: "Prečo si podvodníci často vyberajú seniorov ako cieľ?", options: ["Pretože sú menej dôverčiví", "Niektorí môžu byť menej oboznámení s novými podvodnými technikami a bývajú ochotní pomôcť", "Seniori nemajú peniaze"], correctIndex: 1 },
-        { question: "Čo znamená „overiť si informáciu z druhého, nezávislého zdroja“?", options: ["Veriť len tomu, čo povie volajúci", "Skontrolovať si to napríklad na oficiálnej stránke banky alebo telefonicky u rodiny", "Nie je to potrebné"], correctIndex: 1 },
-        { question: "Ktoré tvrdenie je pravdivé?", options: ["Banka si od vás nikdy nebude telefonicky pýtať PIN ani celé heslo", "Banka si môže telefonicky pýtať váš PIN", "Podvody sa týkajú len mladých ľudí"], correctIndex: 0 },
+        { question: "Volá vám osoba, ktorá tvrdí, že je z banky, a žiada previesť peniaze na „bezpečný účet“. Čo urobíte?", options: ["Peniaze okamžite prevediem, ide o naliehavú situáciu", "Hovor ukončím a zavolám banke na oficiálne číslo z karty", "Nadiktujem PIN, aby banka mohla účet zabezpečiť"], correctIndex: 1 },
+        { question: "Umelá inteligencia vám odpovedala na dôležitú finančnú otázku. Ako postupovať?", options: ["Odpoveď AI je vždy správna", "Pri dôležitých rozhodnutiach si informácie overím aj inde", "Rozhodnem sa výlučne podľa AI"], correctIndex: 1 },
+        { question: "Ponuka sľubuje: „Investujte 250 € a získajte garantovaný výnos 5 000 € mesačne.“ Čo je najpravdepodobnejšie?", options: ["Ide o výhodnú investičnú príležitosť", "Ide o bežný bankový produkt", "Ide o ponuku, ktorá s veľkou pravdepodobnosťou je podvod"], correctIndex: 2 },
+        { question: "Ktoré údaje by ste nikdy nemali zadávať do ChatGPT ani posielať neznámej osobe?", options: ["Otázku o počasí", "Heslá, PIN kódy, čísla kariet alebo autorizačné kódy", "Recept na guláš"], correctIndex: 1 },
+        { question: "Ktorý znak je typický pre poplašné či podvodné príspevky na sociálnych sieťach?", options: ["VEĽKÉ PÍSMENÁ, výkričníky a výzvy „Zdieľajte, kým to nezmažú!“", "Uvedený autor, dôveryhodný zdroj a odkazy na oficiálne informácie", "Vecný a pokojný štýl písania"], correctIndex: 0 },
+        { question: "Na fotografii má osoba šesť prstov na jednej ruke. Čo je najpravdepodobnejšie?", options: ["Fotografia je len rozmazaná", "Obrázok mohol byť vytvorený alebo upravený umelou inteligenciou", "Ide o dôkaz, že fotografia je skutočná"], correctIndex: 1 },
+        { question: "Čo je to „prompt“?", options: ["Tajný bezpečnostný kód", "Otázka alebo zadanie, ktoré napíšete umelej inteligencii", "Názov aplikácie na video hovory"], correctIndex: 1 },
+        { question: "Čo znamená, že AI „halucinuje“?", options: ["AI si niečo vymyslí a tvári sa, že je to pravda", "AI sa vypne kvôli chybe", "AI zobrazuje farebné obrázky"], correctIndex: 0 },
+        { question: "Ako sa volal prvý počítačový program schopný viesť rozhovor podobný ľudskému a v ktorom roku vznikol?", options: ["ChatGPT, 2020", "ELIZA, 1966", "Google, 1998"], correctIndex: 1 },
+        { question: "Čo je „phishing“?", options: ["Podvodný e-mail alebo SMS, ktoré sa tvária ako správa od banky či úradu a chcú vylákať vaše údaje", "Druh rybolovu", "Bezpečný spôsob platby cez internet"], correctIndex: 0 },
+        { question: "Čo je „vishing“?", options: ["Podvod cez telefonát, pri ktorom sa volajúci vydáva napr. za pracovníka banky", "Vírus v počítači", "Bezpečnostný kód karty"], correctIndex: 0 },
+        { question: "Čo je „smishing“?", options: ["Podvod cez SMS správu, napríklad falošné oznámenie o doručení balíka", "Skratka pre smartfón", "Typ internetového pripojenia"], correctIndex: 0 },
+        { question: "Čo je „dezinformácia“?", options: ["Nepravdivá informácia šírená úmyselne s cieľom ovplyvniť názory alebo správanie ľudí", "Aktualizácia softvéru", "Iný názov pre reklamu"], correctIndex: 0 },
+        { question: "Čo je „deepfake“?", options: ["Falošné video alebo hlas vytvorený umelou inteligenciou, ktorý napodobňuje skutočnú osobu", "Staré, zašumené video", "Bezpečnostná funkcia telefónu"], correctIndex: 0 },
+        { question: "Čo je „dvojfaktorové overenie“?", options: ["Dvojitý zámok — okrem hesla treba zadať aj kód, napríklad z SMS", "Dve rôzne heslá k tomu istému účtu", "Overenie dvomi rôznymi bankami naraz"], correctIndex: 0 },
+        { question: "Podľa jednej zo „zlatých poučiek“ z brožúry: „Kto ma naháňa a tlačí na rýchle konanie…“", options: ["…mi chce ušetriť čas", "…chce ma pripraviť o peniaze", "…je vždy z banky"], correctIndex: 1 },
+        { question: "Dostali ste nezrozumiteľnú zmluvu od dodávateľa energií. Čo je bezpečný postup pri práci s AI?", options: ["Odfotiť zmluvu aj s rodným číslom a poslať ju AI na vysvetlenie", "Prekryť osobné údaje, dať si zmluvu vysvetliť jednoducho a pri väčších rozhodnutiach sa poradiť aj s odborníkom", "Zmluvu radšej vôbec nečítať"], correctIndex: 1 },
+        { question: "Ako si bezpečne overíte telefonát, ktorý tvrdí, že je „z banky“?", options: ["Zavolám späť na číslo, ktoré mi volajúci sám nadiktoval", "Zavolám na oficiálne číslo z karty alebo webu banky, nie na číslo od volajúceho", "Údaje potvrdím rovno v hovore, aby to bolo rýchlejšie"], correctIndex: 1 },
+        { question: "Čo urobiť, ak sa aj napriek opatrnosti staniete obeťou podvodu?", options: ["Nič, peniaze sú už stratené", "Okamžite kontaktovať banku (zablokovanie karty/účtu) a nahlásiť to polícii na 158 alebo 112", "Počkať mesiac, či sa podvodník sám neozve"], correctIndex: 1 },
+        { question: "Aká je celková hlavná myšlienka všetkých šiestich „zlatých pravidiel“ z brožúry?", options: ["Internetu je lepšie sa úplne vyhýbať", "Spomaľte, spýtajte sa a overte si to skôr, než konáte", "Umelá inteligencia rozhoduje namiesto vás"], correctIndex: 1 },
       ],
     },
   },

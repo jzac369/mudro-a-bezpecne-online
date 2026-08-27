@@ -202,62 +202,234 @@
     showSavedToast();
   }
 
-  function renderExercise() {
-    const ex = state.workshop.exercises[0];
-    const body = document.getElementById("exercise-body");
-    body.innerHTML =
+function renderBudgetExercise(ex) {
+    const rowsHtml = (labels) =>
+      labels
+        .map(
+          (label, i) =>
+            "<div style='display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:.5rem;'>" +
+            "<label style='font-weight:400;flex:1;'>" + label + "</label>" +
+            '<input type="number" step="1" min="0" data-budget-input style="width:110px;" placeholder="0">' +
+            "</div>"
+        )
+        .join("");
+    return (
       "<h3>" + ex.title + "</h3><p>" + ex.prompt + "</p>" +
-      '<textarea rows="4" style="width:100%;font:inherit;padding:.8rem;border-radius:10px;border:2px solid var(--line);" placeholder="Sem napíšte svoju odpoveď…"></textarea>';
+      "<h4 style='margin-top:1.2rem;'>Mesačné príjmy</h4>" + rowsHtml(ex.incomeLabels) +
+      "<h4 style='margin-top:1.2rem;'>Mesačné výdavky</h4>" + rowsHtml(ex.expenseLabels) +
+      '<button class="btn btn-secondary" id="budget-calc" type="button" style="margin-top:1rem;">Spočítať</button>' +
+      '<p id="budget-result" class="hint" style="margin-top:.8rem;font-weight:700;"></p>'
+    );
   }
 
-  function drawCertificate(participantName) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1000;
-    canvas.height = 700;
-    const ctx = canvas.getContext("2d");
+  function wireBudgetExercise() {
+    const btn = document.getElementById("budget-calc");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const inputs = Array.from(document.querySelectorAll("[data-budget-input]"));
+      const incomeCount = state.workshop.exercises.find((e) => e.type === "budget").incomeLabels.length;
+      const income = inputs.slice(0, incomeCount).reduce((s, i) => s + (Number(i.value) || 0), 0);
+      const expense = inputs.slice(incomeCount).reduce((s, i) => s + (Number(i.value) || 0), 0);
+      const zostatok = income - expense;
+      document.getElementById("budget-result").textContent =
+        "Príjmy: " + income + " € · Výdavky: " + expense + " € · Zostatok na konci mesiaca: " + zostatok + " €";
+    });
+  }
 
-    ctx.fillStyle = "#f6f3ec";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#c17a2e";
-    ctx.lineWidth = 10;
-    ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
-    ctx.strokeStyle = "#1f3a3d";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
+  function renderScamHuntExercise(ex) {
+    return (
+      "<h3>" + ex.title + "</h3><p>" + ex.prompt + "</p>" +
+      ex.messages
+        .map(
+          (m, i) =>
+            "<div class='card' style='background:var(--surface-2);margin-top:1rem;'>" +
+            "<p style='font-weight:700;margin-bottom:.4rem;'>" + m.label + "</p>" +
+            "<p style='font-style:italic;'>" + m.text + "</p>" +
+            '<button class="btn btn-secondary" data-reveal="' + i + '" type="button" style="padding:.4rem .8rem;font-size:.85rem;">Zobraziť riešenie</button>' +
+            "<p data-answer='" + i + "' class='hint' style='display:none;margin-top:.6rem;'>" + m.answer + "</p>" +
+            "</div>"
+        )
+        .join("")
+    );
+  }
+
+  function wireScamHuntExercise() {
+    document.querySelectorAll("[data-reveal]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = btn.dataset.reveal;
+        document.querySelector("[data-answer='" + i + "']").style.display = "block";
+        btn.style.display = "none";
+      });
+    });
+  }
+
+  function renderExercise() {
+    const body = document.getElementById("exercise-body");
+    const exercises = state.workshop.exercises;
+    body.innerHTML = exercises
+      .map((ex) => {
+        if (ex.type === "budget") return renderBudgetExercise(ex);
+        if (ex.type === "spot-the-scam") return renderScamHuntExercise(ex);
+        return (
+          "<h3>" + ex.title + "</h3><p>" + ex.prompt + "</p>" +
+          '<textarea rows="4" style="width:100%;font:inherit;padding:.8rem;border-radius:10px;border:2px solid var(--line);" placeholder="Sem napíšte svoju odpoveď…"></textarea>'
+        );
+      })
+      .join("<hr style='margin:2rem 0;border:none;border-top:1px solid var(--line);'>");
+    wireBudgetExercise();
+    wireScamHuntExercise();
+  }
+
+  function loadImage(url) {
+    return new Promise((resolve) => {
+      if (!url) { resolve(null); return; }
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+
+  function blob(ctx, x, y, r, color) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  async function drawCertificate(participantName) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 848;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+
+    // Krémové pozadie + jemné farebné škvrny v rohoch (podľa vzoru certifikátu)
+    ctx.fillStyle = "#faf3e6";
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.55;
+    blob(ctx, 60, 40, 220, "#e7c98f");
+    blob(ctx, 40, 260, 180, "#8fae8f");
+    blob(ctx, W - 60, H - 60, 240, "#8fae8f");
+    blob(ctx, W - 100, H - 280, 170, "#e0a98f");
+    ctx.globalAlpha = 1;
 
     ctx.textAlign = "center";
-    ctx.fillStyle = "#1f3a3d";
-    ctx.font = "bold 30px Georgia, serif";
-    ctx.fillText("CERTIFIKÁT O ABSOLVOVANÍ", canvas.width / 2, 170);
 
+    ctx.font = "700 15px 'Atkinson Hyperlegible', sans-serif";
+    ctx.fillStyle = "#c17a2e";
+    ctx.save();
+    ctx.textAlign = "left";
+    ctx.font = "700 14px 'Atkinson Hyperlegible', sans-serif";
+    ctx.fillText("M Ú D R O   A   B E Z P E Č N E   O N L I N E", 90, 90);
+    ctx.restore();
+
+    ctx.font = "700 64px Georgia, 'Times New Roman', serif";
+    ctx.fillStyle = "#1f3a3d";
+    ctx.fillText("Certifikát", W / 2, 250);
+
+    ctx.font = "italic 26px Georgia, serif";
+    ctx.fillStyle = "#5c5749";
+    ctx.fillText("o úspešnom absolvovaní workshopu", W / 2, 300);
+
+    ctx.strokeStyle = "#c17a2e";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(W / 2 - 160, 360);
+    ctx.lineTo(W / 2 + 160, 360);
+    ctx.stroke();
+
+    ctx.font = "20px 'Atkinson Hyperlegible', sans-serif";
+    ctx.fillStyle = "#332f28";
+    wrapText(ctx, "Tento certifikát vystavuje Múdro a Bezpečne Online za úspešné absolvovanie", W / 2, 410, 820, 28);
+    wrapText(ctx, "vzdelávacieho workshopu, ktorý absolvoval(a):", W / 2, 438, 820, 28);
+
+    ctx.font = "700 40px Georgia, serif";
+    ctx.fillStyle = "#c17a2e";
+    ctx.fillText(participantName, W / 2, 505);
+
+    // Zvýraznený rámček s názvom workshopu
+    ctx.fillStyle = "rgba(143,174,143,0.18)";
+    roundRect(ctx, W / 2 - 400, 540, 800, 95, 14);
+    ctx.fill();
+    ctx.font = "700 26px Georgia, serif";
+    ctx.fillStyle = "#1f3a3d";
+    wrapText(ctx, state.workshop.title, W / 2, 585, 740, 32);
     ctx.font = "20px Georgia, serif";
     ctx.fillStyle = "#5c5749";
-    ctx.fillText("Múdro a Bezpečne Online", canvas.width / 2, 210);
+    ctx.fillText(state.workshop.subtitle || "", W / 2, 618);
 
-    ctx.font = "italic 22px Georgia, serif";
-    ctx.fillText("Tento certifikát potvrdzuje, že", canvas.width / 2, 300);
-
-    ctx.font = "bold 44px Georgia, serif";
-    ctx.fillStyle = "#c17a2e";
-    ctx.fillText(participantName, canvas.width / 2, 370);
-
-    ctx.font = "22px Georgia, serif";
-    ctx.fillStyle = "#1f3a3d";
-    ctx.fillText("úspešne absolvoval(a) workshop", canvas.width / 2, 430);
-
-    ctx.font = "bold 28px Georgia, serif";
-    ctx.fillText(state.workshop.title, canvas.width / 2, 470);
-
-    ctx.font = "18px Georgia, serif";
-    ctx.fillStyle = "#5c5749";
+    // Pätička: dátum + podpis lektora
     const dateStr = new Date().toLocaleDateString("sk-SK", { year: "numeric", month: "long", day: "numeric" });
-    ctx.fillText(dateStr, canvas.width / 2, 560);
+    const sigImg = await loadImage(state.workshop.lecturerSignatureUrl);
+
+    ctx.textAlign = "center";
+    const colLeftX = W / 2 - 220, colRightX = W / 2 + 220;
+
+    if (sigImg) {
+      const sigW = 160, sigH = (sigImg.height / sigImg.width) * sigW;
+      ctx.drawImage(sigImg, colRightX - sigW / 2, 690 - sigH, sigW, sigH);
+    } else {
+      ctx.font = "italic 26px Georgia, serif";
+      ctx.fillStyle = "#1f3a3d";
+      ctx.fillText("Lektor", colRightX, 685);
+    }
+    ctx.font = "700 22px Georgia, serif";
+    ctx.fillStyle = "#1f3a3d";
+    ctx.fillText(dateStr, colLeftX, 685);
+
+    ctx.strokeStyle = "#c9c0a8";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(colLeftX - 130, 705); ctx.lineTo(colLeftX + 130, 705);
+    ctx.moveTo(colRightX - 130, 705); ctx.lineTo(colRightX + 130, 705);
+    ctx.stroke();
+
+    ctx.font = "700 12px 'Atkinson Hyperlegible', sans-serif";
+    ctx.fillStyle = "#5c5749";
+    ctx.fillText("D Á T U M", colLeftX, 728);
+    ctx.fillText("L E K T O R", colRightX, 728);
+
+    ctx.font = "12px 'Atkinson Hyperlegible', sans-serif";
+    ctx.fillStyle = "#8a8474";
+    ctx.textAlign = "left";
+    ctx.fillText("mudroabezpecne.sk", 90, H - 50);
 
     return canvas.toDataURL("image/png");
   }
 
-  function showCertificate(participantName) {
-    const dataUrl = drawCertificate(participantName);
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function wrapText(ctx, text, cx, y, maxWidth, lineHeight) {
+    const words = text.split(" ");
+    let line = "", lines = [];
+    words.forEach((w) => {
+      const test = line ? line + " " + w : w;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = w;
+      } else {
+        line = test;
+      }
+    });
+    if (line) lines.push(line);
+    lines.forEach((l, i) => ctx.fillText(l, cx, y + i * lineHeight));
+  }
+
+  async function showCertificate(participantName) {
+    const dataUrl = await drawCertificate(participantName);
     document.getElementById("cert-preview").src = dataUrl;
     document.getElementById("cert-download").href = dataUrl;
     document.getElementById("cert-area").style.display = "block";
@@ -271,35 +443,53 @@
     }
     const body = document.getElementById("quiz-body");
     document.getElementById("cert-area").style.display = "none";
+    let cursor = 0;
 
-    body.innerHTML = indexes
-      .map((qi) => {
-        const q = allQuestions[qi];
-        return (
-          "<div style='margin-bottom:1.6rem;'><p style='font-weight:700;'>" + (qi + 1) + ". " + q.question + "</p>" +
-          q.options
-            .map(
-              (opt, oi) =>
-                '<label class="quiz-option" data-q="' + qi + '" data-o="' + oi + '">' +
-                '<input type="radio" name="q' + qi + '" value="' + oi + '"><span>' + opt + "</span></label>"
-            )
-            .join("") +
-          "</div>"
-        );
-      })
-      .join("") +
-      '<button class="btn btn-primary" id="quiz-submit">' + (subsetIndexes ? "Odovzdať opravené odpovede" : "Odovzdať kvíz") + "</button>" +
-      '<p id="quiz-result" class="hint" style="margin-top:1rem;"></p>';
+    function renderCurrent() {
+      const qi = indexes[cursor];
+      const q = allQuestions[qi];
+      const isLast = cursor === indexes.length - 1;
+      const selected = state.quizAnswers[qi];
 
-    body.addEventListener("change", (e) => {
-      if (e.target.type !== "radio") return;
-      const qi = e.target.name.replace("q", "");
-      document.querySelectorAll('.quiz-option[data-q="' + qi + '"]').forEach((el) => el.classList.remove("selected"));
-      e.target.closest(".quiz-option").classList.add("selected");
-      state.quizAnswers[Number(qi)] = Number(e.target.value);
-    });
+      body.innerHTML =
+        "<p class='hint' style='margin-bottom:.3rem;'>Otázka " + (cursor + 1) + " z " + indexes.length + "</p>" +
+        "<div class='progress-bar-bg' style='margin-bottom:1.2rem;'><div class='progress-bar-fill' style='width:" + Math.round(((cursor) / indexes.length) * 100) + "%'></div></div>" +
+        "<p style='font-weight:700;font-size:1.1rem;'>" + q.question + "</p>" +
+        q.options
+          .map(
+            (opt, oi) =>
+              '<label class="quiz-option' + (selected === oi ? " selected" : "") + '" data-o="' + oi + '">' +
+              '<input type="radio" name="qcurrent" value="' + oi + '"' + (selected === oi ? " checked" : "") + "><span>" + opt + "</span></label>"
+          )
+          .join("") +
+        "<div style='display:flex;gap:.8rem;margin-top:1.2rem;flex-wrap:wrap;'>" +
+        (cursor > 0 ? '<button class="btn btn-secondary" id="quiz-prev" type="button">Späť</button>' : "") +
+        '<button class="btn btn-primary" id="quiz-next" type="button" disabled>' + (isLast ? "Odovzdať" : "Ďalšia otázka") + "</button>" +
+        "</div>" +
+        '<p id="quiz-result" class="hint" style="margin-top:1.2rem;"></p>';
 
-    document.getElementById("quiz-submit").addEventListener("click", async () => {
+      const nextBtn = document.getElementById("quiz-next");
+      nextBtn.disabled = selected === null || selected === undefined;
+
+      body.querySelectorAll(".quiz-option").forEach((label) => {
+        label.addEventListener("click", () => {
+          body.querySelectorAll(".quiz-option").forEach((l) => l.classList.remove("selected"));
+          label.classList.add("selected");
+          state.quizAnswers[qi] = Number(label.dataset.o);
+          nextBtn.disabled = false;
+        });
+      });
+
+      const prevBtn = document.getElementById("quiz-prev");
+      if (prevBtn) prevBtn.addEventListener("click", () => { cursor--; renderCurrent(); });
+
+      nextBtn.addEventListener("click", () => {
+        if (!isLast) { cursor++; renderCurrent(); return; }
+        submitQuiz();
+      });
+    }
+
+    async function submitQuiz() {
       const total = allQuestions.length;
       const correct = allQuestions.filter((q, i) => state.quizAnswers[i] === q.correctIndex).length;
       const passed = correct >= Math.min(state.workshop.quiz.passScore, total);
@@ -313,7 +503,7 @@
 
       if (passed) {
         resultEl.innerHTML += "<br>Výborne, workshop ste úspešne dokončili!";
-        showCertificate(participantName);
+        await showCertificate(participantName);
       } else {
         resultEl.innerHTML += "<br>Ešte to nie je ono — skúste si zopakovať len otázky, ktoré neboli správne.";
         const retryBtn = document.createElement("button");
@@ -336,7 +526,9 @@
       });
       await saveProgress({ quizCompleted: true, quizScore: correct, quizPassed: passed });
       if (passed) markStepDone("kviz");
-    });
+    }
+
+    renderCurrent();
   }
 
   function initVideo() {
@@ -466,7 +658,14 @@
       // Admin v admin zóne vie upraviť video/brožúrku/cenu/názov — tie majú prednosť.
       try {
         const wSnap = await state.db.collection("workshops").doc(state.workshopId).get();
-        if (wSnap.exists) Object.assign(state.workshop, wSnap.data());
+        if (wSnap.exists) {
+          const overrides = wSnap.data();
+          Object.keys(overrides).forEach((k) => {
+            if (overrides[k] !== "" && overrides[k] !== null && overrides[k] !== undefined) {
+              state.workshop[k] = overrides[k];
+            }
+          });
+        }
       } catch (err) {
         console.error("Nepodarilo sa načítať nastavenia workshopu:", err);
       }

@@ -261,6 +261,7 @@ window.addEventListener("load", function () {
         '<div class="field"><label>Cena (€)</label><input type="number" data-f="price" value="' + (data.price ?? local.price ?? 19) + '"></div>' +
         '<div class="field"><label>YouTube ID videa</label><input type="text" data-f="youtubeId" value="' + (data.youtubeId || "") + '" placeholder="napr. dQw4w9WgXcQ"></div>' +
         '<div class="field"><label>Odkaz na PDF brožúrku</label><input type="text" data-f="brochureUrl" value="' + (data.brochureUrl || "") + '" placeholder="https://…"></div>' +
+        '<div class="field"><label>Odkaz na podpis lektora (PNG, priehľadné pozadie)</label><input type="text" data-f="lecturerSignatureUrl" value="' + (data.lecturerSignatureUrl || "") + '" placeholder="https://…"></div>' +
         '<button class="btn btn-primary" data-save="' + id + '" style="padding:.5rem 1rem;font-size:.9rem;">Uložiť</button>' +
         '<p class="hint" data-status style="margin-top:.5rem;"></p>';
       container.appendChild(wrap);
