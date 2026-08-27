@@ -35,15 +35,32 @@
     <p id="workshop-price" class="lead"></p>
 
     <form class="card" id="order-form">
-      <div class="field">
-        <label for="name">Vaše meno a priezvisko</label>
-        <input type="text" id="name" name="name" required autocomplete="name">
+      <div class="field" style="display:flex;gap:1rem;">
+        <div style="flex:1;">
+          <label for="firstName">Vaše meno</label>
+          <input type="text" id="firstName" name="firstName" required autocomplete="given-name">
+        </div>
+        <div style="flex:1;">
+          <label for="lastName">Vaše priezvisko</label>
+          <input type="text" id="lastName" name="lastName" required autocomplete="family-name">
+        </div>
       </div>
       <div class="field">
         <label for="email">Váš e-mail</label>
         <input type="email" id="email" name="email" required autocomplete="email">
-        <p class="hint">Na tento e-mail príde platobný pokyn aj prístupový kód.</p>
+        <p class="hint">Na tento e-mail príde platobný pokyn aj prístupový kód (kódy).</p>
       </div>
+
+      <div id="participants-wrap"></div>
+      <button class="btn btn-secondary" type="button" id="add-participant" style="margin-bottom:1.4rem;">+ Pridať ďalšieho účastníka</button>
+
+      <div class="field">
+        <label for="coupon">Zľavový kód (nepovinné)</label>
+        <input type="text" id="coupon" name="coupon" autocapitalize="characters" style="text-transform:uppercase;">
+      </div>
+
+      <p class="hint" id="price-summary" style="margin-bottom:1rem;"></p>
+
       <button class="btn btn-primary btn-block" type="submit">Pokračovať k platbe</button>
       <p id="form-error" class="hint" style="color:var(--warn);display:none;"></p>
     </form>
@@ -77,9 +94,21 @@
       return;
     }
 
+    const db = firebase.firestore();
+
+    try {
+      const settingsSnap = await db.collection("settings").doc("general").get();
+      if (settingsSnap.exists && settingsSnap.data().maintenanceMode) {
+        document.querySelector("main").innerHTML =
+          "<div class='card'><h1>Prebieha údržba</h1><p>Objednávky sú momentálne dočasne pozastavené, skúste to prosím neskôr.</p></div>";
+        return;
+      }
+    } catch (err) {
+      console.error("Nepodarilo sa overiť režim údržby:", err);
+    }
+
     // Admin vie v admin zóne prepísať cenu (aj pôvodnú, preškrtnutú) — má prednosť.
     try {
-      const db = firebase.firestore();
       const snap = await db.collection("workshops").doc(workshopId).get();
       if (snap.exists) {
         const overrides = snap.data();
@@ -92,9 +121,17 @@
       console.error("Nepodarilo sa načítať cenu workshopu:", err);
     }
 
+    if (workshop.hidden) {
+      document.getElementById("workshop-title").textContent = "Tento workshop nie je momentálne dostupný";
+      document.getElementById("order-form").style.display = "none";
+      return;
+    }
+
     document.getElementById("workshop-title").textContent = workshop.title;
     const priceEl = document.getElementById("workshop-price");
-    if (workshop.showOriginalPrice && workshop.originalPrice) {
+    const today = new Date().toISOString().slice(0, 10);
+    const saleActive = workshop.showOriginalPrice && workshop.originalPrice && (!workshop.saleEndAt || workshop.saleEndAt >= today);
+    if (saleActive) {
       priceEl.innerHTML =
         workshop.subtitle + " · " +
         "<span style='text-decoration:line-through;color:var(--text-mute);font-weight:400;'>" + workshop.originalPrice + " €</span> " +
@@ -103,17 +140,62 @@
       priceEl.textContent = workshop.subtitle + " · " + workshop.priceLabel;
     }
 
+    // ---------- Ďalší účastníci (skupinová objednávka) ----------
+    const participantsWrap = document.getElementById("participants-wrap");
+    function addParticipantRow() {
+      const row = document.createElement("div");
+      row.className = "field participant-row";
+      row.style.cssText = "display:flex;gap:1rem;align-items:flex-end;";
+      row.innerHTML =
+        "<div style='flex:1;'><label>Meno ďalšieho účastníka</label><input type='text' class='p-first' required></div>" +
+        "<div style='flex:1;'><label>Priezvisko</label><input type='text' class='p-last' required></div>" +
+        "<button type='button' class='btn btn-secondary' data-remove-participant style='padding:.7rem 1rem;'>Odobrať</button>";
+      row.querySelector("[data-remove-participant]").addEventListener("click", () => {
+        row.remove();
+        updatePriceSummary();
+      });
+      participantsWrap.appendChild(row);
+      updatePriceSummary();
+    }
+    document.getElementById("add-participant").addEventListener("click", addParticipantRow);
+
+    function getParticipants() {
+      return Array.from(participantsWrap.querySelectorAll(".participant-row")).map((row) => ({
+        firstName: row.querySelector(".p-first").value.trim(),
+        lastName: row.querySelector(".p-last").value.trim(),
+      }));
+    }
+
+    function updatePriceSummary() {
+      const groupSize = 1 + getParticipants().length;
+      const summaryEl = document.getElementById("price-summary");
+      summaryEl.textContent = groupSize > 1
+        ? "Počet účastníkov: " + groupSize + " · orientačná cena spolu: " + (workshop.price * groupSize) + " € (zľavy sa prepočítajú po odoslaní)"
+        : "";
+    }
+    participantsWrap.addEventListener("input", updatePriceSummary);
+
+    // ---------- UTM parametre (sledovanie zdroja registrácie) ----------
+    const utm = {
+      source: params.get("utm_source") || null,
+      medium: params.get("utm_medium") || null,
+      campaign: params.get("utm_campaign") || null,
+    };
+
     document.getElementById("order-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const name = document.getElementById("name").value.trim();
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
       const email = document.getElementById("email").value.trim();
+      const coupon = document.getElementById("coupon").value.trim();
+      const participants = getParticipants();
       const errorEl = document.getElementById("form-error");
       errorEl.style.display = "none";
 
       try {
         const createOrder = firebase.app().functions("europe-west1").httpsCallable("createOrder");
-        const result = await createOrder({ name, email, workshopId });
-        document.getElementById("pay-amount").textContent = workshop.priceLabel;
+        const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm });
+        document.getElementById("pay-amount").textContent = result.data.amount + " €";
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;
         document.getElementById("step-form").style.display = "none";
         document.getElementById("step-payment").style.display = "block";

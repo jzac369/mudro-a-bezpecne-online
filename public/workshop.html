@@ -715,8 +715,8 @@ function renderBudgetExercise(ex) {
 
       document.getElementById("workshop-name").textContent = state.workshop.title;
       document.getElementById("workshop-title").textContent = state.workshop.title;
-      const name = sessionStorage.getItem("mbo_participant_name");
-      document.getElementById("welcome").textContent = name ? "Vitajte späť, " + name + "." : "";
+      const firstName = sessionStorage.getItem("mbo_participant_firstname") || sessionStorage.getItem("mbo_participant_name");
+      document.getElementById("welcome").textContent = firstName ? "Vitajte späť, " + firstName + "." : "";
 
       document.getElementById("brochure-frame").src = state.workshop.brochureUrl;
       document.getElementById("brochure-download").href = state.workshop.brochureUrl;

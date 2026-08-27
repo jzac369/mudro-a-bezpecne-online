@@ -255,8 +255,11 @@
         <div class="card" style="margin-bottom:1.5rem;" id="generate-card">
           <h2>Vygenerovať prístupový kód ručne</h2>
           <form id="generate-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
-            <div class="field" style="flex:1;min-width:160px;">
-              <label for="g-name">Meno účastníka</label><input type="text" id="g-name" required>
+            <div class="field" style="flex:1;min-width:140px;">
+              <label for="g-firstname">Meno</label><input type="text" id="g-firstname" required>
+            </div>
+            <div class="field" style="flex:1;min-width:140px;">
+              <label for="g-lastname">Priezvisko</label><input type="text" id="g-lastname">
             </div>
             <div class="field" style="flex:1;min-width:160px;">
               <label for="g-email">E-mail (nepovinné)</label><input type="email" id="g-email">
@@ -281,6 +284,14 @@
                 <option value="">Všetky</option>
                 <option value="pending_payment">Čaká na úhradu</option>
                 <option value="code_sent">Kód odoslaný</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="filter-workshop">Workshop</label>
+              <select id="filter-workshop">
+                <option value="">Všetky</option>
+                <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
+                <option value="zaciname-s-ai">Začíname s umelou inteligenciou</option>
               </select>
             </div>
             <div style="flex:1;"></div>
@@ -349,19 +360,80 @@
 
       <section class="dash-section" data-section="nastavenia">
         <h1>Nastavenia</h1>
-        <div class="card" style="margin-bottom:1.5rem;">
-          <h2>Automatické odhlásenie</h2>
-          <p class="hint" style="margin-bottom:1rem;">Po koľkých minútach neaktivity sa účastník automaticky odhlási z workshopu (video sa do tohto počítania nezapočítava).</p>
-          <form id="settings-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
-            <div class="field" style="max-width:200px;">
-              <label for="s-inactivity">Doba neaktivity (minúty)</label>
-              <input type="number" id="s-inactivity" min="1" max="60" value="5">
+
+        <form id="settings-form">
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h2>Prístup a bezpečnosť</h2>
+            <div class="workshop-settings-grid" style="margin-top:1rem;">
+              <div class="field">
+                <label for="s-inactivity">Automatické odhlásenie po neaktivite (minúty)</label>
+                <input type="number" id="s-inactivity" min="1" max="60" value="5">
+                <p class="hint">Video sa do tohto počítania nezapočítava.</p>
+              </div>
+              <div class="field">
+                <label for="s-validity">Platnosť prístupového kódu (dni od vydania)</label>
+                <input type="number" id="s-validity" min="1" max="1000" value="90">
+                <p class="hint">Po uplynutí tejto doby sa kód prestane dať použiť na prihlásenie. Príznak platnosti sa zobrazuje pri každej registrácii v stĺpci „Stav“.</p>
+              </div>
+              <div class="field">
+                <label for="s-maxlogins">Max. počet prihlásení na jeden kód</label>
+                <input type="number" id="s-maxlogins" min="0" value="0">
+                <p class="hint">0 = neobmedzené. Zabráni zdieľaniu jedného kódu medzi viacerými ľuďmi.</p>
+              </div>
             </div>
-            <button class="btn btn-primary" type="submit">Uložiť</button>
-          </form>
+          </div>
+
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h2>Ceny a zľavy</h2>
+            <div class="workshop-settings-grid" style="margin-top:1rem;">
+              <div class="field">
+                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-coupon-active" style="width:auto;"> Zapnúť zľavový kupón</label>
+                <label for="s-coupon-code" style="margin-top:.6rem;">Kód kupónu</label>
+                <input type="text" id="s-coupon-code" placeholder="napr. SENIOR20" style="text-transform:uppercase;">
+                <label for="s-coupon-percent" style="margin-top:.6rem;">Zľava (%)</label>
+                <input type="number" id="s-coupon-percent" min="0" max="100" value="0">
+              </div>
+              <div class="field">
+                <label for="s-group-min">Skupinová zľava od počtu účastníkov</label>
+                <input type="number" id="s-group-min" min="0" value="0">
+                <p class="hint">0 = vypnuté. Platí pre jednu objednávku s viacerými účastníkmi naraz.</p>
+                <label for="s-group-percent" style="margin-top:.6rem;">Skupinová zľava (%)</label>
+                <input type="number" id="s-group-percent" min="0" max="100" value="0">
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h2>Upozornenia a prevádzka</h2>
+            <div class="workshop-settings-grid" style="margin-top:1rem;">
+              <div class="field">
+                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-sound" style="width:auto;" checked> Zvukové upozornenie pri novej registrácii</label>
+              </div>
+              <div class="field">
+                <label for="s-stale-days">Objednávku bez úhrady označiť ako „staré“ po (dni)</label>
+                <input type="number" id="s-stale-days" min="1" value="3">
+              </div>
+              <div class="field">
+                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-maintenance" style="width:auto;"> Režim údržby (verejný web nedostupný)</label>
+                <p class="hint">Účastníci s existujúcim kódom sa naďalej vedia prihlásiť do workshopu — zablokuje sa len úvodná stránka, objednávka a prihlásenie.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h2>Text v e-maile s kódom</h2>
+            <div class="field">
+              <label for="s-email-msg">Vlastná krátka správa / odkaz</label>
+              <textarea id="s-email-msg" rows="2" style="width:100%;font:inherit;padding:.7rem;border-radius:10px;border:2px solid var(--line);"></textarea>
+              <p class="hint">Táto správa sa pošle spolu s kódom ako premenná <code>custom_message</code>. Aby sa reálne zobrazila, treba ju raz pridať aj do šablóny na stránke EmailJS (template_aspeze7) — inak sa v e-maile nezobrazí.</p>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" type="submit">Uložiť všetky nastavenia</button>
           <p id="settings-result" class="hint" style="margin-top:1rem;"></p>
-        </div>
-        <div class="card">
+        </form>
+
+        <div class="card" style="margin-top:1.5rem;">
           <h2>Administrátorské účty</h2>
           <form id="admin-add-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
             <div class="field" style="flex:1;min-width:160px;">
@@ -406,7 +478,7 @@ window.addEventListener("load", function () {
   });
   document.getElementById("qa-generate").addEventListener("click", () => {
     showSection("registracie");
-    document.getElementById("g-name").focus();
+    document.getElementById("g-firstname").focus();
   });
   document.getElementById("qa-export").addEventListener("click", () => document.getElementById("export-csv").click());
 
@@ -437,7 +509,8 @@ window.addEventListener("load", function () {
     const resultEl = document.getElementById("generate-result");
     try {
       const res = await generateCode({
-        participantName: document.getElementById("g-name").value.trim(),
+        firstName: document.getElementById("g-firstname").value.trim(),
+        lastName: document.getElementById("g-lastname").value.trim(),
         email: document.getElementById("g-email").value.trim() || null,
         workshopId: document.getElementById("g-workshop").value,
       });
@@ -448,11 +521,24 @@ window.addEventListener("load", function () {
   });
 
   // ---------- Všeobecné nastavenia platformy (settings/general) ----------
+  let generalSettingsCache = { codeValidityDays: 90, staleOrderDays: 3, soundOnNewReg: true };
   async function loadGeneralSettings() {
     try {
       const snap = await db.collection("settings").doc("general").get();
       const data = snap.exists ? snap.data() : {};
+      generalSettingsCache = Object.assign({ codeValidityDays: 90, staleOrderDays: 3, soundOnNewReg: true }, data);
       document.getElementById("s-inactivity").value = data.inactivityMinutes || 5;
+      document.getElementById("s-validity").value = data.codeValidityDays ?? 90;
+      document.getElementById("s-maxlogins").value = data.maxLoginsPerCode ?? 0;
+      document.getElementById("s-coupon-active").checked = !!data.couponActive;
+      document.getElementById("s-coupon-code").value = data.couponCode || "";
+      document.getElementById("s-coupon-percent").value = data.couponPercent ?? 0;
+      document.getElementById("s-group-min").value = data.groupDiscountMinSize ?? 0;
+      document.getElementById("s-group-percent").value = data.groupDiscountPercent ?? 0;
+      document.getElementById("s-sound").checked = data.soundOnNewReg !== false;
+      document.getElementById("s-stale-days").value = data.staleOrderDays ?? 3;
+      document.getElementById("s-maintenance").checked = !!data.maintenanceMode;
+      document.getElementById("s-email-msg").value = data.emailCustomMessage || "";
     } catch (err) {
       console.error("Nepodarilo sa načítať nastavenia:", err);
     }
@@ -461,9 +547,23 @@ window.addEventListener("load", function () {
   document.getElementById("settings-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const resultEl = document.getElementById("settings-result");
-    const minutes = Number(document.getElementById("s-inactivity").value) || 5;
+    const patch = {
+      inactivityMinutes: Number(document.getElementById("s-inactivity").value) || 5,
+      codeValidityDays: Number(document.getElementById("s-validity").value) || 0,
+      maxLoginsPerCode: Number(document.getElementById("s-maxlogins").value) || 0,
+      couponActive: document.getElementById("s-coupon-active").checked,
+      couponCode: document.getElementById("s-coupon-code").value.trim().toUpperCase(),
+      couponPercent: Number(document.getElementById("s-coupon-percent").value) || 0,
+      groupDiscountMinSize: Number(document.getElementById("s-group-min").value) || 0,
+      groupDiscountPercent: Number(document.getElementById("s-group-percent").value) || 0,
+      soundOnNewReg: document.getElementById("s-sound").checked,
+      staleOrderDays: Number(document.getElementById("s-stale-days").value) || 3,
+      maintenanceMode: document.getElementById("s-maintenance").checked,
+      emailCustomMessage: document.getElementById("s-email-msg").value.trim(),
+    };
     try {
-      await db.collection("settings").doc("general").set({ inactivityMinutes: minutes }, { merge: true });
+      await db.collection("settings").doc("general").set(patch, { merge: true });
+      generalSettingsCache = patch;
       resultEl.textContent = "Uložené ✓";
     } catch (err) {
       resultEl.textContent = "Chyba: " + err.message;
@@ -505,6 +605,8 @@ window.addEventListener("load", function () {
         '<div class="field"><label>Cena (€)</label><input type="number" data-f="price" value="' + (data.price ?? local.price ?? 19) + '"></div>' +
         '<div class="field"><label>Pôvodná cena (€) — zobrazí sa preškrtnutá, marketingový efekt</label><input type="number" data-f="originalPrice" value="' + (data.originalPrice ?? "") + '" placeholder="napr. 29"></div>' +
         '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="showOriginalPrice" style="width:auto;" ' + (data.showOriginalPrice ? "checked" : "") + '> Zobrazovať pôvodnú cenu na webe</label></div>' +
+        '<div class="field"><label>Akcia platí do (nepovinné)</label><input type="date" data-f="saleEndAt" value="' + (data.saleEndAt || "") + '"><p class="hint">Po tomto dátume sa pôvodná cena prestane zobrazovať automaticky.</p></div>' +
+        '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="hidden" style="width:auto;" ' + (data.hidden ? "checked" : "") + '> Skryť workshop z ponuky (dočasne nedostupný)</label></div>' +
         '<div class="field"><label>YouTube ID videa</label><input type="text" data-f="youtubeId" value="' + (data.youtubeId || "") + '" placeholder="napr. dQw4w9WgXcQ"></div>' +
         '<div class="field"><label>Odkaz na PDF brožúrku</label><input type="text" data-f="brochureUrl" value="' + (data.brochureUrl || "") + '" placeholder="https://…"></div>' +
         '<div class="field"><label>Odkaz na podpis lektora (PNG, priehľadné pozadie)</label><input type="text" data-f="lecturerSignatureUrl" value="' + (data.lecturerSignatureUrl || "") + '" placeholder="https://…"></div>' +
@@ -792,10 +894,20 @@ window.addEventListener("load", function () {
 
     const detailBody = overlay.querySelector("#detail-body");
 
-    const regLine =
+    let regLine =
       "<h3 style='margin-top:1rem;'>Registrácia a platba</h3>" +
       "<div class='session-row'><span>Zaregistroval(a) sa</span><span>" + (order.createdAt ? order.createdAt.toDate().toLocaleString("sk-SK") : "—") + "</span></div>" +
       "<div class='session-row'><span>Uhradil(a)</span><span>" + (order.paidAt ? order.paidAt.toDate().toLocaleString("sk-SK") : (order.status === "pending_payment" ? "zatiaľ neuhradené" : "—")) + "</span></div>";
+    if (order.groupSize && order.groupSize > 1) {
+      const others = (order.participants || []).map((p) => p.firstName + " " + p.lastName).join(", ");
+      regLine += "<div class='session-row'><span>Skupinová objednávka</span><span>" + order.groupSize + " účastníci: " + others + "</span></div>";
+    }
+    if (order.couponApplied || order.discountNote) {
+      regLine += "<div class='session-row'><span>Zľava</span><span>" + [order.couponApplied ? "kupón " + order.couponApplied : null, order.discountNote].filter(Boolean).join(" · ") + "</span></div>";
+    }
+    if (order.utm && (order.utm.source || order.utm.medium || order.utm.campaign)) {
+      regLine += "<div class='session-row'><span>Zdroj registrácie</span><span>" + [order.utm.source, order.utm.medium, order.utm.campaign].filter(Boolean).join(" / ") + "</span></div>";
+    }
 
     if (!codeId) {
       detailBody.innerHTML = regLine + "<p class='hint' style='margin-top:1rem;'>Prístupový kód zatiaľ nebol vydaný.</p>";
@@ -880,7 +992,7 @@ window.addEventListener("load", function () {
           if (!isFirstSnapshot) {
             snap.docChanges().forEach((change) => {
               if (change.type === "added") {
-                playBeep();
+                if (generalSettingsCache.soundOnNewReg !== false) playBeep();
                 showNewRegToast(change.doc.data().name || "účastník");
               }
             });
@@ -896,6 +1008,7 @@ window.addEventListener("load", function () {
   async function renderOrders(snap) {
     const myToken = ++renderToken;
     const statusFilter = document.getElementById("filter-status").value;
+    const workshopFilter = document.getElementById("filter-workshop").value;
     const searchQuery = document.getElementById("search-input").value.trim().toLowerCase();
     const tbody = document.getElementById("orders-body");
     tbody.innerHTML = "";
@@ -914,16 +1027,29 @@ window.addEventListener("load", function () {
       if (order.createdAt && order.createdAt.toDate() >= todayStart) todayCount++;
 
       if (statusFilter && order.status !== statusFilter) continue;
-      const haystack = (order.name + " " + order.email).toLowerCase();
+      if (workshopFilter && order.workshopId !== workshopFilter) continue;
+      const haystack = (order.name + " " + order.email + " " + (order.adminNote || "")).toLowerCase();
       if (searchQuery && !haystack.includes(searchQuery)) continue;
 
-      let codeId = null, codeActive = true, timeSpentSec = 0, timeSpent = "—", progressPct = "—", quizCell = "—", quizPassed = null;
+      let codeId = null, codeActive = true, timeSpentSec = 0, timeSpent = "—", progressPct = "—", quizCell = "—", quizPassed = null, expiryBadge = "";
 
       try {
         const codeSnap = await db.collection("accessCodes").where("orderId", "==", doc.id).limit(1).get();
         if (!codeSnap.empty) {
           codeId = codeSnap.docs[0].id;
-          codeActive = codeSnap.docs[0].data().active !== false;
+          const codeDataRow = codeSnap.docs[0].data();
+          codeActive = codeDataRow.active !== false;
+          if (generalSettingsCache.codeValidityDays > 0 && codeDataRow.createdAt) {
+            const expiresAt = new Date(codeDataRow.createdAt.toDate().getTime() + generalSettingsCache.codeValidityDays * 24 * 3600 * 1000);
+            const daysLeft = Math.ceil((expiresAt.getTime() - now) / (24 * 3600 * 1000));
+            if (daysLeft < 0) {
+              expiryBadge = '<span class="chip warn" title="Kód vypršal ' + expiresAt.toLocaleDateString("sk-SK") + '">Kód vypršal</span>';
+            } else if (daysLeft <= 7) {
+              expiryBadge = '<span class="chip warn" title="Platný do ' + expiresAt.toLocaleDateString("sk-SK") + '">Vyprší o ' + daysLeft + ' dní</span>';
+            } else {
+              expiryBadge = '<span class="hint">platný do ' + expiresAt.toLocaleDateString("sk-SK") + '</span>';
+            }
+          }
           const sessionsSnap = await db.collection("sessions").where("codeId", "==", codeId).get();
           timeSpentSec = sessionsSnap.docs.reduce((sum, s) => sum + (s.data().durationSec || 0), 0);
           timeSpent = timeSpentSec > 0 ? Math.round(timeSpentSec / 60) + " min" : "0 min";
@@ -957,9 +1083,10 @@ window.addEventListener("load", function () {
         console.error("Nepodarilo sa načítať detail objednávky " + doc.id, err);
       }
 
-      const isStale = order.status === "pending_payment" && order.createdAt && (now - order.createdAt.toDate().getTime()) > 3 * 24 * 3600 * 1000;
+      const staleDays = generalSettingsCache.staleOrderDays || 3;
+      const isStale = order.status === "pending_payment" && order.createdAt && (now - order.createdAt.toDate().getTime()) > staleDays * 24 * 3600 * 1000;
 
-      rows.push({ doc, order, codeId, codeActive, timeSpentSec, timeSpent, progressPct, quizCell, quizPassed, isStale });
+      rows.push({ doc, order, codeId, codeActive, timeSpentSec, timeSpent, progressPct, quizCell, quizPassed, isStale, expiryBadge });
     }
 
     if (sortKey) {
@@ -975,11 +1102,12 @@ window.addEventListener("load", function () {
       });
     }
 
-    rows.forEach(({ doc, order, codeId, codeActive, timeSpent, progressPct, quizCell, isStale }) => {
+    rows.forEach(({ doc, order, codeId, codeActive, timeSpent, progressPct, quizCell, isStale, expiryBadge }) => {
       const statusChip =
-        order.status === "pending_payment"
+        (order.status === "pending_payment"
           ? '<span class="chip warn">Čaká na úhradu' + (isStale ? " · staré" : "") + "</span>"
-          : '<span class="chip good">Uhradené</span>';
+          : '<span class="chip good">Uhradené</span>') +
+        (expiryBadge ? "<br>" + expiryBadge : "");
 
       let actionCell = "";
       if (codeId) {
@@ -1087,6 +1215,9 @@ window.addEventListener("load", function () {
   document.getElementById("filter-status").addEventListener("change", () => {
     if (lastSnapshot) renderOrders(lastSnapshot);
   });
+  document.getElementById("filter-workshop").addEventListener("change", () => {
+    if (lastSnapshot) renderOrders(lastSnapshot);
+  });
   document.getElementById("search-input").addEventListener("input", () => {
     showSection("registracie");
     if (lastSnapshot) renderOrders(lastSnapshot);
@@ -1107,18 +1238,59 @@ window.addEventListener("load", function () {
   });
 
   document.getElementById("export-csv").addEventListener("click", async () => {
-    const snap = await db.collection("orders").orderBy("createdAt", "desc").get();
-    const rows = [["Meno", "E-mail", "Workshop", "Stav", "Suma"]];
-    snap.forEach((doc) => {
-      const o = doc.data();
-      rows.push([o.name, o.email, workshopTitle(o.workshopId), o.status, o.amount]);
-    });
-    const csv = rows.map((r) => r.map((v) => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "registracie.csv";
-    a.click();
+    const exportBtn = document.getElementById("export-csv");
+    exportBtn.disabled = true;
+    exportBtn.textContent = "Pripravujem export…";
+    try {
+      const snap = await db.collection("orders").orderBy("createdAt", "desc").get();
+      const rows = [[
+        "Kód", "Meno", "Priezvisko", "E-mail", "Workshop", "Stav", "Suma (€)", "Počet účastníkov",
+        "Dátum registrácie", "Dátum úhrady", "Čas strávený (min)", "Postup kurzu",
+        "Kvíz skóre", "Poznámka", "UTM zdroj", "UTM médium", "UTM kampaň",
+      ]];
+      for (const doc of snap.docs) {
+        const o = doc.data();
+        let codeId = "", timeSpentMin = 0, courseStr = "", quizStr = "";
+        try {
+          const codeSnap = await db.collection("accessCodes").where("orderId", "==", doc.id).limit(1).get();
+          if (!codeSnap.empty) {
+            codeId = codeSnap.docs[0].id;
+            const sessionsSnap = await db.collection("sessions").where("codeId", "==", codeId).get();
+            timeSpentMin = Math.round(sessionsSnap.docs.reduce((s, d) => s + (d.data().durationSec || 0), 0) / 60);
+            const progressSnap = await db.collection("progress").doc(codeId).get();
+            if (progressSnap.exists) {
+              const p = progressSnap.data();
+              const total = (window.COURSE_SLIDES && window.COURSE_SLIDES.length) || 35;
+              courseStr = Number.isInteger(p.courseIndex) ? (p.courseDone ? "dokončený" : (p.courseIndex + 1) + "/" + total) : "";
+            }
+            const quizSnap = await db.collection("quizResults").where("codeId", "==", codeId).orderBy("completedAt", "desc").limit(1).get();
+            if (!quizSnap.empty) {
+              const q = quizSnap.docs[0].data();
+              quizStr = q.score + "/" + q.total + (q.passed ? " (prešiel)" : " (neprešiel)");
+            }
+          }
+        } catch (err) {
+          console.error("Export: chyba pri načítaní detailu " + doc.id, err);
+        }
+        rows.push([
+          codeId, o.firstName || o.name || "", o.lastName || "", o.email, workshopTitle(o.workshopId), o.status, o.amount,
+          o.groupSize || 1,
+          o.createdAt ? o.createdAt.toDate().toLocaleString("sk-SK") : "",
+          o.paidAt ? o.paidAt.toDate().toLocaleString("sk-SK") : "",
+          timeSpentMin, courseStr, quizStr, o.adminNote || "",
+          (o.utm && o.utm.source) || "", (o.utm && o.utm.medium) || "", (o.utm && o.utm.campaign) || "",
+        ]);
+      }
+      const csv = rows.map((r) => r.map((v) => '"' + String(v ?? "").replace(/"/g, '""') + '"').join(",")).join("\n");
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "registracie.csv";
+      a.click();
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.textContent = "Export CSV";
+    }
   });
 
   auth.onAuthStateChanged(async (user) => {
@@ -1142,8 +1314,7 @@ window.addEventListener("load", function () {
     loadWorkshopSettings();
     loadFeedback();
     renderCourseSlideList();
-    loadGeneralSettings();
-    watchOrders();
+    loadGeneralSettings().then(watchOrders);
   });
 });
 </script>

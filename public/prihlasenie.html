@@ -75,6 +75,7 @@
       const result = await verifyCode({ name, code });
       await firebase.auth().signInWithCustomToken(result.data.token);
       sessionStorage.setItem("mbo_participant_name", result.data.participantName);
+      sessionStorage.setItem("mbo_participant_firstname", result.data.firstName || result.data.participantName);
       location.href = "workshop.html?w=" + encodeURIComponent(result.data.workshopId);
     } catch (err) {
       errorEl.textContent = "Meno alebo kód nesedí. Skontrolujte prosím veľké/malé písmená a skúste znova.";
