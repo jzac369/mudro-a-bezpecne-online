@@ -69,7 +69,7 @@
     errorEl.style.display = "none";
 
     try {
-      const verifyCode = firebase.functions().httpsCallable("verifyCode");
+      const verifyCode = firebase.app().functions("europe-west1").httpsCallable("verifyCode");
       const result = await verifyCode({ name, code });
       await firebase.auth().signInWithCustomToken(result.data.token);
       sessionStorage.setItem("mbo_participant_name", result.data.participantName);

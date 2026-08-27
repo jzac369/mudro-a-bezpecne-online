@@ -86,7 +86,7 @@
       errorEl.style.display = "none";
 
       try {
-        const createOrder = firebase.functions().httpsCallable("createOrder");
+        const createOrder = firebase.app().functions("europe-west1").httpsCallable("createOrder");
         const result = await createOrder({ name, email, workshopId });
         document.getElementById("pay-amount").textContent = workshop.priceLabel;
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;

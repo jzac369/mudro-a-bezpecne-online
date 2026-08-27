@@ -129,7 +129,7 @@ window.addEventListener("load", function () {
 
   document.getElementById("generate-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const generateCode = firebase.functions().httpsCallable("generateCode");
+    const generateCode = firebase.app().functions("europe-west1").httpsCallable("generateCode");
     const resultEl = document.getElementById("generate-result");
     try {
       const res = await generateCode({
@@ -215,7 +215,7 @@ window.addEventListener("load", function () {
         btn.disabled = true;
         btn.textContent = "Spracúvam…";
         try {
-          const markOrderPaid = firebase.functions().httpsCallable("markOrderPaid");
+          const markOrderPaid = firebase.app().functions("europe-west1").httpsCallable("markOrderPaid");
           await markOrderPaid({ orderId: btn.dataset.markPaid });
           loadOrders();
         } catch (err) {

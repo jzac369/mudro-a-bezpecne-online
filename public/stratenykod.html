@@ -48,7 +48,7 @@
   document.getElementById("resend-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = document.getElementById("email").value.trim();
-    const resendCode = firebase.functions().httpsCallable("resendCode");
+    const resendCode = firebase.app().functions("europe-west1").httpsCallable("resendCode");
     try { await resendCode({ email }); } catch (err) { /* zámerne mlčíme, viď funkcia resendCode */ }
     document.getElementById("resend-form").style.display = "none";
     document.getElementById("confirm").style.display = "block";
