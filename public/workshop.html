@@ -596,7 +596,7 @@ function renderBudgetExercise(ex) {
       clearTimeout(timeout);
       if (!res.ok) return {};
       const data = await res.json();
-      return { ip: data.ip || null, country: data.country_name || null };
+      return { ip: data.ip || null, country: data.country_name || null, city: data.city || null };
     } catch (err) {
       return {}; // best-effort — nikdy neblokuje prihlásenie
     }
@@ -612,6 +612,7 @@ function renderBudgetExercise(ex) {
       reason: null,
       ip: geo.ip || null,
       country: geo.country || null,
+      city: geo.city || null,
     });
     state.sessionRef = ref;
     state.sessionStart = Date.now();
