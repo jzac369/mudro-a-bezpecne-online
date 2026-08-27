@@ -40,8 +40,12 @@
   <div id="login-view" class="card" style="max-width:420px;">
     <h1>Prihlásenie administrátora</h1>
     <form id="admin-login-form">
-      <div class="field"><label for="a-email">E-mail</label><input type="email" id="a-email" required></div>
-      <div class="field"><label for="a-pass">Heslo</label><input type="password" id="a-pass" required></div>
+      <div class="field"><label for="a-email">E-mail</label><input type="email" id="a-email" required autocomplete="username"></div>
+      <div class="field"><label for="a-pass">Heslo</label><input type="password" id="a-pass" required autocomplete="current-password"></div>
+      <div class="field" style="display:flex;align-items:center;gap:.6rem;">
+        <input type="checkbox" id="a-remember" style="width:auto;" checked>
+        <label for="a-remember" style="margin:0;font-weight:400;">Zapamätať ma na tomto zariadení</label>
+      </div>
       <button class="btn btn-primary btn-block" type="submit">Prihlásiť sa</button>
       <p id="admin-login-error" class="hint" style="color:var(--warn);display:none;"></p>
     </form>
@@ -116,8 +120,12 @@ window.addEventListener("load", function () {
     e.preventDefault();
     const email = document.getElementById("a-email").value.trim();
     const pass = document.getElementById("a-pass").value;
+    const remember = document.getElementById("a-remember").checked;
     const errorEl = document.getElementById("admin-login-error");
     try {
+      await auth.setPersistence(
+        remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
+      );
       await auth.signInWithEmailAndPassword(email, pass);
     } catch (err) {
       errorEl.textContent = "Nesprávny e-mail alebo heslo.";
@@ -143,16 +151,35 @@ window.addEventListener("load", function () {
     }
   });
 
-  async function loadOrders() {
+  let unsubscribeOrders = null;
+  let lastSnapshot = null;
+  let renderToken = 0;
+
+  function watchOrders() {
+    if (unsubscribeOrders) unsubscribeOrders();
+    unsubscribeOrders = db
+      .collection("orders")
+      .orderBy("createdAt", "desc")
+      .limit(200)
+      .onSnapshot(
+        (snap) => {
+          lastSnapshot = snap;
+          renderOrders(snap);
+        },
+        (err) => console.error("Živé sledovanie registrácií zlyhalo:", err)
+      );
+  }
+
+  async function renderOrders(snap) {
+    const myToken = ++renderToken;
     const statusFilter = document.getElementById("filter-status").value;
-    let query = db.collection("orders").orderBy("createdAt", "desc").limit(200);
-    const snap = await query.get();
     const tbody = document.getElementById("orders-body");
     tbody.innerHTML = "";
 
     let paid = 0, revenue = 0, completed = 0;
 
     for (const doc of snap.docs) {
+      if (myToken !== renderToken) return; // novší snapshot medzitým prišiel, tento zahodíme
       const order = doc.data();
       if (statusFilter && order.status !== statusFilter) continue;
       if (order.status !== "pending_payment") { paid++; revenue += order.amount || 0; }
@@ -221,7 +248,7 @@ window.addEventListener("load", function () {
         try {
           const markOrderPaid = firebase.app().functions("europe-west1").httpsCallable("markOrderPaid");
           await markOrderPaid({ orderId: btn.dataset.markPaid });
-          loadOrders();
+          // Tabuľka sa aktualizuje sama vďaka živému sledovaniu (onSnapshot).
         } catch (err) {
           btn.disabled = false;
           btn.textContent = "Chyba, skúsiť znova";
@@ -230,7 +257,9 @@ window.addEventListener("load", function () {
     });
   }
 
-  document.getElementById("filter-status").addEventListener("change", loadOrders);
+  document.getElementById("filter-status").addEventListener("change", () => {
+    if (lastSnapshot) renderOrders(lastSnapshot);
+  });
 
   document.getElementById("export-csv").addEventListener("click", async () => {
     const snap = await db.collection("orders").orderBy("createdAt", "desc").get();
@@ -249,6 +278,8 @@ window.addEventListener("load", function () {
 
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
+      if (unsubscribeOrders) { unsubscribeOrders(); unsubscribeOrders = null; }
+      lastSnapshot = null;
       document.getElementById("login-view").style.display = "block";
       document.getElementById("dashboard-view").style.display = "none";
       document.getElementById("logout-btn").style.display = "none";
@@ -264,7 +295,7 @@ window.addEventListener("load", function () {
     document.getElementById("login-view").style.display = "none";
     document.getElementById("dashboard-view").style.display = "block";
     document.getElementById("logout-btn").style.display = "inline-flex";
-    loadOrders();
+    watchOrders();
   });
 });
 </script>
