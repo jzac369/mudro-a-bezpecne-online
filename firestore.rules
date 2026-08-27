@@ -18,6 +18,11 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.codeId == codeId;
     }
 
+    function isOwnChat(chatId) {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/chats/$(chatId)).data.visitorUid == request.auth.uid;
+    }
+
     match /workshops/{workshopId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -70,6 +75,29 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isOwnCode(request.resource.data.codeId);
       allow update, delete: if false;
+    }
+
+    // Živý chat "Potrebujem pomoc". Návštevník (aj anonymne prihlásený cez
+    // signInAnonymously) vidí a píše len do vlastnej konverzácie; admin vidí
+    // a odpovedá do všetkých.
+    match /chats/{chatId} {
+      allow read: if isAdmin() || (request.auth != null && resource.data.visitorUid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.visitorUid == request.auth.uid;
+      allow update: if isAdmin() || (request.auth != null && resource.data.visitorUid == request.auth.uid);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isAdmin() || isOwnChat(chatId);
+        allow create: if isAdmin() || isOwnChat(chatId);
+        allow update, delete: if false;
+      }
+    }
+
+    // Prítomnosť administrátora (online/offline) — verejne čitateľné, aby
+    // chat widget vedel rozhodnúť medzi živým chatom a "zanechajte správu".
+    match /presence/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

@@ -132,6 +132,26 @@
   }
   .course-slide-row.active .course-slide-num { background: var(--ink); color:#fff; }
   .course-slide-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chat-badge {
+    position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; padding:0 4px; border-radius:999px;
+    background:var(--warn); color:#fff; font-size:.68rem; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .chat-layout { display:grid; grid-template-columns:280px 1fr; gap:1.2rem; align-items:start; }
+  @media (max-width:900px) { .chat-layout { grid-template-columns:1fr; } }
+  .chat-conv-list { max-height:70vh; overflow-y:auto; }
+  .chat-conv-row {
+    display:block; width:100%; text-align:left; background:none; border:none; border-bottom:1px solid var(--line);
+    padding:.8rem .5rem; cursor:pointer; font:inherit;
+  }
+  .chat-conv-row:hover { background:var(--surface-2); }
+  .chat-conv-row.active { background:var(--accent-soft); }
+  .chat-conv-row .name { font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+  .chat-conv-row .preview { font-size:.85rem; color:var(--text-mute); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:.2rem; }
+  .chat-conv-row .meta { font-size:.75rem; color:var(--text-mute); margin-top:.2rem; }
+  .chat-thread-body { min-height:300px; max-height:55vh; overflow-y:auto; display:flex; flex-direction:column; gap:.6rem; padding:.5rem; }
+  .chat-thread-bubble { max-width:75%; padding:.6rem .9rem; border-radius:12px; font-size:.92rem; }
+  .chat-thread-bubble.visitor { align-self:flex-start; background:var(--surface-2); }
+  .chat-thread-bubble.admin { align-self:flex-end; background:var(--ink); color:#fff; }
 </style>
 </head>
 <body>
@@ -175,6 +195,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h7"/></svg>
         Obsah kurzu
       </button>
+      <button data-section="chat" type="button" style="position:relative;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v12H7l-3 3V4Z"/></svg>
+        Chat
+        <span id="chat-nav-badge" class="chat-badge" style="display:none;"></span>
+      </button>
       <button data-section="spatnavazba" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8Z"/></svg>
         Spätná väzba
@@ -190,6 +215,10 @@
     <div class="dash-topbar">
       <input type="search" id="search-input" placeholder="Hľadať účastníka, e-mail…">
       <div class="who">
+        <button type="button" id="topbar-chat-btn" class="btn btn-secondary" style="padding:.5rem .8rem;font-size:.85rem;position:relative;display:none;" title="Nová správa v chate">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:18px;height:18px;vertical-align:-3px;"><path d="M4 4h16v12H7l-3 3V4Z"/></svg>
+          <span id="topbar-chat-badge" class="chat-badge"></span>
+        </button>
         <span id="admin-email-label"></span>
         <button class="btn btn-secondary" id="logout-btn" style="padding:.5rem .9rem;font-size:.85rem;">Odhlásiť sa</button>
       </div>
@@ -336,6 +365,22 @@
           </div>
           <div class="card" id="course-editor-card">
             <p class="hint">Vyberte obrazovku vľavo.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="dash-section" data-section="chat">
+        <h1>Chat</h1>
+        <p class="hint" style="margin-bottom:1rem;">
+          Váš stav: <span id="presence-indicator" class="chip warn">zisťujem…</span>
+          <label style="display:inline-flex;align-items:center;gap:.4rem;font-weight:400;margin-left:1rem;"><input type="checkbox" id="chat-sound-toggle" style="width:auto;" checked> Zvuk pri novej správe</label>
+        </p>
+        <div class="chat-layout">
+          <div class="card chat-conv-list" id="chat-conv-list">
+            <p class="hint">Zatiaľ žiadne konverzácie.</p>
+          </div>
+          <div class="card" id="chat-thread-card">
+            <p class="hint">Vyberte konverzáciu vľavo.</p>
           </div>
         </div>
       </section>
@@ -801,6 +846,159 @@ window.addEventListener("load", function () {
 
   function escapeHtml(s) {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // ---------- Chat "Potrebujem pomoc" ----------
+  let presenceHeartbeat = null;
+  let activeChatId = null;
+  let unsubscribeChatList = null;
+  let unsubscribeThread = null;
+  let chatSoundEnabled = true;
+  let firstChatSnapshot = true;
+  const seenChatIds = new Set();
+
+  function startPresenceHeartbeat() {
+    const beat = () => db.collection("presence").doc("admin").set(
+      { online: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }
+    ).catch((err) => console.error("Nepodarilo sa aktualizovať prítomnosť:", err));
+    beat();
+    presenceHeartbeat = setInterval(beat, 30000);
+    document.getElementById("presence-indicator").textContent = "online";
+    document.getElementById("presence-indicator").className = "chip good";
+    window.addEventListener("beforeunload", () => {
+      navigator.sendBeacon && db.collection("presence").doc("admin").set({ online: false }, { merge: true });
+    });
+  }
+
+  function stopPresenceHeartbeat() {
+    if (presenceHeartbeat) clearInterval(presenceHeartbeat);
+    presenceHeartbeat = null;
+    if (db) db.collection("presence").doc("admin").set({ online: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
+  }
+
+  document.getElementById("chat-sound-toggle").addEventListener("change", (e) => {
+    chatSoundEnabled = e.target.checked;
+  });
+
+  function watchChats() {
+    if (unsubscribeChatList) unsubscribeChatList();
+    firstChatSnapshot = true;
+    unsubscribeChatList = db.collection("chats").orderBy("lastMessageAt", "desc").limit(100).onSnapshot(
+      (snap) => {
+        if (!firstChatSnapshot) {
+          snap.docChanges().forEach((change) => {
+            const c = change.doc.data();
+            const isNewIncoming = c.lastMessageBy === "visitor" && c.unreadByAdmin &&
+              (change.type === "added" || change.type === "modified") && !seenChatIds.has(change.doc.id + "_" + (c.lastMessageAt ? c.lastMessageAt.toMillis() : 0));
+            if (isNewIncoming) {
+              seenChatIds.add(change.doc.id + "_" + (c.lastMessageAt ? c.lastMessageAt.toMillis() : 0));
+              if (chatSoundEnabled) playBeep();
+              showNewRegToast("Nová správa v chate: " + c.visitorName);
+            }
+          });
+        }
+        firstChatSnapshot = false;
+        renderChatList(snap);
+      },
+      (err) => console.error("Sledovanie chatu zlyhalo:", err)
+    );
+  }
+
+  let lastChatSnapshot = null;
+  function renderChatList(snap) {
+    lastChatSnapshot = snap;
+    const list = document.getElementById("chat-conv-list");
+    list.innerHTML = "";
+    let unreadCount = 0;
+    if (snap.empty) {
+      list.innerHTML = "<p class='hint'>Zatiaľ žiadne konverzácie.</p>";
+    }
+    snap.forEach((doc) => {
+      const c = doc.data();
+      if (c.unreadByAdmin && c.lastMessageBy === "visitor") unreadCount++;
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "chat-conv-row" + (doc.id === activeChatId ? " active" : "");
+      const when = c.lastMessageAt ? c.lastMessageAt.toDate().toLocaleString("sk-SK") : "";
+      row.innerHTML =
+        "<div class='name'>" + escapeHtml(c.visitorName || "Návštevník") +
+        (c.unreadByAdmin && c.lastMessageBy === "visitor" ? "<span class='chip warn' style='font-size:.7rem;'>nové</span>" : "") + "</div>" +
+        "<div class='meta'>" + (c.status === "message_left" ? "zanechaná správa" : c.status === "closed" ? "zatvorené" : "otvorené") + " · " + when + "</div>";
+      row.addEventListener("click", () => openChatThread(doc.id, c));
+      list.appendChild(row);
+    });
+
+    const navBadge = document.getElementById("chat-nav-badge");
+    const topBadge = document.getElementById("topbar-chat-badge");
+    const topBtn = document.getElementById("topbar-chat-btn");
+    if (unreadCount > 0) {
+      navBadge.textContent = String(unreadCount);
+      navBadge.style.display = "flex";
+      topBadge.textContent = String(unreadCount);
+      topBtn.style.display = "inline-block";
+    } else {
+      navBadge.style.display = "none";
+      topBtn.style.display = "none";
+    }
+  }
+
+  document.getElementById("topbar-chat-btn").addEventListener("click", () => showSection("chat"));
+
+  async function openChatThread(chatId, chatData) {
+    activeChatId = chatId;
+    document.querySelectorAll(".chat-conv-row").forEach((r) => r.classList.remove("active"));
+    renderChatList(lastChatSnapshot || { forEach: () => {}, empty: true });
+
+    if (chatData.unreadByAdmin) {
+      db.collection("chats").doc(chatId).update({ unreadByAdmin: false }).catch(() => {});
+    }
+
+    const card = document.getElementById("chat-thread-card");
+    card.innerHTML =
+      "<h3>" + escapeHtml(chatData.visitorName || "Návštevník") + "</h3>" +
+      "<p class='hint' style='margin-bottom:.8rem;'>" + (chatData.visitorEmail ? escapeHtml(chatData.visitorEmail) + " · " : "") + "stránka: " + escapeHtml(chatData.page || "—") + (chatData.codeId ? " · kód: " + escapeHtml(chatData.codeId) : "") + "</p>" +
+      "<div class='chat-thread-body' id='chat-thread-body'></div>" +
+      "<div style='display:flex;gap:.5rem;margin-top:.8rem;'>" +
+      "<input type='text' id='chat-reply-input' placeholder='Napíšte odpoveď…' style='flex:1;'>" +
+      "<button class='btn btn-primary' id='chat-reply-send'>Odoslať</button>" +
+      "</div>" +
+      "<button class='btn btn-secondary' id='chat-close-btn' style='margin-top:.6rem;'>" + (chatData.status === "closed" ? "Znova otvoriť" : "Zavrieť konverzáciu") + "</button>";
+
+    const bodyEl = card.querySelector("#chat-thread-body");
+    if (unsubscribeThread) unsubscribeThread();
+    unsubscribeThread = db.collection("chats").doc(chatId).collection("messages").orderBy("createdAt", "asc").onSnapshot((msgsSnap) => {
+      bodyEl.innerHTML = "";
+      msgsSnap.forEach((m) => {
+        const msg = m.data();
+        const when = msg.createdAt ? msg.createdAt.toDate().toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" }) : "";
+        const b = document.createElement("div");
+        b.className = "chat-thread-bubble " + msg.sender;
+        b.innerHTML = escapeHtml(msg.text) + "<br><span style='opacity:.6;font-size:.72rem;'>" + when + "</span>";
+        bodyEl.appendChild(b);
+      });
+      bodyEl.scrollTop = bodyEl.scrollHeight;
+    });
+
+    const sendReply = async () => {
+      const input = card.querySelector("#chat-reply-input");
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = "";
+      await db.collection("chats").doc(chatId).collection("messages").add({
+        sender: "admin", text, createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      await db.collection("chats").doc(chatId).update({
+        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(), lastMessageBy: "admin", status: "open",
+      });
+    };
+    card.querySelector("#chat-reply-send").addEventListener("click", sendReply);
+    card.querySelector("#chat-reply-input").addEventListener("keydown", (e) => { if (e.key === "Enter") sendReply(); });
+    card.querySelector("#chat-close-btn").addEventListener("click", async () => {
+      const newStatus = chatData.status === "closed" ? "open" : "closed";
+      await db.collection("chats").doc(chatId).update({ status: newStatus });
+      chatData.status = newStatus;
+      openChatThread(chatId, chatData);
+    });
   }
 
   // ---------- Spätná väzba ----------
@@ -1352,6 +1550,9 @@ window.addEventListener("load", function () {
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       if (unsubscribeOrders) { unsubscribeOrders(); unsubscribeOrders = null; }
+      if (unsubscribeChatList) { unsubscribeChatList(); unsubscribeChatList = null; }
+      if (unsubscribeThread) { unsubscribeThread(); unsubscribeThread = null; }
+      stopPresenceHeartbeat();
       lastSnapshot = null;
       document.getElementById("login-view").style.display = "block";
       document.getElementById("dashboard-view").style.display = "none";
@@ -1371,6 +1572,8 @@ window.addEventListener("load", function () {
     loadFeedback();
     renderCourseSlideList();
     loadGeneralSettings().then(watchOrders);
+    startPresenceHeartbeat();
+    watchChats();
   });
 });
 </script>

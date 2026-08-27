@@ -3,6 +3,7 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
 
@@ -546,3 +547,38 @@ exports.runRemindersNow = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (requ
   }
   return await runReminderSweep();
 });
+
+/**
+ * Keď návštevník zanechá správu v chate a admin práve nie je online
+ * (status "message_left"), pošle e-mailové upozornenie administrátorovi
+ * na adresu nastavenú v settings/general.notifyEmail.
+ */
+exports.notifyOfflineChatMessage = onDocumentCreated(
+  { document: "chats/{chatId}", secrets: [EMAILJS_PRIVATE_KEY] },
+  async (event) => {
+    const chat = event.data.data();
+    if (chat.status !== "message_left") return;
+
+    const settings = await getSettings();
+    if (!settings.notifyEmail) return;
+
+    let firstMessage = "";
+    try {
+      const msgsSnap = await db.collection("chats").doc(event.params.chatId).collection("messages").orderBy("createdAt", "asc").limit(1).get();
+      if (!msgsSnap.empty) firstMessage = msgsSnap.docs[0].data().text || "";
+    } catch (err) {
+      console.error("Nepodarilo sa načítať prvú správu chatu:", err);
+    }
+
+    await sendCodeEmail({
+      to: settings.notifyEmail,
+      name: "Admin",
+      codes: [],
+      workshopId: null,
+      messageOverride:
+        "Nová správa v chate od " + chat.visitorName + (chat.visitorEmail ? " (" + chat.visitorEmail + ")" : "") +
+        ", stránka: " + (chat.page || "—") + ".\n\nSpráva: " + firstMessage +
+        "\n\nOdpovedať môžete priamo v admin zóne v sekcii Chat.",
+    });
+  }
+);
