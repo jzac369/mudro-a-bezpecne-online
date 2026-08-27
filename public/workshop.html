@@ -636,15 +636,25 @@ function renderBudgetExercise(ex) {
     }
   }
 
-  window.addEventListener("load", () => {
+  window.addEventListener("load", async () => {
     state.db = firebase.firestore();
     registerServiceWorker();
 
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) {
-        location.href = "prihlasenie.html";
-        return;
-      }
+    // Počkáme, kým Firebase obnovy session z IndexedDB — inak onAuthStateChanged
+    // hneď vystreľuje null a presmeruje pred tým, ako je stav obnovený.
+    await firebase.auth().authStateReady();
+    const user = firebase.auth().currentUser;
+    if (!user) {
+      location.href = "prihlasenie.html";
+      return;
+    }
+
+    // Sleduje reálne odhlásenie počas práce (napr. vypršanie tokenu).
+    firebase.auth().onAuthStateChanged((u) => {
+      if (!u) location.href = "prihlasenie.html";
+    });
+
+    (async () => {
       const tokenResult = await user.getIdTokenResult();
       state.codeId = tokenResult.claims.codeId;
       state.workshopId = new URLSearchParams(location.search).get("w") || tokenResult.claims.workshopId;
@@ -740,7 +750,7 @@ function renderBudgetExercise(ex) {
       await startSession();
       MBO.startInactivityWatch(doLogout);
       window.addEventListener("beforeunload", () => endSession("zatvorenie_okna"));
-    });
+    })();
   });
 })();
 </script>
