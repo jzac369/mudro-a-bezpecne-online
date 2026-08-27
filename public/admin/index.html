@@ -211,6 +211,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m20.8 8.6c0 5-8.8 10-8.8 10s-8.8-5-8.8-10a4.6 4.6 0 0 1 8.8-2 4.6 4.6 0 0 1 8.8 2Z"/></svg>
         Referencie
       </button>
+      <button data-section="zlavovekody" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.6 12.3 12.3 20.6a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.4A2 2 0 0 1 13 3h6a2 2 0 0 1 2 2v6a2 2 0 0 1-.4 1.3Z"/><circle cx="16.5" cy="7.5" r="1.5"/></svg>
+        Zľavové kódy
+      </button>
       <button data-section="spatnavazba" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8Z"/></svg>
         Spätná väzba
@@ -459,6 +463,108 @@
         </div>
       </section>
 
+      <section class="dash-section" data-section="zlavovekody">
+        <h1>Zľavové kódy</h1>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 id="dc-form-title">Vytvoriť zľavový kód</h2>
+          <form id="dc-form">
+            <input type="hidden" id="dc-original-code">
+            <div class="workshop-settings-grid">
+              <div class="field">
+                <label for="dc-code">Kód</label>
+                <div style="display:flex;gap:.5rem;">
+                  <input type="text" id="dc-code" required placeholder="napr. SENIOR20" style="text-transform:uppercase;">
+                  <button class="btn btn-secondary" type="button" id="dc-generate" style="white-space:nowrap;padding:.6rem .8rem;">Navrhnúť</button>
+                </div>
+              </div>
+              <div class="field">
+                <label for="dc-type">Typ zľavy</label>
+                <select id="dc-type">
+                  <option value="percent">Percentuálna (%)</option>
+                  <option value="fixed">Pevná suma (€)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="dc-value">Hodnota</label>
+                <input type="number" id="dc-value" min="0" required placeholder="napr. 20">
+              </div>
+              <div class="field">
+                <label for="dc-applies">Platí pre</label>
+                <select id="dc-applies">
+                  <option value="all">Všetky workshopy</option>
+                  <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
+                  <option value="zaciname-s-ai">Začíname s umelou inteligenciou</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="dc-maxuses">Max. počet použití</label>
+                <input type="number" id="dc-maxuses" min="0" value="0">
+                <p class="hint">0 = neobmedzené</p>
+              </div>
+              <div class="field">
+                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="dc-active" style="width:auto;" checked> Aktívny</label>
+              </div>
+              <div class="field">
+                <label for="dc-from">Platnosť od (nepovinné)</label>
+                <input type="date" id="dc-from">
+              </div>
+              <div class="field">
+                <label for="dc-until">Platnosť do (nepovinné)</label>
+                <input type="date" id="dc-until">
+              </div>
+              <div class="field">
+                <label for="dc-note">Interná poznámka (nepovinné)</label>
+                <input type="text" id="dc-note" placeholder="napr. jesenná kampaň na Facebooku">
+              </div>
+            </div>
+            <button class="btn btn-primary" type="submit" id="dc-submit-btn">Vytvoriť kód</button>
+            <button class="btn btn-secondary" type="button" id="dc-cancel-btn" style="display:none;">Zrušiť úpravu</button>
+            <p id="dc-result" class="hint" style="margin-top:.6rem;"></p>
+          </form>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.8rem;">Aktívne kódy</h2>
+          <div style="overflow-x:auto;">
+            <table class="dash">
+              <thead><tr><th>Kód</th><th>Zľava</th><th>Platí pre</th><th>Použitia</th><th>Platnosť</th><th>Poznámka</th><th>Akcia</th></tr></thead>
+              <tbody id="dc-active-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.8rem;">Neaktívne / vypršané kódy</h2>
+          <div style="overflow-x:auto;">
+            <table class="dash">
+              <thead><tr><th>Kód</th><th>Zľava</th><th>Platí pre</th><th>Použitia</th><th>Platnosť</th><th>Poznámka</th><th>Akcia</th></tr></thead>
+              <tbody id="dc-inactive-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Skupinová zľava</h2>
+          <p class="hint" style="margin-bottom:1rem;">Platí automaticky pri jednej objednávke s viacerými účastníkmi naraz — bez potreby zadávať kód.</p>
+          <form id="group-discount-form">
+            <div class="workshop-settings-grid">
+              <div class="field">
+                <label for="s-group-min">Skupinová zľava od počtu účastníkov</label>
+                <input type="number" id="s-group-min" min="0" value="0">
+                <p class="hint">0 = vypnuté.</p>
+              </div>
+              <div class="field">
+                <label for="s-group-percent">Skupinová zľava (%)</label>
+                <input type="number" id="s-group-percent" min="0" max="100" value="0">
+              </div>
+            </div>
+            <button class="btn btn-primary" type="submit">Uložiť skupinovú zľavu</button>
+            <p id="group-discount-result" class="hint" style="margin-top:.6rem;"></p>
+          </form>
+        </div>
+      </section>
+
       <section class="dash-section" data-section="spatnavazba">
         <h1>Spätná väzba</h1>
         <div class="grid-2" style="margin-bottom:1.5rem;">
@@ -498,26 +604,6 @@
                 <label for="s-maxlogins">Max. počet prihlásení na jeden kód</label>
                 <input type="number" id="s-maxlogins" min="0" value="0">
                 <p class="hint">0 = neobmedzené. Zabráni zdieľaniu jedného kódu medzi viacerými ľuďmi.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-bottom:1.5rem;">
-            <h2>Ceny a zľavy</h2>
-            <div class="workshop-settings-grid" style="margin-top:1rem;">
-              <div class="field">
-                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-coupon-active" style="width:auto;"> Zapnúť zľavový kupón</label>
-                <label for="s-coupon-code" style="margin-top:.6rem;">Kód kupónu</label>
-                <input type="text" id="s-coupon-code" placeholder="napr. SENIOR20" style="text-transform:uppercase;">
-                <label for="s-coupon-percent" style="margin-top:.6rem;">Zľava (%)</label>
-                <input type="number" id="s-coupon-percent" min="0" max="100" value="0">
-              </div>
-              <div class="field">
-                <label for="s-group-min">Skupinová zľava od počtu účastníkov</label>
-                <input type="number" id="s-group-min" min="0" value="0">
-                <p class="hint">0 = vypnuté. Platí pre jednu objednávku s viacerými účastníkmi naraz.</p>
-                <label for="s-group-percent" style="margin-top:.6rem;">Skupinová zľava (%)</label>
-                <input type="number" id="s-group-percent" min="0" max="100" value="0">
               </div>
             </div>
           </div>
@@ -701,11 +787,6 @@ window.addEventListener("load", function () {
       document.getElementById("s-inactivity").value = data.inactivityMinutes || 5;
       document.getElementById("s-validity").value = data.codeValidityDays ?? 90;
       document.getElementById("s-maxlogins").value = data.maxLoginsPerCode ?? 0;
-      document.getElementById("s-coupon-active").checked = !!data.couponActive;
-      document.getElementById("s-coupon-code").value = data.couponCode || "";
-      document.getElementById("s-coupon-percent").value = data.couponPercent ?? 0;
-      document.getElementById("s-group-min").value = data.groupDiscountMinSize ?? 0;
-      document.getElementById("s-group-percent").value = data.groupDiscountPercent ?? 0;
       document.getElementById("s-sound").checked = data.soundOnNewReg !== false;
       document.getElementById("s-stale-days").value = data.staleOrderDays ?? 3;
       document.getElementById("s-maintenance").checked = !!data.maintenanceMode;
@@ -728,11 +809,6 @@ window.addEventListener("load", function () {
       inactivityMinutes: Number(document.getElementById("s-inactivity").value) || 5,
       codeValidityDays: Number(document.getElementById("s-validity").value) || 0,
       maxLoginsPerCode: Number(document.getElementById("s-maxlogins").value) || 0,
-      couponActive: document.getElementById("s-coupon-active").checked,
-      couponCode: document.getElementById("s-coupon-code").value.trim().toUpperCase(),
-      couponPercent: Number(document.getElementById("s-coupon-percent").value) || 0,
-      groupDiscountMinSize: Number(document.getElementById("s-group-min").value) || 0,
-      groupDiscountPercent: Number(document.getElementById("s-group-percent").value) || 0,
       soundOnNewReg: document.getElementById("s-sound").checked,
       staleOrderDays: Number(document.getElementById("s-stale-days").value) || 3,
       maintenanceMode: document.getElementById("s-maintenance").checked,
@@ -1243,6 +1319,181 @@ window.addEventListener("load", function () {
     } catch (err) {
       tbody.innerHTML = "<tr><td colspan='7' class='hint'>Zoznam sa nepodarilo načítať.</td></tr>";
       console.error(err);
+    }
+  }
+
+  // ---------- Zľavové kódy ----------
+  const WORKSHOP_LABELS_DC = { all: "Všetky workshopy", "bezpecne-financie": "Ako nenaletieť podvodníkom", "zaciname-s-ai": "Začíname s umelou inteligenciou" };
+
+  document.getElementById("dc-generate").addEventListener("click", () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    document.getElementById("dc-code").value = code;
+  });
+
+  function dcStatus(c) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (!c.active) return { label: "Neaktívny", chip: "warn", isActive: false };
+    if (c.validUntil && today > c.validUntil) return { label: "Vypršal", chip: "warn", isActive: false };
+    if (c.validFrom && today < c.validFrom) return { label: "Ešte neplatí", chip: "warn", isActive: false };
+    if (c.maxUses > 0 && (c.usedCount || 0) >= c.maxUses) return { label: "Vyčerpaný", chip: "warn", isActive: false };
+    return { label: "Aktívny", chip: "good", isActive: true };
+  }
+
+  async function loadDiscountCodes() {
+    const activeBody = document.getElementById("dc-active-body");
+    const inactiveBody = document.getElementById("dc-inactive-body");
+    activeBody.innerHTML = "<tr><td colspan='7' class='hint'>Načítavam…</td></tr>";
+    inactiveBody.innerHTML = "";
+    try {
+      const snap = await db.collection("discountCodes").get();
+      const rows = [];
+      snap.forEach((doc) => rows.push({ id: doc.id, data: doc.data() }));
+      rows.sort((a, b) => a.id.localeCompare(b.id));
+
+      activeBody.innerHTML = "";
+      inactiveBody.innerHTML = "";
+      let activeCount = 0, inactiveCount = 0;
+
+      rows.forEach(({ id, data: c }) => {
+        const st = dcStatus(c);
+        const valueLabel = c.type === "fixed" ? c.value + " €" : c.value + " %";
+        const usesLabel = (c.usedCount || 0) + (c.maxUses > 0 ? " / " + c.maxUses : " (neobmedzené)");
+        const validLabel = [c.validFrom, c.validUntil].filter(Boolean).length
+          ? (c.validFrom || "…") + " – " + (c.validUntil || "…")
+          : "bez obmedzenia";
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td><span class='mono'>" + escapeHtml(id) + "</span></td>" +
+          "<td>" + valueLabel + " <span class='chip " + st.chip + "' style='font-size:.7rem;'>" + st.label + "</span></td>" +
+          "<td>" + (WORKSHOP_LABELS_DC[c.appliesTo] || "Všetky workshopy") + "</td>" +
+          "<td>" + usesLabel + "</td>" +
+          "<td>" + validLabel + "</td>" +
+          "<td>" + escapeHtml(c.note || "—") + "</td>" +
+          "<td class='row-actions'>" +
+          "<button class='btn btn-secondary' data-dc-edit='" + id + "'>Upraviť</button>" +
+          "<button class='btn btn-secondary' data-dc-toggle='" + id + "' data-active='" + c.active + "'>" + (c.active ? "Deaktivovať" : "Aktivovať") + "</button>" +
+          "<button class='btn btn-secondary' data-dc-delete='" + id + "'>Vymazať</button>" +
+          "</td>";
+        if (st.isActive) { activeBody.appendChild(tr); activeCount++; }
+        else { inactiveBody.appendChild(tr); inactiveCount++; }
+      });
+
+      if (activeCount === 0) activeBody.innerHTML = "<tr><td colspan='7' class='hint'>Žiadne aktívne kódy.</td></tr>";
+      if (inactiveCount === 0) inactiveBody.innerHTML = "<tr><td colspan='7' class='hint'>Žiadne neaktívne/vypršané kódy.</td></tr>";
+
+      document.querySelectorAll("[data-dc-edit]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const snap = await db.collection("discountCodes").doc(btn.dataset.dcEdit).get();
+          if (!snap.exists) return;
+          const c = snap.data();
+          document.getElementById("dc-original-code").value = snap.id;
+          document.getElementById("dc-code").value = snap.id;
+          document.getElementById("dc-code").disabled = true;
+          document.getElementById("dc-type").value = c.type || "percent";
+          document.getElementById("dc-value").value = c.value ?? 0;
+          document.getElementById("dc-applies").value = c.appliesTo || "all";
+          document.getElementById("dc-maxuses").value = c.maxUses ?? 0;
+          document.getElementById("dc-active").checked = c.active !== false;
+          document.getElementById("dc-from").value = c.validFrom || "";
+          document.getElementById("dc-until").value = c.validUntil || "";
+          document.getElementById("dc-note").value = c.note || "";
+          document.getElementById("dc-form-title").textContent = "Upraviť kód " + snap.id;
+          document.getElementById("dc-submit-btn").textContent = "Uložiť zmeny";
+          document.getElementById("dc-cancel-btn").style.display = "inline-block";
+          document.getElementById("dc-form").scrollIntoView({ behavior: "smooth" });
+        });
+      });
+      document.querySelectorAll("[data-dc-toggle]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await db.collection("discountCodes").doc(btn.dataset.dcToggle).set({ active: btn.dataset.active !== "true" }, { merge: true });
+          loadDiscountCodes();
+        });
+      });
+      document.querySelectorAll("[data-dc-delete]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Naozaj natrvalo vymazať kód " + btn.dataset.dcDelete + "?")) return;
+          await db.collection("discountCodes").doc(btn.dataset.dcDelete).delete();
+          loadDiscountCodes();
+        });
+      });
+    } catch (err) {
+      activeBody.innerHTML = "<tr><td colspan='7' class='hint'>Zoznam sa nepodarilo načítať.</td></tr>";
+      console.error(err);
+    }
+  }
+
+  function resetDcForm() {
+    document.getElementById("dc-form").reset();
+    document.getElementById("dc-original-code").value = "";
+    document.getElementById("dc-code").disabled = false;
+    document.getElementById("dc-active").checked = true;
+    document.getElementById("dc-form-title").textContent = "Vytvoriť zľavový kód";
+    document.getElementById("dc-submit-btn").textContent = "Vytvoriť kód";
+    document.getElementById("dc-cancel-btn").style.display = "none";
+  }
+  document.getElementById("dc-cancel-btn").addEventListener("click", resetDcForm);
+
+  document.getElementById("dc-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const resultEl = document.getElementById("dc-result");
+    const originalCode = document.getElementById("dc-original-code").value;
+    const code = document.getElementById("dc-code").value.trim().toUpperCase();
+    if (!code) { resultEl.textContent = "Zadajte kód."; return; }
+    const data = {
+      type: document.getElementById("dc-type").value,
+      value: Number(document.getElementById("dc-value").value) || 0,
+      appliesTo: document.getElementById("dc-applies").value,
+      maxUses: Number(document.getElementById("dc-maxuses").value) || 0,
+      active: document.getElementById("dc-active").checked,
+      validFrom: document.getElementById("dc-from").value || null,
+      validUntil: document.getElementById("dc-until").value || null,
+      note: document.getElementById("dc-note").value.trim(),
+    };
+    try {
+      if (originalCode) {
+        await db.collection("discountCodes").doc(originalCode).set(data, { merge: true });
+      } else {
+        const existing = await db.collection("discountCodes").doc(code).get();
+        if (existing.exists) {
+          resultEl.textContent = "Kód " + code + " už existuje — použite iný, alebo ho upravte v zozname.";
+          return;
+        }
+        data.usedCount = 0;
+        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        await db.collection("discountCodes").doc(code).set(data);
+      }
+      resultEl.textContent = "Uložené ✓";
+      resetDcForm();
+      loadDiscountCodes();
+    } catch (err) {
+      resultEl.textContent = "Chyba: " + err.message;
+    }
+  });
+
+  document.getElementById("group-discount-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const resultEl = document.getElementById("group-discount-result");
+    try {
+      await db.collection("settings").doc("general").set({
+        groupDiscountMinSize: Number(document.getElementById("s-group-min").value) || 0,
+        groupDiscountPercent: Number(document.getElementById("s-group-percent").value) || 0,
+      }, { merge: true });
+      resultEl.textContent = "Uložené ✓";
+    } catch (err) {
+      resultEl.textContent = "Chyba: " + err.message;
+    }
+  });
+
+  async function loadGroupDiscount() {
+    try {
+      const snap = await db.collection("settings").doc("general").get();
+      const data = snap.exists ? snap.data() : {};
+      document.getElementById("s-group-min").value = data.groupDiscountMinSize ?? 0;
+      document.getElementById("s-group-percent").value = data.groupDiscountPercent ?? 0;
+    } catch (err) {
+      console.error("Nepodarilo sa načítať skupinovú zľavu:", err);
     }
   }
 
@@ -1913,6 +2164,8 @@ window.addEventListener("load", function () {
     loadConsultationSettings();
     loadConsultationBookings();
     loadTestimonials();
+    loadDiscountCodes();
+    loadGroupDiscount();
   });
 });
 </script>

@@ -24,9 +24,6 @@ const DEFAULT_SETTINGS = {
   inactivityMinutes: 5,
   codeValidityDays: 90,
   maxLoginsPerCode: 0, // 0 = neobmedzené
-  couponCode: "",
-  couponPercent: 0,
-  couponActive: false,
   groupDiscountMinSize: 0, // 0 = vypnuté
   groupDiscountPercent: 0,
   staleOrderDays: 3,
@@ -157,12 +154,38 @@ exports.createOrder = onCall(async (request) => {
 
   let amount = Math.round(unitPrice * groupSize * 100) / 100;
 
-  // Zľavový kupón (percentuálny, na celkovú sumu).
+  // Zľavový kód — overí sa a jeho použitie sa započíta atomicky (transakcia
+  // chráni pred súbežným prekročením limitu maxUses pri viacerých objednávkach naraz).
   let couponApplied = null;
-  if (couponCode && settings.couponActive && settings.couponCode &&
-      String(couponCode).trim().toUpperCase() === String(settings.couponCode).trim().toUpperCase()) {
-    amount = Math.round(amount * (1 - settings.couponPercent / 100) * 100) / 100;
-    couponApplied = settings.couponCode;
+  if (couponCode) {
+    const codeId = String(couponCode).trim().toUpperCase();
+    if (codeId) {
+      try {
+        const codeRef = db.collection("discountCodes").doc(codeId);
+        const discountAmount = await db.runTransaction(async (tx) => {
+          const codeSnap = await tx.get(codeRef);
+          if (!codeSnap.exists) return 0;
+          const c = codeSnap.data();
+          if (!c.active) return 0;
+          const today = new Date().toISOString().slice(0, 10);
+          if (c.validFrom && today < c.validFrom) return 0;
+          if (c.validUntil && today > c.validUntil) return 0;
+          if (c.appliesTo && c.appliesTo !== "all" && c.appliesTo !== workshopId) return 0;
+          if (c.maxUses > 0 && (c.usedCount || 0) >= c.maxUses) return 0;
+
+          const raw = c.type === "fixed" ? Number(c.value) : amount * (Number(c.value) / 100);
+          const discount = Math.round(Math.min(Math.max(raw, 0), amount) * 100) / 100;
+          tx.update(codeRef, { usedCount: FieldValue.increment(1) });
+          return discount;
+        });
+        if (discountAmount > 0) {
+          amount = Math.round((amount - discountAmount) * 100) / 100;
+          couponApplied = codeId;
+        }
+      } catch (err) {
+        console.error("Overenie zľavového kódu zlyhalo:", err);
+      }
+    }
   }
 
   const orderRef = db.collection("orders").doc();

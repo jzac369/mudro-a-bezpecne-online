@@ -113,5 +113,13 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false;
     }
+
+    // Zľavové kódy — spravuje administrátor priamo z admin zóny; overovanie
+    // a započítanie použitia (usedCount) pri objednávke robí createOrder
+    // cez Admin SDK, ktorý tieto pravidlá obchádza.
+    match /discountCodes/{code} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
   }
 }
