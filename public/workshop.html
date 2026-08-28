@@ -576,7 +576,8 @@ function renderBudgetExercise(ex) {
     async function submitQuiz() {
       const total = allQuestions.length;
       const correct = allQuestions.filter((q, i) => state.quizAnswers[i] === q.correctIndex).length;
-      const passed = correct >= Math.min(state.workshop.quiz.passScore, total);
+      const passThreshold = Math.max(Math.ceil(total * 0.8), Math.min(state.workshop.quiz.passScore, total));
+      const passed = correct >= passThreshold;
       const wrongIndexes = allQuestions.map((q, i) => i).filter((i) => state.quizAnswers[i] !== allQuestions[i].correctIndex);
       const resultEl = document.getElementById("quiz-result");
 
