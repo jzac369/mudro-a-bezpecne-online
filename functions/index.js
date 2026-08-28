@@ -1099,6 +1099,35 @@ async function sendDocumentLinkEmail({ to, name, docLabel, docNumber, url, extra
   }
 }
 
+// Náhľad faktúry/POZ pred odoslaním — rovnaký vzhľad, ale s dočasným číslom
+// "NÁHĽAD" a bez zápisu do denného počítadla, aby si prezretie nespotrebovalo
+// skutočné poradové číslo dokumentu.
+exports.previewDocumentPdf = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže zobraziť náhľad dokumentu.");
+  }
+  const { orderId, docType } = request.data || {};
+  if (!orderId || (docType !== "invoice" && docType !== "poz")) {
+    throw new HttpsError("invalid-argument", "Chýba orderId alebo neplatný docType.");
+  }
+
+  const orderSnap = await db.collection("orders").doc(orderId).get();
+  if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
+  const order = orderSnap.data();
+
+  const settingsSnap = await db.collection("settings").doc("general").get();
+  const s = settingsSnap.exists ? settingsSnap.data() : {};
+
+  const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
+  order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
+
+  const buffer = docType === "invoice"
+    ? await pdfToBuffer((doc) => drawInvoicePdf(doc, { s, order, invoiceNumber: "NÁHĽAD" }))
+    : await pdfToBuffer((doc) => drawPozPdf(doc, { s, order, pozNumber: "NÁHĽAD" }));
+
+  return { pdfBase64: buffer.toString("base64") };
+});
+
 exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže odosielať faktúry.");

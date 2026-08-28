@@ -767,8 +767,7 @@
             <p id="reminders-result" class="hint" style="margin-top:.6rem;"></p>
           </div>
 
-          <button class="btn btn-primary" type="submit">Uložiť všetky nastavenia</button>
-          <p id="settings-result" class="hint" style="margin-top:1rem;"></p>
+          <p class="hint">Zmeny sa ukladajú automaticky. <span id="settings-result" style="font-weight:700;"></span></p>
         </form>
 
         <div class="card" style="margin-top:1.5rem;">
@@ -794,8 +793,7 @@
             </div>
             <h3 style="margin:1.2rem 0 .6rem;">Týždenná dostupnosť</h3>
             <div id="availability-grid"></div>
-            <button class="btn btn-primary" type="submit" style="margin-top:1rem;">Uložiť nastavenia konzultácií</button>
-            <p id="consult-settings-result" class="hint" style="margin-top:.6rem;"></p>
+            <p class="hint" style="margin-top:1rem;">Zmeny sa ukladajú automaticky. <span id="consult-settings-result" style="font-weight:700;"></span></p>
           </form>
         </div>
 
@@ -958,10 +956,8 @@ window.addEventListener("load", function () {
     }
   }
 
-  document.getElementById("settings-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const resultEl = document.getElementById("settings-result");
-    const patch = {
+  function buildSettingsPatch() {
+    return {
       inactivityMinutes: Number(document.getElementById("s-inactivity").value) || 5,
       codeValidityDays: Number(document.getElementById("s-validity").value) || 0,
       maxLoginsPerCode: Number(document.getElementById("s-maxlogins").value) || 0,
@@ -984,14 +980,44 @@ window.addEventListener("load", function () {
       staleOrderEmailEnabled: document.getElementById("s-remind-stale").checked,
       notifyEmail: document.getElementById("s-notify-email").value.trim(),
     };
-    try {
-      await db.collection("settings").doc("general").set(patch, { merge: true });
-      generalSettingsCache = patch;
-      resultEl.textContent = "Uložené ✓";
-    } catch (err) {
-      resultEl.textContent = "Chyba: " + err.message;
+  }
+
+  // Automatické ukladanie — žiadne tlačidlo "Uložiť" netreba, zmena sa uloží
+  // hneď (checkbox/select) alebo krátko po dopísaní (text/číslo).
+  function wireAutoSave(form, buildPatch, resultElId, docPath, onSaved) {
+    const resultEl = document.getElementById(resultElId);
+    let saveTimer = null;
+    let flashTimer = null;
+    async function doSave() {
+      const patch = buildPatch();
+      try {
+        await db.collection("settings").doc(docPath).set(patch, { merge: true });
+        if (onSaved) onSaved(patch);
+        resultEl.textContent = "Uložené ✓";
+        resultEl.style.color = "";
+      } catch (err) {
+        resultEl.textContent = "Chyba: " + err.message;
+        resultEl.style.color = "var(--warn)";
+        return;
+      }
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => { if (resultEl.textContent === "Uložené ✓") resultEl.textContent = ""; }, 2500);
     }
-  });
+    form.addEventListener("submit", (e) => e.preventDefault());
+    form.addEventListener("change", (e) => {
+      if (e.target.closest("[data-no-autosave]")) return;
+      doSave();
+    });
+    form.addEventListener("input", (e) => {
+      if (e.target.closest("[data-no-autosave]")) return;
+      if (e.target.tagName === "SELECT" || e.target.type === "checkbox" || e.target.type === "date") return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(doSave, 800);
+    });
+  }
+
+  wireAutoSave(document.getElementById("settings-form"), buildSettingsPatch, "settings-result", "general",
+    (patch) => { generalSettingsCache = Object.assign({}, generalSettingsCache, patch); });
 
   document.getElementById("load-suspicious-activity").addEventListener("click", async () => {
     const body = document.getElementById("suspicious-activity-body");
@@ -1424,23 +1450,16 @@ window.addEventListener("load", function () {
     }
   }
 
-  document.getElementById("consult-settings-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const resultEl = document.getElementById("consult-settings-result");
-    const patch = {
+  function buildConsultSettingsPatch() {
+    return {
       enabled: document.getElementById("k-enabled").checked,
       price30: Number(document.getElementById("k-price30").value) || 0,
       price60: Number(document.getElementById("k-price60").value) || 0,
       meetingLink: document.getElementById("k-link").value.trim(),
       availability: readAvailabilityGrid(),
     };
-    try {
-      await db.collection("settings").doc("consultations").set(patch, { merge: true });
-      resultEl.textContent = "Uložené ✓";
-    } catch (err) {
-      resultEl.textContent = "Chyba: " + err.message;
-    }
-  });
+  }
+  wireAutoSave(document.getElementById("consult-settings-form"), buildConsultSettingsPatch, "consult-settings-result", "consultations");
 
   async function loadConsultationBookings() {
     const tbody = document.getElementById("consultations-body");
@@ -2497,11 +2516,13 @@ window.addEventListener("load", function () {
       if (sendInvoiceBtn) {
         sendInvoiceBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          showConfirmModal({
+          showDocumentSendModal({
             title: "Poslať faktúru?",
-            message: "Na e-mail <strong>" + escapeHtml(order.email) + "</strong> sa odošle faktúra vo formáte PDF (na stiahnutie odkazom v e-maile). Naozaj chcete pokračovať?",
+            docType: "invoice",
+            orderId: doc.id,
+            message: "Na e-mail <strong>" + escapeHtml(order.email) + "</strong> sa odošle faktúra vo formáte PDF (na stiahnutie odkazom v e-maile).",
             confirmLabel: "Áno, poslať faktúru",
-            onConfirm: async () => {
+            sendFn: async () => {
               const sendInvoiceEmail = functions.httpsCallable("sendInvoiceEmail");
               await sendInvoiceEmail({ orderId: doc.id });
             },
@@ -2512,11 +2533,13 @@ window.addEventListener("load", function () {
       if (sendPozBtn) {
         sendPozBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          showConfirmModal({
+          showDocumentSendModal({
             title: "Poslať potvrdenie o zaplatení?",
-            message: "Na e-mail <strong>" + escapeHtml(order.email) + "</strong> sa odošle potvrdenie o zaplatení (POZ) vo formáte PDF. Naozaj chcete pokračovať?",
+            docType: "poz",
+            orderId: doc.id,
+            message: "Na e-mail <strong>" + escapeHtml(order.email) + "</strong> sa odošle potvrdenie o zaplatení (POZ) vo formáte PDF.",
             confirmLabel: "Áno, poslať POZ",
-            onConfirm: async () => {
+            sendFn: async () => {
               const sendPaymentConfirmationEmail = functions.httpsCallable("sendPaymentConfirmationEmail");
               await sendPaymentConfirmationEmail({ orderId: doc.id });
             },
@@ -2724,6 +2747,64 @@ window.addEventListener("load", function () {
       btn.textContent = "Odosielam…";
       try {
         await onConfirm();
+        overlay.remove();
+      } catch (err) {
+        errorEl.textContent = "Zlyhalo: " + err.message;
+        errorEl.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+  }
+
+  // Potvrdzovacie okno pre odoslanie faktúry/POZ — najprv ukáže náhľad PDF
+  // (bez spotrebovania skutočného čísla dokumentu), až po kliknutí sa
+  // dokument reálne očísluje, uloží a e-mailom odošle.
+  function showDocumentSendModal({ title, message, confirmLabel, docType, orderId, sendFn }) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML =
+      "<div class='modal-box' style='max-width:640px;'><button class='modal-close' data-close>&times;</button>" +
+      "<h2>" + escapeHtml(title) + "</h2>" +
+      "<p class='hint'>" + message + "</p>" +
+      "<div id='doc-preview-wrap' style='margin:1rem 0;min-height:200px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border-radius:10px;'>" +
+      "<p class='hint'>Pripravujem náhľad…</p>" +
+      "</div>" +
+      "<button class='btn btn-primary btn-block' type='button' id='confirm-modal-yes' disabled>" + escapeHtml(confirmLabel) + "</button>" +
+      "<button class='btn btn-secondary btn-block' type='button' style='margin-top:.6rem;' data-close>Zrušiť</button>" +
+      "<p id='confirm-modal-error' class='hint' style='color:var(--warn);display:none;margin-top:.6rem;'></p>" +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay || e.target.hasAttribute("data-close")) overlay.remove();
+    });
+
+    const yesBtn = overlay.querySelector("#confirm-modal-yes");
+    const previewWrap = overlay.querySelector("#doc-preview-wrap");
+
+    (async () => {
+      try {
+        const previewDocumentPdf = functions.httpsCallable("previewDocumentPdf");
+        const result = await previewDocumentPdf({ orderId, docType });
+        if (!overlay.isConnected) return; // medzičasom zavreté
+        previewWrap.innerHTML =
+          "<iframe src='data:application/pdf;base64," + result.data.pdfBase64 +
+          "' style='width:100%;height:480px;border:1px solid var(--line);border-radius:10px;'></iframe>";
+        yesBtn.disabled = false;
+      } catch (err) {
+        previewWrap.innerHTML = "<p class='hint' style='color:var(--warn);'>Náhľad sa nepodarilo pripraviť: " + escapeHtml(err.message) + "</p>";
+      }
+    })();
+
+    yesBtn.addEventListener("click", async (e) => {
+      const btn = e.target;
+      const errorEl = overlay.querySelector("#confirm-modal-error");
+      errorEl.style.display = "none";
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = "Odosielam…";
+      try {
+        await sendFn();
         overlay.remove();
       } catch (err) {
         errorEl.textContent = "Zlyhalo: " + err.message;
