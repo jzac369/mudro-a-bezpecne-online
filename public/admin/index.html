@@ -152,6 +152,7 @@
     opacity:0; transform:translateY(-10px); transition:opacity .25s ease, transform .25s ease; pointer-events:none;
   }
   .new-reg-toast.show { opacity:1; transform:translateY(0); }
+  @keyframes pulse-dot { 0%, 100% { opacity:1; } 50% { opacity:.35; } }
   .course-slide-row {
     display:flex; align-items:center; gap:.6rem; width:100%; text-align:left; background:none; border:none;
     border-radius:8px; padding:.55rem .6rem; cursor:pointer; font:inherit; font-size:.88rem; color:var(--text);
@@ -300,15 +301,17 @@
       <section class="dash-section" data-section="prehlad">
         <h1>Prehľad</h1>
 
-        <div class="grid-2" style="margin-bottom:1.5rem;">
-          <div class="card">
-            <h2 style="margin-bottom:.6rem;">Aktivita systému</h2>
-            <div id="activity-ticker" style="min-height:1.4em;font-size:.95rem;color:var(--ink-soft);"></div>
+        <div class="card" style="margin-bottom:1.5rem;border-left:4px solid var(--accent);display:flex;align-items:center;gap:.8rem;">
+          <span style="width:9px;height:9px;border-radius:50%;background:var(--good);flex:none;animation:pulse-dot 1.6s infinite;"></span>
+          <div style="flex:1;min-width:0;">
+            <div class="hint" style="font-weight:700;text-transform:uppercase;font-size:.72rem;letter-spacing:.04em;margin-bottom:.2rem;">Aktivita systému naživo</div>
+            <div id="activity-ticker" style="min-height:1.4em;font-size:.95rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
           </div>
-          <div class="card">
-            <h2 style="margin-bottom:.6rem;">Firebase Storage</h2>
-            <div id="storage-status" class="hint">Načítavam…</div>
-          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.6rem;">Firebase Storage</h2>
+          <div id="storage-status" class="hint">Načítavam…</div>
         </div>
 
         <div class="summary-grid">
@@ -1306,16 +1309,16 @@ window.addEventListener("load", function () {
         '<label>Brožúrka (PDF)</label>' +
         '<input type="file" accept=".pdf" data-brochure-file="' + id + '">' +
         '<button class="btn btn-secondary" type="button" data-brochure-upload="' + id + '" style="margin-top:.5rem;">Nahrať brožúrku</button> ' +
-        (data.brochureUrl ? '<a href="' + data.brochureUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a>' : "") +
-        '<p class="hint" data-brochure-status="' + id + '" style="margin-top:.5rem;">' + (data.brochureUrl ? "Brožúrka nahratá." : "Zatiaľ nenahraná.") + '</p>' +
+        (data.brochureUrl ? '<a href="' + data.brochureUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a> <button class="btn btn-secondary" type="button" data-brochure-remove="' + id + '" style="font-size:.8rem;">Odstrániť</button>' : "") +
+        '<p class="hint" data-brochure-status="' + id + '" style="margin-top:.5rem;">' + (data.brochureName ? "Aktuálny súbor: " + data.brochureName : "Zatiaľ nenahraná.") + '</p>' +
         '</div>' +
 
         '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
         '<label>Podpis lektora (PNG, priehľadné pozadie)</label>' +
         '<input type="file" accept=".png" data-signature-file="' + id + '">' +
         '<button class="btn btn-secondary" type="button" data-signature-upload="' + id + '" style="margin-top:.5rem;">Nahrať podpis</button> ' +
-        (data.lecturerSignatureUrl ? '<a href="' + data.lecturerSignatureUrl + '" target="_blank" rel="noopener">Zobraziť aktuálny</a>' : "") +
-        '<p class="hint" data-signature-status="' + id + '" style="margin-top:.5rem;">' + (data.lecturerSignatureUrl ? "Podpis nahratý." : "Zatiaľ nenahraný.") + '</p>' +
+        (data.lecturerSignatureUrl ? '<a href="' + data.lecturerSignatureUrl + '" target="_blank" rel="noopener">Zobraziť aktuálny</a> <button class="btn btn-secondary" type="button" data-signature-remove="' + id + '" style="font-size:.8rem;">Odstrániť</button>' : "") +
+        '<p class="hint" data-signature-status="' + id + '" style="margin-top:.5rem;">' + (data.lecturerSignatureName ? "Aktuálny súbor: " + data.lecturerSignatureName : "Zatiaľ nenahraný.") + '</p>' +
         '</div>' +
         "</div>";
       container.appendChild(details);
@@ -1358,25 +1361,32 @@ window.addEventListener("load", function () {
       presentationType: ext === "pdf" ? "pdf" : "ppt",
       presentationName: file.name,
     }));
-    wireFileUpload(container, "brochure", "brochures", ".pdf", ["pdf"], (url) => ({
+    wireFileUpload(container, "brochure", "brochures", ".pdf", ["pdf"], (url, file) => ({
       brochureUrl: url,
+      brochureName: file.name,
     }));
-    wireFileUpload(container, "signature", "signatures", ".png", ["png"], (url) => ({
+    wireFileUpload(container, "signature", "signatures", ".png", ["png"], (url, file) => ({
       lecturerSignatureUrl: url,
+      lecturerSignatureName: file.name,
     }));
 
-    container.querySelectorAll("[data-presentation-remove]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const id = btn.dataset.presentationRemove;
-        if (!confirm("Naozaj odstrániť nahratú prezentáciu?")) return;
-        try {
-          await db.collection("workshops").doc(id).set({ presentationUrl: null, presentationType: null, presentationName: null }, { merge: true });
-          loadWorkshopSettings();
-        } catch (err) {
-          alert("Chyba: " + err.message);
-        }
+    function wireFileRemove(kind, confirmText, clearFields) {
+      container.querySelectorAll("[data-" + kind + "-remove]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-" + kind + "-remove");
+          if (!confirm(confirmText)) return;
+          try {
+            await db.collection("workshops").doc(id).set(clearFields, { merge: true });
+            loadWorkshopSettings();
+          } catch (err) {
+            alert("Chyba: " + err.message);
+          }
+        });
       });
-    });
+    }
+    wireFileRemove("presentation", "Naozaj odstrániť nahratú prezentáciu?", { presentationUrl: null, presentationType: null, presentationName: null });
+    wireFileRemove("brochure", "Naozaj odstrániť nahratú brožúrku?", { brochureUrl: null, brochureName: null });
+    wireFileRemove("signature", "Naozaj odstrániť nahratý podpis?", { lecturerSignatureUrl: null, lecturerSignatureName: null });
   }
 
   // ---------- Obsah interaktívneho kurzu ----------
@@ -1542,20 +1552,24 @@ window.addEventListener("load", function () {
   document.getElementById("activity-log-load-more").addEventListener("click", () => loadActivityLog(true));
 
   // ---------- Rolujúci prehľad aktivity systému (Prehľad) ----------
-  let tickerItems = [];
+  // Zahŕňa reálne záznamy z logu aktivity aj priebežné "systémové" správy
+  // (napr. využitie Firebase Storage) — všetko v jednom rolujúcom okne.
+  let tickerActivityItems = [];
+  let tickerSystemItems = [];
   let tickerIndex = 0;
   let tickerTimer = null;
 
   function renderTickerItem() {
     const el = document.getElementById("activity-ticker");
-    if (!tickerItems.length) {
+    const items = tickerSystemItems.concat(tickerActivityItems).slice(0, 10);
+    if (!items.length) {
       el.textContent = "Zatiaľ žiadna zaznamenaná aktivita.";
       return;
     }
-    const item = tickerItems[tickerIndex % tickerItems.length];
+    const item = items[tickerIndex % items.length];
     el.style.opacity = "0";
     setTimeout(() => {
-      el.textContent = item.when + " · " + item.who + " — " + item.text;
+      el.textContent = item.when + (item.who ? " · " + item.who : "") + " — " + item.text;
       el.style.transition = "opacity .3s ease";
       el.style.opacity = "1";
     }, 150);
@@ -1563,9 +1577,9 @@ window.addEventListener("load", function () {
   }
 
   function watchActivityTicker() {
-    db.collection("activityLog").orderBy("createdAt", "desc").limit(10).onSnapshot(
+    db.collection("activityLog").orderBy("createdAt", "desc").limit(9).onSnapshot(
       (snap) => {
-        tickerItems = snap.docs.map((doc) => {
+        tickerActivityItems = snap.docs.map((doc) => {
           const a = doc.data();
           return {
             when: a.createdAt ? a.createdAt.toDate().toLocaleString("sk-SK") : "—",
@@ -1573,7 +1587,6 @@ window.addEventListener("load", function () {
             text: a.description || "",
           };
         });
-        tickerIndex = 0;
         renderTickerItem();
       },
       (err) => console.error("Sledovanie aktivity zlyhalo:", err)
@@ -1591,6 +1604,12 @@ window.addEventListener("load", function () {
       const mb = res.data.totalBytes / (1024 * 1024);
       const freeLimitMb = 5 * 1024; // 5 GB trvalý free limit (neresetuje sa mesačne)
       const pct = Math.min(100, Math.round((mb / freeLimitMb) * 100));
+      tickerSystemItems = [{
+        when: new Date().toLocaleDateString("sk-SK"),
+        who: "",
+        text: "Firebase Storage: " + mb.toFixed(1) + " MB / " + freeLimitMb.toLocaleString("sk-SK") + " MB free (" + pct + " %), " + res.data.fileCount + " súborov",
+      }];
+      renderTickerItem();
       el.innerHTML =
         "<div style='font-size:1.6rem;font-weight:700;'>" + mb.toFixed(1) + " MB <span class='hint' style='font-size:.9rem;font-weight:400;'>/ " + freeLimitMb.toLocaleString("sk-SK") + " MB free</span></div>" +
         "<div class='progress-bar-bg' style='margin:.6rem 0;'><div class='progress-bar-fill' style='width:" + pct + "%;'></div></div>" +

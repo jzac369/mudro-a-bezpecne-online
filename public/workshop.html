@@ -330,11 +330,21 @@ function renderBudgetExercise(ex) {
       return;
     }
     const type = state.workshop.presentationType;
-    const viewerSrc = type === "pdf" ? url : "https://view.officeapps.live.com/op/embed.aspx?src=" + encodeURIComponent(url);
-    body.innerHTML =
-      "<p>Prezentáciu si môžete prezrieť priamo tu, alebo si ju stiahnuť.</p>" +
-      "<iframe src='" + viewerSrc + "' style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>" +
-      "<a class='btn btn-secondary' href='" + url + "' target='_blank' rel='noopener' style='margin-top:1rem;display:inline-block;text-decoration:none;'>Stiahnuť prezentáciu</a>";
+    if (type === "pdf") {
+      // PDF vie prehliadač zobraziť priamo — spoľahlivé, žiadna externá služba netreba.
+      body.innerHTML =
+        "<p>Prezentáciu si môžete prezrieť priamo tu, alebo si ju stiahnuť.</p>" +
+        "<iframe src='" + url + "' style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>" +
+        "<a class='btn btn-secondary' href='" + url + "' target='_blank' rel='noopener' style='margin-top:1rem;display:inline-block;text-decoration:none;'>Stiahnuť prezentáciu</a>";
+    } else {
+      // PPT/PPTX sa v prehliadači natívne nezobrazí — namiesto nespoľahlivého
+      // externého náhľadu ponúkame rovno stiahnutie a otvorenie v PowerPointe.
+      body.innerHTML =
+        "<div class='card' style='background:var(--surface-2);text-align:center;padding:2.5rem 1.5rem;'>" +
+        "<p style='margin-bottom:1rem;'>Táto prezentácia je vo formáte PowerPoint. Stiahnite si ju a otvorte v PowerPointe alebo inej aplikácii na prezentácie.</p>" +
+        "<a class='btn btn-primary' href='" + url + "' target='_blank' rel='noopener' style='text-decoration:none;display:inline-block;'>Stiahnuť prezentáciu</a>" +
+        "</div>";
+    }
   }
 
   function renderExercise() {
