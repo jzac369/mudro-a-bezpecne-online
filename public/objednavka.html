@@ -243,7 +243,7 @@
       if (!b) { el.innerHTML = ""; return; }
 
       const allNames = [buyerName].concat(participantList.map((p) => p.firstName + " " + p.lastName)).filter(Boolean);
-      const itemLabel = workshopTitle + (b.groupSize > 1 ? " (" + b.groupSize + " účastníci)" : "");
+      const itemLabel = "Online kurz: " + workshopTitle + (b.groupSize > 1 ? " (" + b.groupSize + " účastníci)" : "");
 
       const rows = [];
       rows.push([itemLabel, b.baseAmount + " €"]);
