@@ -24,6 +24,14 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "codeIssuedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "orderAuditLog",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "orderId", "order": "ASCENDING" },
+        { "fieldPath": "editedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

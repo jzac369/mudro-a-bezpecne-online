@@ -2206,6 +2206,26 @@ window.addEventListener("load", function () {
 
     const detailBody = overlay.querySelector("#detail-body");
 
+    let auditHtml = "";
+    try {
+      const auditSnap = await db.collection("orderAuditLog").where("orderId", "==", orderId).orderBy("editedAt", "desc").limit(10).get();
+      if (!auditSnap.empty) {
+        auditHtml = "<h3 style='margin-top:1.4rem;'>História úprav údajov</h3>" +
+          auditSnap.docs.map((d) => {
+            const a = d.data();
+            const when = a.editedAt ? a.editedAt.toDate().toLocaleString("sk-SK") : "—";
+            const changeLines = Object.entries(a.changes || {}).map(([field, c]) =>
+              escapeHtml(field) + ": „" + escapeHtml(c.from || "—") + "“ → „" + escapeHtml(c.to || "—") + "“"
+            ).join("<br>");
+            return "<div class='session-row' style='flex-direction:column;align-items:flex-start;gap:.2rem;padding:.5rem 0;'>" +
+              "<div class='hint'>" + when + " · " + escapeHtml(a.editedBy || "—") + "</div>" +
+              "<div style='font-size:.9rem;'>" + changeLines + "</div></div>";
+          }).join("");
+      }
+    } catch (err) {
+      console.error("Nepodarilo sa načítať históriu úprav:", err);
+    }
+
     let regLine =
       "<h3 style='margin-top:1rem;'>Registrácia a platba</h3>" +
       "<div class='session-row'><span>Zaregistroval(a) sa</span><span>" + (order.createdAt ? order.createdAt.toDate().toLocaleString("sk-SK") : "—") + "</span></div>" +
@@ -2236,7 +2256,7 @@ window.addEventListener("load", function () {
         "</span></div>";
     }
     let actionButtons = "";
-    if (order.paidAt) {
+    if (order.status !== "pending_payment") {
       actionButtons += "<button type='button' class='btn btn-secondary' id='detail-invoice-btn'>Vygenerovať faktúru</button> ";
     }
     if (order.isGift && codeId) {
@@ -2245,6 +2265,7 @@ window.addEventListener("load", function () {
     if (actionButtons) {
       regLine += "<p style='margin-top:.8rem;'>" + actionButtons + "</p>";
     }
+    regLine += auditHtml;
 
     if (!codeId) {
       detailBody.innerHTML = regLine + "<p class='hint' style='margin-top:1rem;'>Prístupový kód zatiaľ nebol vydaný.</p>";
@@ -2454,11 +2475,12 @@ window.addEventListener("load", function () {
           ? '<span class="chip warn">Čaká na úhradu' + (isStale ? " · staré" : "") + "</span>"
           : '<span class="chip good">Uhradené</span>') +
         (expiryBadge ? "<br>" + expiryBadge : "") +
-        (order.paidAt ?
-          "<div class='row-actions' style='margin-top:.4rem;'>" +
-          "<button class='btn btn-secondary' data-send-invoice='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Poslať faktúru</button>" +
-          "<button class='btn btn-secondary' data-send-poz='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Poslať POZ</button>" +
-          "</div>" : "");
+        "<div class='row-actions' style='margin-top:.4rem;'>" +
+        (order.status !== "pending_payment" ?
+          "<button class='btn btn-secondary' data-send-invoice='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Poslať FA</button>" +
+          "<button class='btn btn-secondary' data-send-poz='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Poslať POZ</button>" : "") +
+        "<button class='btn btn-secondary' data-edit-contact='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Upraviť</button>" +
+        "</div>";
 
       let actionCell = "";
       if (codeId) {
@@ -2517,11 +2539,11 @@ window.addEventListener("load", function () {
         sendInvoiceBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           showDocumentSendModal({
-            title: "Poslať faktúru?",
+            title: "Poslať FA?",
             docType: "invoice",
             orderId: doc.id,
             message: "Na e-mail <strong>" + escapeHtml(order.email) + "</strong> sa odošle faktúra vo formáte PDF (na stiahnutie odkazom v e-maile).",
-            confirmLabel: "Áno, poslať faktúru",
+            confirmLabel: "Áno, poslať FA",
             sendFn: async () => {
               const sendInvoiceEmail = functions.httpsCallable("sendInvoiceEmail");
               await sendInvoiceEmail({ orderId: doc.id });
@@ -2544,6 +2566,13 @@ window.addEventListener("load", function () {
               await sendPaymentConfirmationEmail({ orderId: doc.id });
             },
           });
+        });
+      }
+      const editContactBtn = tr.querySelector("[data-edit-contact]");
+      if (editContactBtn) {
+        editContactBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showEditContactModal(order, doc.id);
         });
       }
       const copyEl = tr.querySelector("[data-copy-code]");
@@ -2760,6 +2789,48 @@ window.addEventListener("load", function () {
   // Potvrdzovacie okno pre odoslanie faktúry/POZ — najprv ukáže náhľad PDF
   // (bez spotrebovania skutočného čísla dokumentu), až po kliknutí sa
   // dokument reálne očísluje, uloží a e-mailom odošle.
+  function showEditContactModal(order, orderId) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML =
+      "<div class='modal-box' style='max-width:420px;'><button class='modal-close' data-close>&times;</button>" +
+      "<h2>Upraviť údaje účastníka</h2>" +
+      "<form id='edit-contact-form'>" +
+      "<div class='field'><label for='ec-firstname'>Meno</label><input type='text' id='ec-firstname' required value=\"" + escapeHtml(order.firstName || "") + "\"></div>" +
+      "<div class='field'><label for='ec-lastname'>Priezvisko</label><input type='text' id='ec-lastname' value=\"" + escapeHtml(order.lastName || "") + "\"></div>" +
+      "<div class='field'><label for='ec-email'>E-mail</label><input type='email' id='ec-email' required value=\"" + escapeHtml(order.email || "") + "\"></div>" +
+      "<button class='btn btn-primary btn-block' type='submit'>Uložiť zmeny</button>" +
+      "<p id='edit-contact-error' class='hint' style='color:var(--warn);display:none;margin-top:.6rem;'></p>" +
+      "</form></div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay || e.target.hasAttribute("data-close")) overlay.remove();
+    });
+    overlay.querySelector("#edit-contact-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById("edit-contact-error");
+      const submitBtn = e.target.querySelector("button[type='submit']");
+      errorEl.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Ukladám…";
+      try {
+        const updateOrderContact = functions.httpsCallable("updateOrderContact");
+        await updateOrderContact({
+          orderId,
+          firstName: document.getElementById("ec-firstname").value.trim(),
+          lastName: document.getElementById("ec-lastname").value.trim(),
+          email: document.getElementById("ec-email").value.trim(),
+        });
+        overlay.remove();
+      } catch (err) {
+        errorEl.textContent = "Zlyhalo: " + err.message;
+        errorEl.style.display = "block";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Uložiť zmeny";
+      }
+    });
+  }
+
   function showDocumentSendModal({ title, message, confirmLabel, docType, orderId, sendFn }) {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";

@@ -281,7 +281,7 @@ exports.markOrderPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (reques
     codes.push(code);
   }
 
-  await orderRef.update({ status: "code_sent", codeIssuedAt: FieldValue.serverTimestamp() });
+  await orderRef.update({ status: "code_sent", codeIssuedAt: FieldValue.serverTimestamp(), paidAt: FieldValue.serverTimestamp() });
 
   await sendCodeEmail({ to: order.email, name: order.firstName || order.name, codes, workshopId: order.workshopId });
 
@@ -1102,6 +1102,53 @@ async function sendDocumentLinkEmail({ to, name, docLabel, docNumber, url, extra
 // Náhľad faktúry/POZ pred odoslaním — rovnaký vzhľad, ale s dočasným číslom
 // "NÁHĽAD" a bez zápisu do denného počítadla, aby si prezretie nespotrebovalo
 // skutočné poradové číslo dokumentu.
+// Úprava mena/priezviska/e-mailu registrácie z admin zóny — každá zmena sa
+// zaznamená do orderAuditLog (čo sa zmenilo a ktorý admin to urobil).
+exports.updateOrderContact = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže upravovať údaje registrácie.");
+  }
+  const { orderId, firstName, lastName, email } = request.data || {};
+  if (!orderId || !firstName || !email) {
+    throw new HttpsError("invalid-argument", "Chýba meno alebo e-mail.");
+  }
+
+  const orderRef = db.collection("orders").doc(orderId);
+  const orderSnap = await orderRef.get();
+  if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
+  const before = orderSnap.data();
+
+  const cleanFirstName = String(firstName).trim();
+  const cleanLastName = String(lastName || "").trim();
+  const cleanEmail = String(email).trim();
+  const newName = fullName(cleanFirstName, cleanLastName);
+
+  const changes = {};
+  if ((before.firstName || "") !== cleanFirstName) changes.firstName = { from: before.firstName || null, to: cleanFirstName };
+  if ((before.lastName || "") !== cleanLastName) changes.lastName = { from: before.lastName || null, to: cleanLastName };
+  if ((before.email || "") !== cleanEmail) changes.email = { from: before.email || null, to: cleanEmail };
+
+  if (Object.keys(changes).length === 0) {
+    return { changed: false };
+  }
+
+  await orderRef.update({ firstName: cleanFirstName, lastName: cleanLastName, email: cleanEmail, name: newName });
+
+  const codesSnap = await db.collection("accessCodes").where("orderId", "==", orderId).get();
+  await Promise.all(codesSnap.docs.map((codeDoc) =>
+    codeDoc.ref.update({ firstName: cleanFirstName, lastName: cleanLastName, participantName: newName })
+  ));
+
+  await db.collection("orderAuditLog").add({
+    orderId,
+    changes,
+    editedBy: request.auth.token.email || request.auth.uid,
+    editedAt: FieldValue.serverTimestamp(),
+  });
+
+  return { changed: true };
+});
+
 exports.previewDocumentPdf = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže zobraziť náhľad dokumentu.");
@@ -1138,7 +1185,7 @@ exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (req
   const orderSnap = await db.collection("orders").doc(orderId).get();
   if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
   const order = orderSnap.data();
-  if (!order.paidAt) throw new HttpsError("failed-precondition", "Objednávka ešte nie je uhradená.");
+  if (order.status === "pending_payment") throw new HttpsError("failed-precondition", "Objednávka ešte nie je uhradená.");
 
   const settingsSnap = await db.collection("settings").doc("general").get();
   const s = settingsSnap.exists ? settingsSnap.data() : {};
@@ -1172,7 +1219,7 @@ exports.sendPaymentConfirmationEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }
   const orderSnap = await db.collection("orders").doc(orderId).get();
   if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
   const order = orderSnap.data();
-  if (!order.paidAt) throw new HttpsError("failed-precondition", "Objednávka ešte nie je uhradená.");
+  if (order.status === "pending_payment") throw new HttpsError("failed-precondition", "Objednávka ešte nie je uhradená.");
 
   const settingsSnap = await db.collection("settings").doc("general").get();
   const s = settingsSnap.exists ? settingsSnap.data() : {};

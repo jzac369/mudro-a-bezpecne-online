@@ -78,6 +78,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Audit log úprav mena/priezviska/e-mailu registrácie — zapisuje len
+    // updateOrderContact cez Admin SDK, číta administrátor.
+    match /orderAuditLog/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     match /accessCodes/{codeId} {
       allow read: if isAdmin() || isOwnCode(codeId);
       allow create, delete: if false; // len Cloud Functions cez Admin SDK
