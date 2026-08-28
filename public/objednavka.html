@@ -182,6 +182,21 @@
       campaign: params.get("utm_campaign") || null,
     };
 
+    async function lookupGeo() {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch("https://ipwho.is/", { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data.success === false) return null;
+        return { ip: data.ip || null, city: data.city || null, region: data.region || null, country: data.country || null };
+      } catch (err) {
+        return null; // best-effort — nikdy neblokuje objednávku
+      }
+    }
+
     document.getElementById("order-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const firstName = document.getElementById("firstName").value.trim();
@@ -193,8 +208,9 @@
       errorEl.style.display = "none";
 
       try {
+        const geo = await lookupGeo();
         const createOrder = firebase.app().functions("europe-west1").httpsCallable("createOrder");
-        const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm });
+        const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm, geo });
         document.getElementById("pay-amount").textContent = result.data.amount + " €";
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;
         document.getElementById("step-form").style.display = "none";

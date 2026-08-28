@@ -155,6 +155,12 @@
   .avail-row { display:flex; align-items:center; gap:.8rem; padding:.5rem 0; border-bottom:1px solid var(--line); flex-wrap:wrap; }
   .avail-row label.day-label { min-width:110px; font-weight:700; display:flex; align-items:center; gap:.5rem; }
   .avail-row input[type="time"] { width:auto; padding:.4rem .6rem; }
+  .code-copy { cursor:pointer; border-bottom:1px dashed var(--text-mute); }
+  .code-copy:hover { color: var(--focus); }
+  .sk-region { cursor:pointer; stroke:var(--surface); stroke-width:2; transition:opacity .15s; }
+  .sk-region:hover { opacity:.8; }
+  .sk-region-label { font-size:11px; font-weight:700; fill:var(--ink); pointer-events:none; text-anchor:middle; }
+  .sk-region-count { font-size:10px; fill:var(--text-mute); pointer-events:none; text-anchor:middle; }
 </style>
 </head>
 <body>
@@ -291,6 +297,18 @@
             <div id="rating-distribution"></div>
           </div>
         </div>
+
+        <div class="card" style="margin-top:1.5rem;">
+          <h2 style="margin-bottom:.3rem;">Odkiaľ prichádzajú registrácie</h2>
+          <p class="hint" style="margin-bottom:1rem;">Podľa kraja, z ktorého bola vytvorená objednávka (na základe IP adresy). Tmavšia farba = viac registrácií.</p>
+          <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start;">
+            <svg id="sk-map" viewBox="0 0 470 260" style="width:100%;max-width:470px;flex:1 1 300px;min-width:280px;"></svg>
+            <div style="flex:1 1 220px;min-width:220px;">
+              <h3 style="font-size:.95rem;margin-bottom:.6rem;">Top mestá</h3>
+              <div id="sk-top-cities"></div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="dash-section" data-section="registracie">
@@ -339,12 +357,14 @@
               </select>
             </div>
             <div style="flex:1;"></div>
+            <button class="btn btn-secondary" id="delete-selected" style="display:none;">Vymazať vybrané (<span id="delete-selected-count">0</span>)</button>
             <button class="btn btn-secondary" id="export-csv">Export CSV</button>
           </div>
           <div style="overflow-x:auto;">
             <table class="dash" id="orders-table">
               <thead>
                 <tr>
+                  <th style="width:2rem;"><input type="checkbox" id="select-all-orders" style="width:auto;"></th>
                   <th>Kód</th>
                   <th data-sort="name">Účastník <span class="arrow"></span></th>
                   <th data-sort="workshopId">Workshop <span class="arrow"></span></th>
@@ -1640,6 +1660,88 @@ window.addEventListener("load", function () {
     }
   }
 
+  // ---------- Mapa Slovenska podľa kraja registrácie ----------
+  const SK_REGIONS = [
+    { key: "TN", name: "Trenčiansky", col: 0, row: 0 },
+    { key: "ZA", name: "Žilinský", col: 1, row: 0 },
+    { key: "PO", name: "Prešovský", col: 3, row: 0 },
+    { key: "TT", name: "Trnavský", col: 0, row: 1 },
+    { key: "NR", name: "Nitriansky", col: 1, row: 1 },
+    { key: "BB", name: "Banskobystrický", col: 2, row: 1 },
+    { key: "KE", name: "Košický", col: 3, row: 1 },
+    { key: "BA", name: "Bratislavský", col: 0, row: 2 },
+  ];
+
+  function normalizeRegion(region, city) {
+    const s = (region || city || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (s.includes("bratislava")) return "BA";
+    if (s.includes("trnava")) return "TT";
+    if (s.includes("trencin")) return "TN";
+    if (s.includes("nitra")) return "NR";
+    if (s.includes("zilina")) return "ZA";
+    if (s.includes("banska bystrica") || s.includes("banskobystrick")) return "BB";
+    if (s.includes("presov")) return "PO";
+    if (s.includes("kosice")) return "KE";
+    return null;
+  }
+
+  function renderRegionMap(orders) {
+    const svg = document.getElementById("sk-map");
+    if (!svg) return;
+    const counts = {};
+    const cityCounts = {};
+    let withGeo = 0;
+    orders.forEach((o) => {
+      if (!o.geo) return;
+      const key = normalizeRegion(o.geo.region, o.geo.city);
+      if (key) { counts[key] = (counts[key] || 0) + 1; withGeo++; }
+      if (o.geo.city) cityCounts[o.geo.city] = (cityCounts[o.geo.city] || 0) + 1;
+    });
+    const maxCount = Math.max(1, ...Object.values(counts));
+
+    const tileW = 105, tileH = 75, gap = 10;
+    let html = "";
+    SK_REGIONS.forEach((r) => {
+      const x = r.col * (tileW + gap);
+      const y = r.row * (tileH + gap);
+      const count = counts[r.key] || 0;
+      const intensity = count / maxCount; // 0..1
+      const bg = count === 0 ? "var(--surface-2)" : mixColor(intensity);
+      const textColor = intensity > 0.55 ? "#fff" : "var(--ink)";
+      html +=
+        "<g class='sk-region' data-region='" + r.key + "'>" +
+        "<rect x='" + x + "' y='" + y + "' width='" + tileW + "' height='" + tileH + "' rx='10' fill='" + bg + "'></rect>" +
+        "<text x='" + (x + tileW / 2) + "' y='" + (y + tileH / 2 - 4) + "' class='sk-region-label' fill='" + textColor + "'>" + r.name + "</text>" +
+        "<text x='" + (x + tileW / 2) + "' y='" + (y + tileH / 2 + 14) + "' class='sk-region-count' fill='" + textColor + "' style='opacity:.85;'>" + count + " registrácií</text>" +
+        "<title>" + r.name + ": " + count + " registrácií</title>" +
+        "</g>";
+    });
+    svg.innerHTML = html;
+
+    // Top mestá rebríček
+    const topCitiesEl = document.getElementById("sk-top-cities");
+    const topCities = Object.entries(cityCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    if (topCities.length === 0) {
+      topCitiesEl.innerHTML = "<p class='hint'>Zatiaľ žiadne údaje o polohe (zbierajú sa len pri nových objednávkach).</p>";
+    } else {
+      const maxCity = topCities[0][1];
+      topCitiesEl.innerHTML = topCities.map(([city, n]) =>
+        "<div style='margin-bottom:.6rem;'>" +
+        "<div style='display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.2rem;'><span>" + escapeHtml(city) + "</span><span class='hint'>" + n + "</span></div>" +
+        "<div style='background:var(--surface-2);border-radius:999px;height:6px;overflow:hidden;'><div style='background:var(--accent);height:100%;width:" + Math.round((n / maxCity) * 100) + "%;'></div></div>" +
+        "</div>"
+      ).join("");
+    }
+  }
+
+  function mixColor(t) {
+    // svetlá -> tmavá odtieň akcentovej farby podľa intenzity t (0..1)
+    const start = [241, 221, 192]; // --accent-soft
+    const end = [193, 122, 46]; // --accent
+    const c = start.map((s, i) => Math.round(s + (end[i] - s) * t));
+    return "rgb(" + c.join(",") + ")";
+  }
+
   // ---------- Grafy ----------
   function renderCharts(orders) {
     const days = [];
@@ -1957,21 +2059,25 @@ window.addEventListener("load", function () {
           '<a class="btn btn-secondary" href="mailto:' + order.email + '">E-mail</a>' +
           '<button class="btn btn-secondary" data-resend="' + order.email + '">Poslať znova</button>' +
           '<button class="btn btn-secondary" data-toggle-code="' + codeId + '" data-active="' + codeActive + '">' + (codeActive ? "Deaktivovať" : "Aktivovať") + "</button>" +
+          '<button class="btn btn-secondary" data-delete-order="' + doc.id + '">Vymazať</button>' +
           "</div>";
       } else if (order.status === "pending_payment") {
         actionCell =
           '<div class="row-actions">' +
           '<button class="btn btn-secondary" data-mark-paid="' + doc.id + '">Označiť ako uhradené</button>' +
           '<a class="btn btn-secondary" href="mailto:' + order.email + '">E-mail</a>' +
+          '<button class="btn btn-secondary" data-delete-order="' + doc.id + '">Vymazať</button>' +
           "</div>";
       } else {
-        actionCell = '<a class="btn btn-secondary" href="mailto:' + order.email + '">E-mail</a>';
+        actionCell = '<a class="btn btn-secondary" href="mailto:' + order.email + '">E-mail</a> ' +
+          '<button class="btn btn-secondary" data-delete-order="' + doc.id + '">Vymazať</button>';
       }
 
       const tr = document.createElement("tr");
       if (isStale) tr.classList.add("stale");
       tr.innerHTML =
-        "<td>" + (codeId ? "<span class='mono'>" + codeId + (codeActive ? "" : " (deakt.)") + "</span>" : "—") + "</td>" +
+        "<td><input type='checkbox' class='row-select' data-order-id='" + doc.id + "' style='width:auto;'></td>" +
+        "<td>" + (codeId ? "<span class='mono code-copy' data-copy-code='" + codeId + "' title='Kliknutím skopírovať'>" + codeId + (codeActive ? "" : " (deakt.)") + "</span>" : "—") + "</td>" +
         "<td>" + order.name + "<br><span class='hint'>" + order.email + "</span></td>" +
         "<td>" + workshopTitle(order.workshopId) + "</td>" +
         "<td>" + statusChip + "</td>" +
@@ -1993,6 +2099,23 @@ window.addEventListener("load", function () {
           db.collection("orders").doc(doc.id).set({ adminNote: noteInput.value }, { merge: true }).catch((err) => console.error("Nepodarilo sa uložiť poznámku:", err));
         }, 700);
       });
+      tr.querySelector(".row-select").addEventListener("click", (e) => { e.stopPropagation(); updateDeleteSelectedButton(); });
+      tr.querySelector("[data-delete-order]").addEventListener("click", (e) => {
+        e.stopPropagation();
+        confirmAndDeleteRegistrations([doc.id]);
+      });
+      const copyEl = tr.querySelector("[data-copy-code]");
+      if (copyEl) {
+        copyEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const code = copyEl.dataset.copyCode;
+          navigator.clipboard.writeText(code).then(() => {
+            const original = copyEl.textContent;
+            copyEl.textContent = "Skopírované ✓";
+            setTimeout(() => { copyEl.textContent = original; }, 1200);
+          }).catch(() => {});
+        });
+      }
       tbody.appendChild(tr);
     });
 
@@ -2003,6 +2126,7 @@ window.addEventListener("load", function () {
     document.getElementById("sum-today").textContent = todayCount;
 
     renderCharts(allOrders);
+    renderRegionMap(allOrders);
     renderCompletionDonut(snap.size - paid, paid - completed, completed);
 
     tbody.querySelectorAll("[data-mark-paid]").forEach((btn) => {
@@ -2133,6 +2257,77 @@ window.addEventListener("load", function () {
       exportBtn.textContent = "Export CSV";
     }
   });
+
+  // ---------- Vymazanie registrácie (jednotlivo aj hromadne, s overením heslom) ----------
+  function updateDeleteSelectedButton() {
+    const checked = document.querySelectorAll(".row-select:checked");
+    const btn = document.getElementById("delete-selected");
+    document.getElementById("delete-selected-count").textContent = checked.length;
+    btn.style.display = checked.length > 0 ? "inline-block" : "none";
+  }
+
+  document.getElementById("select-all-orders").addEventListener("change", (e) => {
+    document.querySelectorAll(".row-select").forEach((cb) => { cb.checked = e.target.checked; });
+    updateDeleteSelectedButton();
+  });
+
+  document.getElementById("delete-selected").addEventListener("click", () => {
+    const ids = Array.from(document.querySelectorAll(".row-select:checked")).map((cb) => cb.dataset.orderId);
+    if (ids.length === 0) return;
+    confirmAndDeleteRegistrations(ids);
+  });
+
+  function confirmAndDeleteRegistrations(orderIds) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML =
+      "<div class='modal-box' style='max-width:420px;'><button class='modal-close' data-close>&times;</button>" +
+      "<h2>Vymazať " + orderIds.length + (orderIds.length === 1 ? " registráciu" : " registrácií") + "?</h2>" +
+      "<p class='hint'>Táto akcia je nevratná — natrvalo sa vymaže objednávka, prístupový kód, história prihlásení, výsledky kvízu aj postup kurzu. Pre potvrdenie zadajte svoje prihlasovacie heslo.</p>" +
+      "<form id='delete-confirm-form'>" +
+      "<div class='field'><label for='delete-confirm-pass'>Heslo</label><input type='password' id='delete-confirm-pass' required autocomplete='current-password'></div>" +
+      "<button class='btn btn-primary btn-block' type='submit' style='background:var(--warn);'>Natrvalo vymazať</button>" +
+      "<p id='delete-confirm-error' class='hint' style='color:var(--warn);display:none;margin-top:.6rem;'></p>" +
+      "</form></div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay || e.target.hasAttribute("data-close")) overlay.remove();
+    });
+
+    overlay.querySelector("#delete-confirm-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pass = document.getElementById("delete-confirm-pass").value;
+      const errorEl = document.getElementById("delete-confirm-error");
+      const submitBtn = e.target.querySelector("button[type='submit']");
+      errorEl.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Overujem heslo…";
+      try {
+        const cred = firebase.auth.EmailAuthProvider.credential(auth.currentUser.email, pass);
+        await auth.currentUser.reauthenticateWithCredential(cred);
+      } catch (err) {
+        errorEl.textContent = "Nesprávne heslo. Skúste to prosím znova.";
+        errorEl.style.display = "block";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Natrvalo vymazať";
+        return;
+      }
+      submitBtn.textContent = "Mažem…";
+      try {
+        const deleteRegistrations = functions.httpsCallable("deleteRegistrations");
+        await deleteRegistrations({ orderIds });
+        overlay.remove();
+        document.getElementById("select-all-orders").checked = false;
+        updateDeleteSelectedButton();
+        if (lastSnapshot) renderOrders(lastSnapshot);
+      } catch (err) {
+        errorEl.textContent = "Mazanie zlyhalo: " + err.message;
+        errorEl.style.display = "block";
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Natrvalo vymazať";
+      }
+    });
+  }
 
   auth.onAuthStateChanged(async (user) => {
     if (!user) {

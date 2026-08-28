@@ -122,7 +122,7 @@ function fullName(firstName, lastName) {
  * hlavného objednávateľa) a voliteľný zľavový kupón.
  */
 exports.createOrder = onCall(async (request) => {
-  const { firstName, lastName, email, workshopId, participants, couponCode, utm } = request.data || {};
+  const { firstName, lastName, email, workshopId, participants, couponCode, utm, geo } = request.data || {};
   if (!firstName || !lastName || !email || !workshopId) {
     throw new HttpsError("invalid-argument", "Chýba meno, priezvisko, e-mail alebo workshop.");
   }
@@ -210,6 +210,12 @@ exports.createOrder = onCall(async (request) => {
       source: utm.source || null,
       medium: utm.medium || null,
       campaign: utm.campaign || null,
+    } : null,
+    geo: geo && typeof geo === "object" ? {
+      ip: geo.ip || null,
+      city: geo.city || null,
+      region: geo.region || null,
+      country: geo.country || null,
     } : null,
   });
 
@@ -793,4 +799,52 @@ exports.cancelConsultation = onCall(async (request) => {
     status: "cancelled", cancelledAt: FieldValue.serverTimestamp(),
   });
   return { ok: true };
+});
+
+async function deleteInChunks(refs) {
+  for (let i = 0; i < refs.length; i += 400) {
+    const batch = db.batch();
+    refs.slice(i, i + 400).forEach((ref) => batch.delete(ref));
+    await batch.commit();
+  }
+}
+
+/**
+ * Natrvalo vymaže registráciu (objednávku) a všetko s ňou súvisiace —
+ * prístupový kód (kódy pri skupinovej objednávke), relácie, výsledky
+ * kvízu a postup kurzu. Nevratná operácia, preto len pre administrátora
+ * (klient navyše vyžaduje opätovné zadanie hesla pred zavolaním).
+ */
+exports.deleteRegistrations = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže mazať registrácie.");
+  }
+  const { orderIds } = request.data || {};
+  if (!Array.isArray(orderIds) || orderIds.length === 0) {
+    throw new HttpsError("invalid-argument", "Chýba zoznam registrácií na vymazanie.");
+  }
+  const ids = orderIds.filter((id) => typeof id === "string" && id).slice(0, 100);
+
+  let deletedOrders = 0, deletedCodes = 0;
+  for (const orderId of ids) {
+    try {
+      const codesSnap = await db.collection("accessCodes").where("orderId", "==", orderId).get();
+      for (const codeDoc of codesSnap.docs) {
+        const codeId = codeDoc.id;
+        const [sessionsSnap, quizSnap] = await Promise.all([
+          db.collection("sessions").where("codeId", "==", codeId).get(),
+          db.collection("quizResults").where("codeId", "==", codeId).get(),
+        ]);
+        const refs = [...sessionsSnap.docs.map((d) => d.ref), ...quizSnap.docs.map((d) => d.ref),
+          db.collection("progress").doc(codeId), codeDoc.ref];
+        await deleteInChunks(refs);
+        deletedCodes++;
+      }
+      await db.collection("orders").doc(orderId).delete();
+      deletedOrders++;
+    } catch (err) {
+      console.error("Nepodarilo sa vymazať registráciu " + orderId, err);
+    }
+  }
+  return { deletedOrders, deletedCodes };
 });
