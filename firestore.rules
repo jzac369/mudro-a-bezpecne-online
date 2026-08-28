@@ -61,6 +61,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Ochrana pred zneužitím prístupového kódu (opakované nesprávne pokusy) —
+    // zapisuje len verifyCode cez Admin SDK, číta administrátor.
+    match /loginAttempts/{attemptId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     match /accessCodes/{codeId} {
       allow read: if isAdmin() || isOwnCode(codeId);
       allow create, delete: if false; // len Cloud Functions cez Admin SDK

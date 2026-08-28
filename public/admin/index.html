@@ -309,6 +309,19 @@
             </div>
           </div>
         </div>
+
+        <div class="grid-2" style="margin-top:1.5rem;">
+          <div class="card">
+            <h2 style="margin-bottom:.3rem;">Zariadenia návštevníkov</h2>
+            <p class="hint" style="margin-bottom:1rem;">Z akého zariadenia a prehliadača ľudia najčastejšie robia objednávku.</p>
+            <div id="device-stats"></div>
+          </div>
+          <div class="card">
+            <h2 style="margin-bottom:.3rem;">Zdroje návštevnosti (UTM)</h2>
+            <p class="hint" style="margin-bottom:1rem;">Podľa parametrov utm_source / utm_medium / utm_campaign v odkaze, ktorým ľudia prišli.</p>
+            <div id="utm-stats"></div>
+          </div>
+        </div>
       </section>
 
       <section class="dash-section" data-section="registracie">
@@ -649,7 +662,27 @@
                 <input type="number" id="s-maxlogins" min="0" value="0">
                 <p class="hint">0 = neobmedzené. Zabráni zdieľaniu jedného kódu medzi viacerými ľuďmi.</p>
               </div>
+              <div class="field">
+                <label for="s-max-failed-attempts">Max. počet nesprávnych pokusov o kód (z jednej IP)</label>
+                <input type="number" id="s-max-failed-attempts" min="0" value="5">
+                <p class="hint">0 = vypnuté. Chráni pred skúšaním náhodných kódov (brute-force).</p>
+              </div>
+              <div class="field">
+                <label for="s-lockout-minutes">Dĺžka dočasného zablokovania (minúty)</label>
+                <input type="number" id="s-lockout-minutes" min="1" value="15">
+              </div>
             </div>
+          </div>
+
+          <div class="card" style="margin-bottom:1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+              <div>
+                <h2 style="margin-bottom:.3rem;">Podozrivá aktivita</h2>
+                <p class="hint" style="margin:0;">IP adresy, ktoré boli dočasne zablokované pre opakované nesprávne pokusy o prístupový kód.</p>
+              </div>
+              <button class="btn btn-secondary" type="button" id="load-suspicious-activity">Načítať</button>
+            </div>
+            <div id="suspicious-activity-body" style="margin-top:1rem;"></div>
           </div>
 
           <div class="card" style="margin-bottom:1.5rem;">
@@ -665,6 +698,42 @@
               <div class="field">
                 <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-maintenance" style="width:auto;"> Režim údržby (verejný web nedostupný)</label>
                 <p class="hint">Účastníci s existujúcim kódom sa naďalej vedia prihlásiť do workshopu — zablokuje sa len úvodná stránka, objednávka a prihlásenie.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h2>Fakturačné údaje</h2>
+            <p class="hint" style="margin-bottom:1rem;">Použijú sa pri ručnom vystavení faktúry k objednávke (tlačidlo v detaile registrácie).</p>
+            <div class="workshop-settings-grid">
+              <div class="field">
+                <label for="s-inv-company">Názov spoločnosti</label>
+                <input type="text" id="s-inv-company" placeholder="Akadémia digitálneho vzdelávania DigiStart">
+              </div>
+              <div class="field">
+                <label for="s-inv-address">Sídlo (adresa)</label>
+                <input type="text" id="s-inv-address">
+              </div>
+              <div class="field">
+                <label for="s-inv-ico">IČO</label>
+                <input type="text" id="s-inv-ico">
+              </div>
+              <div class="field">
+                <label for="s-inv-dic">DIČ</label>
+                <input type="text" id="s-inv-dic">
+              </div>
+              <div class="field">
+                <label for="s-inv-icdph">IČ DPH (ak ste platca)</label>
+                <input type="text" id="s-inv-icdph">
+              </div>
+              <div class="field">
+                <label for="s-inv-iban">IBAN</label>
+                <input type="text" id="s-inv-iban" placeholder="SK50 8330 0000 0025 0342 5536">
+              </div>
+              <div class="field">
+                <label for="s-inv-nextnumber">Číslo ďalšej faktúry</label>
+                <input type="number" id="s-inv-nextnumber" min="1" value="1">
+                <p class="hint">Zvyšuje sa automaticky po každom vystavení. Meňte len pri oprave číselného radu.</p>
               </div>
             </div>
           </div>
@@ -870,6 +939,15 @@ window.addEventListener("load", function () {
       document.getElementById("s-inactivity").value = data.inactivityMinutes || 5;
       document.getElementById("s-validity").value = data.codeValidityDays ?? 90;
       document.getElementById("s-maxlogins").value = data.maxLoginsPerCode ?? 0;
+      document.getElementById("s-max-failed-attempts").value = data.maxFailedAttempts ?? 5;
+      document.getElementById("s-lockout-minutes").value = data.lockoutMinutes ?? 15;
+      document.getElementById("s-inv-company").value = data.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart";
+      document.getElementById("s-inv-address").value = data.invoiceAddress || "";
+      document.getElementById("s-inv-ico").value = data.invoiceIco || "";
+      document.getElementById("s-inv-dic").value = data.invoiceDic || "";
+      document.getElementById("s-inv-icdph").value = data.invoiceIcDph || "";
+      document.getElementById("s-inv-iban").value = data.invoiceIban || "";
+      document.getElementById("s-inv-nextnumber").value = data.invoiceNextNumber || 1;
       document.getElementById("s-sound").checked = data.soundOnNewReg !== false;
       document.getElementById("s-stale-days").value = data.staleOrderDays ?? 3;
       document.getElementById("s-maintenance").checked = !!data.maintenanceMode;
@@ -892,6 +970,15 @@ window.addEventListener("load", function () {
       inactivityMinutes: Number(document.getElementById("s-inactivity").value) || 5,
       codeValidityDays: Number(document.getElementById("s-validity").value) || 0,
       maxLoginsPerCode: Number(document.getElementById("s-maxlogins").value) || 0,
+      maxFailedAttempts: Number(document.getElementById("s-max-failed-attempts").value) || 0,
+      lockoutMinutes: Number(document.getElementById("s-lockout-minutes").value) || 15,
+      invoiceCompany: document.getElementById("s-inv-company").value.trim(),
+      invoiceAddress: document.getElementById("s-inv-address").value.trim(),
+      invoiceIco: document.getElementById("s-inv-ico").value.trim(),
+      invoiceDic: document.getElementById("s-inv-dic").value.trim(),
+      invoiceIcDph: document.getElementById("s-inv-icdph").value.trim(),
+      invoiceIban: document.getElementById("s-inv-iban").value.trim(),
+      invoiceNextNumber: Number(document.getElementById("s-inv-nextnumber").value) || 1,
       soundOnNewReg: document.getElementById("s-sound").checked,
       staleOrderDays: Number(document.getElementById("s-stale-days").value) || 3,
       maintenanceMode: document.getElementById("s-maintenance").checked,
@@ -909,6 +996,26 @@ window.addEventListener("load", function () {
       resultEl.textContent = "Uložené ✓";
     } catch (err) {
       resultEl.textContent = "Chyba: " + err.message;
+    }
+  });
+
+  document.getElementById("load-suspicious-activity").addEventListener("click", async () => {
+    const body = document.getElementById("suspicious-activity-body");
+    body.innerHTML = "<p class='hint'>Načítavam…</p>";
+    try {
+      const snap = await db.collection("loginAttempts").orderBy("lastAttemptAt", "desc").limit(50).get();
+      const rows = snap.docs.map((d) => d.data()).filter((r) => r.lockedUntil && r.lockedUntil.toDate() > new Date());
+      if (rows.length === 0) {
+        body.innerHTML = "<p class='hint'>Momentálne žiadne zablokované IP adresy.</p>";
+        return;
+      }
+      body.innerHTML = "<div style='overflow-x:auto;'><table class='dash'><thead><tr><th>IP adresa</th><th>Nesprávnych pokusov</th><th>Posledný pokus o kód</th><th>Zablokované do</th></tr></thead><tbody>" +
+        rows.map((r) =>
+          "<tr><td class='mono'>" + escapeHtml(r.ip || "—") + "</td><td>" + (r.count || 0) + "</td><td class='mono'>" + escapeHtml(r.lastCode || "—") +
+          "</td><td>" + r.lockedUntil.toDate().toLocaleString("sk-SK") + "</td></tr>"
+        ).join("") + "</tbody></table></div>";
+    } catch (err) {
+      body.innerHTML = "<p class='hint' style='color:var(--warn);'>Načítanie zlyhalo: " + escapeHtml(err.message) + "</p>";
     }
   });
 
@@ -1805,6 +1912,62 @@ window.addEventListener("load", function () {
     return "rgb(" + c.join(",") + ")";
   }
 
+  function renderBarList(containerEl, entries, emptyMessage) {
+    if (entries.length === 0) {
+      containerEl.innerHTML = "<p class='hint'>" + emptyMessage + "</p>";
+      return;
+    }
+    const max = Math.max(...entries.map((e) => e[1]));
+    containerEl.innerHTML = entries.map(([label, n]) =>
+      "<div style='margin-bottom:.6rem;'>" +
+      "<div style='display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.2rem;'><span>" + escapeHtml(label) + "</span><span class='hint'>" + n + "</span></div>" +
+      "<div style='background:var(--surface-2);border-radius:999px;height:6px;overflow:hidden;'><div style='background:var(--accent);height:100%;width:" + Math.round((n / max) * 100) + "%;'></div></div>" +
+      "</div>"
+    ).join("");
+  }
+
+  function renderDeviceStats(orders) {
+    const el = document.getElementById("device-stats");
+    if (!el) return;
+    const deviceCounts = {}, browserCounts = {};
+    let withClient = 0;
+    orders.forEach((o) => {
+      if (!o.client) return;
+      withClient++;
+      if (o.client.deviceType) deviceCounts[o.client.deviceType] = (deviceCounts[o.client.deviceType] || 0) + 1;
+      if (o.client.browser) browserCounts[o.client.browser] = (browserCounts[o.client.browser] || 0) + 1;
+    });
+    if (withClient === 0) {
+      el.innerHTML = "<p class='hint'>Zatiaľ žiadne údaje o zariadení (zbierajú sa len pri nových objednávkach).</p>";
+      return;
+    }
+    const deviceEntries = Object.entries(deviceCounts).sort((a, b) => b[1] - a[1]);
+    const browserEntries = Object.entries(browserCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    el.innerHTML = "<h3 style='font-size:.9rem;margin-bottom:.5rem;'>Typ zariadenia</h3><div id='device-type-bars'></div>" +
+      "<h3 style='font-size:.9rem;margin:1rem 0 .5rem;'>Prehliadač</h3><div id='device-browser-bars'></div>";
+    renderBarList(document.getElementById("device-type-bars"), deviceEntries, "—");
+    renderBarList(document.getElementById("device-browser-bars"), browserEntries, "—");
+  }
+
+  function renderUtmStats(orders) {
+    const el = document.getElementById("utm-stats");
+    if (!el) return;
+    const sourceCounts = {};
+    let withUtm = 0;
+    orders.forEach((o) => {
+      if (!o.utm || !(o.utm.source || o.utm.medium || o.utm.campaign)) return;
+      withUtm++;
+      const label = [o.utm.source, o.utm.medium, o.utm.campaign].filter(Boolean).join(" / ");
+      sourceCounts[label] = (sourceCounts[label] || 0) + 1;
+    });
+    if (withUtm === 0) {
+      el.innerHTML = "<p class='hint'>Zatiaľ žiadne registrácie s UTM parametrami v odkaze.</p>";
+      return;
+    }
+    const entries = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    renderBarList(el, entries, "—");
+  }
+
   // ---------- Grafy ----------
   function renderCharts(orders) {
     const days = [];
@@ -1884,6 +2047,129 @@ window.addEventListener("load", function () {
   }
 
   // ---------- Modálne okno s detailom účastníka ----------
+  function wireInvoiceButton(overlay, order, orderId, codeId) {
+    const invoiceBtn = overlay.querySelector("#detail-invoice-btn");
+    if (invoiceBtn) {
+      invoiceBtn.addEventListener("click", async () => {
+        invoiceBtn.disabled = true;
+        invoiceBtn.textContent = "Pripravujem…";
+        try {
+          await generateInvoice(order, orderId);
+        } catch (err) {
+          alert("Faktúru sa nepodarilo vygenerovať: " + err.message);
+        } finally {
+          invoiceBtn.disabled = false;
+          invoiceBtn.textContent = "Vygenerovať faktúru";
+        }
+      });
+    }
+    const voucherBtn = overlay.querySelector("#detail-voucher-btn");
+    if (voucherBtn) {
+      voucherBtn.addEventListener("click", async () => {
+        voucherBtn.disabled = true;
+        voucherBtn.textContent = "Pripravujem…";
+        try {
+          await generateGiftVoucher(order, codeId);
+        } catch (err) {
+          alert("Poukaz sa nepodarilo vygenerovať: " + err.message);
+        } finally {
+          voucherBtn.disabled = false;
+          voucherBtn.textContent = "Vygenerovať darčekový poukaz";
+        }
+      });
+    }
+  }
+
+  async function generateGiftVoucher(order, codeId) {
+    const workshop = workshopTitle(order.workshopId);
+    const recipient = order.giftRecipientName ? escapeHtml(order.giftRecipientName) : "";
+    const message = order.giftMessage ? escapeHtml(order.giftMessage) : "";
+    const html =
+      "<!doctype html><html lang='sk'><head><meta charset='utf-8'><title>Darčekový poukaz</title>" +
+      "<style>" +
+      "body{font-family:Georgia,serif;color:#1f3a3d;max-width:680px;margin:2rem auto;padding:0 1rem;}" +
+      ".voucher{border:3px solid #c17a2e;border-radius:16px;padding:2.5rem;text-align:center;background:#f1ddc0;}" +
+      ".voucher h1{font-size:1.6rem;margin-bottom:.3rem;} .voucher .sub{color:#5c5749;margin-bottom:1.5rem;}" +
+      ".voucher .workshop{font-size:1.3rem;font-weight:700;margin:1.2rem 0;}" +
+      ".voucher .code{font-size:1.8rem;letter-spacing:.3em;font-weight:700;background:#fff;border-radius:10px;padding:.8rem;margin:1.5rem 0;}" +
+      ".voucher .message{font-style:italic;margin:1.5rem 0;}" +
+      ".print-btn{margin-top:2rem;padding:.7rem 1.2rem;font-size:1rem;cursor:pointer;}" +
+      "@media print{.print-btn{display:none;}}" +
+      "</style></head><body>" +
+      "<div class='voucher'>" +
+      "<h1>Darčekový poukaz</h1>" +
+      "<p class='sub'>Múdro a Bezpečne Online</p>" +
+      (recipient ? "<p>Pre: <strong>" + recipient + "</strong></p>" : "") +
+      "<p class='workshop'>" + escapeHtml(workshop) + "</p>" +
+      (message ? "<p class='message'>„" + message + "“</p>" : "") +
+      "<p>Prihlasovací kód:</p>" +
+      "<div class='code'>" + escapeHtml(codeId) + "</div>" +
+      "<p class='sub'>Kód zadajte na stránke mudroabezpecne.sk/prihlasenie.html</p>" +
+      "</div>" +
+      "<button class='print-btn' onclick='window.print()'>Tlačiť / Uložiť ako PDF</button>" +
+      "</body></html>";
+
+    const w = window.open("", "_blank");
+    if (!w) { alert("Prehliadač zablokoval otvorenie okna. Povoľte vyskakovacie okná pre túto stránku."); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  async function generateInvoice(order, orderId) {
+    const settingsSnap = await db.collection("settings").doc("general").get();
+    const s = settingsSnap.exists ? settingsSnap.data() : {};
+    const nextNumber = s.invoiceNextNumber || 1;
+    const year = new Date().getFullYear();
+    const invoiceNumber = year + "-" + String(nextNumber).padStart(4, "0");
+
+    await db.collection("settings").doc("general").set({ invoiceNextNumber: nextNumber + 1 }, { merge: true });
+    generalSettingsCache.invoiceNextNumber = nextNumber + 1;
+    const nextNumberInput = document.getElementById("s-inv-nextnumber");
+    if (nextNumberInput) nextNumberInput.value = nextNumber + 1;
+
+    const issueDate = new Date().toLocaleDateString("sk-SK");
+    const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
+    const amount = order.amount != null ? order.amount : (order.groupSize ? "—" : "—");
+    const workshop = workshopTitle(order.workshopId);
+    const buyerLines = [escapeHtml(order.name), escapeHtml(order.email)].filter(Boolean).join("<br>");
+
+    const html =
+      "<!doctype html><html lang='sk'><head><meta charset='utf-8'><title>Faktúra " + invoiceNumber + "</title>" +
+      "<style>" +
+      "body{font-family:Arial,sans-serif;color:#1f3a3d;max-width:720px;margin:2rem auto;padding:0 1rem;}" +
+      "h1{font-size:1.4rem;margin-bottom:.2rem;} .muted{color:#5c5749;} table{width:100%;border-collapse:collapse;margin:1.5rem 0;}" +
+      "th,td{text-align:left;padding:.5rem;border-bottom:1px solid #ddd5c2;} .cols{display:flex;justify-content:space-between;gap:2rem;margin-top:1.5rem;flex-wrap:wrap;}" +
+      ".total{font-weight:700;font-size:1.15rem;} .print-btn{margin-top:2rem;padding:.7rem 1.2rem;font-size:1rem;cursor:pointer;}" +
+      "@media print{.print-btn{display:none;}}" +
+      "</style></head><body>" +
+      "<h1>Faktúra č. " + invoiceNumber + "</h1>" +
+      "<p class='muted'>Dátum vystavenia: " + issueDate + " · Dátum úhrady: " + paidDate + "</p>" +
+      "<div class='cols'>" +
+      "<div><strong>Dodávateľ</strong><br>" + escapeHtml(s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart") + "<br>" +
+      escapeHtml(s.invoiceAddress || "") + "<br>" +
+      (s.invoiceIco ? "IČO: " + escapeHtml(s.invoiceIco) + "<br>" : "") +
+      (s.invoiceDic ? "DIČ: " + escapeHtml(s.invoiceDic) + "<br>" : "") +
+      (s.invoiceIcDph ? "IČ DPH: " + escapeHtml(s.invoiceIcDph) + "<br>" : "") +
+      (s.invoiceIban ? "IBAN: " + escapeHtml(s.invoiceIban) : "") +
+      "</div>" +
+      "<div><strong>Odberateľ</strong><br>" + buyerLines + "</div>" +
+      "</div>" +
+      "<table><thead><tr><th>Položka</th><th>Suma</th></tr></thead><tbody>" +
+      "<tr><td>" + escapeHtml(workshop) + (order.groupSize > 1 ? " (" + order.groupSize + " účastníci)" : "") + "</td><td>" + amount + " €</td></tr>" +
+      "</tbody></table>" +
+      "<p class='total'>Spolu: " + amount + " €</p>" +
+      "<p class='muted'>Variabilný symbol: " + (order.variableSymbol || "—") + "</p>" +
+      "<button class='print-btn' onclick='window.print()'>Tlačiť / Uložiť ako PDF</button>" +
+      "</body></html>";
+
+    const w = window.open("", "_blank");
+    if (!w) { alert("Prehliadač zablokoval otvorenie okna. Povoľte vyskakovacie okná pre túto stránku."); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
   async function openDetail(order, orderId, codeId) {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
@@ -1923,9 +2209,25 @@ window.addEventListener("load", function () {
         regLine += "<div class='session-row'><span>Odkiaľ prišiel(la)</span><span style='word-break:break-all;'>" + escapeHtml(order.client.referrer) + "</span></div>";
       }
     }
+    if (order.isGift) {
+      regLine += "<div class='session-row'><span>Darček</span><span>" +
+        [order.giftRecipientName ? "pre: " + escapeHtml(order.giftRecipientName) : "áno", order.giftMessage ? "odkaz: „" + escapeHtml(order.giftMessage) + "“" : null].filter(Boolean).join(" · ") +
+        "</span></div>";
+    }
+    let actionButtons = "";
+    if (order.paidAt) {
+      actionButtons += "<button type='button' class='btn btn-secondary' id='detail-invoice-btn'>Vygenerovať faktúru</button> ";
+    }
+    if (order.isGift && codeId) {
+      actionButtons += "<button type='button' class='btn btn-secondary' id='detail-voucher-btn'>Vygenerovať darčekový poukaz</button>";
+    }
+    if (actionButtons) {
+      regLine += "<p style='margin-top:.8rem;'>" + actionButtons + "</p>";
+    }
 
     if (!codeId) {
       detailBody.innerHTML = regLine + "<p class='hint' style='margin-top:1rem;'>Prístupový kód zatiaľ nebol vydaný.</p>";
+      wireInvoiceButton(overlay, order, orderId);
       return;
     }
 
@@ -1991,6 +2293,7 @@ window.addEventListener("load", function () {
     }
 
     detailBody.innerHTML = html;
+    wireInvoiceButton(overlay, order, orderId, codeId);
   }
 
   // ---------- Hlavná tabuľka registrácií ----------
@@ -2206,6 +2509,8 @@ window.addEventListener("load", function () {
 
     renderCharts(allOrders);
     renderRegionMap(allOrders);
+    renderDeviceStats(allOrders);
+    renderUtmStats(allOrders);
     renderCompletionDonut(snap.size - paid, paid - completed, completed);
 
     tbody.querySelectorAll("[data-mark-paid]").forEach((btn) => {

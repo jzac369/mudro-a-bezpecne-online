@@ -24,6 +24,8 @@ const DEFAULT_SETTINGS = {
   inactivityMinutes: 5,
   codeValidityDays: 90,
   maxLoginsPerCode: 0, // 0 = neobmedzené
+  maxFailedAttempts: 5, // 0 = vypnuté
+  lockoutMinutes: 15,
   groupDiscountMinSize: 0, // 0 = vypnuté
   groupDiscountPercent: 0,
   staleOrderDays: 3,
@@ -122,7 +124,7 @@ function fullName(firstName, lastName) {
  * hlavného objednávateľa) a voliteľný zľavový kupón.
  */
 exports.createOrder = onCall(async (request) => {
-  const { firstName, lastName, email, workshopId, participants, couponCode, utm, geo, client } = request.data || {};
+  const { firstName, lastName, email, workshopId, participants, couponCode, utm, geo, client, gift } = request.data || {};
   if (!firstName || !lastName || !email || !workshopId) {
     throw new HttpsError("invalid-argument", "Chýba meno, priezvisko, e-mail alebo workshop.");
   }
@@ -226,6 +228,9 @@ exports.createOrder = onCall(async (request) => {
       screenHeight: Number.isFinite(client.screenHeight) ? client.screenHeight : null,
       referrer: typeof client.referrer === "string" ? client.referrer.slice(0, 500) : null,
     } : null,
+    isGift: !!gift,
+    giftRecipientName: gift && typeof gift.recipientName === "string" ? gift.recipientName.slice(0, 200) : null,
+    giftMessage: gift && typeof gift.message === "string" ? gift.message.slice(0, 1000) : null,
   });
 
   return { orderId: orderRef.id, variableSymbol, amount };
@@ -342,20 +347,66 @@ exports.generateCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request
  * kontroluje platnosť kódu (dni od vydania) a limit počtu prihlásení,
  * ak sú tieto obmedzenia v nastaveniach zapnuté.
  */
+function getRequestIp(request) {
+  const req = request.rawRequest;
+  if (!req) return "unknown";
+  const forwarded = req.headers && req.headers["x-forwarded-for"];
+  if (forwarded) return String(forwarded).split(",")[0].trim();
+  return req.ip || "unknown";
+}
+
 exports.verifyCode = onCall(async (request) => {
   const { name, code } = request.data || {};
   if (!name || !code) {
     throw new HttpsError("invalid-argument", "Zadaj meno aj prístupový kód.");
   }
 
+  const settings = await getSettings();
+  const ip = getRequestIp(request);
+  const attemptRef = db.collection("loginAttempts").doc(Buffer.from(ip).toString("hex").slice(0, 200));
+
+  if (settings.maxFailedAttempts > 0) {
+    const attemptSnap = await attemptRef.get();
+    if (attemptSnap.exists) {
+      const a = attemptSnap.data();
+      if (a.lockedUntil && a.lockedUntil.toDate() > new Date()) {
+        throw new HttpsError("resource-exhausted", "Príliš veľa nesprávnych pokusov. Skúste to prosím znova o pár minút.");
+      }
+    }
+  }
+
   const normalizedCode = String(code).trim().toUpperCase();
   const codeSnap = await db.collection("accessCodes").doc(normalizedCode).get();
   if (!codeSnap.exists || codeSnap.data().active !== true) {
+    if (settings.maxFailedAttempts > 0) {
+      await db.runTransaction(async (tx) => {
+        const cur = await tx.get(attemptRef);
+        const now = Date.now();
+        const windowMs = settings.lockoutMinutes * 60 * 1000;
+        const prev = cur.exists ? cur.data() : null;
+        const stillInWindow = prev && prev.windowStart && (now - prev.windowStart.toDate().getTime()) < windowMs;
+        const count = (stillInWindow ? prev.count : 0) + 1;
+        const patch = {
+          ip,
+          count,
+          lastCode: normalizedCode,
+          lastAttemptAt: FieldValue.serverTimestamp(),
+          windowStart: stillInWindow ? prev.windowStart : FieldValue.serverTimestamp(),
+        };
+        if (count >= settings.maxFailedAttempts) {
+          patch.lockedUntil = new Date(now + windowMs);
+        }
+        tx.set(attemptRef, patch, { merge: true });
+      });
+    }
     throw new HttpsError("not-found", "Kód nie je platný. Skontroluj prosím jeho zápis.");
   }
 
+  if (settings.maxFailedAttempts > 0) {
+    await attemptRef.set({ count: 0, lockedUntil: null }, { merge: true });
+  }
+
   const codeData = codeSnap.data();
-  const settings = await getSettings();
 
   if (settings.codeValidityDays > 0 && codeData.createdAt) {
     const ageMs = Date.now() - codeData.createdAt.toDate().getTime();

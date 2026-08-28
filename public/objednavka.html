@@ -59,6 +59,23 @@
         <input type="text" id="coupon" name="coupon" autocapitalize="characters" style="text-transform:uppercase;">
       </div>
 
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;">
+          <input type="checkbox" id="is-gift" style="width:auto;"> Kupujem ako darček pre niekoho iného
+        </label>
+      </div>
+      <div id="gift-fields" style="display:none;">
+        <div class="field">
+          <label for="gift-recipient">Meno obdarovaného (nepovinné)</label>
+          <input type="text" id="gift-recipient" placeholder="napr. mama Jarka">
+        </div>
+        <div class="field">
+          <label for="gift-message">Osobný odkaz (nepovinné)</label>
+          <textarea id="gift-message" rows="2" style="width:100%;font:inherit;padding:.7rem;border-radius:10px;border:2px solid var(--line);"></textarea>
+        </div>
+        <p class="hint" style="margin-bottom:1rem;">Po úhrade vám radi pripravíme aj pekný darčekový poukaz na vytlačenie — stačí napísať do e-mailu, ktorý dostanete s pokynmi na platbu.</p>
+      </div>
+
       <p class="hint" id="price-summary" style="margin-bottom:1rem;"></p>
 
       <button class="btn btn-primary btn-block" type="submit">Pokračovať k platbe</button>
@@ -159,6 +176,10 @@
     }
     document.getElementById("add-participant").addEventListener("click", addParticipantRow);
 
+    document.getElementById("is-gift").addEventListener("change", (e) => {
+      document.getElementById("gift-fields").style.display = e.target.checked ? "block" : "none";
+    });
+
     function getParticipants() {
       return Array.from(participantsWrap.querySelectorAll(".participant-row")).map((row) => ({
         firstName: row.querySelector(".p-first").value.trim(),
@@ -211,8 +232,13 @@
       try {
         const geo = await lookupGeo();
         const client = window.MBO ? MBO.getClientInfo() : null;
+        const isGift = document.getElementById("is-gift").checked;
+        const gift = isGift ? {
+          recipientName: document.getElementById("gift-recipient").value.trim() || null,
+          message: document.getElementById("gift-message").value.trim() || null,
+        } : null;
         const createOrder = firebase.app().functions("europe-west1").httpsCallable("createOrder");
-        const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm, geo, client });
+        const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm, geo, client, gift });
         document.getElementById("pay-amount").textContent = result.data.amount + " €";
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;
         document.getElementById("step-form").style.display = "none";
