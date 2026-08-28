@@ -81,6 +81,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Log prihlásení do admin zóny a zmien nastavení — píše priamo admin
+    // klient (nie je to citlivá operácia vyžadujúca Admin SDK), je to
+    // nemenný záznam (create only, žiadny update/delete).
+    match /activityLog/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
     match /accessCodes/{codeId} {
       allow read: if isAdmin() || isOwnCode(codeId);
       allow create, delete: if false; // len Cloud Functions cez Admin SDK

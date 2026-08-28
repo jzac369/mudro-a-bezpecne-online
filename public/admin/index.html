@@ -201,10 +201,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         Kurzy
       </button>
-      <button data-section="obsahkurzu" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h7"/></svg>
-        Obsah kurzu
-      </button>
       <button data-section="chat" type="button" style="position:relative;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v12H7l-3 3V4Z"/></svg>
         Chat
@@ -230,6 +226,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
         Nastavenia
       </button>
+      <button data-section="aktivita" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+        Aktivita
+      </button>
     </nav>
   </aside>
 
@@ -250,6 +250,17 @@
 
       <section class="dash-section" data-section="prehlad">
         <h1>Prehľad</h1>
+
+        <div class="grid-2" style="margin-bottom:1.5rem;">
+          <div class="card">
+            <h2 style="margin-bottom:.6rem;">Aktivita systému</h2>
+            <div id="activity-ticker" style="min-height:1.4em;font-size:.95rem;color:var(--ink-soft);"></div>
+          </div>
+          <div class="card">
+            <h2 style="margin-bottom:.6rem;">Firebase Storage</h2>
+            <div id="storage-status" class="hint">Načítavam…</div>
+          </div>
+        </div>
 
         <div class="summary-grid">
           <div class="card summary-card"><div class="num" id="sum-total">0</div><div class="label">Registrácií spolu</div></div>
@@ -423,21 +434,19 @@
 
       <section class="dash-section" data-section="workshopy">
         <h1>Kurzy</h1>
-        <div class="card">
-          <p class="hint">Sem doplňte YouTube ID videa (časť z adresy za „v=“), odkaz na PDF brožúrku a odkaz na podpis lektora.</p>
-          <div class="workshop-settings-grid" id="workshop-settings"></div>
-        </div>
-      </section>
+        <p class="hint" style="margin-bottom:1rem;">Kliknutím na kurz nižšie rozbalíte jeho nastavenia — viditeľnosť, cenu, video a nahrávanie súborov (prezentácia, brožúrka, podpis lektora).</p>
+        <div id="workshop-settings"></div>
 
-      <section class="dash-section" data-section="obsahkurzu">
-        <h1>Obsah interaktívneho kurzu</h1>
-        <p class="hint" style="margin-bottom:1.2rem;">Tu môžete upraviť texty ktorejkoľvek z 35 obrazoviek kurzu — nadpisy, otázky, texty kartičiek a podobne. Herné nastavenie (napr. ktorá odpoveď je správna) sa cez tento formulár meniť nedá.</p>
-        <div class="grid-2" style="align-items:start;gap:1.2rem;">
-          <div class="card" style="max-height:70vh;overflow-y:auto;">
-            <div id="course-slide-list"></div>
-          </div>
-          <div class="card" id="course-editor-card">
-            <p class="hint">Vyberte obrazovku vľavo.</p>
+        <div class="card" style="margin-top:1.5rem;">
+          <h2 style="margin-bottom:.3rem;">Obsah interaktívneho kurzu</h2>
+          <p class="hint" style="margin-bottom:1.2rem;">Tento obsah (35 obrazoviek) je momentálne spoločný pre všetky kurzy vyššie — úprava textu sa prejaví vo všetkých. Herné nastavenie (napr. ktorá odpoveď je správna) sa cez tento formulár meniť nedá.</p>
+          <div class="grid-2" style="align-items:start;gap:1.2rem;">
+            <div class="card" style="max-height:70vh;overflow-y:auto;background:var(--surface-2);">
+              <div id="course-slide-list"></div>
+            </div>
+            <div class="card" id="course-editor-card" style="background:var(--surface-2);">
+              <p class="hint">Vyberte obrazovku vľavo.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -827,6 +836,20 @@
         </div>
       </section>
 
+      <section class="dash-section" data-section="aktivita">
+        <h1>Aktivita</h1>
+        <p class="hint" style="margin-bottom:1rem;">Prihlásenia do admin zóny a zmeny nastavení (aj drobné) — kto a kedy ich urobil.</p>
+        <div class="card">
+          <div style="overflow-x:auto;">
+            <table class="dash">
+              <thead><tr><th>Kedy</th><th>Kto</th><th>Typ</th><th>Popis</th></tr></thead>
+              <tbody id="activity-log-body"><tr><td colspan="4" class="hint">Načítavam…</td></tr></tbody>
+            </table>
+          </div>
+          <button class="btn btn-secondary" id="activity-log-load-more" style="margin-top:1rem;">Načítať ďalšie</button>
+        </div>
+      </section>
+
     </div>
   </div>
 </div>
@@ -853,7 +876,13 @@ window.addEventListener("load", function () {
   }
   document.getElementById("dash-nav").addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-section]");
-    if (btn) showSection(btn.dataset.section);
+    if (btn) {
+      showSection(btn.dataset.section);
+      if (btn.dataset.section === "aktivita" && !activityLogLoaded) {
+        activityLogLoaded = true;
+        loadActivityLog(false);
+      }
+    }
   });
 
   let deletedRegistrationsLoaded = false;
@@ -912,6 +941,7 @@ window.addEventListener("load", function () {
         remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION
       );
       await auth.signInWithEmailAndPassword(email, pass);
+      logActivity("login", "Prihlásenie do admin zóny");
     } catch (err) {
       errorEl.textContent = "Nesprávny e-mail alebo heslo.";
       errorEl.style.display = "block";
@@ -1017,7 +1047,7 @@ window.addEventListener("load", function () {
 
   // Automatické ukladanie — žiadne tlačidlo "Uložiť" netreba, zmena sa uloží
   // hneď (checkbox/select) alebo krátko po dopísaní (text/číslo).
-  function wireAutoSave(form, buildPatch, resultElId, docPath, onSaved) {
+  function wireAutoSave(form, buildPatch, resultElId, docPath, onSaved, logLabel) {
     const resultEl = document.getElementById(resultElId);
     let saveTimer = null;
     let flashTimer = null;
@@ -1028,6 +1058,7 @@ window.addEventListener("load", function () {
         if (onSaved) onSaved(patch);
         resultEl.textContent = "Uložené ✓";
         resultEl.style.color = "";
+        logActivity("settings", (logLabel || docPath) + " — zmenené nastavenie");
       } catch (err) {
         resultEl.textContent = "Chyba: " + err.message;
         resultEl.style.color = "var(--warn)";
@@ -1050,7 +1081,7 @@ window.addEventListener("load", function () {
   }
 
   wireAutoSave(document.getElementById("settings-form"), buildSettingsPatch, "settings-result", "general",
-    (patch) => { generalSettingsCache = Object.assign({}, generalSettingsCache, patch); });
+    (patch) => { generalSettingsCache = Object.assign({}, generalSettingsCache, patch); }, "Všeobecné nastavenia");
 
   document.getElementById("s-suspicious-enabled").addEventListener("change", (e) => {
     document.getElementById("s-max-failed-attempts").disabled = !e.target.checked;
@@ -1108,6 +1139,7 @@ window.addEventListener("load", function () {
         password: document.getElementById("na-pass").value,
       });
       resultEl.textContent = "Administrátorský účet bol pridaný / povýšený.";
+      logActivity("settings", "Nový administrátorský účet: " + document.getElementById("na-email").value.trim());
       document.getElementById("admin-add-form").reset();
     } catch (err) {
       resultEl.textContent = "Nepodarilo sa: " + err.message;
@@ -1115,85 +1147,48 @@ window.addEventListener("load", function () {
   });
 
   // ---------- Nastavenia workshopov (video, brožúrka, cena, názov, podpis) ----------
-  async function loadWorkshopSettings() {
-    const container = document.getElementById("workshop-settings");
-    container.innerHTML = "";
-    for (const id of WORKSHOP_IDS) {
-      const snap = await db.collection("workshops").doc(id).get();
-      const data = snap.exists ? snap.data() : {};
-      const local = window.WORKSHOPS[id] || {};
-      const wrap = document.createElement("div");
-      wrap.className = "card";
-      wrap.style.background = "var(--surface-2)";
-      wrap.innerHTML =
-        "<h3>" + (data.title || local.title) + "</h3>" +
-        '<div class="field"><label>Názov</label><input type="text" data-f="title" value="' + (data.title || local.title || "") + '"></div>' +
-        '<div class="field"><label>Podnadpis</label><input type="text" data-f="subtitle" value="' + (data.subtitle || local.subtitle || "") + '"></div>' +
-        '<div class="field"><label>Cena (€)</label><input type="number" data-f="price" value="' + (data.price ?? local.price ?? 19) + '"></div>' +
-        '<div class="field"><label>Pôvodná cena (€) — zobrazí sa preškrtnutá, marketingový efekt</label><input type="number" data-f="originalPrice" value="' + (data.originalPrice ?? "") + '" placeholder="napr. 29"></div>' +
-        '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="showOriginalPrice" style="width:auto;" ' + (data.showOriginalPrice ? "checked" : "") + '> Zobrazovať pôvodnú cenu na webe</label></div>' +
-        '<div class="field"><label>Akcia platí do (nepovinné)</label><input type="date" data-f="saleEndAt" value="' + (data.saleEndAt || "") + '"><p class="hint">Po tomto dátume sa pôvodná cena prestane zobrazovať automaticky.</p></div>' +
-        '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="hidden" style="width:auto;" ' + (data.hidden ? "checked" : "") + '> Skryť kurz z ponuky (dočasne nedostupný)</label></div>' +
-        '<div class="field"><label>YouTube ID videa</label><input type="text" data-f="youtubeId" value="' + (data.youtubeId || "") + '" placeholder="napr. dQw4w9WgXcQ"></div>' +
-        '<div class="field"><label>Odkaz na PDF brožúrku</label><input type="text" data-f="brochureUrl" value="' + (data.brochureUrl || "") + '" placeholder="https://…"></div>' +
-        '<div class="field"><label>Odkaz na podpis lektora (PNG, priehľadné pozadie)</label><input type="text" data-f="lecturerSignatureUrl" value="' + (data.lecturerSignatureUrl || "") + '" placeholder="https://…"></div>' +
-        '<button class="btn btn-primary" data-save="' + id + '" style="padding:.5rem 1rem;font-size:.9rem;">Uložiť</button>' +
-        '<p class="hint" data-status style="margin-top:.5rem;"></p>' +
-        '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
-        '<label>Prezentácia ku kurzu (PDF alebo PPT/PPTX)</label>' +
-        '<input type="file" accept=".pdf,.ppt,.pptx" data-presentation-file="' + id + '">' +
-        '<button class="btn btn-secondary" type="button" data-presentation-upload="' + id + '" style="margin-top:.5rem;">Nahrať prezentáciu</button> ' +
-        (data.presentationUrl ? '<a href="' + data.presentationUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a> <button class="btn btn-secondary" type="button" data-presentation-remove="' + id + '" style="font-size:.8rem;">Odstrániť</button>' : "") +
-        '<p class="hint" data-presentation-status="' + id + '" style="margin-top:.5rem;">' + (data.presentationName ? "Aktuálny súbor: " + data.presentationName : "Zatiaľ nenahraná.") + '</p>' +
-        '</div>';
-      container.appendChild(wrap);
+  // Rozpozná YouTube ID z plnej URL adresy (watch?v=, youtu.be/, embed/, shorts/)
+  // — ak nič nesedí, vezme vstup tak ako je (napr. keby niekto vložil holé ID).
+  function extractYoutubeId(input) {
+    const trimmed = (input || "").trim();
+    if (!trimmed) return "";
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/,
+    ];
+    for (const re of patterns) {
+      const m = trimmed.match(re);
+      if (m) return m[1];
     }
+    return trimmed;
+  }
 
-    container.querySelectorAll("[data-save]").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const wrap = btn.closest(".card");
-        const id = btn.dataset.save;
-        const patch = {};
-        wrap.querySelectorAll("[data-f]").forEach((input) => {
-          const isNumeric = input.dataset.f === "price" || input.dataset.f === "originalPrice";
-          patch[input.dataset.f] = isNumeric ? (input.value === "" ? null : Number(input.value)) : input.value.trim();
-        });
-        wrap.querySelectorAll("[data-f-bool]").forEach((input) => {
-          patch[input.dataset.fBool] = input.checked;
-        });
-        const statusEl = wrap.querySelector("[data-status]");
-        try {
-          await db.collection("workshops").doc(id).set(patch, { merge: true });
-          statusEl.textContent = "Uložené ✓";
-        } catch (err) {
-          statusEl.textContent = "Chyba: " + err.message;
-        }
-      });
-    });
+  async function uploadCourseFile(workshopId, file, folder, patchFields) {
+    const storageRef = adminApp.storage().ref(folder + "/" + workshopId + "/" + Date.now() + "_" + file.name);
+    await storageRef.put(file);
+    const url = await storageRef.getDownloadURL();
+    const patch = Object.assign({}, patchFields(url, file));
+    await db.collection("workshops").doc(workshopId).set(patch, { merge: true });
+    logActivity("settings", "Kurz " + workshopId + " — nahraný súbor (" + folder + ")");
+    return url;
+  }
 
-    container.querySelectorAll("[data-presentation-upload]").forEach((btn) => {
+  function wireFileUpload(container, kind, folder, accept, allowedExts, patchFields) {
+    container.querySelectorAll("[data-" + kind + "-upload]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const id = btn.dataset.presentationUpload;
-        const fileInput = container.querySelector('[data-presentation-file="' + id + '"]');
-        const statusEl = container.querySelector('[data-presentation-status="' + id + '"]');
+        const id = btn.getAttribute("data-" + kind + "-upload");
+        const fileInput = container.querySelector('[data-' + kind + '-file="' + id + '"]');
+        const statusEl = container.querySelector('[data-' + kind + '-status="' + id + '"]');
         const file = fileInput.files[0];
         if (!file) { statusEl.textContent = "Najprv vyberte súbor."; return; }
         const ext = file.name.split(".").pop().toLowerCase();
-        if (!["pdf", "ppt", "pptx"].includes(ext)) {
-          statusEl.textContent = "Podporované formáty: PDF, PPT, PPTX.";
+        if (allowedExts && !allowedExts.includes(ext)) {
+          statusEl.textContent = "Podporované formáty: " + allowedExts.join(", ").toUpperCase() + ".";
           return;
         }
         btn.disabled = true;
         statusEl.textContent = "Nahrávam…";
         try {
-          const storageRef = adminApp.storage().ref("presentations/" + id + "/" + Date.now() + "_" + file.name);
-          await storageRef.put(file);
-          const url = await storageRef.getDownloadURL();
-          await db.collection("workshops").doc(id).set({
-            presentationUrl: url,
-            presentationType: ext === "pdf" ? "pdf" : "ppt",
-            presentationName: file.name,
-          }, { merge: true });
+          await uploadCourseFile(id, file, folder, (url) => patchFields(url, file, ext));
           statusEl.textContent = "Nahraté ✓ (" + file.name + ")";
           loadWorkshopSettings();
         } catch (err) {
@@ -1203,6 +1198,110 @@ window.addEventListener("load", function () {
         }
       });
     });
+  }
+
+  async function loadWorkshopSettings() {
+    const container = document.getElementById("workshop-settings");
+    const previouslyOpen = new Set(Array.from(container.querySelectorAll("details[open]")).map((d) => d.dataset.workshopId));
+    container.innerHTML = "";
+    for (const id of WORKSHOP_IDS) {
+      const snap = await db.collection("workshops").doc(id).get();
+      const data = snap.exists ? snap.data() : {};
+      const local = window.WORKSHOPS[id] || {};
+      const videoUrl = data.youtubeId ? "https://www.youtube.com/watch?v=" + data.youtubeId : "";
+      const details = document.createElement("details");
+      details.className = "card";
+      details.dataset.workshopId = id;
+      if (previouslyOpen.has(id)) details.open = true;
+      details.style.background = "var(--surface-2)";
+      details.style.marginBottom = "1rem";
+      details.innerHTML =
+        "<summary style='cursor:pointer;font-weight:700;font-size:1.05rem;'>" +
+        escapeHtml(data.title || local.title || id) +
+        (data.hidden ? " <span class='chip warn' style='margin-left:.5rem;'>skrytý</span>" : " <span class='chip good' style='margin-left:.5rem;'>viditeľný</span>") +
+        "</summary>" +
+        "<div style='margin-top:1rem;'>" +
+        '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="visible" style="width:auto;" ' + (data.hidden ? "" : "checked") + '> Viditeľný v ponuke</label><p class="hint">Ak vypnete, kurz sa dočasne skryje z úvodnej stránky.</p></div>' +
+        '<div class="field"><label>Názov</label><input type="text" data-f="title" value="' + (data.title || local.title || "") + '"></div>' +
+        '<div class="field"><label>Podnadpis</label><input type="text" data-f="subtitle" value="' + (data.subtitle || local.subtitle || "") + '"></div>' +
+        '<div class="field"><label>Cena (€)</label><input type="number" data-f="price" value="' + (data.price ?? local.price ?? 19) + '"></div>' +
+        '<div class="field"><label>Pôvodná cena (€) — zobrazí sa preškrtnutá, marketingový efekt</label><input type="number" data-f="originalPrice" value="' + (data.originalPrice ?? "") + '" placeholder="napr. 29"></div>' +
+        '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="showOriginalPrice" style="width:auto;" ' + (data.showOriginalPrice ? "checked" : "") + '> Zobrazovať pôvodnú cenu na webe</label></div>' +
+        '<div class="field"><label>Akcia platí do (nepovinné)</label><input type="date" data-f="saleEndAt" value="' + (data.saleEndAt || "") + '"><p class="hint">Po tomto dátume sa pôvodná cena prestane zobrazovať automaticky.</p></div>' +
+        '<div class="field"><label>URL adresa videa (YouTube)</label><input type="text" data-f="videoUrl" value="' + videoUrl + '" placeholder="https://www.youtube.com/watch?v=…"></div>' +
+        '<button class="btn btn-primary" data-save="' + id + '" style="padding:.5rem 1rem;font-size:.9rem;">Uložiť</button>' +
+        '<p class="hint" data-status style="margin-top:.5rem;"></p>' +
+
+        '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
+        '<label>Prezentácia ku kurzu (PDF alebo PPT/PPTX)</label>' +
+        '<input type="file" accept=".pdf,.ppt,.pptx" data-presentation-file="' + id + '">' +
+        '<button class="btn btn-secondary" type="button" data-presentation-upload="' + id + '" style="margin-top:.5rem;">Nahrať prezentáciu</button> ' +
+        (data.presentationUrl ? '<a href="' + data.presentationUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a> <button class="btn btn-secondary" type="button" data-presentation-remove="' + id + '" style="font-size:.8rem;">Odstrániť</button>' : "") +
+        '<p class="hint" data-presentation-status="' + id + '" style="margin-top:.5rem;">' + (data.presentationName ? "Aktuálny súbor: " + data.presentationName : "Zatiaľ nenahraná.") + '</p>' +
+        '</div>' +
+
+        '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
+        '<label>Brožúrka (PDF)</label>' +
+        '<input type="file" accept=".pdf" data-brochure-file="' + id + '">' +
+        '<button class="btn btn-secondary" type="button" data-brochure-upload="' + id + '" style="margin-top:.5rem;">Nahrať brožúrku</button> ' +
+        (data.brochureUrl ? '<a href="' + data.brochureUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a>' : "") +
+        '<p class="hint" data-brochure-status="' + id + '" style="margin-top:.5rem;">' + (data.brochureUrl ? "Brožúrka nahratá." : "Zatiaľ nenahraná.") + '</p>' +
+        '</div>' +
+
+        '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
+        '<label>Podpis lektora (PNG, priehľadné pozadie)</label>' +
+        '<input type="file" accept=".png" data-signature-file="' + id + '">' +
+        '<button class="btn btn-secondary" type="button" data-signature-upload="' + id + '" style="margin-top:.5rem;">Nahrať podpis</button> ' +
+        (data.lecturerSignatureUrl ? '<a href="' + data.lecturerSignatureUrl + '" target="_blank" rel="noopener">Zobraziť aktuálny</a>' : "") +
+        '<p class="hint" data-signature-status="' + id + '" style="margin-top:.5rem;">' + (data.lecturerSignatureUrl ? "Podpis nahratý." : "Zatiaľ nenahraný.") + '</p>' +
+        '</div>' +
+        "</div>";
+      container.appendChild(details);
+    }
+
+    container.querySelectorAll("[data-save]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const wrap = btn.closest("details");
+        const id = btn.dataset.save;
+        const patch = {};
+        wrap.querySelectorAll("[data-f]").forEach((input) => {
+          if (input.dataset.f === "videoUrl") {
+            patch.youtubeId = extractYoutubeId(input.value);
+            return;
+          }
+          const isNumeric = input.dataset.f === "price" || input.dataset.f === "originalPrice";
+          patch[input.dataset.f] = isNumeric ? (input.value === "" ? null : Number(input.value)) : input.value.trim();
+        });
+        wrap.querySelectorAll("[data-f-bool]").forEach((input) => {
+          if (input.dataset.fBool === "visible") {
+            patch.hidden = !input.checked;
+            return;
+          }
+          patch[input.dataset.fBool] = input.checked;
+        });
+        const statusEl = wrap.querySelector("[data-status]");
+        try {
+          await db.collection("workshops").doc(id).set(patch, { merge: true });
+          statusEl.textContent = "Uložené ✓";
+          logActivity("settings", "Kurz " + id + " — zmenené nastavenia");
+          loadWorkshopSettings();
+        } catch (err) {
+          statusEl.textContent = "Chyba: " + err.message;
+        }
+      });
+    });
+
+    wireFileUpload(container, "presentation", "presentations", ".pdf,.ppt,.pptx", ["pdf", "ppt", "pptx"], (url, file, ext) => ({
+      presentationUrl: url,
+      presentationType: ext === "pdf" ? "pdf" : "ppt",
+      presentationName: file.name,
+    }));
+    wireFileUpload(container, "brochure", "brochures", ".pdf", ["pdf"], (url) => ({
+      brochureUrl: url,
+    }));
+    wireFileUpload(container, "signature", "signatures", ".png", ["png"], (url) => ({
+      lecturerSignatureUrl: url,
+    }));
 
     container.querySelectorAll("[data-presentation-remove]").forEach((btn) => {
       btn.addEventListener("click", async () => {
@@ -1325,6 +1424,118 @@ window.addEventListener("load", function () {
 
   function escapeHtml(s) {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // ---------- Log aktivity (prihlásenia + zmeny nastavení, aj drobné) ----------
+  function logActivity(type, description) {
+    const adminEmail = (auth.currentUser && auth.currentUser.email) || "neznámy admin";
+    db.collection("activityLog").add({
+      type,
+      description,
+      adminEmail,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    }).catch((err) => console.error("Nepodarilo sa zapísať log aktivity:", err));
+  }
+
+  // ---------- Log aktivity — zobrazenie ----------
+  let activityLogLastDoc = null;
+  let activityLogLoaded = false;
+
+  async function loadActivityLog(append) {
+    const tbody = document.getElementById("activity-log-body");
+    const moreBtn = document.getElementById("activity-log-load-more");
+    if (!append) {
+      tbody.innerHTML = "<tr><td colspan='4' class='hint'>Načítavam…</td></tr>";
+      activityLogLastDoc = null;
+    }
+    try {
+      let query = db.collection("activityLog").orderBy("createdAt", "desc").limit(50);
+      if (append && activityLogLastDoc) query = query.startAfter(activityLogLastDoc);
+      const snap = await query.get();
+      if (!append) tbody.innerHTML = "";
+      if (snap.empty && !append) {
+        tbody.innerHTML = "<tr><td colspan='4' class='hint'>Zatiaľ žiadna zaznamenaná aktivita.</td></tr>";
+        moreBtn.style.display = "none";
+        return;
+      }
+      snap.docs.forEach((doc) => {
+        const a = doc.data();
+        const when = a.createdAt ? a.createdAt.toDate().toLocaleString("sk-SK") : "—";
+        const typeLabel = a.type === "login" ? "Prihlásenie" : "Nastavenie";
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + when + "</td>" +
+          "<td>" + escapeHtml(a.adminEmail || "—") + "</td>" +
+          "<td><span class='chip " + (a.type === "login" ? "info" : "good") + "'>" + typeLabel + "</span></td>" +
+          "<td>" + escapeHtml(a.description || "") + "</td>";
+        tbody.appendChild(tr);
+      });
+      activityLogLastDoc = snap.docs[snap.docs.length - 1] || activityLogLastDoc;
+      moreBtn.style.display = snap.size < 50 ? "none" : "inline-block";
+    } catch (err) {
+      if (!append) tbody.innerHTML = "<tr><td colspan='4' class='hint' style='color:var(--warn);'>Načítanie zlyhalo: " + escapeHtml(err.message) + "</td></tr>";
+    }
+  }
+
+  document.getElementById("activity-log-load-more").addEventListener("click", () => loadActivityLog(true));
+
+  // ---------- Rolujúci prehľad aktivity systému (Prehľad) ----------
+  let tickerItems = [];
+  let tickerIndex = 0;
+  let tickerTimer = null;
+
+  function renderTickerItem() {
+    const el = document.getElementById("activity-ticker");
+    if (!tickerItems.length) {
+      el.textContent = "Zatiaľ žiadna zaznamenaná aktivita.";
+      return;
+    }
+    const item = tickerItems[tickerIndex % tickerItems.length];
+    el.style.opacity = "0";
+    setTimeout(() => {
+      el.textContent = item.when + " · " + item.who + " — " + item.text;
+      el.style.transition = "opacity .3s ease";
+      el.style.opacity = "1";
+    }, 150);
+    tickerIndex++;
+  }
+
+  function watchActivityTicker() {
+    db.collection("activityLog").orderBy("createdAt", "desc").limit(10).onSnapshot(
+      (snap) => {
+        tickerItems = snap.docs.map((doc) => {
+          const a = doc.data();
+          return {
+            when: a.createdAt ? a.createdAt.toDate().toLocaleString("sk-SK") : "—",
+            who: a.adminEmail || "—",
+            text: a.description || "",
+          };
+        });
+        tickerIndex = 0;
+        renderTickerItem();
+      },
+      (err) => console.error("Sledovanie aktivity zlyhalo:", err)
+    );
+    clearInterval(tickerTimer);
+    tickerTimer = setInterval(renderTickerItem, 4000);
+  }
+
+  // ---------- Stav Firebase Storage (Prehľad) ----------
+  async function loadStorageStatus() {
+    const el = document.getElementById("storage-status");
+    try {
+      const getStorageUsage = functions.httpsCallable("getStorageUsage");
+      const res = await getStorageUsage();
+      const mb = res.data.totalBytes / (1024 * 1024);
+      const freeLimitMb = 5 * 1024; // 5 GB trvalý free limit (neresetuje sa mesačne)
+      const pct = Math.min(100, Math.round((mb / freeLimitMb) * 100));
+      el.innerHTML =
+        "<div style='font-size:1.6rem;font-weight:700;'>" + mb.toFixed(1) + " MB <span class='hint' style='font-size:.9rem;font-weight:400;'>/ " + freeLimitMb.toLocaleString("sk-SK") + " MB free</span></div>" +
+        "<div class='progress-bar-bg' style='margin:.6rem 0;'><div class='progress-bar-fill' style='width:" + pct + "%;'></div></div>" +
+        "<p class='hint'>" + res.data.fileCount + " súborov · " + pct + " % z trvalého free limitu úložiska. Free limit úložiska sa neresetuje mesačne (na rozdiel od prenosu dát) — presné hodnoty vždy vidno v <a href='https://console.firebase.google.com/project/mudro-a-bezpecne-online/storage/usage' target='_blank' rel='noopener'>Firebase konzole</a>.</p>";
+    } catch (err) {
+      el.innerHTML = "<p class='hint'>Firebase Storage ešte nie je nastavený alebo sa nepodarilo načítať údaje (" + escapeHtml(err.message) + "). <a href='https://console.firebase.google.com/project/mudro-a-bezpecne-online/storage' target='_blank' rel='noopener'>Nastaviť v konzole</a>.</p>";
+    }
   }
 
   // ---------- Chat "Potrebujem pomoc" ----------
@@ -1550,7 +1761,7 @@ window.addEventListener("load", function () {
       availability: readAvailabilityGrid(),
     };
   }
-  wireAutoSave(document.getElementById("consult-settings-form"), buildConsultSettingsPatch, "consult-settings-result", "consultations");
+  wireAutoSave(document.getElementById("consult-settings-form"), buildConsultSettingsPatch, "consult-settings-result", "consultations", null, "Nastavenia konzultácií");
 
   async function loadConsultationBookings() {
     const tbody = document.getElementById("consultations-body");
@@ -1701,7 +1912,9 @@ window.addEventListener("load", function () {
       });
       document.querySelectorAll("[data-dc-toggle]").forEach((btn) => {
         btn.addEventListener("click", async () => {
-          await db.collection("discountCodes").doc(btn.dataset.dcToggle).set({ active: btn.dataset.active !== "true" }, { merge: true });
+          const willBeActive = btn.dataset.active !== "true";
+          await db.collection("discountCodes").doc(btn.dataset.dcToggle).set({ active: willBeActive }, { merge: true });
+          logActivity("settings", "Zľavový kód " + btn.dataset.dcToggle + (willBeActive ? " aktivovaný" : " deaktivovaný"));
           loadDiscountCodes();
         });
       });
@@ -1709,6 +1922,7 @@ window.addEventListener("load", function () {
         btn.addEventListener("click", async () => {
           if (!confirm("Naozaj natrvalo vymazať kód " + btn.dataset.dcDelete + "?")) return;
           await db.collection("discountCodes").doc(btn.dataset.dcDelete).delete();
+          logActivity("settings", "Zľavový kód " + btn.dataset.dcDelete + " vymazaný");
           loadDiscountCodes();
         });
       });
@@ -1759,6 +1973,7 @@ window.addEventListener("load", function () {
         await db.collection("discountCodes").doc(code).set(data);
       }
       resultEl.textContent = "Uložené ✓";
+      logActivity("settings", "Zľavový kód " + (originalCode || code) + (originalCode ? " upravený" : " vytvorený"));
       resetDcForm();
       loadDiscountCodes();
     } catch (err) {
@@ -1775,6 +1990,7 @@ window.addEventListener("load", function () {
         groupDiscountPercent: Number(document.getElementById("s-group-percent").value) || 0,
       }, { merge: true });
       resultEl.textContent = "Uložené ✓";
+      logActivity("settings", "Skupinová zľava — zmenené nastavenie");
     } catch (err) {
       resultEl.textContent = "Chyba: " + err.message;
     }
@@ -1874,6 +2090,7 @@ window.addEventListener("load", function () {
         await db.collection("testimonials").add(data);
       }
       resultEl.textContent = "Uložené ✓";
+      logActivity("settings", "Referencia „" + data.name + "“ " + (id ? "upravená" : "pridaná"));
       resetTestiForm();
       loadTestimonials();
     } catch (err) {
@@ -2653,11 +2870,18 @@ window.addEventListener("load", function () {
         e.stopPropagation();
         const codeId = btn.dataset.toggleCode;
         const nowActive = btn.dataset.active === "true";
+        const willBeActive = !nowActive;
         btn.disabled = true;
         try {
-          await db.collection("accessCodes").doc(codeId).update({ active: !nowActive });
+          await db.collection("accessCodes").doc(codeId).update({ active: willBeActive });
+          btn.dataset.active = String(willBeActive);
+          btn.textContent = willBeActive ? "Deaktivovať" : "Aktivovať";
+          const row = btn.closest("tr");
+          const codeSpan = row && row.querySelector("[data-copy-code='" + codeId + "']");
+          if (codeSpan) codeSpan.textContent = codeId + (willBeActive ? "" : " (deakt.)");
         } catch (err) {
           console.error(err);
+        } finally {
           btn.disabled = false;
         }
       });
@@ -3025,6 +3249,8 @@ window.addEventListener("load", function () {
     loadTestimonials();
     loadDiscountCodes();
     loadGroupDiscount();
+    watchActivityTicker();
+    loadStorageStatus();
   });
 });
 </script>

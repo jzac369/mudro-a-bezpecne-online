@@ -9,6 +9,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
 <script defer src="assets/firebase-config.js"></script>
 <script defer src="assets/app.js"></script>
 <script defer src="assets/chat-widget.js"></script>
@@ -201,7 +202,7 @@
     <div class="testi-dots" id="testi-dots"></div>
   </section>
 
-  <section style="margin-top:2.5rem;max-width:640px;">
+  <section id="consultation-section" style="display:none;margin-top:2.5rem;max-width:640px;">
     <div class="card">
       <h2>Potrebujete osobnú pomoc?</h2>
       <p>Dohodnite si krátku video alebo telefonickú konzultáciu priamo s lektorom — poradíme s konkrétnym
@@ -300,6 +301,19 @@
       }
     } catch (err) {
       console.error("Nepodarilo sa overiť režim údržby:", err);
+    }
+
+    // Konzultácie sa dajú zapnúť/vypnúť jediným miestom (Nastavenia → Konzultácie) —
+    // CTA na úvodnej stránke sa preto riadi rovnakou funkciou ako booking stránka.
+    try {
+      const fmtDate = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      const getAvailability = firebase.app().functions("europe-west1").httpsCallable("getConsultationAvailability");
+      const probe = await getAvailability({ date: fmtDate(new Date()), duration: 30 });
+      if (probe.data.enabled !== false) {
+        document.getElementById("consultation-section").style.display = "block";
+      }
+    } catch (err) {
+      console.error("Nepodarilo sa zistiť dostupnosť konzultácií:", err);
     }
 
     const today = new Date().toISOString().slice(0, 10);

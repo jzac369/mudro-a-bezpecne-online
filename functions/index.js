@@ -1183,6 +1183,18 @@ async function sendDocumentLinkEmail({ to, name, docLabel, docNumber, url, extra
 // skutočné poradové číslo dokumentu.
 // Úprava mena/priezviska/e-mailu registrácie z admin zóny — každá zmena sa
 // zaznamená do orderAuditLog (čo sa zmenilo a ktorý admin to urobil).
+// Približné využitie Firebase Storage (súčet veľkostí všetkých súborov v
+// buckete) — Storage má trvalý free limit 5 GB úložiska (neresetuje sa
+// mesačne, na rozdiel od prenosu dát/operácií, ktoré tu nevieme zmerať).
+exports.getStorageUsage = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže vidieť využitie úložiska.");
+  }
+  const [files] = await getStorage().bucket().getFiles();
+  const totalBytes = files.reduce((sum, f) => sum + Number(f.metadata.size || 0), 0);
+  return { totalBytes, fileCount: files.length };
+});
+
 exports.updateOrderContact = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže upravovať údaje registrácie.");
