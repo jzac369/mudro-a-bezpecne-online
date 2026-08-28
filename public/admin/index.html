@@ -188,11 +188,11 @@
       Múdro a Bezpečne
     </span>
     <nav class="dash-nav" id="dash-nav">
-      <button data-section="prehlad" class="active" type="button">
+      <button data-section="prehlad" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></svg>
         Prehľad
       </button>
-      <button data-section="registracie" type="button">
+      <button data-section="registracie" class="active" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
         Registrácie
       </button>
@@ -247,7 +247,7 @@
 
     <div class="dash-content">
 
-      <section class="dash-section active" data-section="prehlad">
+      <section class="dash-section" data-section="prehlad">
         <h1>Prehľad</h1>
 
         <div class="summary-grid">
@@ -324,7 +324,7 @@
         </div>
       </section>
 
-      <section class="dash-section" data-section="registracie">
+      <section class="dash-section active" data-section="registracie">
         <h1>Registrácie</h1>
 
         <div class="card" style="margin-bottom:1.5rem;" id="generate-card">
@@ -2437,10 +2437,11 @@ window.addEventListener("load", function () {
     }
 
     rows.forEach(({ doc, order, codeId, codeActive, timeSpent, progressPct, quizCell, isStale, expiryBadge }) => {
+      const paymentMethodLabels = { card: "Karta", transfer: "Prevod", cash: "Hotovosť" };
       const statusChip =
         (order.status === "pending_payment"
           ? '<span class="chip warn">Čaká na úhradu' + (isStale ? " · staré" : "") + "</span>"
-          : '<span class="chip good">Uhradené</span>') +
+          : '<span class="chip good">Uhradené</span>' + (paymentMethodLabels[order.paymentMethod] ? " <span class='chip'>" + paymentMethodLabels[order.paymentMethod] + "</span>" : "")) +
         (expiryBadge ? "<br>" + expiryBadge : "") +
         "<div class='row-actions' style='margin-top:.4rem;'>" +
         (order.status !== "pending_payment" ?
@@ -2958,6 +2959,7 @@ window.addEventListener("load", function () {
     document.getElementById("login-view").style.display = "none";
     document.getElementById("dashboard-view").style.display = "flex";
     document.getElementById("admin-email-label").textContent = user.email;
+    showSection("registracie");
     loadWorkshopSettings();
     loadFeedback();
     renderCourseSlideList();

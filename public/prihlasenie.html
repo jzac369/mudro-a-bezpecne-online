@@ -48,6 +48,17 @@
     <p id="login-error" class="hint" style="color:var(--warn);display:none;"></p>
   </form>
 
+  <div id="restricted-access" class="card" style="display:none;margin-top:1.2rem;border:2px solid var(--warn);text-align:center;">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:44px;height:44px;color:var(--warn);margin:0 auto .6rem;display:block;">
+      <rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+    </svg>
+    <h2 style="margin-bottom:.5rem;">Prístup dočasne obmedzený</h2>
+    <p>Váš prístup ku kurzu je momentálne obmedzený. Napíšte nám prosím na
+      <strong>info@digistart.sk</strong> a uveďte svoj prístupový kód
+      <strong id="restricted-code" style="font-family:monospace;letter-spacing:.1em;"></strong> — radi vám pomôžeme.</p>
+    <a class="btn btn-primary btn-block" id="restricted-email-btn" style="text-decoration:none;margin-top:1rem;">Napísať e-mail</a>
+  </div>
+
   <p style="margin-top:1.2rem;text-align:center;">
     <a href="stratenykod.html">Nemôžem nájsť svoj kód</a>
     &nbsp;·&nbsp;
@@ -70,7 +81,9 @@
     const name = document.getElementById("name").value.trim();
     const code = document.getElementById("code").value.trim().toUpperCase();
     const errorEl = document.getElementById("login-error");
+    const restrictedEl = document.getElementById("restricted-access");
     errorEl.style.display = "none";
+    restrictedEl.style.display = "none";
 
     try {
       const verifyCode = firebase.app().functions("europe-west1").httpsCallable("verifyCode");
@@ -80,8 +93,20 @@
       sessionStorage.setItem("mbo_participant_firstname", result.data.firstName || result.data.participantName);
       location.href = "workshop.html?w=" + encodeURIComponent(result.data.workshopId);
     } catch (err) {
-      errorEl.textContent = "Meno alebo kód nesedí. Skontrolujte prosím veľké/malé písmená a skúste znova.";
-      errorEl.style.display = "block";
+      if (err.details && err.details.reason === "deactivated") {
+        const codeValue = err.details.code || code;
+        document.getElementById("restricted-code").textContent = codeValue;
+        document.getElementById("restricted-email-btn").href =
+          "mailto:info@digistart.sk?subject=" + encodeURIComponent("Prístup ku kurzu — kód " + codeValue) +
+          "&body=" + encodeURIComponent("Dobrý deň,\n\nprosím o obnovenie prístupu ku kurzu pre môj prístupový kód " + codeValue + ".\n\nĎakujem.");
+        restrictedEl.style.display = "block";
+      } else if (err.code === "resource-exhausted" || err.code === "permission-denied") {
+        errorEl.textContent = err.message;
+        errorEl.style.display = "block";
+      } else {
+        errorEl.textContent = "Meno alebo kód nesedí. Skontrolujte prosím veľké/malé písmená a skúste znova.";
+        errorEl.style.display = "block";
+      }
     }
   });
 </script>

@@ -407,7 +407,18 @@ exports.verifyCode = onCall(async (request) => {
 
   const normalizedCode = String(code).trim().toUpperCase();
   const codeSnap = await db.collection("accessCodes").doc(normalizedCode).get();
-  if (!codeSnap.exists || codeSnap.data().active !== true) {
+
+  // Existujúci, ale deaktivovaný kód nie je pokus o uhádnutie kódu — nerátame
+  // ho do ochrany pred brute-force a vraciame samostatnú, zrozumiteľnú správu.
+  if (codeSnap.exists && codeSnap.data().active === false) {
+    throw new HttpsError(
+      "permission-denied",
+      "Váš prístup ku kurzu je dočasne obmedzený. Kontaktujte nás prosím na info@digistart.sk a uveďte svoj prístupový kód " + normalizedCode + " — radi vám pomôžeme.",
+      { reason: "deactivated", code: normalizedCode }
+    );
+  }
+
+  if (!codeSnap.exists) {
     if (settings.maxFailedAttempts > 0) {
       await db.runTransaction(async (tx) => {
         const cur = await tx.get(attemptRef);
