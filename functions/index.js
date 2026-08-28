@@ -199,9 +199,11 @@ exports.createOrder = onCall(async (request) => {
   }
 
   const orderRef = db.collection("orders").doc();
-  // Vždy presne 10 číslic — id z Firestore je base62 (väčšinou len pár číslic
-  // po odfiltrovaní písmen), preto sa naň nedá spoľahnúť.
-  const variableSymbol = String(Date.now()).slice(-10);
+  // Číslo faktúry sa prideľuje hneď pri vytvorení objednávky (nie až pri
+  // vystavení faktúry), aby variabilný symbol na platobných pokynoch bol
+  // od začiatku ten istý, aký bude neskôr aj na faktúre/POZ dokumente.
+  const invoiceNumber = await nextDocNumber("KU", "invoiceCounters");
+  const variableSymbol = invoiceNumber.slice(2);
 
   await orderRef.set({
     name: fullName(firstName, lastName),
@@ -219,6 +221,7 @@ exports.createOrder = onCall(async (request) => {
     couponApplied,
     couponDiscountAmount,
     variableSymbol,
+    invoiceNumber,
     status: "pending_payment",
     createdAt: FieldValue.serverTimestamp(),
     utm: utm && typeof utm === "object" ? {

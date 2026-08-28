@@ -238,17 +238,17 @@
       campaign: params.get("utm_campaign") || null,
     };
 
-    function renderPriceBreakdown(b) {
+    function renderPriceBreakdown(b, workshopTitle, buyerName, participantList) {
       const el = document.getElementById("price-breakdown");
       if (!b) { el.innerHTML = ""; return; }
+
+      const allNames = [buyerName].concat(participantList.map((p) => p.firstName + " " + p.lastName)).filter(Boolean);
+      const itemLabel = workshopTitle + (b.groupSize > 1 ? " (" + b.groupSize + " účastníci)" : "");
+
       const rows = [];
+      rows.push([itemLabel, b.baseAmount + " €"]);
       if (b.groupSize > 1) {
         rows.push(["Cena za 1 účastníka", b.basePrice + " €"]);
-        rows.push(["Počet účastníkov", String(b.groupSize)]);
-      }
-      const hasDiscount = b.groupDiscountAmount > 0 || b.couponDiscountAmount > 0;
-      if (hasDiscount) {
-        rows.push(["Medzisúčet", b.baseAmount + " €"]);
       }
       if (b.groupDiscountAmount > 0) {
         rows.push(["Skupinová zľava (" + b.groupDiscountPercent + " %)", "−" + b.groupDiscountAmount + " €"]);
@@ -259,11 +259,20 @@
       const rowsHtml = rows.map(([label, value]) =>
         "<tr><td style='padding:.3rem 0;color:var(--text-mute);'>" + label + "</td><td style='padding:.3rem 0;text-align:right;'>" + value + "</td></tr>"
       ).join("");
+
+      const participantsLine = allNames.length > 1
+        ? "<p class='hint' style='margin:.6rem 0 0;'>Účastníci: " + allNames.map(escapeHtmlLocal).join(", ") + "</p>"
+        : "";
+
       el.innerHTML =
         "<table style='width:100%;border-collapse:collapse;'>" + rowsHtml +
         "<tr><td style='padding:.6rem 0 0;font-weight:700;font-size:1.1em;border-top:1px solid var(--line);'>Spolu na úhradu</td>" +
         "<td style='padding:.6rem 0 0;font-weight:700;font-size:1.1em;text-align:right;border-top:1px solid var(--line);'>" + b.finalAmount + " €</td></tr>" +
-        "</table>";
+        "</table>" + participantsLine;
+    }
+
+    function escapeHtmlLocal(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
 
     async function lookupGeo() {
@@ -303,7 +312,7 @@
         const createOrder = firebase.app().functions("europe-west1").httpsCallable("createOrder");
         const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm, geo, client, gift });
 
-        renderPriceBreakdown(result.data.breakdown);
+        renderPriceBreakdown(result.data.breakdown, workshop.title, firstName + " " + lastName, participants);
         document.getElementById("pay-amount").textContent = result.data.amount + " €";
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;
         document.getElementById("pay-iban").innerHTML =
