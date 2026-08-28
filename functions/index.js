@@ -1040,7 +1040,7 @@ function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
 
   doc.font(FONT_BOLD).fontSize(13).text("Spolu: " + amount + " €", 56, itemY + 36);
   doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
-    .text("Variabilný symbol: " + (order.variableSymbol || "—"), 56, itemY + 60);
+    .text("Variabilný symbol: " + invoiceNumber.slice(2), 56, itemY + 60);
 }
 
 function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
@@ -1063,7 +1063,7 @@ function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
   doc.font(FONT_BOLD).text(workshop + (order.groupSize > 1 ? " (" + order.groupSize + " účastníci)" : ""));
   doc.font(FONT_REGULAR);
   doc.text("Suma: " + amount + " €");
-  doc.text("Variabilný symbol: " + (order.variableSymbol || "—"));
+  doc.text("Variabilný symbol: " + invoiceNumber.slice(2));
 
   doc.moveDown(1.2);
   doc.fontSize(10).fillColor("#5c5749").text(
@@ -1236,7 +1236,7 @@ exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (req
     docLabel: "faktúra",
     docNumber: invoiceNumber,
     url,
-    extraLine: "Suma: " + (order.amount != null ? order.amount : "—") + " € · VS: " + (order.variableSymbol || "—"),
+    extraLine: "Suma: " + (order.amount != null ? order.amount : "—") + " € · VS: " + invoiceNumber.slice(2),
   });
 
   return { invoiceNumber, url };
