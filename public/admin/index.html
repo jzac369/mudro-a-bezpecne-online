@@ -2434,7 +2434,12 @@ window.addEventListener("load", function () {
         (order.status === "pending_payment"
           ? '<span class="chip warn">Čaká na úhradu' + (isStale ? " · staré" : "") + "</span>"
           : '<span class="chip good">Uhradené</span>') +
-        (expiryBadge ? "<br>" + expiryBadge : "");
+        (expiryBadge ? "<br>" + expiryBadge : "") +
+        (order.paidAt ?
+          "<div class='row-actions' style='margin-top:.4rem;'>" +
+          "<button class='btn btn-secondary' data-send-invoice='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Poslať faktúru</button>" +
+          "<button class='btn btn-secondary' data-send-poz='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Poslať POZ</button>" +
+          "</div>" : "");
 
       let actionCell = "";
       if (codeId) {
@@ -2488,6 +2493,36 @@ window.addEventListener("load", function () {
         e.stopPropagation();
         confirmAndDeleteRegistrations([doc.id]);
       });
+      const sendInvoiceBtn = tr.querySelector("[data-send-invoice]");
+      if (sendInvoiceBtn) {
+        sendInvoiceBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showConfirmModal({
+            title: "Poslať faktúru?",
+            message: "Na e-mail <strong>" + escapeHtml(order.email) + "</strong> sa odošle faktúra vo formáte PDF (na stiahnutie odkazom v e-maile). Naozaj chcete pokračovať?",
+            confirmLabel: "Áno, poslať faktúru",
+            onConfirm: async () => {
+              const sendInvoiceEmail = functions.httpsCallable("sendInvoiceEmail");
+              await sendInvoiceEmail({ orderId: doc.id });
+            },
+          });
+        });
+      }
+      const sendPozBtn = tr.querySelector("[data-send-poz]");
+      if (sendPozBtn) {
+        sendPozBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showConfirmModal({
+            title: "Poslať potvrdenie o zaplatení?",
+            message: "Na e-mail <strong>" + escapeHtml(order.email) + "</strong> sa odošle potvrdenie o zaplatení (POZ) vo formáte PDF. Naozaj chcete pokračovať?",
+            confirmLabel: "Áno, poslať POZ",
+            onConfirm: async () => {
+              const sendPaymentConfirmationEmail = functions.httpsCallable("sendPaymentConfirmationEmail");
+              await sendPaymentConfirmationEmail({ orderId: doc.id });
+            },
+          });
+        });
+      }
       const copyEl = tr.querySelector("[data-copy-code]");
       if (copyEl) {
         copyEl.addEventListener("click", (e) => {
@@ -2662,6 +2697,42 @@ window.addEventListener("load", function () {
     if (ids.length === 0) return;
     confirmAndDeleteRegistrations(ids);
   });
+
+  // Jednoduché potvrdzovacie okno (bez hesla) pre menej rizikové, no nevratné akcie
+  // ako odoslanie faktúry/POZ e-mailom.
+  function showConfirmModal({ title, message, confirmLabel, onConfirm }) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML =
+      "<div class='modal-box' style='max-width:420px;'><button class='modal-close' data-close>&times;</button>" +
+      "<h2>" + escapeHtml(title) + "</h2>" +
+      "<p class='hint'>" + message + "</p>" +
+      "<button class='btn btn-primary btn-block' type='button' id='confirm-modal-yes'>" + escapeHtml(confirmLabel) + "</button>" +
+      "<button class='btn btn-secondary btn-block' type='button' style='margin-top:.6rem;' data-close>Zrušiť</button>" +
+      "<p id='confirm-modal-error' class='hint' style='color:var(--warn);display:none;margin-top:.6rem;'></p>" +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay || e.target.hasAttribute("data-close")) overlay.remove();
+    });
+    overlay.querySelector("#confirm-modal-yes").addEventListener("click", async (e) => {
+      const btn = e.target;
+      const errorEl = overlay.querySelector("#confirm-modal-error");
+      errorEl.style.display = "none";
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = "Odosielam…";
+      try {
+        await onConfirm();
+        overlay.remove();
+      } catch (err) {
+        errorEl.textContent = "Zlyhalo: " + err.message;
+        errorEl.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    });
+  }
 
   function confirmAndDeleteRegistrations(orderIds) {
     const overlay = document.createElement("div");

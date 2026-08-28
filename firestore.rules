@@ -68,9 +68,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Denné počítadlo pre čísla faktúr (KUYYYYMMDD001…), spravuje admin zóna priamo.
+    // Denné počítadlo pre čísla faktúr (KUYYYYMMDD001…) a potvrdení o zaplatení
+    // (POZYYYYMMDD001…) — zapisuje len Cloud Function cez Admin SDK.
     match /invoiceCounters/{dayKey} {
       allow read, write: if isAdmin();
+    }
+    match /pozCounters/{dayKey} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     match /accessCodes/{codeId} {

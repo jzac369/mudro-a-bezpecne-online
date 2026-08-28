@@ -1,11 +1,13 @@
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
+const { getStorage } = require("firebase-admin/storage");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
+const PDFDocument = require("pdfkit");
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
@@ -920,4 +922,246 @@ exports.deleteRegistrations = onCall(async (request) => {
     }
   }
   return { deletedOrders, deletedCodes };
+});
+
+// ---------- Faktúra a potvrdenie o zaplatení (PDF, e-mailom na žiadosť admina) ----------
+
+const FONT_REGULAR = __dirname + "/assets/DejaVuSans.ttf";
+const FONT_BOLD = __dirname + "/assets/DejaVuSans-Bold.ttf";
+
+// Denné číslovanie dokumentov v tvare PREFIX + YYYYMMDD + poradie (001, 002, …),
+// reštartuje sa samo každý deň, keďže kľúčom počítadla je samotný dátum.
+async function nextDocNumber(prefix, counterCollection) {
+  const now = new Date();
+  const dayKey = now.getFullYear() + String(now.getMonth() + 1).padStart(2, "0") + String(now.getDate()).padStart(2, "0");
+  const counterRef = db.collection(counterCollection).doc(dayKey);
+  const seq = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(counterRef);
+    const next = (snap.exists ? snap.data().count : 0) + 1;
+    tx.set(counterRef, { count: next, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return next;
+  });
+  return prefix + dayKey + String(seq).padStart(3, "0");
+}
+
+function pdfToBuffer(draw) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: "A4", margin: 56 });
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+    doc.font(FONT_REGULAR);
+    try {
+      draw(doc);
+    } catch (err) {
+      reject(err);
+      return;
+    }
+    doc.end();
+  });
+}
+
+function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
+  const issueDate = new Date().toLocaleDateString("sk-SK");
+  const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
+  const workshop = order.workshopTitleSnapshot || order.workshopId;
+  const amount = order.amount != null ? order.amount : 0;
+
+  doc.font(FONT_BOLD).fontSize(20).text("Faktúra č. " + invoiceNumber);
+  doc.moveDown(0.3);
+  doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
+    .text("Dátum vystavenia: " + issueDate + "    Dátum úhrady: " + paidDate);
+  doc.fillColor("#1f3a3d");
+  doc.moveDown(1.2);
+
+  const colY = doc.y;
+  doc.font(FONT_BOLD).fontSize(11).text("Dodávateľ", 56, colY);
+  doc.font(FONT_REGULAR).fontSize(10);
+  doc.text(s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart", 56, doc.y + 4);
+  if (s.invoiceAddress) doc.text(s.invoiceAddress);
+  if (s.invoiceIco) doc.text("IČO: " + s.invoiceIco);
+  if (s.invoiceDic) doc.text("DIČ: " + s.invoiceDic);
+  if (s.invoiceIcDph) doc.text("IČ DPH: " + s.invoiceIcDph);
+  if (s.invoiceIban) doc.text("IBAN: " + s.invoiceIban);
+
+  doc.font(FONT_BOLD).fontSize(11).text("Odberateľ", 320, colY);
+  doc.font(FONT_REGULAR).fontSize(10);
+  doc.text(order.name || "", 320, colY + 18);
+  doc.text(order.email || "", 320);
+
+  doc.moveDown(2.5);
+  const tableTop = doc.y;
+  doc.font(FONT_BOLD).fontSize(10);
+  doc.text("Položka", 56, tableTop);
+  doc.text("Suma", 480, tableTop);
+  doc.moveTo(56, tableTop + 16).lineTo(539, tableTop + 16).strokeColor("#ddd5c2").stroke();
+
+  doc.font(FONT_REGULAR).fontSize(10);
+  const itemY = tableTop + 24;
+  const itemLabel = workshop + (order.groupSize > 1 ? " (" + order.groupSize + " účastníci)" : "");
+  doc.text(itemLabel, 56, itemY, { width: 400 });
+  doc.text(amount + " €", 480, itemY);
+  doc.moveTo(56, itemY + 24).lineTo(539, itemY + 24).strokeColor("#ddd5c2").stroke();
+
+  doc.font(FONT_BOLD).fontSize(13).text("Spolu: " + amount + " €", 56, itemY + 36);
+  doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
+    .text("Variabilný symbol: " + (order.variableSymbol || "—"), 56, itemY + 60);
+}
+
+function drawPozPdf(doc, { s, order, pozNumber }) {
+  const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
+  const workshop = order.workshopTitleSnapshot || order.workshopId;
+  const amount = order.amount != null ? order.amount : 0;
+
+  doc.font(FONT_BOLD).fontSize(20).text("Potvrdenie o zaplatení");
+  doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749").text("Číslo: " + pozNumber);
+  doc.fillColor("#1f3a3d");
+  doc.moveDown(1.2);
+
+  doc.font(FONT_REGULAR).fontSize(11).text(
+    (s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart") +
+    " týmto potvrdzuje prijatie platby od:",
+    { width: 483 }
+  );
+  doc.moveDown(0.8);
+  doc.font(FONT_BOLD).fontSize(12).text(order.name || "");
+  doc.font(FONT_REGULAR).fontSize(11).text(order.email || "");
+  doc.moveDown(1.2);
+
+  doc.font(FONT_REGULAR).fontSize(11);
+  doc.text("Workshop: " + workshop);
+  doc.text("Suma: " + amount + " €");
+  doc.text("Dátum úhrady: " + paidDate);
+  doc.text("Variabilný symbol: " + (order.variableSymbol || "—"));
+
+  doc.moveDown(1.5);
+  doc.fontSize(10).fillColor("#5c5749").text(
+    "Toto potvrdenie slúži ako doklad o prijatí platby za uvedenú objednávku."
+  );
+}
+
+async function uploadPdfAndGetUrl(buffer, path) {
+  const bucket = getStorage().bucket();
+  const file = bucket.file(path);
+  await file.save(buffer, { contentType: "application/pdf", resumable: false });
+  const [url] = await file.getSignedUrl({
+    action: "read",
+    expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 dní
+  });
+  return url;
+}
+
+async function sendDocumentLinkEmail({ to, name, docLabel, docNumber, url, extraLine }) {
+  const settings = await getSettings();
+  const message =
+    "Vaše " + docLabel + " č. " + docNumber + " je pripravené na stiahnutie (PDF):\n" + url +
+    (extraLine ? "\n\n" + extraLine : "");
+
+  let status = "sent";
+  try {
+    const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        accessToken: EMAILJS_PRIVATE_KEY.value(),
+        template_params: {
+          to_email: to,
+          to_name: name,
+          name,
+          email: to,
+          code: docNumber,
+          workshop_title: docLabel,
+          custom_message: message,
+        },
+      }),
+    });
+    if (!res.ok) {
+      status = "failed";
+      console.error("EmailJS odoslanie dokumentu zlyhalo:", res.status, await res.text());
+    }
+  } catch (err) {
+    status = "failed";
+    console.error("EmailJS odoslanie dokumentu zlyhalo:", err);
+  }
+
+  try {
+    await db.collection("mail").add({ to, docLabel, docNumber, status, createdAt: FieldValue.serverTimestamp() });
+  } catch (err) {
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
+
+  if (status === "failed") {
+    throw new HttpsError("internal", "Odoslanie e-mailu zlyhalo. Skúste to prosím znova.");
+  }
+}
+
+exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže odosielať faktúry.");
+  }
+  const { orderId } = request.data || {};
+  if (!orderId) throw new HttpsError("invalid-argument", "Chýba orderId.");
+
+  const orderSnap = await db.collection("orders").doc(orderId).get();
+  if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
+  const order = orderSnap.data();
+  if (!order.paidAt) throw new HttpsError("failed-precondition", "Objednávka ešte nie je uhradená.");
+
+  const settingsSnap = await db.collection("settings").doc("general").get();
+  const s = settingsSnap.exists ? settingsSnap.data() : {};
+
+  const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
+  order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
+
+  const invoiceNumber = await nextDocNumber("KU", "invoiceCounters");
+  const buffer = await pdfToBuffer((doc) => drawInvoicePdf(doc, { s, order, invoiceNumber }));
+  const url = await uploadPdfAndGetUrl(buffer, "invoices/" + orderId + "/" + invoiceNumber + ".pdf");
+
+  await sendDocumentLinkEmail({
+    to: order.email,
+    name: order.firstName || order.name,
+    docLabel: "faktúra",
+    docNumber: invoiceNumber,
+    url,
+    extraLine: "Suma: " + (order.amount != null ? order.amount : "—") + " € · VS: " + (order.variableSymbol || "—"),
+  });
+
+  return { invoiceNumber, url };
+});
+
+exports.sendPaymentConfirmationEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže odosielať potvrdenia o zaplatení.");
+  }
+  const { orderId } = request.data || {};
+  if (!orderId) throw new HttpsError("invalid-argument", "Chýba orderId.");
+
+  const orderSnap = await db.collection("orders").doc(orderId).get();
+  if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
+  const order = orderSnap.data();
+  if (!order.paidAt) throw new HttpsError("failed-precondition", "Objednávka ešte nie je uhradená.");
+
+  const settingsSnap = await db.collection("settings").doc("general").get();
+  const s = settingsSnap.exists ? settingsSnap.data() : {};
+
+  const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
+  order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
+
+  const pozNumber = await nextDocNumber("POZ", "pozCounters");
+  const buffer = await pdfToBuffer((doc) => drawPozPdf(doc, { s, order, pozNumber }));
+  const url = await uploadPdfAndGetUrl(buffer, "poz/" + orderId + "/" + pozNumber + ".pdf");
+
+  await sendDocumentLinkEmail({
+    to: order.email,
+    name: order.firstName || order.name,
+    docLabel: "potvrdenie o zaplatení",
+    docNumber: pozNumber,
+    url,
+  });
+
+  return { pozNumber, url };
 });
