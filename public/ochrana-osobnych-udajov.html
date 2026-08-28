@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ochrana osobných údajov (GDPR) — Múdro a Bezpečne Online</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+<style>
+  .gdpr h2 { margin-top: 2rem; font-size: 1.25rem; }
+  .gdpr h3 { margin-top: 1.2rem; font-size: 1.05rem; }
+  .gdpr table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  .gdpr th, .gdpr td { text-align: left; padding: .6rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; font-size: .95rem; }
+  .gdpr th { color: var(--text-mute); font-weight: 700; }
+  .gdpr ul { padding-left: 1.3rem; }
+  .gdpr li { margin-bottom: .4rem; }
+  .fill { background: var(--warn-bg); color: var(--warn); padding: .05rem .35rem; border-radius: 5px; font-size: .9em; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Múdro a Bezpečne Online
+    </a>
+    <div class="text-tools">
+      <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+      <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+    </div>
+  </div>
+</header>
+
+<main class="container gdpr" style="max-width:760px;padding-top:2.5rem;padding-bottom:4rem;">
+  <h1>Ochrana osobných údajov (GDPR)</h1>
+  <p class="lead">Zásady spracúvania osobných údajov portálu Múdro a Bezpečne Online.</p>
+  <p class="hint">Platné od: <span class="fill">[doplňte dátum účinnosti]</span> · Posledná aktualizácia: <span class="fill">[doplňte dátum]</span></p>
+
+  <div class="card" style="margin-top:1.5rem;">
+
+    <h2>1. Kto je prevádzkovateľom vašich údajov</h2>
+    <p>
+      Prevádzkovateľom webového portálu Múdro a Bezpečne Online a spracúvateľom vašich osobných údajov je:
+    </p>
+    <table>
+      <tr><th>Názov</th><td>Akadémia digitálneho vzdelávania DigiStart <span class="fill">[doplňte presný právny názov subjektu, napr. s.r.o. / o.z. / živnostník]</span></td></tr>
+      <tr><th>Sídlo</th><td><span class="fill">[doplňte presnú adresu sídla]</span></td></tr>
+      <tr><th>IČO</th><td><span class="fill">[doplňte IČO]</span></td></tr>
+      <tr><th>Registrácia</th><td><span class="fill">[doplňte, napr. Obchodný register Okresného súdu ..., vložka č. ...]</span></td></tr>
+      <tr><th>Webová stránka</th><td>www.digistart.sk</td></tr>
+      <tr><th>Kontaktný e-mail</th><td><span class="fill">[doplňte kontaktný e-mail, napr. gdpr@digistart.sk]</span></td></tr>
+    </table>
+    <p class="hint">V prípade akýchkoľvek otázok týkajúcich sa spracúvania vašich osobných údajov nás môžete kedykoľvek kontaktovať na uvedenom e-maile.</p>
+
+    <h2>2. Aké osobné údaje spracúvame</h2>
+
+    <h3>2.1 Údaje pri registrácii a objednávke workshopu</h3>
+    <ul>
+      <li>Meno a priezvisko (vaše a prípadných ďalších účastníkov skupinovej objednávky)</li>
+      <li>E-mailová adresa</li>
+      <li>Údaje o objednávke — zvolený workshop, cena, prípadný zľavový kód, variabilný symbol platby, stav úhrady</li>
+      <li>Prístupový kód ku kurzu, ktorý vám bol vygenerovaný po prijatí platby</li>
+    </ul>
+
+    <h3>2.2 Údaje o zariadení a technické údaje</h3>
+    <p>Pri vytvorení objednávky a pri každom prihlásení do interaktívneho kurzu evidujeme z bezpečnostných a prevádzkových dôvodov (napr. odhalenie zdieľania alebo zneužitia prístupového kódu, riešenie technických problémov):</p>
+    <ul>
+      <li>Typ zariadenia (počítač / tablet / mobil) a operačný systém</li>
+      <li>Typ a verzia prehliadača</li>
+      <li>Rozlíšenie/veľkosť obrazovky</li>
+      <li>Stránka, z ktorej ste na náš web prišli (tzv. referrer), prípadne UTM parametre marketingovej kampane</li>
+      <li>Dátum a čas prihlásenia a odhlásenia, dĺžka trvania relácie</li>
+      <li>IP adresa a z nej odvodená približná poloha (krajina, kraj, mesto) — pozri bod 2.3</li>
+    </ul>
+
+    <h3>2.3 Poloha na základe IP adresy</h3>
+    <p>
+      Pri prihlásení do kurzu spracúvame približnú polohu (krajinu, kraj, mesto) odvodenú z vašej IP adresy — z bezpečnostného dôvodu (napr. odhalenie neobvyklého prístupu k vášmu kódu). Pri vytvorení objednávky spracúvame tento údaj len s vaším súhlasom (voliteľné „štatistické" cookies, pozri bod 6), a to výlučne na agregovanú, anonymizovanú marketingovú štatistiku toho, z ktorých krajov Slovenska prichádza najviac registrácií.
+    </p>
+
+    <h3>2.4 Priebeh a výsledky kurzu</h3>
+    <ul>
+      <li>Postup v jednotlivých obrazovkách interaktívneho kurzu</li>
+      <li>Výsledky kvízu (skóre, dátum absolvovania)</li>
+      <li>Vaše hodnotenie a spätná väzba ku kurzu (ak ich vyplníte)</li>
+    </ul>
+
+    <h3>2.5 Komunikácia</h3>
+    <ul>
+      <li>Obsah správ v chate medzi vami a lektorom/administrátorom</li>
+      <li>Údaje o rezervácii konzultácie (termín, spôsob, poznámka)</li>
+    </ul>
+
+    <h2>3. Na aký účel a na akom právnom základe</h2>
+    <table>
+      <thead><tr><th>Účel spracúvania</th><th>Právny základ (čl. 6 ods. 1 GDPR)</th></tr></thead>
+      <tbody>
+        <tr><td>Vybavenie objednávky, vystavenie prístupového kódu, poskytnutie kurzu</td><td>b) plnenie zmluvy</td></tr>
+        <tr><td>Bezpečnostné logovanie prihlásení (zariadenie, IP, poloha pri prihlásení) — ochrana pred zneužitím kódu</td><td>f) oprávnený záujem prevádzkovateľa</td></tr>
+        <tr><td>Marketingová štatistika regiónu registrácií (poloha pri objednávke)</td><td>a) súhlas (voliteľné cookies)</td></tr>
+        <tr><td>Komunikácia v chate a pri konzultáciách</td><td>b) plnenie zmluvy / predzmluvné vzťahy</td></tr>
+        <tr><td>Zobrazenie referencie s vaším menom na úvodnej stránke</td><td>a) súhlas (poskytnutý pri zaslaní referencie)</td></tr>
+        <tr><td>Účtovné a daňové doklady</td><td>c) plnenie zákonnej povinnosti</td></tr>
+        <tr><td>Vybavovanie reklamácií a sťažností</td><td>c) plnenie zákonnej povinnosti / f) oprávnený záujem</td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Doba uchovávania</h2>
+    <ul>
+      <li><strong>Objednávky a účtovné doklady:</strong> po dobu vyžadovanú zákonom o účtovníctve a daňovými predpismi (spravidla 10 rokov).</li>
+      <li><strong>Prístupové kódy, priebeh a výsledky kurzu:</strong> po dobu trvania vášho prístupu ku kurzu a primeranú dobu potom, najviac <span class="fill">[doplňte, napr. 24 mesiacov]</span> od poslednej aktivity, pokiaľ nepožiadate o skorší výmaz.</li>
+      <li><strong>Záznamy o prihlásení (zariadenie, IP, poloha):</strong> najviac <span class="fill">[doplňte, napr. 12 mesiacov]</span>, následne sa anonymizujú alebo vymažú.</li>
+      <li><strong>História chatu:</strong> po dobu trvania vášho prístupu ku kurzu, následne sa vymaže spolu s ostatnými údajmi.</li>
+      <li><strong>Vymazané registrácie:</strong> ak registráciu na vašu žiadosť vymažeme, archivujeme len minimálny záznam (meno, e-mail, workshop, dátum a dôvod vymazania) po dobu <span class="fill">[doplňte, napr. 12 mesiacov]</span> pre účely internej kontroly, ostatné údaje (priebeh kurzu, relácie, výsledky kvízu) sa vymažú natrvalo okamžite.</li>
+    </ul>
+
+    <h2>5. Komu údaje sprístupňujeme</h2>
+    <p>Vaše údaje neposkytujeme tretím stranám na ich vlastné marketingové účely. Na prevádzku portálu využívame týchto sprostredkovateľov:</p>
+    <ul>
+      <li><strong>Google Firebase / Google Cloud Platform</strong> (Google Ireland Limited) — hosting webu, databáza, autentifikácia a odosielanie e-mailov. Dáta môžu byť spracúvané aj mimo EÚ/EHP (napr. v USA); Google sa zaväzuje k štandardným zmluvným doložkám (SCC) schváleným Európskou komisiou.</li>
+      <li><strong>ipwho.is</strong> — služba na odvodenie približnej polohy z IP adresy (bod 2.2 a 2.3).</li>
+      <li>Poskytovateľ platobných služieb / banka, cez ktorú prijímame úhrady bankovým prevodom.</li>
+    </ul>
+    <p>Údaje môžeme sprístupniť aj orgánom verejnej moci, ak nám to ukladá zákon (napr. daňový úrad, orgány činné v trestnom konaní).</p>
+
+    <h2>6. Cookies</h2>
+    <p>Pri prvej návšteve stránky vás požiadame o súhlas s používaním cookies. Rozlišujeme dve kategórie:</p>
+    <table>
+      <thead><tr><th>Kategória</th><th>Účel</th><th>Súhlas potrebný?</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Nevyhnutné</strong></td><td>Prihlásenie do kurzu, uloženie priebehu, spracovanie objednávky, zapamätanie zvolenej veľkosti textu. Bez nich portál nemôže fungovať.</td><td>Nie — právny základ je plnenie zmluvy/oprávnený záujem.</td></tr>
+        <tr><td><strong>Štatistické</strong></td><td>Anonymizovaná IP geolokácia pri objednávke pre marketingovú mapu, z ktorých krajov prichádza najviac registrácií.</td><td>Áno, dobrovoľný.</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Svoj súhlas môžete kedykoľvek zmeniť tlačidlom nižšie:
+    </p>
+    <p><button type="button" class="btn btn-secondary" onclick="window.MBO && MBO.openCookieSettings()">Zmeniť nastavenia cookies</button></p>
+
+    <h2>7. Vaše práva</h2>
+    <p>Vo vzťahu k svojim osobným údajom máte nasledujúce práva podľa GDPR:</p>
+    <ul>
+      <li><strong>Právo na prístup</strong> — získať potvrdenie a kópiu údajov, ktoré o vás spracúvame.</li>
+      <li><strong>Právo na opravu</strong> — požiadať o opravu nesprávnych alebo neúplných údajov.</li>
+      <li><strong>Právo na výmaz</strong> ("právo byť zabudnutý") — požiadať o vymazanie vašich údajov, ak na ich spracúvanie už nie je zákonný dôvod.</li>
+      <li><strong>Právo na obmedzenie spracúvania</strong> — napríklad kým prebieha overenie správnosti údajov.</li>
+      <li><strong>Právo na prenosnosť údajov</strong> — získať svoje údaje v štruktúrovanom, strojovo čitateľnom formáte.</li>
+      <li><strong>Právo namietať</strong> — proti spracúvaniu na základe oprávneného záujmu.</li>
+      <li><strong>Právo odvolať súhlas</strong> — kedykoľvek, bez toho, aby to malo vplyv na zákonnosť spracúvania pred jeho odvolaním.</li>
+      <li><strong>Právo podať sťažnosť</strong> na Úrad na ochranu osobných údajov Slovenskej republiky, Hraničná 12, 820 07 Bratislava 27, <a href="https://dataprotection.gov.sk" target="_blank" rel="noopener">dataprotection.gov.sk</a>, ak sa domnievate, že spracúvanie vašich údajov porušuje GDPR.</li>
+    </ul>
+    <p>Svoje práva si môžete uplatniť e-mailom na kontaktnej adrese uvedenej v bode 1. Na vašu žiadosť odpovieme najneskôr do 30 dní.</p>
+
+    <h2>8. Zabezpečenie údajov</h2>
+    <p>
+      Vaše údaje sú uložené na zabezpečených serveroch Google Firebase s prístupom chráneným heslom a autentifikáciou. Prístup do administračnej časti portálu má výhradne poverený administrátor, mazanie registrácií je chránené opätovným overením hesla. Prenos údajov medzi vaším prehliadačom a serverom je šifrovaný (HTTPS).
+    </p>
+
+    <h2>9. Automatizované rozhodovanie</h2>
+    <p>Na portáli nedochádza k automatizovanému rozhodovaniu ani profilovaniu, ktoré by malo pre vás právne účinky alebo by vás obdobne významne ovplyvňovalo.</p>
+
+    <h2>10. Zmeny týchto zásad</h2>
+    <p>Tieto zásady môžeme z času na čas aktualizovať, napríklad pri zmene právnych predpisov alebo funkcií portálu. Aktuálne znenie je vždy dostupné na tejto stránke spolu s dátumom poslednej aktualizácie.</p>
+
+  </div>
+</main>
+
+</body>
+</html>

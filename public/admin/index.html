@@ -196,10 +196,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
         Registrácie
       </button>
-      <button data-section="vymazane" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
-        Vymazané registrácie
-      </button>
       <button data-section="workshopy" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         Workshopy
@@ -385,13 +381,16 @@
           </div>
           <button class="btn btn-secondary" id="load-more" style="margin-top:1rem;">Načítať ďalšie</button>
         </div>
-      </section>
 
-      <section class="dash-section" data-section="vymazane">
-        <h1>Vymazané registrácie</h1>
-        <p class="hint" style="margin-bottom:1rem;">Archív registrácií, ktoré boli vymazané cez sekciu Registrácie. Uchováva sa meno, e-mail, workshop, prístupové kódy a kedy a kým bola registrácia vymazaná — samotný postup kurzu, relácie a výsledky kvízu sa spolu s registráciou natrvalo vymazali.</p>
-        <div class="card">
-          <div style="overflow-x:auto;">
+        <div class="card" style="margin-top:1.5rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <div>
+              <h2 style="margin-bottom:.3rem;">Vymazané registrácie</h2>
+              <p class="hint" style="margin:0;">Archív toho, čo bolo vymazané vyššie — meno, e-mail, workshop, kódy a kedy/kým bolo vymazané.</p>
+            </div>
+            <button class="btn btn-secondary" type="button" id="toggle-deleted-registrations">Zobraziť</button>
+          </div>
+          <div id="deleted-registrations-wrap" style="display:none;margin-top:1rem;overflow-x:auto;">
             <table class="dash">
               <thead>
                 <tr>
@@ -776,9 +775,18 @@ window.addEventListener("load", function () {
   }
   document.getElementById("dash-nav").addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-section]");
-    if (btn) {
-      showSection(btn.dataset.section);
-      if (btn.dataset.section === "vymazane") loadDeletedRegistrations();
+    if (btn) showSection(btn.dataset.section);
+  });
+
+  let deletedRegistrationsLoaded = false;
+  document.getElementById("toggle-deleted-registrations").addEventListener("click", (e) => {
+    const wrap = document.getElementById("deleted-registrations-wrap");
+    const isHidden = wrap.style.display === "none";
+    wrap.style.display = isHidden ? "block" : "none";
+    e.target.textContent = isHidden ? "Skryť" : "Zobraziť";
+    if (isHidden && !deletedRegistrationsLoaded) {
+      deletedRegistrationsLoaded = true;
+      loadDeletedRegistrations();
     }
   });
 
@@ -1905,6 +1913,16 @@ window.addEventListener("load", function () {
     if (order.utm && (order.utm.source || order.utm.medium || order.utm.campaign)) {
       regLine += "<div class='session-row'><span>Zdroj registrácie</span><span>" + [order.utm.source, order.utm.medium, order.utm.campaign].filter(Boolean).join(" / ") + "</span></div>";
     }
+    if (order.client && (order.client.deviceType || order.client.browser)) {
+      const c = order.client;
+      const deviceLine = [c.deviceType, c.os].filter(Boolean).join(" · ");
+      const browserLine = [c.browser, c.browserVersion].filter(Boolean).join(" ");
+      const screenLine = (c.screenWidth && c.screenHeight) ? c.screenWidth + "×" + c.screenHeight + " px" : null;
+      regLine += "<div class='session-row'><span>Zariadenie pri registrácii</span><span>" + [deviceLine, browserLine, screenLine].filter(Boolean).join(" · ") + "</span></div>";
+      if (order.client.referrer) {
+        regLine += "<div class='session-row'><span>Odkiaľ prišiel(la)</span><span style='word-break:break-all;'>" + escapeHtml(order.client.referrer) + "</span></div>";
+      }
+    }
 
     if (!codeId) {
       detailBody.innerHTML = regLine + "<p class='hint' style='margin-top:1rem;'>Prístupový kód zatiaľ nebol vydaný.</p>";
@@ -1944,11 +1962,17 @@ window.addEventListener("load", function () {
         const reason = s.reason ? " · " + (reasonLabels[s.reason] || s.reason) : "";
         const place = [s.city || s.region, s.country].filter(Boolean).join(", ");
         const placeLine = [s.ip, place].filter(Boolean).join(" · ") || "—";
+        const deviceLine = [s.deviceType, s.os].filter(Boolean).join(" · ");
+        const browserLine = [s.browser, s.browserVersion].filter(Boolean).join(" ");
+        const screenLine = (s.screenWidth && s.screenHeight) ? s.screenWidth + "×" + s.screenHeight + " px" : null;
+        const clientLine = [deviceLine, browserLine, screenLine].filter(Boolean).join(" · ");
         html +=
           "<div class='session-row' style='flex-direction:column;align-items:flex-start;gap:.2rem;padding:.6rem 0;'>" +
           "<div style='display:flex;justify-content:space-between;width:100%;'><strong>Prihlásenie: " + login + "</strong><span class='chip " + (logout ? "good" : "warn") + "'>" + dur + "</span></div>" +
           "<div class='hint'>" + (logout ? "Odhlásenie: " + logout + reason : "Relácia stále beží") + "</div>" +
           "<div class='hint'>IP / lokalita: " + placeLine + "</div>" +
+          (clientLine ? "<div class='hint'>Zariadenie: " + clientLine + "</div>" : "") +
+          (s.referrer ? "<div class='hint' style='word-break:break-all;'>Odkiaľ prišiel(la): " + escapeHtml(s.referrer) + "</div>" : "") +
           "</div>";
       });
     }
@@ -2375,6 +2399,8 @@ window.addEventListener("load", function () {
         document.getElementById("select-all-orders").checked = false;
         updateDeleteSelectedButton();
         if (lastSnapshot) renderOrders(lastSnapshot);
+        deletedRegistrationsLoaded = false;
+        if (document.getElementById("deleted-registrations-wrap").style.display !== "none") loadDeletedRegistrations();
       } catch (err) {
         errorEl.textContent = "Mazanie zlyhalo: " + err.message;
         errorEl.style.display = "block";

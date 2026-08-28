@@ -610,6 +610,7 @@ function renderBudgetExercise(ex) {
 
   async function startSession() {
     const geo = await lookupIpCountry();
+    const client = window.MBO ? MBO.getClientInfo() : {};
     const ref = await state.db.collection("sessions").add({
       codeId: state.codeId,
       workshopId: state.workshopId,
@@ -620,6 +621,13 @@ function renderBudgetExercise(ex) {
       country: geo.country || null,
       city: geo.city || null,
       region: geo.region || null,
+      deviceType: client.deviceType || null,
+      os: client.os || null,
+      browser: client.browser || null,
+      browserVersion: client.browserVersion || null,
+      screenWidth: client.screenWidth || null,
+      screenHeight: client.screenHeight || null,
+      referrer: client.referrer ? String(client.referrer).slice(0, 500) : null,
     });
     state.sessionRef = ref;
     state.sessionStart = Date.now();

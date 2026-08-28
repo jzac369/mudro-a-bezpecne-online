@@ -183,6 +183,7 @@
     };
 
     async function lookupGeo() {
+      if (!window.MBO || !MBO.hasStatsConsent()) return null; // len so súhlasom so štatistickými cookies
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 2500);
@@ -209,8 +210,9 @@
 
       try {
         const geo = await lookupGeo();
+        const client = window.MBO ? MBO.getClientInfo() : null;
         const createOrder = firebase.app().functions("europe-west1").httpsCallable("createOrder");
-        const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm, geo });
+        const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm, geo, client });
         document.getElementById("pay-amount").textContent = result.data.amount + " €";
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;
         document.getElementById("step-form").style.display = "none";

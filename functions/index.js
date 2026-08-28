@@ -122,7 +122,7 @@ function fullName(firstName, lastName) {
  * hlavného objednávateľa) a voliteľný zľavový kupón.
  */
 exports.createOrder = onCall(async (request) => {
-  const { firstName, lastName, email, workshopId, participants, couponCode, utm, geo } = request.data || {};
+  const { firstName, lastName, email, workshopId, participants, couponCode, utm, geo, client } = request.data || {};
   if (!firstName || !lastName || !email || !workshopId) {
     throw new HttpsError("invalid-argument", "Chýba meno, priezvisko, e-mail alebo workshop.");
   }
@@ -216,6 +216,15 @@ exports.createOrder = onCall(async (request) => {
       city: geo.city || null,
       region: geo.region || null,
       country: geo.country || null,
+    } : null,
+    client: client && typeof client === "object" ? {
+      deviceType: client.deviceType || null,
+      os: client.os || null,
+      browser: client.browser || null,
+      browserVersion: client.browserVersion || null,
+      screenWidth: Number.isFinite(client.screenWidth) ? client.screenWidth : null,
+      screenHeight: Number.isFinite(client.screenHeight) ? client.screenHeight : null,
+      referrer: typeof client.referrer === "string" ? client.referrer.slice(0, 500) : null,
     } : null,
   });
 
