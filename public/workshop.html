@@ -605,14 +605,12 @@ function renderBudgetExercise(ex) {
       });
     }
 
-    async function submitQuiz() {
+    function submitQuiz() {
       const total = allQuestions.length;
       const correct = allQuestions.filter((q, i) => state.quizAnswers[i] === q.correctIndex).length;
       const passThreshold = Math.max(Math.ceil(total * 0.8), Math.min(state.workshop.quiz.passScore, total));
       const passed = correct >= passThreshold;
       const wrongIndexes = allQuestions.map((q, i) => i).filter((i) => state.quizAnswers[i] !== allQuestions[i].correctIndex);
-      const resultEl = document.getElementById("quiz-result");
-
       const participantName = sessionStorage.getItem("mbo_participant_name") || "Účastník kurzu";
 
       const breakdownHtml = allQuestions.map((q, i) => {
@@ -624,40 +622,69 @@ function renderBudgetExercise(ex) {
           "<span style='color:" + (isCorrect ? "var(--good)" : "var(--warn)") + ";'>" + (isCorrect ? "✔" : "✘") + "</span> " +
           (i + 1) + ". " + q.question + "</p>" +
           "<p class='hint' style='margin:0;'>Vaša odpoveď: " + chosenText + "</p>" +
-          (isCorrect ? "" : "<p class='hint' style='margin:0;color:var(--good);'>Správna odpoveď: " + q.options[q.correctIndex] + "</p>") +
+          "<p class='hint' style='margin:0;color:var(--good);font-weight:" + (isCorrect ? "400" : "700") + ";'>Správna odpoveď: " + q.options[q.correctIndex] + "</p>" +
           "</div>";
       }).join("");
 
-      const summaryLine =
-        '<span class="' + (passed ? "feedback-ok" : "feedback-bad") + '">Správne odpovede: ' + correct + " / " + total + "</span><br>" +
-        (passed
-          ? "Výborne, kurz ste úspešne dokončili! Presmerúvame vás na certifikát…"
-          : "Ešte to nie je ono — skúste si zopakovať len otázky, ktoré neboli správne.");
+      renderReviewScreen();
 
-      resultEl.innerHTML = summaryLine + "<h3 style='margin-top:1.4rem;margin-bottom:.3rem;'>Prehľad odpovedí</h3>" + breakdownHtml;
-
-      if (!passed) {
-        const retryBtn = document.createElement("button");
-        retryBtn.className = "btn btn-secondary";
-        retryBtn.style.margin = "1rem 0";
-        retryBtn.textContent = "Zopakovať nesprávne otázky (" + wrongIndexes.length + ")";
-        retryBtn.addEventListener("click", () => renderQuiz(wrongIndexes));
-        resultEl.insertBefore(retryBtn, resultEl.querySelector("h3"));
+      function renderReviewScreen() {
+        body.innerHTML =
+          "<h2 style='margin-top:0;'>Skontrolujte si svoje odpovede</h2>" +
+          "<p class='hint'>Pred odovzdaním práce lektorovi si prejdite všetky otázky — pri každej je vyznačená správna odpoveď.</p>" +
+          breakdownHtml +
+          '<button class="btn btn-primary" id="submit-work-btn" type="button" style="margin-top:1.2rem;">Odovzdať prácu</button>';
+        document.getElementById("submit-work-btn").addEventListener("click", handleSubmitWork);
       }
 
-      await state.db.collection("quizResults").add({
-        codeId: state.codeId,
-        workshopId: state.workshopId,
-        answers: state.quizAnswers,
-        score: correct,
-        total,
-        passed,
-        completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-      await saveProgress({ quizCompleted: true, quizScore: correct, quizPassed: passed });
-      if (passed) {
-        markStepDone("kviz");
-        await revealCertificateWithLoading(participantName);
+      async function handleSubmitWork() {
+        body.innerHTML =
+          "<div class='cert-loading'>" +
+          "<div class='cert-spinner' aria-hidden='true'></div>" +
+          "<p style='font-weight:700;margin:0;'>Práca úspešne odovzdaná lektorovi.<br>Kontrolujem výsledky…</p>" +
+          "</div>";
+
+        await state.db.collection("quizResults").add({
+          codeId: state.codeId,
+          workshopId: state.workshopId,
+          answers: state.quizAnswers,
+          score: correct,
+          total,
+          passed,
+          completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        await saveProgress({ quizCompleted: true, quizScore: correct, quizPassed: passed });
+        if (passed) markStepDone("kviz");
+
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        renderEvaluationScreen();
+      }
+
+      function renderEvaluationScreen() {
+        const evalMessage = passed
+          ? "🎉 Výborne! Kurz ste úspešne dokončili a preukázali ste, že bezpečnému správaniu online naozaj rozumiete. Ďakujeme, že ste tomu venovali svoj čas — zaslúžite si certifikát!"
+          : "Ešte to nie je ono, ale nevadí — skúste si zopakovať otázky, ktoré neboli správne, a skúste to znova.";
+
+        body.innerHTML =
+          '<h2 style="margin-top:0;">Hodnotenie</h2>' +
+          '<p><span class="' + (passed ? "feedback-ok" : "feedback-bad") + '">Správne odpovede: ' + correct + " / " + total + "</span></p>" +
+          "<p>" + evalMessage + "</p>";
+
+        if (passed) {
+          const goCertBtn = document.createElement("button");
+          goCertBtn.className = "btn btn-primary";
+          goCertBtn.style.marginTop = "1rem";
+          goCertBtn.textContent = "Prejsť na certifikát";
+          goCertBtn.addEventListener("click", () => revealCertificateWithLoading(participantName));
+          body.appendChild(goCertBtn);
+        } else {
+          const retryBtn = document.createElement("button");
+          retryBtn.className = "btn btn-secondary";
+          retryBtn.style.marginTop = "1rem";
+          retryBtn.textContent = "Zopakovať nesprávne otázky (" + wrongIndexes.length + ")";
+          retryBtn.addEventListener("click", () => renderQuiz(wrongIndexes));
+          body.appendChild(retryBtn);
+        }
       }
     }
 
