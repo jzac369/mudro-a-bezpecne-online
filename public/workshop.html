@@ -582,21 +582,36 @@ function renderBudgetExercise(ex) {
 
       const participantName = sessionStorage.getItem("mbo_participant_name") || "Účastník kurzu";
 
-      resultEl.innerHTML =
-        '<span class="' + (passed ? "feedback-ok" : "feedback-bad") + '">Správne odpovede: ' + correct + " / " + total + "</span>";
+      const breakdownHtml = allQuestions.map((q, i) => {
+        const chosen = state.quizAnswers[i];
+        const isCorrect = chosen === q.correctIndex;
+        const chosenText = chosen != null && q.options[chosen] != null ? q.options[chosen] : "—";
+        return "<div style='padding:.7rem 0;border-bottom:1px solid var(--line);'>" +
+          "<p style='font-weight:700;margin-bottom:.3rem;'>" +
+          "<span style='color:" + (isCorrect ? "var(--good)" : "var(--warn)") + ";'>" + (isCorrect ? "✔" : "✘") + "</span> " +
+          (i + 1) + ". " + q.question + "</p>" +
+          "<p class='hint' style='margin:0;'>Vaša odpoveď: " + chosenText + "</p>" +
+          (isCorrect ? "" : "<p class='hint' style='margin:0;color:var(--good);'>Správna odpoveď: " + q.options[q.correctIndex] + "</p>") +
+          "</div>";
+      }).join("");
+
+      const summaryLine =
+        '<span class="' + (passed ? "feedback-ok" : "feedback-bad") + '">Správne odpovede: ' + correct + " / " + total + "</span><br>" +
+        (passed
+          ? "Výborne, kurz ste úspešne dokončili! Váš certifikát je teraz odomknutý."
+          : "Ešte to nie je ono — skúste si zopakovať len otázky, ktoré neboli správne.");
+
+      resultEl.innerHTML = summaryLine + "<h3 style='margin-top:1.4rem;margin-bottom:.3rem;'>Prehľad odpovedí</h3>" + breakdownHtml;
 
       if (passed) {
-        resultEl.innerHTML += "<br>Výborne, kurz ste úspešne dokončili!";
         await showCertificate(participantName);
       } else {
-        resultEl.innerHTML += "<br>Ešte to nie je ono — skúste si zopakovať len otázky, ktoré neboli správne.";
         const retryBtn = document.createElement("button");
         retryBtn.className = "btn btn-secondary";
-        retryBtn.style.marginTop = ".8rem";
+        retryBtn.style.margin = "1rem 0";
         retryBtn.textContent = "Zopakovať nesprávne otázky (" + wrongIndexes.length + ")";
         retryBtn.addEventListener("click", () => renderQuiz(wrongIndexes));
-        resultEl.appendChild(document.createElement("br"));
-        resultEl.appendChild(retryBtn);
+        resultEl.insertBefore(retryBtn, resultEl.querySelector("h3"));
       }
 
       await state.db.collection("quizResults").add({
@@ -611,7 +626,9 @@ function renderBudgetExercise(ex) {
       await saveProgress({ quizCompleted: true, quizScore: correct, quizPassed: passed });
       if (passed) {
         markStepDone("kviz");
-        setTimeout(() => setActiveStep("certifikat"), 1200);
+        // Neodhlasujeme sa hneď na certifikát — nech si účastník najprv
+        // prejde prehľad odpovedí, ktorý si vyžiadal. Krok "Certifikát"
+        // je odteraz odomknutý, prejde naň sám kliknutím v krokovníku.
       }
     }
 
