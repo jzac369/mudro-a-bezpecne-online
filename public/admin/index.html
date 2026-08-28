@@ -2441,7 +2441,7 @@ window.addEventListener("load", function () {
       const statusChip =
         (order.status === "pending_payment"
           ? '<span class="chip warn">Čaká na úhradu' + (isStale ? " · staré" : "") + "</span>"
-          : '<span class="chip good">Uhradené</span>' + (paymentMethodLabels[order.paymentMethod] ? " <span class='chip'>" + paymentMethodLabels[order.paymentMethod] + "</span>" : "")) +
+          : '<span class="chip good">Uhradené</span>' + (paymentMethodLabels[order.paymentMethod] ? " <span class='chip info'>" + paymentMethodLabels[order.paymentMethod] + "</span>" : "")) +
         (expiryBadge ? "<br>" + expiryBadge : "") +
         "<div class='row-actions' style='margin-top:.4rem;'>" +
         (order.status !== "pending_payment" ?
