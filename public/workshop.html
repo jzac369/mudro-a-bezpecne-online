@@ -592,11 +592,17 @@ function renderBudgetExercise(ex) {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 2500);
-      const res = await fetch("https://ipapi.co/json/", { signal: controller.signal });
+      const res = await fetch("https://ipwho.is/", { signal: controller.signal });
       clearTimeout(timeout);
       if (!res.ok) return {};
       const data = await res.json();
-      return { ip: data.ip || null, country: data.country_name || null, city: data.city || null };
+      if (data.success === false) return {};
+      return {
+        ip: data.ip || null,
+        country: data.country || null,
+        city: data.city || null,
+        region: data.region || null,
+      };
     } catch (err) {
       return {}; // best-effort — nikdy neblokuje prihlásenie
     }
@@ -613,6 +619,7 @@ function renderBudgetExercise(ex) {
       ip: geo.ip || null,
       country: geo.country || null,
       city: geo.city || null,
+      region: geo.region || null,
     });
     state.sessionRef = ref;
     state.sessionStart = Date.now();

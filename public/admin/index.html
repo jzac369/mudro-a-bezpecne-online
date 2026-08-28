@@ -1785,7 +1785,7 @@ window.addEventListener("load", function () {
         const logout = s.logoutAt ? s.logoutAt.toDate().toLocaleString("sk-SK") : null;
         const dur = s.durationSec ? Math.round(s.durationSec / 60) + " min" : "prebieha";
         const reason = s.reason ? " · " + (reasonLabels[s.reason] || s.reason) : "";
-        const place = [s.city, s.country].filter(Boolean).join(", ");
+        const place = [s.city || s.region, s.country].filter(Boolean).join(", ");
         const placeLine = [s.ip, place].filter(Boolean).join(" · ") || "—";
         html +=
           "<div class='session-row' style='flex-direction:column;align-items:flex-start;gap:.2rem;padding:.6rem 0;'>" +
