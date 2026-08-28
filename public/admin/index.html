@@ -2625,6 +2625,13 @@ window.addEventListener("load", function () {
     ]);
 
     let html = regLine;
+    const pdataForStatus = progressSnap.exists ? progressSnap.data() : null;
+    if (pdataForStatus && pdataForStatus.courseCompleted) {
+      const completedWhen = pdataForStatus.courseCompletedAt ? pdataForStatus.courseCompletedAt.toDate().toLocaleString("sk-SK") : "—";
+      html += "<div class='session-row'><span>Stav kurzu</span><span class='chip good'>Ukončený · " + completedWhen + "</span></div>";
+    } else {
+      html += "<div class='session-row'><span>Stav kurzu</span><span class='chip warn'>Neukončený</span></div>";
+    }
     html += "<h3 style='margin-top:1.4rem;'>Interaktívny kurz</h3>";
     if (progressSnap.exists && Number.isInteger(progressSnap.data().courseIndex)) {
       const pdata = progressSnap.data();
