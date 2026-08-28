@@ -149,18 +149,23 @@ exports.createOrder = onCall(async (request) => {
 
   let unitPrice = basePrice;
   let discountNote = null;
+  const baseAmount = Math.round(basePrice * groupSize * 100) / 100;
+  let groupDiscountPercent = 0;
 
   // Skupinová zľava (ak je zapnutá a počet účastníkov ju dosahuje).
   if (settings.groupDiscountMinSize > 0 && groupSize >= settings.groupDiscountMinSize && settings.groupDiscountPercent > 0) {
     unitPrice = unitPrice * (1 - settings.groupDiscountPercent / 100);
     discountNote = "skupinová zľava " + settings.groupDiscountPercent + " %";
+    groupDiscountPercent = settings.groupDiscountPercent;
   }
 
   let amount = Math.round(unitPrice * groupSize * 100) / 100;
+  const groupDiscountAmount = Math.round((baseAmount - amount) * 100) / 100;
 
   // Zľavový kód — overí sa a jeho použitie sa započíta atomicky (transakcia
   // chráni pred súbežným prekročením limitu maxUses pri viacerých objednávkach naraz).
   let couponApplied = null;
+  let couponDiscountAmount = 0;
   if (couponCode) {
     const codeId = String(couponCode).trim().toUpperCase();
     if (codeId) {
@@ -185,6 +190,7 @@ exports.createOrder = onCall(async (request) => {
         if (discountAmount > 0) {
           amount = Math.round((amount - discountAmount) * 100) / 100;
           couponApplied = codeId;
+          couponDiscountAmount = discountAmount;
         }
       } catch (err) {
         console.error("Overenie zľavového kódu zlyhalo:", err);
@@ -193,7 +199,9 @@ exports.createOrder = onCall(async (request) => {
   }
 
   const orderRef = db.collection("orders").doc();
-  const variableSymbol = orderRef.id.replace(/\D/g, "").slice(0, 10) || String(Date.now()).slice(-10);
+  // Vždy presne 10 číslic — id z Firestore je base62 (väčšinou len pár číslic
+  // po odfiltrovaní písmen), preto sa naň nedá spoľahnúť.
+  const variableSymbol = String(Date.now()).slice(-10);
 
   await orderRef.set({
     name: fullName(firstName, lastName),
@@ -204,9 +212,12 @@ exports.createOrder = onCall(async (request) => {
     participants: cleanParticipants,
     groupSize,
     amount,
-    baseAmount: Math.round(basePrice * groupSize * 100) / 100,
+    baseAmount,
+    groupDiscountPercent,
+    groupDiscountAmount,
     discountNote,
     couponApplied,
+    couponDiscountAmount,
     variableSymbol,
     status: "pending_payment",
     createdAt: FieldValue.serverTimestamp(),
@@ -235,7 +246,21 @@ exports.createOrder = onCall(async (request) => {
     giftMessage: gift && typeof gift.message === "string" ? gift.message.slice(0, 1000) : null,
   });
 
-  return { orderId: orderRef.id, variableSymbol, amount };
+  return {
+    orderId: orderRef.id,
+    variableSymbol,
+    amount,
+    breakdown: {
+      basePrice,
+      groupSize,
+      baseAmount,
+      groupDiscountPercent,
+      groupDiscountAmount,
+      couponCode: couponApplied,
+      couponDiscountAmount,
+      finalAmount: amount,
+    },
+  };
 });
 
 /**
@@ -992,6 +1017,9 @@ function drawSupplierBuyerColumns(doc, { s, order, colY }) {
     s.invoiceDic ? "DIČ: " + s.invoiceDic : null,
     s.invoiceIcDph ? "IČ DPH: " + s.invoiceIcDph : "Nie sme platcami DPH.",
     s.invoiceIban ? "IBAN: " + s.invoiceIban : null,
+    s.invoiceEmail ? "E-mail: " + s.invoiceEmail : null,
+    s.invoiceWeb ? "Web: " + s.invoiceWeb : null,
+    s.invoicePhone ? "Tel.: " + s.invoicePhone : null,
   ].filter(Boolean);
   supplierLines.forEach((line) => {
     doc.text(line, leftX, ly, { width: 240 });

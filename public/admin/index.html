@@ -663,9 +663,11 @@
                 <p class="hint">0 = neobmedzené. Zabráni zdieľaniu jedného kódu medzi viacerými ľuďmi.</p>
               </div>
               <div class="field">
+                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-suspicious-enabled" style="width:auto;" checked> Ochrana pred zneužitím kódu (blokovanie po opakovaných zlých pokusoch)</label>
+              </div>
+              <div class="field">
                 <label for="s-max-failed-attempts">Max. počet nesprávnych pokusov o kód (z jednej IP)</label>
-                <input type="number" id="s-max-failed-attempts" min="0" value="5">
-                <p class="hint">0 = vypnuté. Chráni pred skúšaním náhodných kódov (brute-force).</p>
+                <input type="number" id="s-max-failed-attempts" min="1" value="5">
               </div>
               <div class="field">
                 <label for="s-lockout-minutes">Dĺžka dočasného zablokovania (minúty)</label>
@@ -729,6 +731,18 @@
               <div class="field">
                 <label for="s-inv-iban">IBAN</label>
                 <input type="text" id="s-inv-iban" placeholder="SK50 8330 0000 0025 0342 5536">
+              </div>
+              <div class="field">
+                <label for="s-inv-email">E-mail dodávateľa</label>
+                <input type="email" id="s-inv-email" placeholder="info@digistart.sk">
+              </div>
+              <div class="field">
+                <label for="s-inv-web">Webová adresa</label>
+                <input type="text" id="s-inv-web" placeholder="www.digistart.sk">
+              </div>
+              <div class="field">
+                <label for="s-inv-phone">Telefónne číslo</label>
+                <input type="text" id="s-inv-phone" placeholder="+421 900 000 000">
               </div>
               <p class="hint" style="margin:0;">Čísla faktúr sa prideľujú automaticky v tvare KU + dátum + poradie v daný deň (napr. KU20260828001).</p>
             </div>
@@ -917,7 +931,15 @@ window.addEventListener("load", function () {
         email: document.getElementById("g-email").value.trim() || null,
         workshopId: document.getElementById("g-workshop").value,
       });
-      resultEl.textContent = "Vygenerovaný kód: " + res.data.code;
+      resultEl.innerHTML = "Vygenerovaný kód: <span class='mono code-copy' data-copy-code='" + res.data.code + "' title='Kliknutím skopírovať'>" + res.data.code + "</span>";
+      const copyEl = resultEl.querySelector("[data-copy-code]");
+      copyEl.addEventListener("click", () => {
+        navigator.clipboard.writeText(copyEl.dataset.copyCode).then(() => {
+          const original = copyEl.textContent;
+          copyEl.textContent = "Skopírované ✓";
+          setTimeout(() => { copyEl.textContent = original; }, 1200);
+        }).catch(() => {});
+      });
     } catch (err) {
       resultEl.textContent = "Kód sa nepodarilo vygenerovať: " + err.message;
     }
@@ -933,14 +955,21 @@ window.addEventListener("load", function () {
       document.getElementById("s-inactivity").value = data.inactivityMinutes || 5;
       document.getElementById("s-validity").value = data.codeValidityDays ?? 90;
       document.getElementById("s-maxlogins").value = data.maxLoginsPerCode ?? 0;
-      document.getElementById("s-max-failed-attempts").value = data.maxFailedAttempts ?? 5;
+      const suspiciousEnabled = (data.maxFailedAttempts ?? 5) > 0;
+      document.getElementById("s-suspicious-enabled").checked = suspiciousEnabled;
+      document.getElementById("s-max-failed-attempts").value = suspiciousEnabled ? data.maxFailedAttempts : 5;
+      document.getElementById("s-max-failed-attempts").disabled = !suspiciousEnabled;
       document.getElementById("s-lockout-minutes").value = data.lockoutMinutes ?? 15;
+      document.getElementById("s-lockout-minutes").disabled = !suspiciousEnabled;
       document.getElementById("s-inv-company").value = data.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart";
       document.getElementById("s-inv-address").value = data.invoiceAddress || "";
       document.getElementById("s-inv-ico").value = data.invoiceIco || "";
       document.getElementById("s-inv-dic").value = data.invoiceDic || "";
       document.getElementById("s-inv-icdph").value = data.invoiceIcDph || "";
       document.getElementById("s-inv-iban").value = data.invoiceIban || "";
+      document.getElementById("s-inv-email").value = data.invoiceEmail || "";
+      document.getElementById("s-inv-web").value = data.invoiceWeb || "";
+      document.getElementById("s-inv-phone").value = data.invoicePhone || "";
       document.getElementById("s-sound").checked = data.soundOnNewReg !== false;
       document.getElementById("s-stale-days").value = data.staleOrderDays ?? 3;
       document.getElementById("s-maintenance").checked = !!data.maintenanceMode;
@@ -961,7 +990,7 @@ window.addEventListener("load", function () {
       inactivityMinutes: Number(document.getElementById("s-inactivity").value) || 5,
       codeValidityDays: Number(document.getElementById("s-validity").value) || 0,
       maxLoginsPerCode: Number(document.getElementById("s-maxlogins").value) || 0,
-      maxFailedAttempts: Number(document.getElementById("s-max-failed-attempts").value) || 0,
+      maxFailedAttempts: document.getElementById("s-suspicious-enabled").checked ? (Number(document.getElementById("s-max-failed-attempts").value) || 5) : 0,
       lockoutMinutes: Number(document.getElementById("s-lockout-minutes").value) || 15,
       invoiceCompany: document.getElementById("s-inv-company").value.trim(),
       invoiceAddress: document.getElementById("s-inv-address").value.trim(),
@@ -969,6 +998,9 @@ window.addEventListener("load", function () {
       invoiceDic: document.getElementById("s-inv-dic").value.trim(),
       invoiceIcDph: document.getElementById("s-inv-icdph").value.trim(),
       invoiceIban: document.getElementById("s-inv-iban").value.trim(),
+      invoiceEmail: document.getElementById("s-inv-email").value.trim(),
+      invoiceWeb: document.getElementById("s-inv-web").value.trim(),
+      invoicePhone: document.getElementById("s-inv-phone").value.trim(),
       soundOnNewReg: document.getElementById("s-sound").checked,
       staleOrderDays: Number(document.getElementById("s-stale-days").value) || 3,
       maintenanceMode: document.getElementById("s-maintenance").checked,
@@ -1018,6 +1050,11 @@ window.addEventListener("load", function () {
 
   wireAutoSave(document.getElementById("settings-form"), buildSettingsPatch, "settings-result", "general",
     (patch) => { generalSettingsCache = Object.assign({}, generalSettingsCache, patch); });
+
+  document.getElementById("s-suspicious-enabled").addEventListener("change", (e) => {
+    document.getElementById("s-max-failed-attempts").disabled = !e.target.checked;
+    document.getElementById("s-lockout-minutes").disabled = !e.target.checked;
+  });
 
   document.getElementById("load-suspicious-activity").addEventListener("click", async () => {
     const body = document.getElementById("suspicious-activity-body");

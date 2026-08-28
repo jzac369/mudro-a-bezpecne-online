@@ -83,18 +83,51 @@
     </form>
   </div>
 
-  <div id="step-payment" class="card" style="display:none;">
+  <div id="step-payment" style="display:none;">
     <span class="chip warn" style="margin-bottom:1rem;">Čaká na úhradu</span>
-    <h1>Posledný krok — úhrada prevodom</h1>
-    <p>Prosím, odošlite platbu na nasledujúci účet. Po prijatí platby vám do
-      e-mailu pošleme 6-miestny prístupový kód.</p>
-    <table style="width:100%;border-collapse:collapse;margin:1.2rem 0;">
-      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Suma</td><td style="padding:.4rem 0;font-weight:700;" id="pay-amount"></td></tr>
-      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Číslo účtu (IBAN)</td><td style="padding:.4rem 0;font-weight:700;">SK50 8330 0000 0025 0342 5536 <span class="hint" style="font-weight:400;">(Fio banka)</span></td></tr>
-      <tr><td style="padding:.4rem 0;color:var(--text-mute);">Variabilný symbol</td><td style="padding:.4rem 0;font-weight:700;" id="pay-vs"></td></tr>
-    </table>
-    <p class="hint">Variabilný symbol nám pomáha nájsť vašu platbu rýchlejšie — nezabudnite ho prosím uviesť.</p>
-    <a class="btn btn-secondary btn-block" style="text-decoration:none;margin-top:1rem;" href="index.html">Späť na úvodnú stránku</a>
+    <h1>Posledný krok — úhrada</h1>
+    <p class="lead">Ďakujeme za objednávku! Zostáva už len uhradiť platbu podľa údajov nižšie — prístupový kód vám pošleme hneď po jej prijatí.</p>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.8rem;">Zhrnutie objednávky</h2>
+      <div id="price-breakdown"></div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.8rem;">Spôsob platby</h2>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <label style="flex:1;min-width:180px;display:flex;align-items:center;gap:.6rem;padding:.9rem 1rem;border:2px solid var(--line);border-radius:10px;opacity:.55;cursor:not-allowed;">
+          <input type="radio" name="pay-method" disabled style="width:auto;">
+          <span>Platobná karta<br><span class="hint">Čoskoro dostupné</span></span>
+        </label>
+        <label style="flex:1;min-width:180px;display:flex;align-items:center;gap:.6rem;padding:.9rem 1rem;border:2px solid var(--focus);border-radius:10px;background:var(--surface-2);">
+          <input type="radio" name="pay-method" checked disabled style="width:auto;">
+          <span>Bankový prevod</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.8rem;">Platobné údaje</h2>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:.4rem 0;color:var(--text-mute);">Suma</td><td style="padding:.4rem 0;font-weight:700;" id="pay-amount"></td></tr>
+        <tr><td style="padding:.4rem 0;color:var(--text-mute);">Číslo účtu (IBAN)</td><td style="padding:.4rem 0;font-weight:700;" id="pay-iban"></td></tr>
+        <tr><td style="padding:.4rem 0;color:var(--text-mute);">Variabilný symbol</td><td style="padding:.4rem 0;font-weight:700;" id="pay-vs"></td></tr>
+      </table>
+      <p class="hint" style="margin-top:.8rem;">Variabilný symbol nám pomáha nájsť vašu platbu rýchlejšie — nezabudnite ho prosím uviesť.</p>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.8rem;">Čo bude nasledovať</h2>
+      <ol style="margin:0;padding-left:1.2rem;">
+        <li style="margin-bottom:.5rem;">Odošlete platbu podľa údajov vyššie.</li>
+        <li style="margin-bottom:.5rem;">Po prijatí platby (zvyčajne do 1 pracovného dňa) vám na e-mail pošleme 6-miestny prístupový kód.</li>
+        <li>Prihlásite sa menom a kódom a môžete začať.</li>
+      </ol>
+      <p class="hint" id="pay-contact" style="margin-top:1rem;"></p>
+    </div>
+
+    <a class="btn btn-secondary btn-block" style="text-decoration:none;margin-top:1.5rem;" href="index.html">Späť na úvodnú stránku</a>
   </div>
 
 </main>
@@ -113,9 +146,11 @@
 
     const db = firebase.firestore();
 
+    let generalSettings = {};
     try {
       const settingsSnap = await db.collection("settings").doc("general").get();
-      if (settingsSnap.exists && settingsSnap.data().maintenanceMode) {
+      generalSettings = settingsSnap.exists ? settingsSnap.data() : {};
+      if (generalSettings.maintenanceMode) {
         document.querySelector("main").innerHTML =
           "<div class='card'><h1>Prebieha údržba</h1><p>Objednávky sú momentálne dočasne pozastavené, skúste to prosím neskôr.</p></div>";
         return;
@@ -203,6 +238,34 @@
       campaign: params.get("utm_campaign") || null,
     };
 
+    function renderPriceBreakdown(b) {
+      const el = document.getElementById("price-breakdown");
+      if (!b) { el.innerHTML = ""; return; }
+      const rows = [];
+      if (b.groupSize > 1) {
+        rows.push(["Cena za 1 účastníka", b.basePrice + " €"]);
+        rows.push(["Počet účastníkov", String(b.groupSize)]);
+      }
+      const hasDiscount = b.groupDiscountAmount > 0 || b.couponDiscountAmount > 0;
+      if (hasDiscount) {
+        rows.push(["Medzisúčet", b.baseAmount + " €"]);
+      }
+      if (b.groupDiscountAmount > 0) {
+        rows.push(["Skupinová zľava (" + b.groupDiscountPercent + " %)", "−" + b.groupDiscountAmount + " €"]);
+      }
+      if (b.couponDiscountAmount > 0) {
+        rows.push(["Zľavový kód " + b.couponCode, "−" + b.couponDiscountAmount + " €"]);
+      }
+      const rowsHtml = rows.map(([label, value]) =>
+        "<tr><td style='padding:.3rem 0;color:var(--text-mute);'>" + label + "</td><td style='padding:.3rem 0;text-align:right;'>" + value + "</td></tr>"
+      ).join("");
+      el.innerHTML =
+        "<table style='width:100%;border-collapse:collapse;'>" + rowsHtml +
+        "<tr><td style='padding:.6rem 0 0;font-weight:700;font-size:1.1em;border-top:1px solid var(--line);'>Spolu na úhradu</td>" +
+        "<td style='padding:.6rem 0 0;font-weight:700;font-size:1.1em;text-align:right;border-top:1px solid var(--line);'>" + b.finalAmount + " €</td></tr>" +
+        "</table>";
+    }
+
     async function lookupGeo() {
       if (!window.MBO || !MBO.hasStatsConsent()) return null; // len so súhlasom so štatistickými cookies
       try {
@@ -239,8 +302,19 @@
         } : null;
         const createOrder = firebase.app().functions("europe-west1").httpsCallable("createOrder");
         const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm, geo, client, gift });
+
+        renderPriceBreakdown(result.data.breakdown);
         document.getElementById("pay-amount").textContent = result.data.amount + " €";
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;
+        document.getElementById("pay-iban").innerHTML =
+          (generalSettings.invoiceIban || "SK50 8330 0000 0025 0342 5536") + " <span class='hint' style='font-weight:400;'>(Fio banka)</span>";
+        const contactParts = [
+          generalSettings.invoiceEmail ? "e-mail: " + generalSettings.invoiceEmail : null,
+          generalSettings.invoicePhone ? "tel.: " + generalSettings.invoicePhone : null,
+        ].filter(Boolean);
+        document.getElementById("pay-contact").textContent = contactParts.length
+          ? "Máte otázku k platbe? Napíšte nám (" + contactParts.join(", ") + ")."
+          : "";
         document.getElementById("step-form").style.display = "none";
         document.getElementById("step-payment").style.display = "block";
       } catch (err) {
