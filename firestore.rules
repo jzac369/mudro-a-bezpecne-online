@@ -54,6 +54,13 @@ service cloud.firestore {
       allow update: if isAdmin(); // napr. poznámka administrátora v Registráciách
     }
 
+    // Archív vymazaných registrácií — zapisuje len deleteRegistrations
+    // cez Admin SDK, číta administrátor.
+    match /deletedRegistrations/{orderId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     match /accessCodes/{codeId} {
       allow read: if isAdmin() || isOwnCode(codeId);
       allow create, delete: if false; // len Cloud Functions cez Admin SDK

@@ -828,7 +828,20 @@ exports.deleteRegistrations = onCall(async (request) => {
   let deletedOrders = 0, deletedCodes = 0;
   for (const orderId of ids) {
     try {
+      const orderSnap = await db.collection("orders").doc(orderId).get();
+      if (!orderSnap.exists) continue;
+      const orderData = orderSnap.data();
+
       const codesSnap = await db.collection("accessCodes").where("orderId", "==", orderId).get();
+      const archivedCodes = codesSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      await db.collection("deletedRegistrations").doc(orderId).set({
+        order: orderData,
+        accessCodes: archivedCodes,
+        deletedAt: FieldValue.serverTimestamp(),
+        deletedBy: request.auth.token.email || request.auth.uid,
+      });
+
       for (const codeDoc of codesSnap.docs) {
         const codeId = codeDoc.id;
         const [sessionsSnap, quizSnap] = await Promise.all([
