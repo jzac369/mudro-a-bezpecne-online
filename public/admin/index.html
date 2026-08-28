@@ -2152,7 +2152,11 @@ window.addEventListener("load", function () {
     let regLine =
       "<h3 style='margin-top:1rem;'>Registrácia a platba</h3>" +
       "<div class='session-row'><span>Zaregistroval(a) sa</span><span>" + (order.createdAt ? order.createdAt.toDate().toLocaleString("sk-SK") : "—") + "</span></div>" +
-      "<div class='session-row'><span>Uhradil(a)</span><span>" + (order.paidAt ? order.paidAt.toDate().toLocaleString("sk-SK") : (order.status === "pending_payment" ? "zatiaľ neuhradené" : "—")) + "</span></div>";
+      "<div class='session-row'><span>Uhradil(a)</span><span>" +
+        (order.paidAt
+          ? order.paidAt.toDate().toLocaleString("sk-SK") + (order.paymentMethod ? " · " + ({ card: "karta", transfer: "prevod", cash: "hotovosť" }[order.paymentMethod] || order.paymentMethod) : "")
+          : (order.status === "pending_payment" ? "zatiaľ neuhradené" : "—")) +
+        "</span></div>";
     if (order.groupSize && order.groupSize > 1) {
       const others = (order.participants || []).map((p) => p.firstName + " " + p.lastName).join(", ");
       regLine += "<div class='session-row'><span>Skupinová objednávka</span><span>" + order.groupSize + " účastníci: " + others + "</span></div>";
@@ -2529,17 +2533,9 @@ window.addEventListener("load", function () {
     renderCompletionDonut(snap.size - paid, paid - completed, completed);
 
     tbody.querySelectorAll("[data-mark-paid]").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
+      btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        btn.disabled = true;
-        btn.textContent = "Spracúvam…";
-        try {
-          const markOrderPaid = functions.httpsCallable("markOrderPaid");
-          await markOrderPaid({ orderId: btn.dataset.markPaid });
-        } catch (err) {
-          btn.disabled = false;
-          btn.textContent = "Chyba, skúsiť znova";
-        }
+        showPaymentMethodModal(btn.dataset.markPaid);
       });
     });
 
@@ -2678,6 +2674,44 @@ window.addEventListener("load", function () {
 
   // Jednoduché potvrdzovacie okno (bez hesla) pre menej rizikové, no nevratné akcie
   // ako odoslanie faktúry/POZ e-mailom.
+  function showPaymentMethodModal(orderId) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML =
+      "<div class='modal-box' style='max-width:380px;'><button class='modal-close' data-close>&times;</button>" +
+      "<h2>Ako bolo uhradené?</h2>" +
+      "<p class='hint'>Vyberte spôsob úhrady — registrácia sa označí ako uhradená a vygeneruje sa prístupový kód.</p>" +
+      "<div style='display:flex;flex-direction:column;gap:.6rem;margin-top:1rem;'>" +
+      "<button class='btn btn-primary' type='button' data-method='card'>Karta</button>" +
+      "<button class='btn btn-primary' type='button' data-method='transfer'>Prevod</button>" +
+      "<button class='btn btn-primary' type='button' data-method='cash'>Hotovosť</button>" +
+      "</div>" +
+      "<p id='payment-method-error' class='hint' style='color:var(--warn);display:none;margin-top:.6rem;'></p>" +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay || e.target.hasAttribute("data-close")) overlay.remove();
+    });
+    overlay.querySelectorAll("[data-method]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const errorEl = document.getElementById("payment-method-error");
+        errorEl.style.display = "none";
+        overlay.querySelectorAll("[data-method]").forEach((b) => (b.disabled = true));
+        btn.textContent = "Spracúvam…";
+        try {
+          const markOrderPaid = functions.httpsCallable("markOrderPaid");
+          await markOrderPaid({ orderId, paymentMethod: btn.dataset.method });
+          overlay.remove();
+        } catch (err) {
+          errorEl.textContent = "Zlyhalo: " + err.message;
+          errorEl.style.display = "block";
+          overlay.querySelectorAll("[data-method]").forEach((b) => (b.disabled = false));
+          btn.textContent = { card: "Karta", transfer: "Prevod", cash: "Hotovosť" }[btn.dataset.method];
+        }
+      });
+    });
+  }
+
   function showConfirmModal({ title, message, confirmLabel, onConfirm }) {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";

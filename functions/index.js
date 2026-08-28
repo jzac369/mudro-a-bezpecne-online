@@ -249,7 +249,10 @@ exports.markOrderPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (reques
     throw new HttpsError("permission-denied", "Len administrátor môže potvrdiť platbu.");
   }
 
-  const { orderId } = request.data || {};
+  const { orderId, paymentMethod } = request.data || {};
+  if (!["card", "transfer", "cash"].includes(paymentMethod)) {
+    throw new HttpsError("invalid-argument", "Neplatný spôsob úhrady.");
+  }
   const orderRef = db.collection("orders").doc(orderId);
   const orderSnap = await orderRef.get();
   if (!orderSnap.exists) {
@@ -281,7 +284,7 @@ exports.markOrderPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (reques
     codes.push(code);
   }
 
-  await orderRef.update({ status: "code_sent", codeIssuedAt: FieldValue.serverTimestamp(), paidAt: FieldValue.serverTimestamp() });
+  await orderRef.update({ status: "code_sent", codeIssuedAt: FieldValue.serverTimestamp(), paidAt: FieldValue.serverTimestamp(), paymentMethod });
 
   await sendCodeEmail({ to: order.email, name: order.firstName || order.name, codes, workshopId: order.workshopId });
 
@@ -1043,10 +1046,13 @@ function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
     .text("Variabilný symbol: " + invoiceNumber.slice(2), 56, itemY + 60);
 }
 
+const PAYMENT_METHOD_LABELS = { card: "Platobnou kartou", transfer: "Bankovým prevodom", cash: "V hotovosti" };
+
 function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
   const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
   const workshop = order.workshopTitleSnapshot || order.workshopId;
   const amount = order.amount != null ? order.amount : 0;
+  const paymentMethodLabel = PAYMENT_METHOD_LABELS[order.paymentMethod] || "—";
 
   doc.font(FONT_BOLD).fontSize(20).text("Potvrdenie o zaplatení č. " + pozNumber);
   doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
@@ -1063,6 +1069,7 @@ function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
   doc.font(FONT_BOLD).text(workshop + (order.groupSize > 1 ? " (" + order.groupSize + " účastníci)" : ""));
   doc.font(FONT_REGULAR);
   doc.text("Suma: " + amount + " €");
+  doc.text("Spôsob úhrady: " + paymentMethodLabel);
   doc.text("Variabilný symbol: " + invoiceNumber.slice(2));
 
   doc.moveDown(1.2);
