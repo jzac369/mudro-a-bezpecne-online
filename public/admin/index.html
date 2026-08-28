@@ -2060,22 +2060,7 @@ window.addEventListener("load", function () {
   }
 
   // ---------- Modálne okno s detailom účastníka ----------
-  function wireInvoiceButton(overlay, order, orderId, codeId) {
-    const invoiceBtn = overlay.querySelector("#detail-invoice-btn");
-    if (invoiceBtn) {
-      invoiceBtn.addEventListener("click", async () => {
-        invoiceBtn.disabled = true;
-        invoiceBtn.textContent = "Pripravujem…";
-        try {
-          await generateInvoice(order, orderId);
-        } catch (err) {
-          alert("Faktúru sa nepodarilo vygenerovať: " + err.message);
-        } finally {
-          invoiceBtn.disabled = false;
-          invoiceBtn.textContent = "Vygenerovať faktúru";
-        }
-      });
-    }
+  function wireVoucherButton(overlay, order, codeId) {
     const voucherBtn = overlay.querySelector("#detail-voucher-btn");
     if (voucherBtn) {
       voucherBtn.addEventListener("click", async () => {
@@ -2119,68 +2104,6 @@ window.addEventListener("load", function () {
       "<div class='code'>" + escapeHtml(codeId) + "</div>" +
       "<p class='sub'>Kód zadajte na stránke mudroabezpecne.sk/prihlasenie.html</p>" +
       "</div>" +
-      "<button class='print-btn' onclick='window.print()'>Tlačiť / Uložiť ako PDF</button>" +
-      "</body></html>";
-
-    const w = window.open("", "_blank");
-    if (!w) { alert("Prehliadač zablokoval otvorenie okna. Povoľte vyskakovacie okná pre túto stránku."); return; }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-  }
-
-  // Číslo faktúry v tvare KUYYYYMMDD001 — počítadlo sa resetuje každý deň
-  // (kľúčom dokumentu je samotný dátum), poradie v rámci dňa rieši transakcia.
-  async function nextInvoiceNumber() {
-    const now = new Date();
-    const dayKey = now.getFullYear() + String(now.getMonth() + 1).padStart(2, "0") + String(now.getDate()).padStart(2, "0");
-    const counterRef = db.collection("invoiceCounters").doc(dayKey);
-    const seq = await db.runTransaction(async (tx) => {
-      const snap = await tx.get(counterRef);
-      const next = (snap.exists ? snap.data().count : 0) + 1;
-      tx.set(counterRef, { count: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-      return next;
-    });
-    return "KU" + dayKey + String(seq).padStart(3, "0");
-  }
-
-  async function generateInvoice(order, orderId) {
-    const settingsSnap = await db.collection("settings").doc("general").get();
-    const s = settingsSnap.exists ? settingsSnap.data() : {};
-    const invoiceNumber = await nextInvoiceNumber();
-
-    const issueDate = new Date().toLocaleDateString("sk-SK");
-    const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
-    const amount = order.amount != null ? order.amount : (order.groupSize ? "—" : "—");
-    const workshop = workshopTitle(order.workshopId);
-    const buyerLines = [escapeHtml(order.name), escapeHtml(order.email)].filter(Boolean).join("<br>");
-
-    const html =
-      "<!doctype html><html lang='sk'><head><meta charset='utf-8'><title>Faktúra " + invoiceNumber + "</title>" +
-      "<style>" +
-      "body{font-family:Arial,sans-serif;color:#1f3a3d;max-width:720px;margin:2rem auto;padding:0 1rem;}" +
-      "h1{font-size:1.4rem;margin-bottom:.2rem;} .muted{color:#5c5749;} table{width:100%;border-collapse:collapse;margin:1.5rem 0;}" +
-      "th,td{text-align:left;padding:.5rem;border-bottom:1px solid #ddd5c2;} .cols{display:flex;justify-content:space-between;gap:2rem;margin-top:1.5rem;flex-wrap:wrap;}" +
-      ".total{font-weight:700;font-size:1.15rem;} .print-btn{margin-top:2rem;padding:.7rem 1.2rem;font-size:1rem;cursor:pointer;}" +
-      "@media print{.print-btn{display:none;}}" +
-      "</style></head><body>" +
-      "<h1>Faktúra č. " + invoiceNumber + "</h1>" +
-      "<p class='muted'>Dátum vystavenia: " + issueDate + " · Dátum úhrady: " + paidDate + "</p>" +
-      "<div class='cols'>" +
-      "<div><strong>Dodávateľ</strong><br>" + escapeHtml(s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart") + "<br>" +
-      escapeHtml(s.invoiceAddress || "") + "<br>" +
-      (s.invoiceIco ? "IČO: " + escapeHtml(s.invoiceIco) + "<br>" : "") +
-      (s.invoiceDic ? "DIČ: " + escapeHtml(s.invoiceDic) + "<br>" : "") +
-      (s.invoiceIcDph ? "IČ DPH: " + escapeHtml(s.invoiceIcDph) + "<br>" : "") +
-      (s.invoiceIban ? "IBAN: " + escapeHtml(s.invoiceIban) : "") +
-      "</div>" +
-      "<div><strong>Odberateľ</strong><br>" + buyerLines + "</div>" +
-      "</div>" +
-      "<table><thead><tr><th>Položka</th><th>Suma</th></tr></thead><tbody>" +
-      "<tr><td>" + escapeHtml(workshop) + (order.groupSize > 1 ? " (" + order.groupSize + " účastníci)" : "") + "</td><td>" + amount + " €</td></tr>" +
-      "</tbody></table>" +
-      "<p class='total'>Spolu: " + amount + " €</p>" +
-      "<p class='muted'>Variabilný symbol: " + (order.variableSymbol || "—") + "</p>" +
       "<button class='print-btn' onclick='window.print()'>Tlačiť / Uložiť ako PDF</button>" +
       "</body></html>";
 
@@ -2240,6 +2163,12 @@ window.addEventListener("load", function () {
     if (order.utm && (order.utm.source || order.utm.medium || order.utm.campaign)) {
       regLine += "<div class='session-row'><span>Zdroj registrácie</span><span>" + [order.utm.source, order.utm.medium, order.utm.campaign].filter(Boolean).join(" / ") + "</span></div>";
     }
+    if (order.geo && (order.geo.ip || order.geo.city || order.geo.region || order.geo.country)) {
+      const g = order.geo;
+      const place = [g.city || g.region, g.country].filter(Boolean).join(", ");
+      const placeLine = [g.ip, place].filter(Boolean).join(" · ") || "—";
+      regLine += "<div class='session-row'><span>IP a lokalita pri registrácii</span><span>" + escapeHtml(placeLine) + "</span></div>";
+    }
     if (order.client && (order.client.deviceType || order.client.browser)) {
       const c = order.client;
       const deviceLine = [c.deviceType, c.os].filter(Boolean).join(" · ");
@@ -2256,9 +2185,6 @@ window.addEventListener("load", function () {
         "</span></div>";
     }
     let actionButtons = "";
-    if (order.status !== "pending_payment") {
-      actionButtons += "<button type='button' class='btn btn-secondary' id='detail-invoice-btn'>Vygenerovať faktúru</button> ";
-    }
     if (order.isGift && codeId) {
       actionButtons += "<button type='button' class='btn btn-secondary' id='detail-voucher-btn'>Vygenerovať darčekový poukaz</button>";
     }
@@ -2269,7 +2195,7 @@ window.addEventListener("load", function () {
 
     if (!codeId) {
       detailBody.innerHTML = regLine + "<p class='hint' style='margin-top:1rem;'>Prístupový kód zatiaľ nebol vydaný.</p>";
-      wireInvoiceButton(overlay, order, orderId);
+      wireVoucherButton(overlay, order, codeId);
       return;
     }
 
@@ -2335,7 +2261,7 @@ window.addEventListener("load", function () {
     }
 
     detailBody.innerHTML = html;
-    wireInvoiceButton(overlay, order, orderId, codeId);
+    wireVoucherButton(overlay, order, codeId);
   }
 
   // ---------- Hlavná tabuľka registrácií ----------

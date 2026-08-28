@@ -944,6 +944,16 @@ async function nextDocNumber(prefix, counterCollection) {
   return prefix + dayKey + String(seq).padStart(3, "0");
 }
 
+// Číslo faktúry sa pridelí len raz za objednávku a odvtedy sa vždy znova
+// použije (aj v náhľade, aj pri faktúre, aj pri z nej odvodenom potvrdení
+// o zaplatení číslo UH+...) — nespotrebúva sa nové číslo pri každom otvorení.
+async function getOrAssignInvoiceNumber(orderRef, order) {
+  if (order.invoiceNumber) return order.invoiceNumber;
+  const invoiceNumber = await nextDocNumber("KU", "invoiceCounters");
+  await orderRef.update({ invoiceNumber });
+  return invoiceNumber;
+}
+
 function pdfToBuffer(draw) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: 56 });
@@ -962,8 +972,46 @@ function pdfToBuffer(draw) {
   });
 }
 
+// Vykreslí dva stĺpce (Dodávateľ/Odberateľ) s nezávislým sledovaním y-pozície
+// pre každý stĺpec — stĺpce môžu mať rôzny počet riadkov (napr. keď firma nemá
+// vyplnené IČ DPH), takže sa nesmie použiť jeden zdieľaný "kurzor" naprieč nimi.
+function drawSupplierBuyerColumns(doc, { s, order, colY }) {
+  const leftX = 56, rightX = 320, lineH = 15;
+
+  let ly = colY;
+  doc.font(FONT_BOLD).fontSize(11).text("Dodávateľ", leftX, ly);
+  ly += lineH + 3;
+  doc.font(FONT_REGULAR).fontSize(10);
+  const supplierLines = [
+    s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart",
+    s.invoiceAddress || null,
+    s.invoiceIco ? "IČO: " + s.invoiceIco : null,
+    s.invoiceDic ? "DIČ: " + s.invoiceDic : null,
+    s.invoiceIcDph ? "IČ DPH: " + s.invoiceIcDph : "Nie sme platcami DPH.",
+    s.invoiceIban ? "IBAN: " + s.invoiceIban : null,
+  ].filter(Boolean);
+  supplierLines.forEach((line) => {
+    doc.text(line, leftX, ly, { width: 240 });
+    ly += lineH;
+  });
+
+  let ry = colY;
+  doc.font(FONT_BOLD).fontSize(11).text("Odberateľ", rightX, ry);
+  ry += lineH + 3;
+  doc.font(FONT_REGULAR).fontSize(10);
+  const buyerLines = [order.name || "—", order.email || "—"];
+  buyerLines.forEach((line) => {
+    doc.text(line, rightX, ry, { width: 220 });
+    ry += lineH;
+  });
+
+  doc.x = leftX;
+  doc.y = Math.max(ly, ry) + 14;
+}
+
 function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
   const issueDate = new Date().toLocaleDateString("sk-SK");
+  const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("sk-SK");
   const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
   const workshop = order.workshopTitleSnapshot || order.workshopId;
   const amount = order.amount != null ? order.amount : 0;
@@ -971,26 +1019,12 @@ function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
   doc.font(FONT_BOLD).fontSize(20).text("Faktúra č. " + invoiceNumber);
   doc.moveDown(0.3);
   doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
-    .text("Dátum vystavenia: " + issueDate + "    Dátum úhrady: " + paidDate);
+    .text("Dátum vystavenia: " + issueDate + "    Dátum splatnosti: " + dueDate + "    Dátum úhrady: " + paidDate);
   doc.fillColor("#1f3a3d");
   doc.moveDown(1.2);
 
-  const colY = doc.y;
-  doc.font(FONT_BOLD).fontSize(11).text("Dodávateľ", 56, colY);
-  doc.font(FONT_REGULAR).fontSize(10);
-  doc.text(s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart", 56, doc.y + 4);
-  if (s.invoiceAddress) doc.text(s.invoiceAddress);
-  if (s.invoiceIco) doc.text("IČO: " + s.invoiceIco);
-  if (s.invoiceDic) doc.text("DIČ: " + s.invoiceDic);
-  if (s.invoiceIcDph) doc.text("IČ DPH: " + s.invoiceIcDph);
-  if (s.invoiceIban) doc.text("IBAN: " + s.invoiceIban);
+  drawSupplierBuyerColumns(doc, { s, order, colY: doc.y });
 
-  doc.font(FONT_BOLD).fontSize(11).text("Odberateľ", 320, colY);
-  doc.font(FONT_REGULAR).fontSize(10);
-  doc.text(order.name || "", 320, colY + 18);
-  doc.text(order.email || "", 320);
-
-  doc.moveDown(2.5);
   const tableTop = doc.y;
   doc.font(FONT_BOLD).fontSize(10);
   doc.text("Položka", 56, tableTop);
@@ -1009,33 +1043,29 @@ function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
     .text("Variabilný symbol: " + (order.variableSymbol || "—"), 56, itemY + 60);
 }
 
-function drawPozPdf(doc, { s, order, pozNumber }) {
+function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
   const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
   const workshop = order.workshopTitleSnapshot || order.workshopId;
   const amount = order.amount != null ? order.amount : 0;
 
-  doc.font(FONT_BOLD).fontSize(20).text("Potvrdenie o zaplatení");
-  doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749").text("Číslo: " + pozNumber);
+  doc.font(FONT_BOLD).fontSize(20).text("Potvrdenie o zaplatení č. " + pozNumber);
+  doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
+    .text("K faktúre č. " + invoiceNumber + "    Dátum úhrady: " + paidDate);
   doc.fillColor("#1f3a3d");
   doc.moveDown(1.2);
 
-  doc.font(FONT_REGULAR).fontSize(11).text(
-    (s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart") +
-    " týmto potvrdzuje prijatie platby od:",
-    { width: 483 }
-  );
-  doc.moveDown(0.8);
-  doc.font(FONT_BOLD).fontSize(12).text(order.name || "");
-  doc.font(FONT_REGULAR).fontSize(11).text(order.email || "");
-  doc.moveDown(1.2);
+  drawSupplierBuyerColumns(doc, { s, order, colY: doc.y });
+  doc.moveDown(0.6);
 
   doc.font(FONT_REGULAR).fontSize(11);
-  doc.text("Workshop: " + workshop);
+  doc.text("Dodávateľ týmto potvrdzuje prijatie platby za:");
+  doc.moveDown(0.4);
+  doc.font(FONT_BOLD).text(workshop + (order.groupSize > 1 ? " (" + order.groupSize + " účastníci)" : ""));
+  doc.font(FONT_REGULAR);
   doc.text("Suma: " + amount + " €");
-  doc.text("Dátum úhrady: " + paidDate);
   doc.text("Variabilný symbol: " + (order.variableSymbol || "—"));
 
-  doc.moveDown(1.5);
+  doc.moveDown(1.2);
   doc.fontSize(10).fillColor("#5c5749").text(
     "Toto potvrdenie slúži ako doklad o prijatí platby za uvedenú objednávku."
   );
@@ -1158,7 +1188,8 @@ exports.previewDocumentPdf = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Chýba orderId alebo neplatný docType.");
   }
 
-  const orderSnap = await db.collection("orders").doc(orderId).get();
+  const orderRef = db.collection("orders").doc(orderId);
+  const orderSnap = await orderRef.get();
   if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
   const order = orderSnap.data();
 
@@ -1168,9 +1199,10 @@ exports.previewDocumentPdf = onCall(async (request) => {
   const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
   order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
 
+  const invoiceNumber = await getOrAssignInvoiceNumber(orderRef, order);
   const buffer = docType === "invoice"
-    ? await pdfToBuffer((doc) => drawInvoicePdf(doc, { s, order, invoiceNumber: "NÁHĽAD" }))
-    : await pdfToBuffer((doc) => drawPozPdf(doc, { s, order, pozNumber: "NÁHĽAD" }));
+    ? await pdfToBuffer((doc) => drawInvoicePdf(doc, { s, order, invoiceNumber }))
+    : await pdfToBuffer((doc) => drawPozPdf(doc, { s, order, pozNumber: "UH" + invoiceNumber.slice(2), invoiceNumber }));
 
   return { pdfBase64: buffer.toString("base64") };
 });
@@ -1182,7 +1214,8 @@ exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (req
   const { orderId } = request.data || {};
   if (!orderId) throw new HttpsError("invalid-argument", "Chýba orderId.");
 
-  const orderSnap = await db.collection("orders").doc(orderId).get();
+  const orderRef = db.collection("orders").doc(orderId);
+  const orderSnap = await orderRef.get();
   if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
   const order = orderSnap.data();
   if (order.status === "pending_payment") throw new HttpsError("failed-precondition", "Objednávka ešte nie je uhradená.");
@@ -1193,7 +1226,7 @@ exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (req
   const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
   order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
 
-  const invoiceNumber = await nextDocNumber("KU", "invoiceCounters");
+  const invoiceNumber = await getOrAssignInvoiceNumber(orderRef, order);
   const buffer = await pdfToBuffer((doc) => drawInvoicePdf(doc, { s, order, invoiceNumber }));
   const url = await uploadPdfAndGetUrl(buffer, "invoices/" + orderId + "/" + invoiceNumber + ".pdf");
 
@@ -1216,7 +1249,8 @@ exports.sendPaymentConfirmationEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }
   const { orderId } = request.data || {};
   if (!orderId) throw new HttpsError("invalid-argument", "Chýba orderId.");
 
-  const orderSnap = await db.collection("orders").doc(orderId).get();
+  const orderRef = db.collection("orders").doc(orderId);
+  const orderSnap = await orderRef.get();
   if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
   const order = orderSnap.data();
   if (order.status === "pending_payment") throw new HttpsError("failed-precondition", "Objednávka ešte nie je uhradená.");
@@ -1227,8 +1261,9 @@ exports.sendPaymentConfirmationEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }
   const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
   order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
 
-  const pozNumber = await nextDocNumber("POZ", "pozCounters");
-  const buffer = await pdfToBuffer((doc) => drawPozPdf(doc, { s, order, pozNumber }));
+  const invoiceNumber = await getOrAssignInvoiceNumber(orderRef, order);
+  const pozNumber = "UH" + invoiceNumber.slice(2);
+  const buffer = await pdfToBuffer((doc) => drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }));
   const url = await uploadPdfAndGetUrl(buffer, "poz/" + orderId + "/" + pozNumber + ".pdf");
 
   await sendDocumentLinkEmail({
