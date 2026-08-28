@@ -68,6 +68,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Denné počítadlo pre čísla faktúr (KUYYYYMMDD001…), spravuje admin zóna priamo.
+    match /invoiceCounters/{dayKey} {
+      allow read, write: if isAdmin();
+    }
+
     match /accessCodes/{codeId} {
       allow read: if isAdmin() || isOwnCode(codeId);
       allow create, delete: if false; // len Cloud Functions cez Admin SDK

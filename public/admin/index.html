@@ -730,11 +730,7 @@
                 <label for="s-inv-iban">IBAN</label>
                 <input type="text" id="s-inv-iban" placeholder="SK50 8330 0000 0025 0342 5536">
               </div>
-              <div class="field">
-                <label for="s-inv-nextnumber">Číslo ďalšej faktúry</label>
-                <input type="number" id="s-inv-nextnumber" min="1" value="1">
-                <p class="hint">Zvyšuje sa automaticky po každom vystavení. Meňte len pri oprave číselného radu.</p>
-              </div>
+              <p class="hint" style="margin:0;">Čísla faktúr sa prideľujú automaticky v tvare KU + dátum + poradie v daný deň (napr. KU20260828001).</p>
             </div>
           </div>
 
@@ -947,7 +943,6 @@ window.addEventListener("load", function () {
       document.getElementById("s-inv-dic").value = data.invoiceDic || "";
       document.getElementById("s-inv-icdph").value = data.invoiceIcDph || "";
       document.getElementById("s-inv-iban").value = data.invoiceIban || "";
-      document.getElementById("s-inv-nextnumber").value = data.invoiceNextNumber || 1;
       document.getElementById("s-sound").checked = data.soundOnNewReg !== false;
       document.getElementById("s-stale-days").value = data.staleOrderDays ?? 3;
       document.getElementById("s-maintenance").checked = !!data.maintenanceMode;
@@ -978,7 +973,6 @@ window.addEventListener("load", function () {
       invoiceDic: document.getElementById("s-inv-dic").value.trim(),
       invoiceIcDph: document.getElementById("s-inv-icdph").value.trim(),
       invoiceIban: document.getElementById("s-inv-iban").value.trim(),
-      invoiceNextNumber: Number(document.getElementById("s-inv-nextnumber").value) || 1,
       soundOnNewReg: document.getElementById("s-sound").checked,
       staleOrderDays: Number(document.getElementById("s-stale-days").value) || 3,
       maintenanceMode: document.getElementById("s-maintenance").checked,
@@ -2116,17 +2110,25 @@ window.addEventListener("load", function () {
     w.document.close();
   }
 
+  // Číslo faktúry v tvare KUYYYYMMDD001 — počítadlo sa resetuje každý deň
+  // (kľúčom dokumentu je samotný dátum), poradie v rámci dňa rieši transakcia.
+  async function nextInvoiceNumber() {
+    const now = new Date();
+    const dayKey = now.getFullYear() + String(now.getMonth() + 1).padStart(2, "0") + String(now.getDate()).padStart(2, "0");
+    const counterRef = db.collection("invoiceCounters").doc(dayKey);
+    const seq = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(counterRef);
+      const next = (snap.exists ? snap.data().count : 0) + 1;
+      tx.set(counterRef, { count: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      return next;
+    });
+    return "KU" + dayKey + String(seq).padStart(3, "0");
+  }
+
   async function generateInvoice(order, orderId) {
     const settingsSnap = await db.collection("settings").doc("general").get();
     const s = settingsSnap.exists ? settingsSnap.data() : {};
-    const nextNumber = s.invoiceNextNumber || 1;
-    const year = new Date().getFullYear();
-    const invoiceNumber = year + "-" + String(nextNumber).padStart(4, "0");
-
-    await db.collection("settings").doc("general").set({ invoiceNextNumber: nextNumber + 1 }, { merge: true });
-    generalSettingsCache.invoiceNextNumber = nextNumber + 1;
-    const nextNumberInput = document.getElementById("s-inv-nextnumber");
-    if (nextNumberInput) nextNumberInput.value = nextNumber + 1;
+    const invoiceNumber = await nextInvoiceNumber();
 
     const issueDate = new Date().toLocaleDateString("sk-SK");
     const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
