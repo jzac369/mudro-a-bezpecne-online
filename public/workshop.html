@@ -331,18 +331,18 @@ function renderBudgetExercise(ex) {
     }
     const type = state.workshop.presentationType;
     if (type === "pdf") {
-      // PDF vie prehliadač zobraziť priamo — spoľahlivé, žiadna externá služba netreba.
+      // Len na prezeranie — #toolbar=0&navpanes=0 skryje vstavané tlačidlo
+      // na stiahnutie vo vnútornom PDF prehliadači prehliadača. Žiadny odkaz
+      // na stiahnutie sa zámerne neponúka.
       body.innerHTML =
-        "<p>Prezentáciu si môžete prezrieť priamo tu, alebo si ju stiahnuť.</p>" +
-        "<iframe src='" + url + "' style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>" +
-        "<a class='btn btn-secondary' href='" + url + "' target='_blank' rel='noopener' style='margin-top:1rem;display:inline-block;text-decoration:none;'>Stiahnuť prezentáciu</a>";
+        "<p>Prezentáciu si môžete prezrieť priamo tu.</p>" +
+        "<iframe src='" + url + "#toolbar=0&navpanes=0' oncontextmenu='return false;' style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>";
     } else {
-      // PPT/PPTX sa v prehliadači natívne nezobrazí — namiesto nespoľahlivého
-      // externého náhľadu ponúkame rovno stiahnutie a otvorenie v PowerPointe.
+      // PPT/PPTX sa nedá bezpečne zobraziť len na prezeranie bez umožnenia
+      // stiahnutia — prezentácie preto musia byť nahraté vo formáte PDF.
       body.innerHTML =
         "<div class='card' style='background:var(--surface-2);text-align:center;padding:2.5rem 1.5rem;'>" +
-        "<p style='margin-bottom:1rem;'>Táto prezentácia je vo formáte PowerPoint. Stiahnite si ju a otvorte v PowerPointe alebo inej aplikácii na prezentácie.</p>" +
-        "<a class='btn btn-primary' href='" + url + "' target='_blank' rel='noopener' style='text-decoration:none;display:inline-block;'>Stiahnuť prezentáciu</a>" +
+        "<p>Táto prezentácia je vo formáte PowerPoint, ktorý sa nedá zobraziť len na prezeranie. Kontaktujte nás prosím na info@digistart.sk, čoskoro ju nahradíme verziou vo formáte PDF.</p>" +
         "</div>";
     }
   }

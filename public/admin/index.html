@@ -1324,8 +1324,8 @@ window.addEventListener("load", function () {
         '<p class="hint" data-status style="margin-top:.5rem;"></p>' +
 
         '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
-        '<label>Prezentácia ku kurzu (PDF alebo PPT/PPTX)</label>' +
-        '<input type="file" accept=".pdf,.ppt,.pptx" data-presentation-file="' + id + '">' +
+        '<label>Prezentácia ku kurzu (len PDF — účastník si ju vie iba prezerať, nie stiahnuť)</label>' +
+        '<input type="file" accept=".pdf" data-presentation-file="' + id + '">' +
         '<button class="btn btn-secondary" type="button" data-presentation-upload="' + id + '" style="margin-top:.5rem;">Nahrať prezentáciu</button> ' +
         (data.presentationUrl ? '<a href="' + data.presentationUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a> <button class="btn btn-secondary" type="button" data-presentation-remove="' + id + '" style="font-size:.8rem;">Odstrániť</button>' : "") +
         '<p class="hint" data-presentation-status="' + id + '" style="margin-top:.5rem;">' + (data.presentationName ? "Aktuálny súbor: " + data.presentationName : "Zatiaľ nenahraná.") + '</p>' +
@@ -1382,9 +1382,9 @@ window.addEventListener("load", function () {
       });
     });
 
-    wireFileUpload(container, "presentation", "presentations", ".pdf,.ppt,.pptx", ["pdf", "ppt", "pptx"], (url, file, ext) => ({
+    wireFileUpload(container, "presentation", "presentations", ".pdf", ["pdf"], (url, file) => ({
       presentationUrl: url,
-      presentationType: ext === "pdf" ? "pdf" : "ppt",
+      presentationType: "pdf",
       presentationName: file.name,
     }));
     wireFileUpload(container, "brochure", "brochures", ".pdf", ["pdf"], (url, file) => ({
