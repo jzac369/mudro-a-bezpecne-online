@@ -22,19 +22,49 @@
   .dash-shell { display: flex; min-height: 100vh; align-items: stretch; }
 
   .dash-sidebar {
-    width: 232px; flex: none; background: var(--surface); border-right: 1px solid var(--line);
-    padding: 1.4rem 1rem; display: flex; flex-direction: column; gap: 1.6rem;
+    --sb-top: #1d5c8f; --sb-bottom: #081826;
+    width: 232px; min-width: 232px; flex: none; background: linear-gradient(180deg, var(--sb-top) 0%, var(--sb-bottom) 100%);
+    padding: 1.2rem 1rem; display: flex; flex-direction: column; gap: 1rem;
+    transition: width .2s ease, min-width .2s ease; position: relative;
   }
-  .dash-sidebar .brand { padding: 0 .5rem; }
-  .dash-nav { display: flex; flex-direction: column; gap: .2rem; }
+  .dash-sidebar.collapsed { width: 76px; min-width: 76px; padding: 1.2rem .6rem; }
+  .sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: 0 .3rem; }
+  .dash-sidebar .brand { color: #fff; display: flex; align-items: center; gap: .6rem; font-weight: 700; }
+  .dash-sidebar .brand svg { color: #fff; }
+  .dash-sidebar.collapsed .brand span { display: none; }
+  .sidebar-toggle-btn {
+    background: rgba(255,255,255,.1); border: none; border-radius: 8px; width: 28px; height: 28px; flex: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;
+  }
+  .sidebar-toggle-btn:hover { background: rgba(255,255,255,.2); }
+  .sidebar-toggle-btn svg { width: 16px; height: 16px; transition: transform .2s ease; }
+  .dash-sidebar.collapsed .sidebar-toggle-btn svg { transform: rotate(180deg); }
+
+  .dash-nav { display: flex; flex-direction: column; gap: .2rem; flex: 1; overflow-y: auto; }
   .dash-nav button {
     display: flex; align-items: center; gap: .7rem; text-align: left;
     background: none; border: none; border-radius: 10px; padding: .65rem .8rem;
-    color: var(--text-mute); font-weight: 600; font-size: .95rem; cursor: pointer;
+    color: rgba(255,255,255,.75); font-weight: 600; font-size: .95rem; cursor: pointer; white-space: nowrap;
   }
-  .dash-nav button:hover { background: var(--surface-2); }
-  .dash-nav button.active { background: var(--accent-soft); color: var(--ink); }
+  .dash-nav button:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .dash-nav button.active { background: rgba(255,255,255,.16); color: #fff; }
   .dash-nav svg { width: 19px; height: 19px; flex: none; }
+  .dash-sidebar.collapsed .dash-nav button span.nav-label,
+  .dash-sidebar.collapsed .sidebar-util-link span.nav-label { display: none; }
+
+  .sidebar-utility { display: flex; flex-direction: column; gap: .2rem; border-top: 1px solid rgba(255,255,255,.15); padding-top: .8rem; }
+  .sidebar-util-link {
+    display: flex; align-items: center; gap: .7rem; text-align: left; text-decoration: none;
+    background: none; border: none; border-radius: 10px; padding: .6rem .8rem;
+    color: rgba(255,255,255,.75); font-weight: 600; font-size: .9rem; cursor: pointer; white-space: nowrap;
+    font-family: inherit;
+  }
+  .sidebar-util-link:hover { background: rgba(255,255,255,.08); color: #fff; }
+  .sidebar-util-link svg { width: 18px; height: 18px; flex: none; }
+
+  .sidebar-footer { text-align: center; color: rgba(255,255,255,.5); font-size: .75rem; padding-top: .4rem; line-height: 1.5; }
+  .dash-sidebar.collapsed .sidebar-footer { font-size: 0; }
+  .dash-sidebar.collapsed .sidebar-footer .sidebar-version { font-size: .7rem; display: block; }
 
   .dash-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .dash-topbar {
@@ -51,10 +81,11 @@
 
   @media (max-width: 900px) {
     .dash-shell { flex-direction: column; }
-    .dash-sidebar { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: .8rem; }
-    .dash-sidebar .brand { display: none; }
-    .dash-nav { flex-direction: row; }
+    .dash-sidebar, .dash-sidebar.collapsed { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: .8rem; }
+    .sidebar-top, .sidebar-toggle-btn, .sidebar-utility, .sidebar-footer { display: none; }
+    .dash-nav { flex-direction: row; flex: none; overflow: visible; }
     .dash-nav button { white-space: nowrap; }
+    .dash-nav button span.nav-label { display: inline; }
     .dash-topbar { padding: .8rem 1rem; }
     .dash-content { padding: 1rem; }
   }
@@ -183,54 +214,73 @@
 </div>
 
 <div id="dashboard-view" class="dash-shell" style="display:none;">
-  <aside class="dash-sidebar">
-    <span class="brand">
-      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
-      Múdro a Bezpečne
-    </span>
+  <aside class="dash-sidebar" id="dash-sidebar">
+    <div class="sidebar-top">
+      <span class="brand">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+        <span>Múdro a Bezpečne</span>
+      </span>
+      <button type="button" id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Zbaliť/rozbaliť menu" title="Zbaliť/rozbaliť menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+    </div>
     <nav class="dash-nav" id="dash-nav">
-      <button data-section="prehlad" type="button">
+      <button data-section="prehlad" type="button" title="Prehľad">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></svg>
-        Prehľad
+        <span class="nav-label">Prehľad</span>
       </button>
-      <button data-section="registracie" class="active" type="button">
+      <button data-section="registracie" class="active" type="button" title="Registrácie">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
-        Registrácie
+        <span class="nav-label">Registrácie</span>
       </button>
-      <button data-section="workshopy" type="button">
+      <button data-section="workshopy" type="button" title="Kurzy">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        Kurzy
+        <span class="nav-label">Kurzy</span>
       </button>
-      <button data-section="chat" type="button" style="position:relative;">
+      <button data-section="zlavovekody" type="button" title="Zľavové kódy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.6 12.3 12.3 20.6a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.4A2 2 0 0 1 13 3h6a2 2 0 0 1 2 2v6a2 2 0 0 1-.4 1.3Z"/><circle cx="16.5" cy="7.5" r="1.5"/></svg>
+        <span class="nav-label">Zľavové kódy</span>
+      </button>
+      <button data-section="konzultacie" type="button" title="Konzultácie">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+        <span class="nav-label">Konzultácie</span>
+      </button>
+      <button data-section="chat" type="button" style="position:relative;" title="Chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16v12H7l-3 3V4Z"/></svg>
-        Chat
+        <span class="nav-label">Chat</span>
         <span id="chat-nav-badge" class="chat-badge" style="display:none;"></span>
       </button>
-      <button data-section="konzultacie" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
-        Konzultácie
-      </button>
-      <button data-section="referencie" type="button">
+      <button data-section="referencie" type="button" title="Referencie">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m20.8 8.6c0 5-8.8 10-8.8 10s-8.8-5-8.8-10a4.6 4.6 0 0 1 8.8-2 4.6 4.6 0 0 1 8.8 2Z"/></svg>
-        Referencie
+        <span class="nav-label">Referencie</span>
       </button>
-      <button data-section="zlavovekody" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.6 12.3 12.3 20.6a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.4A2 2 0 0 1 13 3h6a2 2 0 0 1 2 2v6a2 2 0 0 1-.4 1.3Z"/><circle cx="16.5" cy="7.5" r="1.5"/></svg>
-        Zľavové kódy
-      </button>
-      <button data-section="spatnavazba" type="button">
+      <button data-section="spatnavazba" type="button" title="Spätná väzba">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8Z"/></svg>
-        Spätná väzba
+        <span class="nav-label">Spätná väzba</span>
       </button>
-      <button data-section="nastavenia" type="button">
+      <button data-section="nastavenia" type="button" title="Nastavenia">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
-        Nastavenia
+        <span class="nav-label">Nastavenia</span>
       </button>
-      <button data-section="aktivita" type="button">
+      <button data-section="aktivita" type="button" title="Aktivita">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
-        Aktivita
+        <span class="nav-label">Aktivita</span>
       </button>
     </nav>
+    <div class="sidebar-utility">
+      <a href="../index.html" target="_blank" rel="noopener" class="sidebar-util-link" title="Objednávka">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>
+        <span class="nav-label">Objednávka</span>
+      </a>
+      <button type="button" id="logout-btn" class="sidebar-util-link" title="Odhlásiť sa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        <span class="nav-label">Odhlásiť sa</span>
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div>Powered by DigiStart</div>
+      <div class="sidebar-version">v2.00</div>
+    </div>
   </aside>
 
   <div class="dash-main">
@@ -242,7 +292,6 @@
           <span id="topbar-chat-badge" class="chat-badge"></span>
         </button>
         <span id="admin-email-label"></span>
-        <button class="btn btn-secondary" id="logout-btn" style="padding:.5rem .9rem;font-size:.85rem;">Odhlásiť sa</button>
       </div>
     </div>
 
@@ -868,6 +917,19 @@ window.addEventListener("load", function () {
   const functions = adminApp.functions("europe-west1");
   const workshopTitle = (id) => (window.WORKSHOPS[id] ? window.WORKSHOPS[id].title : id);
   const WORKSHOP_IDS = ["bezpecne-financie", "zaciname-s-ai"];
+
+  // ---------- Zbaliť/rozbaliť ľavé menu ----------
+  (function initSidebarToggle() {
+    const sidebar = document.getElementById("dash-sidebar");
+    const toggleBtn = document.getElementById("sidebar-toggle");
+    if (localStorage.getItem("mbo_admin_sidebar_collapsed") === "1") {
+      sidebar.classList.add("collapsed");
+    }
+    toggleBtn.addEventListener("click", () => {
+      const collapsed = sidebar.classList.toggle("collapsed");
+      localStorage.setItem("mbo_admin_sidebar_collapsed", collapsed ? "1" : "0");
+    });
+  })();
 
   // ---------- Navigácia medzi sekciami ----------
   function showSection(name) {
