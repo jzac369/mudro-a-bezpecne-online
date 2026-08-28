@@ -10,6 +10,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-storage-compat.js"></script>
 <script defer src="../assets/firebase-config.js"></script>
 <script defer src="../data/workshops.js"></script>
 <script defer src="../data/course.js"></script>
@@ -198,7 +199,7 @@
       </button>
       <button data-section="workshopy" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        Workshopy
+        Kurzy
       </button>
       <button data-section="obsahkurzu" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h7"/></svg>
@@ -276,7 +277,7 @@
             <svg id="chart-timeline" class="bar-chart-svg" viewBox="0 0 560 180"></svg>
           </div>
           <div class="card">
-            <h2 style="margin-bottom:1rem;">Obľúbenosť workshopov</h2>
+            <h2 style="margin-bottom:1rem;">Obľúbenosť kurzov</h2>
             <svg id="chart-popularity" class="bar-chart-svg" viewBox="0 0 260 180"></svg>
           </div>
         </div>
@@ -340,7 +341,7 @@
               <label for="g-email">E-mail (nepovinné)</label><input type="email" id="g-email">
             </div>
             <div class="field" style="min-width:200px;">
-              <label for="g-workshop">Workshop</label>
+              <label for="g-workshop">Kurz</label>
               <select id="g-workshop">
                 <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
                 <option value="zaciname-s-ai">Začíname s umelou inteligenciou</option>
@@ -362,7 +363,7 @@
               </select>
             </div>
             <div class="field">
-              <label for="filter-workshop">Workshop</label>
+              <label for="filter-workshop">Kurz</label>
               <select id="filter-workshop">
                 <option value="">Všetky</option>
                 <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
@@ -380,7 +381,7 @@
                   <th style="width:2rem;"><input type="checkbox" id="select-all-orders" style="width:auto;"></th>
                   <th>Kód</th>
                   <th data-sort="name">Účastník <span class="arrow"></span></th>
-                  <th data-sort="workshopId">Workshop <span class="arrow"></span></th>
+                  <th data-sort="workshopId">Kurz <span class="arrow"></span></th>
                   <th data-sort="status">Stav <span class="arrow"></span></th>
                   <th data-sort="timeSpentSec">Čas strávený <span class="arrow"></span></th>
                   <th>Postup kurzu</th>
@@ -399,7 +400,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
             <div>
               <h2 style="margin-bottom:.3rem;">Vymazané registrácie</h2>
-              <p class="hint" style="margin:0;">Archív toho, čo bolo vymazané vyššie — meno, e-mail, workshop, kódy a kedy/kým bolo vymazané.</p>
+              <p class="hint" style="margin:0;">Archív toho, čo bolo vymazané vyššie — meno, e-mail, kurz, kódy a kedy/kým bolo vymazané.</p>
             </div>
             <button class="btn btn-secondary" type="button" id="toggle-deleted-registrations">Zobraziť</button>
           </div>
@@ -408,7 +409,7 @@
               <thead>
                 <tr>
                   <th>Účastník</th>
-                  <th>Workshop</th>
+                  <th>Kurz</th>
                   <th>Kódy</th>
                   <th>Vymazané dňa</th>
                   <th>Vymazal</th>
@@ -421,7 +422,7 @@
       </section>
 
       <section class="dash-section" data-section="workshopy">
-        <h1>Workshopy</h1>
+        <h1>Kurzy</h1>
         <div class="card">
           <p class="hint">Sem doplňte YouTube ID videa (časť z adresy za „v=“), odkaz na PDF brožúrku a odkaz na podpis lektora.</p>
           <div class="workshop-settings-grid" id="workshop-settings"></div>
@@ -549,7 +550,7 @@
               <div class="field">
                 <label for="dc-applies">Platí pre</label>
                 <select id="dc-applies">
-                  <option value="all">Všetky workshopy</option>
+                  <option value="all">Všetky kurzy</option>
                   <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
                   <option value="zaciname-s-ai">Začíname s umelou inteligenciou</option>
                 </select>
@@ -699,7 +700,7 @@
               </div>
               <div class="field">
                 <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-maintenance" style="width:auto;"> Režim údržby (verejný web nedostupný)</label>
-                <p class="hint">Účastníci s existujúcim kódom sa naďalej vedia prihlásiť do workshopu — zablokuje sa len úvodná stránka, objednávka a prihlásenie.</p>
+                <p class="hint">Účastníci s existujúcim kódom sa naďalej vedia prihlásiť do kurzu — zablokuje sa len úvodná stránka, objednávka a prihlásenie.</p>
               </div>
             </div>
           </div>
@@ -1132,12 +1133,19 @@ window.addEventListener("load", function () {
         '<div class="field"><label>Pôvodná cena (€) — zobrazí sa preškrtnutá, marketingový efekt</label><input type="number" data-f="originalPrice" value="' + (data.originalPrice ?? "") + '" placeholder="napr. 29"></div>' +
         '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="showOriginalPrice" style="width:auto;" ' + (data.showOriginalPrice ? "checked" : "") + '> Zobrazovať pôvodnú cenu na webe</label></div>' +
         '<div class="field"><label>Akcia platí do (nepovinné)</label><input type="date" data-f="saleEndAt" value="' + (data.saleEndAt || "") + '"><p class="hint">Po tomto dátume sa pôvodná cena prestane zobrazovať automaticky.</p></div>' +
-        '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="hidden" style="width:auto;" ' + (data.hidden ? "checked" : "") + '> Skryť workshop z ponuky (dočasne nedostupný)</label></div>' +
+        '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="hidden" style="width:auto;" ' + (data.hidden ? "checked" : "") + '> Skryť kurz z ponuky (dočasne nedostupný)</label></div>' +
         '<div class="field"><label>YouTube ID videa</label><input type="text" data-f="youtubeId" value="' + (data.youtubeId || "") + '" placeholder="napr. dQw4w9WgXcQ"></div>' +
         '<div class="field"><label>Odkaz na PDF brožúrku</label><input type="text" data-f="brochureUrl" value="' + (data.brochureUrl || "") + '" placeholder="https://…"></div>' +
         '<div class="field"><label>Odkaz na podpis lektora (PNG, priehľadné pozadie)</label><input type="text" data-f="lecturerSignatureUrl" value="' + (data.lecturerSignatureUrl || "") + '" placeholder="https://…"></div>' +
         '<button class="btn btn-primary" data-save="' + id + '" style="padding:.5rem 1rem;font-size:.9rem;">Uložiť</button>' +
-        '<p class="hint" data-status style="margin-top:.5rem;"></p>';
+        '<p class="hint" data-status style="margin-top:.5rem;"></p>' +
+        '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
+        '<label>Prezentácia ku kurzu (PDF alebo PPT/PPTX)</label>' +
+        '<input type="file" accept=".pdf,.ppt,.pptx" data-presentation-file="' + id + '">' +
+        '<button class="btn btn-secondary" type="button" data-presentation-upload="' + id + '" style="margin-top:.5rem;">Nahrať prezentáciu</button> ' +
+        (data.presentationUrl ? '<a href="' + data.presentationUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a> <button class="btn btn-secondary" type="button" data-presentation-remove="' + id + '" style="font-size:.8rem;">Odstrániť</button>' : "") +
+        '<p class="hint" data-presentation-status="' + id + '" style="margin-top:.5rem;">' + (data.presentationName ? "Aktuálny súbor: " + data.presentationName : "Zatiaľ nenahraná.") + '</p>' +
+        '</div>';
       container.appendChild(wrap);
     }
 
@@ -1159,6 +1167,52 @@ window.addEventListener("load", function () {
           statusEl.textContent = "Uložené ✓";
         } catch (err) {
           statusEl.textContent = "Chyba: " + err.message;
+        }
+      });
+    });
+
+    container.querySelectorAll("[data-presentation-upload]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.presentationUpload;
+        const fileInput = container.querySelector('[data-presentation-file="' + id + '"]');
+        const statusEl = container.querySelector('[data-presentation-status="' + id + '"]');
+        const file = fileInput.files[0];
+        if (!file) { statusEl.textContent = "Najprv vyberte súbor."; return; }
+        const ext = file.name.split(".").pop().toLowerCase();
+        if (!["pdf", "ppt", "pptx"].includes(ext)) {
+          statusEl.textContent = "Podporované formáty: PDF, PPT, PPTX.";
+          return;
+        }
+        btn.disabled = true;
+        statusEl.textContent = "Nahrávam…";
+        try {
+          const storageRef = adminApp.storage().ref("presentations/" + id + "/" + Date.now() + "_" + file.name);
+          await storageRef.put(file);
+          const url = await storageRef.getDownloadURL();
+          await db.collection("workshops").doc(id).set({
+            presentationUrl: url,
+            presentationType: ext === "pdf" ? "pdf" : "ppt",
+            presentationName: file.name,
+          }, { merge: true });
+          statusEl.textContent = "Nahraté ✓ (" + file.name + ")";
+          loadWorkshopSettings();
+        } catch (err) {
+          statusEl.textContent = "Chyba: " + err.message;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+
+    container.querySelectorAll("[data-presentation-remove]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.presentationRemove;
+        if (!confirm("Naozaj odstrániť nahratú prezentáciu?")) return;
+        try {
+          await db.collection("workshops").doc(id).set({ presentationUrl: null, presentationType: null, presentationName: null }, { merge: true });
+          loadWorkshopSettings();
+        } catch (err) {
+          alert("Chyba: " + err.message);
         }
       });
     });
@@ -1563,7 +1617,7 @@ window.addEventListener("load", function () {
   }
 
   // ---------- Zľavové kódy ----------
-  const WORKSHOP_LABELS_DC = { all: "Všetky workshopy", "bezpecne-financie": "Ako nenaletieť podvodníkom", "zaciname-s-ai": "Začíname s umelou inteligenciou" };
+  const WORKSHOP_LABELS_DC = { all: "Všetky kurzy", "bezpecne-financie": "Ako nenaletieť podvodníkom", "zaciname-s-ai": "Začíname s umelou inteligenciou" };
 
   document.getElementById("dc-generate").addEventListener("click", () => {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1607,7 +1661,7 @@ window.addEventListener("load", function () {
         tr.innerHTML =
           "<td><span class='mono'>" + escapeHtml(id) + "</span></td>" +
           "<td>" + valueLabel + " <span class='chip " + st.chip + "' style='font-size:.7rem;'>" + st.label + "</span></td>" +
-          "<td>" + (WORKSHOP_LABELS_DC[c.appliesTo] || "Všetky workshopy") + "</td>" +
+          "<td>" + (WORKSHOP_LABELS_DC[c.appliesTo] || "Všetky kurzy") + "</td>" +
           "<td>" + usesLabel + "</td>" +
           "<td>" + validLabel + "</td>" +
           "<td>" + escapeHtml(c.note || "—") + "</td>" +
@@ -2642,7 +2696,7 @@ window.addEventListener("load", function () {
     try {
       const snap = await db.collection("orders").orderBy("createdAt", "desc").get();
       const rows = [[
-        "Kód", "Meno", "Priezvisko", "E-mail", "Workshop", "Stav", "Suma (€)", "Počet účastníkov",
+        "Kód", "Meno", "Priezvisko", "E-mail", "Kurz", "Stav", "Suma (€)", "Počet účastníkov",
         "Dátum registrácie", "Dátum úhrady", "Čas strávený (min)", "Postup kurzu",
         "Kvíz skóre", "Poznámka", "UTM zdroj", "UTM médium", "UTM kampaň",
       ]];

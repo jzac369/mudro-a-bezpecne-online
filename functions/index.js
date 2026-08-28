@@ -128,12 +128,12 @@ function fullName(firstName, lastName) {
 exports.createOrder = onCall(async (request) => {
   const { firstName, lastName, email, workshopId, participants, couponCode, utm, geo, client, gift } = request.data || {};
   if (!firstName || !lastName || !email || !workshopId) {
-    throw new HttpsError("invalid-argument", "Chýba meno, priezvisko, e-mail alebo workshop.");
+    throw new HttpsError("invalid-argument", "Chýba meno, priezvisko, e-mail alebo kurz.");
   }
 
   const workshopSnap = await db.collection("workshops").doc(workshopId).get();
   if (!workshopSnap.exists) {
-    throw new HttpsError("not-found", "Zvolený workshop neexistuje.");
+    throw new HttpsError("not-found", "Zvolený kurz neexistuje.");
   }
   const basePrice = Number(workshopSnap.data().price) || 0;
 
@@ -329,7 +329,7 @@ exports.generateCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request
   }
   const { workshopId, firstName, lastName, email } = request.data || {};
   if (!workshopId || !firstName) {
-    throw new HttpsError("invalid-argument", "Chýba workshop alebo meno účastníka.");
+    throw new HttpsError("invalid-argument", "Chýba kurz alebo meno účastníka.");
   }
   const participantName = fullName(firstName, lastName || "");
 
@@ -649,7 +649,7 @@ async function runReminderSweep() {
             name: c.firstName || c.participantName || "",
             codes: [c.code || doc.id],
             workshopId: c.workshopId,
-            messageOverride: "Všimli sme si, že ste sa zatiaľ neprihlásili do svojho workshopu. Váš prístupový kód je stále platný — stačí ísť na stránku Prihlásenie a zadať meno a kód.",
+            messageOverride: "Všimli sme si, že ste sa zatiaľ neprihlásili do svojho kurzu. Váš prístupový kód je stále platný — stačí ísť na stránku Prihlásenie a zadať meno a kód.",
           });
           await doc.ref.update({ neverLoggedReminderSentAt: FieldValue.serverTimestamp() });
           result.neverLoggedSent++;
@@ -670,7 +670,7 @@ async function runReminderSweep() {
               name: c.firstName || c.participantName || "",
               codes: [c.code || doc.id],
               workshopId: c.workshopId,
-              messageOverride: "Váš workshop čaká na dokončenie — zostáva vám už len záverečný kvíz a certifikát. Prihláste sa rovnakým kódom a pokračujte presne tam, kde ste skončili.",
+              messageOverride: "Váš kurz čaká na dokončenie — zostáva vám už len záverečný kvíz a certifikát. Prihláste sa rovnakým kódom a pokračujte presne tam, kde ste skončili.",
             });
             await doc.ref.update({ unfinishedReminderSentAt: FieldValue.serverTimestamp() });
             result.unfinishedSent++;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Objednávka workshopu — Múdro a Bezpečne Online</title>
+<title>Objednávka kurzu — Múdro a Bezpečne Online</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -31,7 +31,7 @@
 <main class="container" style="max-width:600px;padding-top:2.5rem;padding-bottom:4rem;">
 
   <div id="step-form">
-    <h1 id="workshop-title">Objednávka workshopu</h1>
+    <h1 id="workshop-title">Objednávka kurzu</h1>
     <p id="workshop-price" class="lead"></p>
 
     <form class="card" id="order-form">
@@ -139,7 +139,7 @@
   window.addEventListener("load", async () => {
     const workshop = window.WORKSHOPS && window.WORKSHOPS[workshopId];
     if (!workshop) {
-      document.getElementById("workshop-title").textContent = "Workshop sa nenašiel";
+      document.getElementById("workshop-title").textContent = "Kurz sa nenašiel";
       document.getElementById("order-form").style.display = "none";
       return;
     }
@@ -170,11 +170,11 @@
         if (workshop.price !== undefined) workshop.priceLabel = workshop.price + " €";
       }
     } catch (err) {
-      console.error("Nepodarilo sa načítať cenu workshopu:", err);
+      console.error("Nepodarilo sa načítať cenu kurzu:", err);
     }
 
     if (workshop.hidden) {
-      document.getElementById("workshop-title").textContent = "Tento workshop nie je momentálne dostupný";
+      document.getElementById("workshop-title").textContent = "Tento kurz nie je momentálne dostupný";
       document.getElementById("order-form").style.display = "none";
       return;
     }

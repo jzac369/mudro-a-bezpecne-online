@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Workshop — Múdro a Bezpečne Online</title>
+<title>Kurz — Múdro a Bezpečne Online</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -27,6 +27,9 @@
   .stepper button.done { border-color: var(--good); color: var(--good); }
   .stepper button .check { display:none; width:15px; height:15px; }
   .stepper button.done .check { display:inline; }
+  .stepper button.locked { opacity:.45; cursor:not-allowed; }
+  .stepper button.locked .lock { display:inline; width:14px; height:14px; }
+  .stepper button .lock { display:none; }
   .progress-wrap { margin:1rem 0 .4rem; }
   .progress-bar-bg { width:100%; height:10px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
   .progress-bar-fill { height:100%; background:var(--good); border-radius:999px; transition:width .3s ease; }
@@ -62,7 +65,7 @@
   <div class="container">
     <span class="brand">
       <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
-      <span id="workshop-name">Workshop</span>
+      <span id="workshop-name">Kurz</span>
     </span>
     <div class="text-tools">
       <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
@@ -75,7 +78,7 @@
 <main class="container" style="padding-top:2rem;padding-bottom:5rem;max-width:820px;">
   <p id="welcome" class="hint"></p>
   <p id="last-login" class="hint"></p>
-  <h1 id="workshop-title">Načítavam workshop…</h1>
+  <h1 id="workshop-title">Načítavam kurz…</h1>
 
   <div class="progress-wrap">
     <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
@@ -87,34 +90,49 @@
     <button class="btn btn-primary" id="continue-btn" style="padding:.5rem 1rem;font-size:.9rem;">Pokračovať</button>
   </div>
 
-  <nav class="stepper" id="stepper" aria-label="Kroky workshopu">
+  <nav class="stepper" id="stepper" aria-label="Kroky kurzu">
     <button data-step="video">
       <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
       1 · Video
     </button>
+    <button data-step="prezentacia">
+      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      2 · Prezentácia
+    </button>
     <button data-step="kurz">
       <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
-      2 · Interaktívny kurz
+      3 · Interaktívny kurz
     </button>
     <button data-step="cvicenia">
       <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
-      3 · Cvičenia
-    </button>
-    <button data-step="kviz">
-      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
-      4 · Kvíz
+      4 · Cvičenia
     </button>
     <button data-step="brozurka">
       <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
       5 · Brožúrka
     </button>
+    <button data-step="kviz">
+      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      6 · Záverečný kvíz
+    </button>
+    <button data-step="certifikat">
+      <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      <svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      7 · Certifikát
+    </button>
   </nav>
 
   <section class="card step-panel" data-panel="video">
-    <h2>Video k workshopu</h2>
+    <h2>Video ku kurzu</h2>
     <div class="video-wrap"><div id="yt-player"></div></div>
     <p class="hint">Video môžete kedykoľvek pozastaviť — vaše miesto si zapamätáme.</p>
-    <button class="btn btn-primary" id="video-done-btn" style="margin-top:1rem;">Video som pozrel(a), pokračovať na cvičenia</button>
+    <button class="btn btn-primary" id="video-done-btn" style="margin-top:1rem;">Video som pozrel(a), pokračovať na prezentáciu</button>
+  </section>
+
+  <section class="card step-panel" data-panel="prezentacia">
+    <h2>Prezentácia ku kurzu</h2>
+    <div id="presentation-body"></div>
+    <button class="btn btn-primary" id="presentation-done-btn" style="margin-top:1rem;">Prezentáciu som prešiel(la), pokračovať</button>
   </section>
 
   <section class="step-panel" data-panel="kurz">
@@ -124,18 +142,7 @@
   <section class="card step-panel" data-panel="cvicenia">
     <h2>Interaktívne cvičenie</h2>
     <div id="exercise-body"></div>
-    <button class="btn btn-primary" id="exercise-done-btn" style="margin-top:1rem;">Pokračovať na kvíz</button>
-  </section>
-
-  <section class="card step-panel" data-panel="kviz">
-    <h2>Výstupný kvíz</h2>
-    <div id="quiz-body"></div>
-    <div id="cert-area" style="display:none;margin-top:1.5rem;">
-      <h3>Váš certifikát</h3>
-      <img id="cert-preview" class="cert-preview" alt="Náhľad certifikátu o absolvovaní">
-      <a class="btn btn-primary" id="cert-download" download="certifikat.png" style="text-decoration:none;display:inline-block;">Stiahnuť certifikát (PNG)</a>
-      <p class="hint" style="margin-top:1.2rem;">Chcete si niečo prebrať osobne? <a href="konzultacia.html">Dohodnite si konzultáciu s lektorom</a>.</p>
-    </div>
+    <button class="btn btn-primary" id="exercise-done-btn" style="margin-top:1rem;">Pokračovať na brožúrku</button>
   </section>
 
   <section class="card step-panel" data-panel="brozurka">
@@ -143,10 +150,29 @@
     <p>Brožúrku si môžete prelistovať priamo tu, alebo si ju stiahnuť do počítača či tabletu. Po prvom otvorení zostane dostupná aj bez internetu.</p>
     <iframe id="brochure-frame" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;"></iframe>
     <a class="btn btn-primary" id="brochure-download" style="margin-top:1rem;display:inline-block;text-decoration:none;" download>Stiahnuť brožúrku (PDF)</a>
+    <button class="btn btn-secondary" type="button" id="brochure-done-btn" style="margin-top:1rem;margin-left:.6rem;">Pokračovať na kvíz</button>
+  </section>
+
+  <section class="card step-panel" data-panel="kviz">
+    <h2>Záverečný kvíz</h2>
+    <div id="quiz-body"></div>
+  </section>
+
+  <section class="card step-panel" data-panel="certifikat">
+    <h2>Váš certifikát</h2>
+    <p class="hint" id="cert-locked-hint">Certifikát sa odomkne po dokončení všetkých predchádzajúcich krokov (vrátane úspešného zvládnutia záverečného kvízu).</p>
+    <div id="cert-area" style="display:none;">
+      <img id="cert-preview" class="cert-preview" alt="Náhľad certifikátu o absolvovaní">
+      <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
+        <a class="btn btn-primary" id="cert-download" download="certifikat.png" style="text-decoration:none;display:inline-block;">Stiahnuť certifikát (PNG)</a>
+        <button class="btn btn-secondary" type="button" id="cert-print-btn">Vytlačiť certifikát</button>
+      </div>
+      <p class="hint" style="margin-top:1.2rem;">Chcete si niečo prebrať osobne? <a href="konzultacia.html">Dohodnite si konzultáciu s lektorom</a>.</p>
+    </div>
   </section>
 
   <section class="card step-panel" data-panel="brozurka" style="margin-top:1.5rem;" id="feedback-card">
-    <h2>Ako sa vám workshop páčil?</h2>
+    <h2>Ako sa vám kurz páčil?</h2>
     <div class="star-row" id="star-row">
       <button type="button" data-star="1">★</button>
       <button type="button" data-star="2">★</button>
@@ -172,7 +198,8 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 (function () {
-  const STEPS = ["video", "kurz", "cvicenia", "kviz", "brozurka"];
+  const STEPS = ["video", "prezentacia", "kurz", "cvicenia", "brozurka", "kviz", "certifikat"];
+  const CERT_REQUIRED_STEPS = STEPS.filter((s) => s !== "certifikat");
   const state = {
     workshop: null, workshopId: null, codeId: null, db: null, ytPlayer: null, course: null,
     sessionRef: null, sessionStart: null, doneSteps: new Set(), quizAnswers: [],
@@ -192,7 +219,25 @@
       state.doneSteps.size + " zo " + STEPS.length + " krokov hotových (" + pct + " %)";
   }
 
+  function isCertUnlocked() {
+    return CERT_REQUIRED_STEPS.every((s) => state.doneSteps.has(s));
+  }
+
+  function updateCertLock() {
+    const unlocked = isCertUnlocked();
+    const btn = document.querySelector('.stepper button[data-step="certifikat"]');
+    btn.classList.toggle("locked", !unlocked);
+    document.getElementById("cert-locked-hint").style.display = unlocked ? "none" : "block";
+    if (unlocked && !state.doneSteps.has("certifikat")) {
+      state.doneSteps.add("certifikat");
+      btn.classList.add("done");
+      updateProgressBar();
+      saveProgress({ completedSteps: Array.from(state.doneSteps) });
+    }
+  }
+
   function setActiveStep(step) {
+    if (step === "certifikat" && !isCertUnlocked()) return; // zamknuté, kým nie sú hotové ostatné kroky
     document.querySelectorAll(".stepper button").forEach((b) => b.classList.toggle("active", b.dataset.step === step));
     document.querySelectorAll(".step-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === step));
     history.replaceState(null, "", "?w=" + state.workshopId + "&step=" + step);
@@ -203,6 +248,7 @@
     state.doneSteps.add(step);
     document.querySelector('.stepper button[data-step="' + step + '"]').classList.add("done");
     updateProgressBar();
+    updateCertLock();
     saveProgress({ completedSteps: Array.from(state.doneSteps) });
   }
 
@@ -276,6 +322,21 @@ function renderBudgetExercise(ex) {
     });
   }
 
+  function renderPresentation() {
+    const body = document.getElementById("presentation-body");
+    const url = state.workshop.presentationUrl;
+    if (!url) {
+      body.innerHTML = "<p class='hint'>Prezentácia sa čoskoro pridá.</p>";
+      return;
+    }
+    const type = state.workshop.presentationType;
+    const viewerSrc = type === "pdf" ? url : "https://view.officeapps.live.com/op/embed.aspx?src=" + encodeURIComponent(url);
+    body.innerHTML =
+      "<p>Prezentáciu si môžete prezrieť priamo tu, alebo si ju stiahnuť.</p>" +
+      "<iframe src='" + viewerSrc + "' style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>" +
+      "<a class='btn btn-secondary' href='" + url + "' target='_blank' rel='noopener' style='margin-top:1rem;display:inline-block;text-decoration:none;'>Stiahnuť prezentáciu</a>";
+  }
+
   function renderExercise() {
     const body = document.getElementById("exercise-body");
     const exercises = state.workshop.exercises;
@@ -347,7 +408,7 @@ function renderBudgetExercise(ex) {
 
     ctx.font = "italic 26px Georgia, serif";
     ctx.fillStyle = "#5c5749";
-    ctx.fillText("o úspešnom absolvovaní workshopu", W / 2, 300);
+    ctx.fillText("o úspešnom absolvovaní kurzu", W / 2, 300);
 
     ctx.strokeStyle = "#c17a2e";
     ctx.lineWidth = 2;
@@ -359,7 +420,7 @@ function renderBudgetExercise(ex) {
     ctx.font = "20px 'Atkinson Hyperlegible', sans-serif";
     ctx.fillStyle = "#332f28";
     wrapText(ctx, "Tento certifikát vystavuje Múdro a Bezpečne Online za úspešné absolvovanie", W / 2, 410, 820, 28);
-    wrapText(ctx, "vzdelávacieho workshopu, ktorý absolvoval(a):", W / 2, 438, 820, 28);
+    wrapText(ctx, "vzdelávacieho kurzu, ktorý absolvoval(a):", W / 2, 438, 820, 28);
 
     ctx.font = "700 40px Georgia, serif";
     ctx.fillStyle = "#c17a2e";
@@ -509,13 +570,13 @@ function renderBudgetExercise(ex) {
       const wrongIndexes = allQuestions.map((q, i) => i).filter((i) => state.quizAnswers[i] !== allQuestions[i].correctIndex);
       const resultEl = document.getElementById("quiz-result");
 
-      const participantName = sessionStorage.getItem("mbo_participant_name") || "Účastník workshopu";
+      const participantName = sessionStorage.getItem("mbo_participant_name") || "Účastník kurzu";
 
       resultEl.innerHTML =
         '<span class="' + (passed ? "feedback-ok" : "feedback-bad") + '">Správne odpovede: ' + correct + " / " + total + "</span>";
 
       if (passed) {
-        resultEl.innerHTML += "<br>Výborne, workshop ste úspešne dokončili!";
+        resultEl.innerHTML += "<br>Výborne, kurz ste úspešne dokončili!";
         await showCertificate(participantName);
       } else {
         resultEl.innerHTML += "<br>Ešte to nie je ono — skúste si zopakovať len otázky, ktoré neboli správne.";
@@ -538,7 +599,10 @@ function renderBudgetExercise(ex) {
         completedAt: firebase.firestore.FieldValue.serverTimestamp(),
       });
       await saveProgress({ quizCompleted: true, quizScore: correct, quizPassed: passed });
-      if (passed) markStepDone("kviz");
+      if (passed) {
+        markStepDone("kviz");
+        setTimeout(() => setActiveStep("certifikat"), 1200);
+      }
     }
 
     renderCurrent();
@@ -712,7 +776,7 @@ function renderBudgetExercise(ex) {
       state.workshop = window.WORKSHOPS[state.workshopId] ? Object.assign({}, window.WORKSHOPS[state.workshopId]) : null;
 
       if (!state.workshop) {
-        document.getElementById("workshop-title").textContent = "Workshop sa nenašiel.";
+        document.getElementById("workshop-title").textContent = "Kurz sa nenašiel.";
         return;
       }
 
@@ -739,6 +803,7 @@ function renderBudgetExercise(ex) {
       document.getElementById("brochure-frame").src = state.workshop.brochureUrl;
       document.getElementById("brochure-download").href = state.workshop.brochureUrl;
 
+      renderPresentation();
       renderExercise();
       renderQuiz();
       setupFeedback();
@@ -754,11 +819,26 @@ function renderBudgetExercise(ex) {
       });
       document.getElementById("video-done-btn").addEventListener("click", () => {
         markStepDone("video");
+        setActiveStep("prezentacia");
+      });
+      document.getElementById("presentation-done-btn").addEventListener("click", () => {
+        markStepDone("prezentacia");
         setActiveStep("kurz");
       });
       document.getElementById("exercise-done-btn").addEventListener("click", () => {
         markStepDone("cvicenia");
+        setActiveStep("brozurka");
+      });
+      document.getElementById("brochure-done-btn").addEventListener("click", () => {
+        markStepDone("brozurka");
         setActiveStep("kviz");
+      });
+      document.getElementById("cert-print-btn").addEventListener("click", () => {
+        const src = document.getElementById("cert-preview").src;
+        const w = window.open("", "_blank");
+        if (!w) return;
+        w.document.write("<!doctype html><html><head><title>Certifikát</title></head><body style='margin:0;'><img src='" + src + "' style='width:100%;' onload='window.print()'></body></html>");
+        w.document.close();
       });
       document.getElementById("logout-btn").addEventListener("click", () => doLogout("manual"));
 
@@ -780,6 +860,7 @@ function renderBudgetExercise(ex) {
         });
       }
       updateProgressBar();
+      updateCertLock();
 
       // Interaktívny kurz — pokračuje presne tam, kde senior naposledy skončil.
       try {
@@ -818,7 +899,7 @@ function renderBudgetExercise(ex) {
       }
 
       const urlStep = new URLSearchParams(location.search).get("step");
-      const stepNames = { video: "Video", kurz: "Interaktívny kurz", cvicenia: "Cvičenia", kviz: "Kvíz", brozurka: "Brožúrka" };
+      const stepNames = { video: "Video", prezentacia: "Prezentácia", kurz: "Interaktívny kurz", cvicenia: "Cvičenia", brozurka: "Brožúrka", kviz: "Záverečný kvíz", certifikat: "Certifikát" };
       if (!urlStep && progressData && progressData.currentStep && STEPS.includes(progressData.currentStep) && progressData.currentStep !== "video") {
         document.getElementById("continue-text").textContent =
           "Naposledy ste skončili v kroku „" + stepNames[progressData.currentStep] + "“.";
