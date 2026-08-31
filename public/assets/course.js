@@ -58,6 +58,10 @@
 
     const wrap = el("div", "course-wrap");
 
+    // Kapitolový banner — zobrazí sa len na prvej obrazovke danej časti.
+    const isFirstOfPart = this.slides.findIndex((s) => s.part === slide.part) === this.index;
+    if (isFirstOfPart) wrap.appendChild(this.renderPartHero(slide));
+
     // Mapa postupu s časťami a pečaťami
     wrap.appendChild(this.renderMap(slide));
 
@@ -75,6 +79,17 @@
 
     this.root.appendChild(wrap);
     this.root.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  Course.prototype.renderPartHero = function (slide) {
+    const part = this.parts.find((p) => p.id === slide.part) || {};
+    const hero = el("div", "course-part-hero");
+    hero.innerHTML =
+      "<div class='course-part-eyebrow'>Časť " + String(slide.part).padStart(2, "0") + " z " + String(this.parts.length).padStart(2, "0") + "</div>" +
+      "<h2>" + part.label + "</h2>" +
+      (part.intro ? "<p>" + part.intro + "</p>" : "") +
+      "<div class='course-part-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'>" + (PART_ICONS[slide.part] || "") + "</svg></div>";
+    return hero;
   };
 
   Course.prototype.renderMap = function (slide) {
@@ -131,10 +146,36 @@
 
   // ---------- Zdieľané pomocné bloky ----------
 
+  const PART_ICONS = {
+    1: '<circle cx="12" cy="8" r="3"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>',
+    2: '<path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
+    3: '<path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/>',
+    4: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/>',
+    5: '<path d="M12 2l2.5 5 5.5.8-4 3.9.9 5.4L12 14.6 7.1 17.1l.9-5.4-4-3.9L9.5 7Z"/>',
+  };
+
+  const MEDIUM_META = {
+    email: { label: "Toto je e-mail", cls: "email", icon: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/>' },
+    sms: { label: "Toto je SMS správa", cls: "sms", icon: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>' },
+    call: { label: "Toto je telefonát", cls: "call", icon: '<path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.36 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/>' },
+    social: { label: "Toto je príspevok na sociálnej sieti", cls: "social", icon: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.2"/><circle cx="17" cy="7" r="1.1" fill="currentColor" stroke="none"/>' },
+  };
+
+  function mediumBadge(medium) {
+    const meta = MEDIUM_META[medium];
+    if (!meta) return null;
+    return el("span", "course-medium-badge " + meta.cls,
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>" + meta.icon + "</svg>" + meta.label);
+  }
+
   function header(card, slide) {
     const partLabel = (window.COURSE_PARTS.find((p) => p.id === slide.part) || {}).label || "";
-    card.appendChild(el("p", "course-kicker", "ČASŤ " + slide.part + " · " + partLabel));
+    const kicker = el("p", "course-kicker",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'>" + (PART_ICONS[slide.part] || "") + "</svg> ČASŤ " + slide.part + " · " + partLabel);
+    card.appendChild(kicker);
     card.appendChild(el("h2", null, slide.title));
+    const badge = mediumBadge(slide.medium);
+    if (badge) card.appendChild(badge);
     if (slide.lead) card.appendChild(el("p", "course-lead", slide.lead));
   }
 
@@ -562,15 +603,20 @@
     slide.questions.forEach((q, i) => {
       const box = el("div", "course-belief-item");
       box.appendChild(el("p", null, q.text));
-      const opts = el("div", "course-choice-opts");
+      const opts = el("div", "course-choice-opts course-choice-opts-row");
       const yes = el("button", "course-choice-opt", "Áno");
       const no = el("button", "course-choice-opt", "Nie");
       [yes, no].forEach((b) => (b.type = "button"));
+      const explain = el("div", "course-choice-result");
       function lock(val) {
         yes.disabled = true; no.disabled = true;
         const ok = val === q.answer;
         if (ok) correct++;
         (val ? yes : no).classList.add(ok ? "correct" : "incorrect");
+        if (q.why) {
+          explain.textContent = q.why;
+          explain.classList.add("show");
+        }
         answered++;
         status.textContent = answered >= slide.questions.length
           ? "Hotovo — správne ste odpovedali na " + correct + " z " + slide.questions.length + "."
@@ -581,17 +627,37 @@
       opts.appendChild(yes);
       opts.appendChild(no);
       box.appendChild(opts);
+      box.appendChild(explain);
       card.appendChild(box);
     });
     card.appendChild(status);
   };
 
+  function initialsOf(text) {
+    const words = String(text).replace(/[^a-zA-ZÀ-ž0-9 ]/g, " ").trim().split(/\s+/);
+    return (words[0] || "?").slice(0, 2).toUpperCase();
+  }
+
   RENDERERS.spot = function (slide, card) {
     header(card, slide);
-    const mail = el("div", "course-mail");
-    mail.appendChild(el("div", "course-mail-head",
-      "<strong>Od:</strong> " + slide.message.from + (slide.message.subject ? "<br><strong>Predmet:</strong> " + slide.message.subject : "")));
-    const body = el("div", "course-mail-body");
+    const medium = slide.medium || "email";
+
+    const mock = el("div", "phone-mock");
+    const shell = el("div", "phone-shell");
+    shell.appendChild(el("div", "phone-statusbar", "<span>9:41</span><span>●●●●</span>"));
+    const inner = el("div", "phone-inner");
+
+    if (medium === "social") {
+      inner.appendChild(el("div", "social-post-head",
+        "<span class='mail-avatar'>" + initialsOf(slide.message.from) + "</span>" +
+        "<span class='who'><b>" + slide.message.from + "</b><span>práve teraz</span></span>"));
+    } else {
+      inner.appendChild(el("div", "mail-app-head",
+        "<span class='mail-avatar'>" + initialsOf(slide.message.from) + "</span>" +
+        "<span class='who'><b>" + slide.message.from + "</b>" + (slide.message.subject ? "<span>Predmet: " + slide.message.subject + "</span>" : "") + "</span>"));
+    }
+
+    const body = el("div", medium === "social" ? "social-post-body" : "mail-body-new");
     const parts = slide.message.body.split(/(\[\[.*?\]\])/g);
     let clueIndex = 0;
     const foundSet = new Set();
@@ -614,37 +680,76 @@
         body.appendChild(document.createTextNode(part));
       }
     });
-    mail.appendChild(body);
-    card.appendChild(mail);
+    inner.appendChild(body);
+    shell.appendChild(inner);
+    mock.appendChild(shell);
+    card.appendChild(mock);
+
     const status = el("p", "course-hint", "Klikajte na podčiarknuté časti textu — nájdených: 0 z " + slide.clues.length);
     card.appendChild(status);
     const list = el("div", "course-clue-list");
-    slide.clues.forEach((c) => list.appendChild(el("div", "course-clue-item", c)));
+    slide.clues.forEach((c) => {
+      const item = el("div", "clue-list-item",
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 9v4M12 17h.01'/><circle cx='12' cy='12' r='9'/></svg><span>" + c + "</span>");
+      list.appendChild(item);
+    });
     card.appendChild(list);
     if (slide.footer) card.appendChild(el("p", "course-hint", slide.footer));
   };
 
   RENDERERS.story = function (slide, card, course) {
     header(card, slide);
-    const box = el("div", "course-story");
+    const medium = slide.medium;
+
+    if (medium === "call") {
+      renderCallStory(slide, card);
+      return;
+    }
+
+    const box = el("div", medium === "sms" ? "phone-mock" : "course-story");
     card.appendChild(box);
 
     function renderNode(id) {
       const node = slide.nodes[id];
       box.innerHTML = "";
+
+      if (medium === "sms") {
+        const shell = el("div", "phone-shell");
+        shell.appendChild(el("div", "phone-statusbar", "<span>9:41</span><span>●●●●</span>"));
+        const inner = el("div", "phone-inner sms-thread");
+        shell.appendChild(inner);
+        box.appendChild(shell);
+
+        if (node.end) {
+          const result = el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text);
+          box.appendChild(result);
+          return;
+        }
+        inner.appendChild(el("div", "sms-bubble in", "<span class='sms-sender'>" + node.speaker + "</span>" + node.text));
+        const choices = el("div", "course-story-choices");
+        node.choices.forEach((c) => {
+          const b = el("button", "course-story-choice-btn", c.text);
+          b.type = "button";
+          b.addEventListener("click", () => {
+            inner.appendChild(el("div", "sms-bubble out", c.text));
+            setTimeout(() => renderNode(c.to), 250);
+          });
+          choices.appendChild(b);
+        });
+        box.appendChild(choices);
+        return;
+      }
+
+      // Fallback — obyčajná bublina rozhovoru (bez konkrétneho média).
       if (node.end) {
-        box.appendChild(el("div", "course-story-bubble " + (node.end === "good" ? "good" : "warn"), node.text));
+        box.appendChild(el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text));
         return;
       }
       box.appendChild(el("div", "course-story-bubble", "<strong>" + node.speaker + ":</strong><br>" + node.text));
       const choices = el("div", "course-story-choices");
       node.choices.forEach((c) => {
-        const b = el("button", "btn btn-secondary", c.text);
+        const b = el("button", "course-story-choice-btn", c.text);
         b.type = "button";
-        b.style.display = "block";
-        b.style.width = "100%";
-        b.style.marginBottom = ".6rem";
-        b.style.textAlign = "left";
         b.addEventListener("click", () => renderNode(c.to));
         choices.appendChild(b);
       });
@@ -652,6 +757,55 @@
     }
     renderNode(slide.start);
   };
+
+  function renderCallStory(slide, card) {
+    const shell = el("div", "call-shell");
+    const inner = el("div", "call-inner");
+    shell.appendChild(inner);
+    card.appendChild(shell);
+    const choicesBox = el("div", "course-story-choices");
+    card.appendChild(choicesBox);
+
+    function showRinging() {
+      const node = slide.nodes[slide.start];
+      inner.innerHTML =
+        "<div class='call-avatar'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8'/></svg></div>" +
+        "<div class='caller'>" + node.speaker + "</div><div class='sub'>prichádzajúci hovor…</div>" +
+        "<div class='call-actions'>" +
+        "<div class='call-btn decline' id='call-decline'><div class='circle'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2'><path d='M22 2 2 22M2 2l20 20'/></svg></div>Odmietnuť</div>" +
+        "<div class='call-btn accept' id='call-accept'><div class='circle'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2'><path d='M15.05 5A5 5 0 0 1 19 8.95m-3.95-7.95A9 9 0 0 1 23 8.94'/><path d='M9 5.5c-1.9.7-3.5 2.3-3.5 5.5 0 5 4.5 9.5 9.5 9.5 3.2 0 4.8-1.6 5.5-3.5'/></svg></div>Prijať</div>" +
+        "</div>";
+      inner.querySelector("#call-accept").addEventListener("click", () => showNode(slide.start, node));
+      inner.querySelector("#call-decline").addEventListener("click", () => {
+        choicesBox.innerHTML = "";
+        card.appendChild(el("div", "course-note", "<strong>Dobrá voľba aj toto:</strong> hovor od neznámeho čísla vôbec nemusíte prijímať. Ak je to niečo dôležité, ozvú sa iným spôsobom."));
+      });
+    }
+
+    function showNode(id, preloadedNode) {
+      const node = preloadedNode || slide.nodes[id];
+      choicesBox.innerHTML = "";
+      if (node.end) {
+        inner.innerHTML =
+          "<div class='call-avatar'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8'/></svg></div>" +
+          "<div class='caller'>Hovor ukončený</div>";
+        choicesBox.appendChild(el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text));
+        return;
+      }
+      inner.innerHTML =
+        "<div class='call-avatar'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8'/></svg></div>" +
+        "<div class='caller'>" + node.speaker + "</div><div class='sub'>hovor prebieha…</div>" +
+        "<div class='call-transcript'>„" + node.text + "“</div>";
+      node.choices.forEach((c) => {
+        const b = el("button", "course-story-choice-btn", c.text);
+        b.type = "button";
+        b.addEventListener("click", () => showNode(c.to));
+        choicesBox.appendChild(b);
+      });
+    }
+
+    showRinging();
+  }
 
   RENDERERS.slider = function (slide, card) {
     header(card, slide);
@@ -708,7 +862,7 @@
         real.disabled = true; ai.disabled = true;
         const ok = val === r.answer;
         (val === "real" ? real : ai).classList.add(ok ? "correct" : "incorrect");
-        result.textContent = ok ? "Uhádli ste!" : "Tentoraz nie — ale hlavné je vedieť, na čo sa pozerať.";
+        result.innerHTML = "<strong>" + (ok ? "Uhádli ste!" : "Tentoraz nie.") + "</strong> " + (r.explain || "");
         result.classList.add("show");
         const goNext = el("button", "btn btn-primary", round + 1 >= slide.rounds.length ? "Zobraziť znaky AI fotografie" : "Ďalšie kolo");
         goNext.type = "button";

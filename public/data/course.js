@@ -145,9 +145,9 @@ window.COURSE_SLIDES = [
     title: "Bleskovka č. 1",
     lead: "Tri rýchle otázky na zopakovanie.",
     questions: [
-      { text: "Vidí umelá inteligencia do vášho bankového účtu?", answer: false },
-      { text: "Dá sa v ChatGPT niečo nenávratne pokaziť?", answer: false },
-      { text: "Môže sa AI niekedy pomýliť?", answer: true },
+      { text: "Vidí umelá inteligencia do vášho bankového účtu?", answer: false, why: "AI nemá prístup k žiadnym vašim účtom ani súkromným dátam, pokiaľ jej ich sami nezdieľate." },
+      { text: "Dá sa v ChatGPT niečo nenávratne pokaziť?", answer: false, why: "V ChatGPT sa nedá nič nenávratne zmazať ani pokaziť — pokojne skúšajte, čo vás zaujíma." },
+      { text: "Môže sa AI niekedy pomýliť?", answer: true, why: "Áno, aj AI sa občas mýli — preto je dobré dôležité informácie overiť aj z druhého zdroja." },
     ],
   },
 
@@ -164,7 +164,7 @@ window.COURSE_SLIDES = [
     note: "Slovo „phishing“ je hračka so slovami „fishing“ (rybolov) a „phone“. Podvodníci „lovia“ vaše údaje s návnadou a trpezlivosťou.",
   },
   {
-    id: 13, part: 3, type: "spot",
+    id: 13, part: 3, type: "spot", medium: "email",
     title: "Podozrivý e-mail „z banky“",
     lead: "Kliknutím označte 3 varovné znaky priamo v texte.",
     message: {
@@ -194,7 +194,7 @@ window.COURSE_SLIDES = [
     ],
   },
   {
-    id: 15, part: 3, type: "spot",
+    id: 15, part: 3, type: "spot", medium: "email",
     title: "Skutočný príklad: e-mail „z banky“",
     lead: "Nájdite 4 varovné znaky — tentoraz bez nápovedy v texte, len podľa toho, čo ste sa už naučili.",
     message: {
@@ -211,7 +211,7 @@ window.COURSE_SLIDES = [
     footer: "Presne takýto e-mail môžete odfotiť a poslať do AI s otázkou: „Je to podvod?“",
   },
   {
-    id: 16, part: 3, type: "spot",
+    id: 16, part: 3, type: "spot", medium: "email",
     title: "Falošná „faktúra o náhrade“",
     lead: "Nájdite 3 varovné znaky. Pozor — tentoraz podvod nestraší, ale sľubuje peniaze!",
     message: {
@@ -227,7 +227,7 @@ window.COURSE_SLIDES = [
     footer: "Ako si to overiť: zavolajte priamo poisťovni na oficiálne číslo z jej webovej stránky.",
   },
   {
-    id: 17, part: 3, type: "spot",
+    id: 17, part: 3, type: "spot", medium: "email",
     title: "„Váš balík čaká na potvrdenie platby“",
     lead: "Nájdite 4 varovné znaky v správe o balíku.",
     message: {
@@ -243,7 +243,7 @@ window.COURSE_SLIDES = [
     ],
   },
   {
-    id: 18, part: 3, type: "story",
+    id: 18, part: 3, type: "story", medium: "call",
     title: "Telefonát „z banky“",
     lead: "Zvoní telefón. Ako budete reagovať?",
     start: "a",
@@ -267,7 +267,7 @@ window.COURSE_SLIDES = [
     },
   },
   {
-    id: 19, part: 3, type: "story",
+    id: 19, part: 3, type: "story", medium: "sms",
     title: "„Babka, potrebujem peniaze“",
     lead: "Prišla vám SMS z neznámeho čísla.",
     start: "a",
@@ -332,7 +332,7 @@ window.COURSE_SLIDES = [
     ],
   },
   {
-    id: 23, part: 3, type: "spot", stamp: true,
+    id: 23, part: 3, type: "spot", stamp: true, medium: "email",
     title: "Opakovanie: nájdite chyták",
     lead: "V tejto správe sú zmiešané znaky z rôznych podvodov. Nájdite všetky 3 — už bez nápovedy v poučkách.",
     message: {
@@ -349,7 +349,7 @@ window.COURSE_SLIDES = [
 
   // ---------- ČASŤ 4 · Hoaxy, fotky, zmluvy ----------
   {
-    id: 24, part: 4, type: "spot",
+    id: 24, part: 4, type: "spot", medium: "social",
     title: "Poplašná správa zo sociálnej siete",
     lead: "Označte varovné signály hoaxu.",
     message: {
@@ -391,8 +391,8 @@ window.COURSE_SLIDES = [
     title: "Skutočná fotografia, alebo AI?",
     lead: "Dve kolá — pri každom hádajte, potom si pozrite, na čo sa dá pri AI fotkách pozerať.",
     rounds: [
-      { prompt: "Fotografia č. 1: usmiata rodina pri jazere, v pozadí hory.", answer: "ai" },
-      { prompt: "Fotografia č. 2: muž podávajúci ruku pri stole, v pozadí rozmazaná kancelária.", answer: "real" },
+      { prompt: "Fotografia č. 1: usmiata rodina pri jazere, v pozadí hory.", answer: "ai", explain: "Je to AI — všimnite si príliš dokonalé svetlo, symetrické tváre bez jedinej nedokonalosti a neprirodzene čistú, „reklamnú“ scénu." },
+      { prompt: "Fotografia č. 2: muž podávajúci ruku pri stole, v pozadí rozmazaná kancelária.", answer: "real", explain: "Je to skutočná fotografia — vidno bežné nedokonalosti reálneho záberu: prirodzené rozostrenie pozadia aj mierne neupravené detaily." },
     ],
     checklist: [
       { title: "Ruky a prsty", text: "Neprirodzený počet alebo tvar prstov." },
@@ -483,11 +483,11 @@ window.COURSE_SLIDES = [
     title: "Záverečná bleskovka",
     lead: "Posledných 5 situácií — vyberte správnu reakciu.",
     questions: [
-      { text: "E-mail vás naháňa časom a žiada kliknúť na odkaz — je to podozrivé?", answer: true },
-      { text: "Banka si od vás telefonicky pýta PIN — je to normálne?", answer: false },
-      { text: "Ponuka sľubuje garantovaný zisk bez rizika — treba byť opatrný?", answer: true },
-      { text: "Správa má veľa výkričníkov a žiada zdieľať ďalej — je to varovný signál?", answer: true },
-      { text: "Je v poriadku overiť si dôležitú informáciu na viacerých zdrojoch?", answer: true },
+      { text: "E-mail vás naháňa časom a žiada kliknúť na odkaz — je to podozrivé?", answer: true, why: "Časový nátlak a odkaz na kliknutie sú dva z najčastejších varovných znakov podvodu." },
+      { text: "Banka si od vás telefonicky pýta PIN — je to normálne?", answer: false, why: "Nie, žiadna banka si nikdy telefonicky ani e-mailom nepýta PIN, heslo ani kódy zo SMS." },
+      { text: "Ponuka sľubuje garantovaný zisk bez rizika — treba byť opatrný?", answer: true, why: "Áno — zaručený vysoký zisk bez rizika v skutočnosti neexistuje, je to typický znak podvodnej investície." },
+      { text: "Správa má veľa výkričníkov a žiada zdieľať ďalej — je to varovný signál?", answer: true, why: "Áno, presne takto vyzerajú hoaxy — čím viac výkričníkov, tým menej pravdy." },
+      { text: "Je v poriadku overiť si dôležitú informáciu na viacerých zdrojoch?", answer: true, why: "Áno, overenie z viacerých nezávislých zdrojov je vždy dobrý a bezpečný postup." },
     ],
   },
   {
@@ -514,9 +514,9 @@ window.COURSE_SLIDES = [
 // Obrazovky, po ktorých pribudne pečať na mape (posledná = diplom).
 window.COURSE_STAMPS = [11, 23, 33, 35];
 window.COURSE_PARTS = [
-  { id: 1, label: "Spoznávame pomocníka" },
-  { id: 2, label: "Pozor, AI sa mýli" },
-  { id: 3, label: "Lovci podvodov" },
-  { id: 4, label: "Hoaxy, fotky, zmluvy" },
-  { id: 5, label: "Zlaté pravidlá" },
+  { id: 1, label: "Spoznávame pomocníka", intro: "Čo je umelá inteligencia, čo vie a čo nevie — a ako s ňou začať krok za krokom." },
+  { id: 2, label: "Pozor, AI sa mýli", intro: "Prečo si dôležité veci vždy treba overiť aj z druhého zdroja." },
+  { id: 3, label: "Lovci podvodov", intro: "Podozrivé e-maily, telefonáty aj SMS správy — presne také, aké chodia tisíckam ľudí denne." },
+  { id: 4, label: "Hoaxy, fotky, zmluvy", intro: "Poplašné správy zo sociálnych sietí, AI fotografie a zložité zmluvy v ľudskej reči." },
+  { id: 5, label: "Zlaté pravidlá", intro: "Čo nikdy nezadávame — ani do AI — a čo robiť, ak sa niečo stane." },
 ];
