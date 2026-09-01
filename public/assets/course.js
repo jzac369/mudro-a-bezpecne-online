@@ -83,12 +83,16 @@
 
   Course.prototype.renderPartHero = function (slide) {
     const part = this.parts.find((p) => p.id === slide.part) || {};
-    const hero = el("div", "course-part-hero");
+    const hero = el("div", "course-part-hero" + (part.image ? " has-image" : ""));
     hero.innerHTML =
+      "<div class='course-part-text'>" +
       "<div class='course-part-eyebrow'>Časť " + String(slide.part).padStart(2, "0") + " z " + String(this.parts.length).padStart(2, "0") + "</div>" +
       "<h2>" + part.label + "</h2>" +
       (part.intro ? "<p>" + part.intro + "</p>" : "") +
-      "<div class='course-part-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'>" + (PART_ICONS[slide.part] || "") + "</svg></div>";
+      "</div>" +
+      (part.image
+        ? "<img class='course-part-image' src='" + part.image + "' alt=''>"
+        : "<div class='course-part-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'>" + (PART_ICONS[slide.part] || "") + "</svg></div>");
     return hero;
   };
 
@@ -189,12 +193,46 @@
     return f;
   }
 
+  function evidenceFigure(card, evidenceImage) {
+    if (!evidenceImage) return;
+    const fig = el("figure", "course-evidence");
+    const img = el("img");
+    img.src = evidenceImage.src;
+    img.alt = evidenceImage.caption || "Skutočný príklad";
+    img.loading = "lazy";
+    fig.appendChild(img);
+    if (evidenceImage.caption) fig.appendChild(el("figcaption", null, evidenceImage.caption));
+    card.appendChild(fig);
+  }
+
+  function galleryBlock(card, items) {
+    if (!items || !items.length) return;
+    const wrap = el("div", "course-gallery");
+    items.forEach((item) => {
+      const fig = el("figure", "course-evidence");
+      const img = el("img");
+      img.src = item.src;
+      img.alt = item.caption || "Skutočný príklad";
+      img.loading = "lazy";
+      fig.appendChild(img);
+      if (item.caption) fig.appendChild(el("figcaption", null, item.caption));
+      wrap.appendChild(fig);
+    });
+    card.appendChild(wrap);
+  }
+
   // ---------- Renderery jednotlivých typov ----------
 
   const RENDERERS = {};
 
   RENDERERS.intro = function (slide, card) {
     card.appendChild(el("div", "course-badge", "Interaktívny kurz"));
+    if (slide.image) {
+      const img = el("img", "course-intro-photo");
+      img.src = slide.image;
+      img.alt = "";
+      card.appendChild(img);
+    }
     header(card, slide);
     card.appendChild(el("p", null, slide.body));
     const map = el("div", "course-intro-parts");
@@ -437,6 +475,7 @@
     card.appendChild(wrap);
     card.appendChild(status);
     note(card, slide.note);
+    galleryBlock(card, slide.gallery);
   };
 
   RENDERERS.sequence = function (slide, card) {
@@ -499,6 +538,7 @@
     card.appendChild(screen);
     card.appendChild(status);
     card.appendChild(info);
+    evidenceFigure(card, slide.evidenceImage);
   };
 
   RENDERERS.choice = function (slide, card) {
@@ -579,6 +619,7 @@
     });
     card.appendChild(grid);
     note(card, slide.note);
+    evidenceFigure(card, slide.evidenceImage);
   };
 
   RENDERERS.revealgrid = function (slide, card) {
@@ -694,6 +735,7 @@
     });
     card.appendChild(list);
     if (slide.footer) card.appendChild(el("p", "course-hint", slide.footer));
+    evidenceFigure(card, slide.evidenceImage);
   };
 
   RENDERERS.story = function (slide, card, course) {
@@ -835,6 +877,7 @@
     card.appendChild(el("p", null, "<strong>Skôr než investujete, opýtajte sa:</strong>"));
     card.appendChild(checklist);
     note(card, slide.note);
+    evidenceFigure(card, slide.evidenceImage);
   };
 
   RENDERERS.guess = function (slide, card) {
@@ -851,7 +894,14 @@
       }
       const r = slide.rounds[round];
       roundBox.appendChild(el("p", "course-choice-num", "Kolo " + (round + 1) + " z " + slide.rounds.length));
-      roundBox.appendChild(el("div", "course-guess-photo", r.prompt));
+      if (r.image) {
+        const img = el("img", "course-guess-photo-img");
+        img.src = r.image;
+        img.alt = "";
+        roundBox.appendChild(img);
+      } else {
+        roundBox.appendChild(el("div", "course-guess-photo", r.prompt));
+      }
       const opts = el("div", "course-choice-opts");
       const real = el("button", "course-choice-opt", "Skutočná fotografia");
       const ai = el("button", "course-choice-opt", "Vytvorená umelou inteligenciou");

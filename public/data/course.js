@@ -8,6 +8,7 @@ window.COURSE_SLIDES = [
     id: 1, part: 1, type: "intro",
     title: "Ako sa nenechať oklamať",
     lead: "Umelá inteligencia ako pomocník pri finančných rozhodnutiach.",
+    image: "assets/course-media/illustrations/cover-elderly-couple.jpg",
     body: "Čaká vás 35 krátkych zastavení rozdelených do 5 častí. Pri každej si niečo vyskúšate — nič sa nedá pokaziť, kedykoľvek sa môžete vrátiť tam, kde ste skončili.",
   },
   {
@@ -90,6 +91,10 @@ window.COURSE_SLIDES = [
       { x: 60, y: 85, title: "Okienko na písanie", text: "Dole — otázka sa píše rovnako ako SMS správa." },
       { x: 60, y: 30, title: "Odpoveď po slovensky", text: "AI odpovie prehľadne, väčšinou v bodoch." },
     ],
+    evidenceImage: {
+      src: "assets/course-media/evidence/chatgpt-screenshot.jpg",
+      caption: "Skutočná obrazovka aplikácie ChatGPT na tablete — presne takto to uvidíte aj vy.",
+    },
   },
   {
     id: 8, part: 1, type: "choice",
@@ -209,6 +214,10 @@ window.COURSE_SLIDES = [
       "Všeobecné oslovenie „Vážený zákazník“ — banka pozná vaše meno.",
     ],
     footer: "Presne takýto e-mail môžete odfotiť a poslať do AI s otázkou: „Je to podvod?“",
+    evidenceImage: {
+      src: "assets/course-media/evidence/vub-phishing-email.jpg",
+      caption: "Skutočný podvodný e-mail, ktorý chodil klientom VÚB banky. Odosielateľ nie je banka, len sa za ňu vydáva.",
+    },
   },
   {
     id: 16, part: 3, type: "spot", medium: "email",
@@ -225,6 +234,10 @@ window.COURSE_SLIDES = [
       "Žiada údaje o karte — poisťovňa vracia peniaze na účet, nikdy si nepýta kartu cez e-mail.",
     ],
     footer: "Ako si to overiť: zavolajte priamo poisťovni na oficiálne číslo z jej webovej stránky.",
+    evidenceImage: {
+      src: "assets/course-media/evidence/vszp-fake-faktura.jpg",
+      caption: "Skutočná falošná „faktúra o náhrade“ vydávajúca sa za zdravotnú poisťovňu. Žiadna poisťovňa takto peniaze nevracia.",
+    },
   },
   {
     id: 17, part: 3, type: "spot", medium: "email",
@@ -241,6 +254,10 @@ window.COURSE_SLIDES = [
       "Tlačidlo „Kliknite tu“ vedie na falošnú platobnú stránku.",
       "Adresa odosielateľa končí na „.br“ — to je Brazília, nie slovenská pošta.",
     ],
+    evidenceImage: {
+      src: "assets/course-media/evidence/posta-phishing-email.jpg",
+      caption: "Skutočný podvodný e-mail vydávajúci sa za Slovenskú poštu. Adresa odosielateľa a drobný poplatok sú typickým vzorom tohto podvodu.",
+    },
   },
   {
     id: 18, part: 3, type: "story", medium: "call",
@@ -321,6 +338,10 @@ window.COURSE_SLIDES = [
       "Môžem svoje peniaze kedykoľvek vybrať?",
     ],
     note: "Zázračný zisk = zaručená strata. Zoznam licencovaných subjektov nájdete na www.nbs.sk.",
+    evidenceImage: {
+      src: "assets/course-media/evidence/investicny-podvod-instagram.jpg",
+      caption: "Presne takéto investičné reklamy s falošným logom energetickej firmy kolujú na Instagrame a Facebooku.",
+    },
   },
   {
     id: 22, part: 3, type: "reveal",
@@ -373,6 +394,10 @@ window.COURSE_SLIDES = [
       { left: "„Kašľaním proti infarktu“", right: "Nebezpečná zdravotná rada — pri podozrení na infarkt vždy volajte 155 alebo 112." },
     ],
     note: "Čím viac výkričníkov, tým menej pravdy.",
+    gallery: [
+      { src: "assets/course-media/evidence/hoax-tanky-facebook.jpg", caption: "„Tanky na Záhorí“ — takto vyzerá skutočný hoax na Facebooku, aj s označením HOAX od stránky, ktorá klamstvá vyvracia." },
+      { src: "assets/course-media/evidence/infarkt-hoax-text.jpg", caption: "„Kašľaním proti infarktu“ — skutočná poplašná správa s nebezpečnou zdravotnou radou." },
+    ],
   },
   {
     id: 26, part: 4, type: "reveal",
@@ -385,14 +410,18 @@ window.COURSE_SLIDES = [
       { title: "Opýtajte sa AI", text: "„Je pravda, že infrazvuk z veterných turbín spôsobuje srdcové choroby? Čo hovoria overené zdroje?“" },
     ],
     note: "Pravdivá informácia sa dá overiť z viacerých nezávislých zdrojov.",
+    evidenceImage: {
+      src: "assets/course-media/evidence/epoch-times-dezinformacia.jpg",
+      caption: "Presne tento príspevok o veterných turbínach koloval na sociálnych sieťach — vyzerá ako spravodajstvo, no ide o zavádzajúci výklad jednej štúdie.",
+    },
   },
   {
     id: 27, part: 4, type: "guess",
     title: "Skutočná fotografia, alebo AI?",
     lead: "Dve kolá — pri každom hádajte, potom si pozrite, na čo sa dá pri AI fotkách pozerať.",
     rounds: [
-      { prompt: "Fotografia č. 1: usmiata rodina pri jazere, v pozadí hory.", answer: "ai", explain: "Je to AI — všimnite si príliš dokonalé svetlo, symetrické tváre bez jedinej nedokonalosti a neprirodzene čistú, „reklamnú“ scénu." },
-      { prompt: "Fotografia č. 2: muž podávajúci ruku pri stole, v pozadí rozmazaná kancelária.", answer: "real", explain: "Je to skutočná fotografia — vidno bežné nedokonalosti reálneho záberu: prirodzené rozostrenie pozadia aj mierne neupravené detaily." },
+      { image: "assets/course-media/evidence/ai-foto-macka-farba.jpg", answer: "ai", explain: "Je to AI — všimnite si, že rozliata farba je nerealisticky dramaticky rozliata, kvapky vo vzduchu nesedia s jedným pádom vedra a perspektíva škvŕn na posteli a stene pôsobí zvláštne. Mačka aj textúry vyzerajú takmer presvedčivo — presne to robí AI fotky nebezpečné." },
+      { image: "assets/course-media/evidence/real-foto-muz-s-notebookom.jpg", answer: "real", explain: "Je to skutočná fotografia — svetlo, tiene aj drobné nedokonalosti (pohyb vlasov, prirodzené vrásky na oblečení) sedia s bežným fotoaparátom, nič nepôsobí „príliš dokonalo“." },
     ],
     checklist: [
       { title: "Ruky a prsty", text: "Neprirodzený počet alebo tvar prstov." },
@@ -514,9 +543,9 @@ window.COURSE_SLIDES = [
 // Obrazovky, po ktorých pribudne pečať na mape (posledná = diplom).
 window.COURSE_STAMPS = [11, 23, 33, 35];
 window.COURSE_PARTS = [
-  { id: 1, label: "Spoznávame pomocníka", intro: "Čo je umelá inteligencia, čo vie a čo nevie — a ako s ňou začať krok za krokom." },
-  { id: 2, label: "Pozor, AI sa mýli", intro: "Prečo si dôležité veci vždy treba overiť aj z druhého zdroja." },
-  { id: 3, label: "Lovci podvodov", intro: "Podozrivé e-maily, telefonáty aj SMS správy — presne také, aké chodia tisíckam ľudí denne." },
-  { id: 4, label: "Hoaxy, fotky, zmluvy", intro: "Poplašné správy zo sociálnych sietí, AI fotografie a zložité zmluvy v ľudskej reči." },
-  { id: 5, label: "Zlaté pravidlá", intro: "Čo nikdy nezadávame — ani do AI — a čo robiť, ak sa niečo stane." },
+  { id: 1, label: "Spoznávame pomocníka", intro: "Čo je umelá inteligencia, čo vie a čo nevie — a ako s ňou začať krok za krokom.", image: "assets/course-media/illustrations/part1-ai-pomocnik.jpg" },
+  { id: 2, label: "Pozor, AI sa mýli", intro: "Prečo si dôležité veci vždy treba overiť aj z druhého zdroja.", image: "assets/course-media/illustrations/part2-upozornenia.jpg" },
+  { id: 3, label: "Lovci podvodov", intro: "Podozrivé e-maily, telefonáty aj SMS správy — presne také, aké chodia tisíckam ľudí denne.", image: "assets/course-media/illustrations/part3-podvodnik-vs-banka.jpg" },
+  { id: 4, label: "Hoaxy, fotky, zmluvy", intro: "Poplašné správy zo sociálnych sietí, AI fotografie a zložité zmluvy v ľudskej reči.", image: "assets/course-media/illustrations/part4-ai-vs-realna-foto.jpg" },
+  { id: 5, label: "Zlaté pravidlá", intro: "Čo nikdy nezadávame — ani do AI — a čo robiť, ak sa niečo stane.", image: "assets/course-media/illustrations/part5-zlate-pravidla.jpg" },
 ];

@@ -256,6 +256,30 @@ label {
   border-radius: 24px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center;
 }
 .course-part-icon svg { width: 44px; height: 44px; color: #e3a35f; }
+.course-part-hero.has-image { padding-right: 8.5rem; }
+.course-part-text { position: relative; z-index: 1; }
+.course-part-image {
+  position: absolute; right: 1.3rem; top: 50%; transform: translateY(-50%); width: 110px; height: 110px;
+  border-radius: 20px; object-fit: cover; box-shadow: 0 10px 26px -10px rgba(0,0,0,.5), 0 0 0 4px rgba(255,255,255,.12);
+}
+
+/* skutočný úvodný obrázok kurzu */
+.course-intro-photo {
+  width: 100%; max-height: 260px; object-fit: cover; border-radius: 18px; margin: .2rem 0 1rem;
+  box-shadow: var(--course-shadow-soft);
+}
+
+/* skutočné príklady (screenshoty podvodných správ, reálne fotky) */
+.course-evidence {
+  margin: 1.2rem 0 0; padding: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  background: var(--surface-2);
+}
+.course-evidence img { display: block; width: 100%; max-height: 420px; object-fit: contain; background: #fff; }
+.course-evidence figcaption { padding: .7rem .9rem; font-size: .85rem; color: var(--text-mute); }
+.course-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1.2rem; }
+.course-gallery .course-evidence { margin-top: 0; }
+
+.course-guess-photo-img { width: 100%; max-height: 360px; object-fit: contain; border-radius: 14px; background: var(--surface-2); display: block; margin-bottom: .8rem; }
 
 .course-map { margin-bottom: .2rem; }
 .course-map-bar { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .7rem; }
@@ -546,6 +570,7 @@ label {
   .course-map-seg-label { display: none; }
   .course-card { padding: 1.3rem; }
   .course-part-hero { padding: 1.6rem 1.4rem; }
-  .course-part-icon { display: none; }
+  .course-part-hero.has-image { padding-right: 1.4rem; }
+  .course-part-icon, .course-part-image { display: none; }
   .course-choice-opts-row { flex-direction: column; }
 }
