@@ -201,19 +201,19 @@ window.COURSE_SLIDES = [
   {
     id: 15, part: 3, type: "spot", medium: "email",
     title: "Skutočný príklad: e-mail „z banky“",
-    lead: "Nájdite 4 varovné znaky — tentoraz bez nápovedy v texte, len podľa toho, čo ste sa už naučili.",
+    lead: "Kliknite postupne na 4 podčiarknuté časti textu nižšie — pri každej sa vám ukáže, prečo je podozrivá. Všimnite si aj adresu odosielateľa hore, tá je tiež nezvyčajná.",
     message: {
       from: "no-reply-2247@livemail.co.uk",
       subject: "Overenie účtu",
       body: "[[Vážený zákazník,]] Váš účet bol [[dočasne zablokovaný]] z bezpečnostných dôvodov. Prosíme, [[okamžite dokončite overenie]] kliknutím na tlačidlo nižšie a prihláste sa svojimi údajmi. [[Tento e-mail bol vygenerovaný automaticky.]]",
     },
     clues: [
-      "Adresa odosielateľa je dlhý nezmyselný reťazec — nekončí na doménu skutočnej banky.",
-      "Strach a časový tlak: „dočasne zablokovaný“, „okamžite dokončite overenie“.",
-      "Prihlásenie cez tlačidlo v e-maile — toto banka od klientov nikdy nežiada.",
-      "Všeobecné oslovenie „Vážený zákazník“ — banka pozná vaše meno.",
+      "Všeobecné oslovenie „Vážený zákazník“ — skutočná banka pozná vaše meno a oslovila by vás ním.",
+      "Strach a časový tlak — tvrdenie, že účet je „dočasne zablokovaný“.",
+      "Naliehavá výzva „okamžite dokončite overenie“ — má vás donútiť konať bez rozmýšľania.",
+      "Automaticky generovaný e-mail bez podpisu konkrétnej osoby — typické pre hromadné podvodné rozposielanie.",
     ],
-    footer: "Presne takýto e-mail môžete odfotiť a poslať do AI s otázkou: „Je to podvod?“",
+    footer: "Presne takýto e-mail môžete odfotiť a poslať do AI s otázkou: „Je to podvod?“ Adresa odosielateľa (no-reply-2247@livemail.co.uk) je dlhý nezmyselný reťazec — nekončí na doméne skutočnej banky.",
     evidenceImage: {
       src: "assets/course-media/evidence/vub-phishing-email.jpg",
       caption: "Skutočný podvodný e-mail, ktorý chodil klientom VÚB banky. Odosielateľ nie je banka, len sa za ňu vydáva.",
@@ -262,12 +262,15 @@ window.COURSE_SLIDES = [
   {
     id: 18, part: 3, type: "story", medium: "call",
     title: "Telefonát „z banky“",
-    lead: "Zvoní telefón. Ako budete reagovať?",
+    lead: "Zvoní vám telefón od neznámeho čísla. Kliknite na zelené tlačidlo „Prijať“, ak chcete hovor prijať (presne tak, ako by ste to urobili naozaj).",
+    flags: ["Neznáme číslo", "Naliehavosť", "Tlak na rýchle konanie"],
+    safeTip: "Skutočná banka vám nikdy netelefonuje so žiadosťou o prevod peňazí na „bezpečný účet“. Ak máte pochybnosti, hovor ukončite a zavolajte si banke sami, na číslo zo zadnej strany karty.",
     start: "a",
     nodes: {
       a: {
         speaker: "Neznáme číslo",
         text: "„Dobrý deň, tu bezpečnostné oddelenie vašej banky. Váš účet bol práve napadnutý hackermi! Musíme okamžite previesť vaše peniaze na bezpečný účet. Nadiktujem vám číslo…“",
+        choiceHint: "Čo teraz urobíte? Kliknite na jednu z možností.",
         choices: [
           { text: "Nadiktujem číslo účtu, nech to vyriešia.", to: "bad" },
           { text: "Hovor ukončím a zavolám banke sám, na číslo zo zadnej strany karty.", to: "good" },
@@ -286,12 +289,15 @@ window.COURSE_SLIDES = [
   {
     id: 19, part: 3, type: "story", medium: "sms",
     title: "„Babka, potrebujem peniaze“",
-    lead: "Prišla vám SMS z neznámeho čísla.",
+    lead: "Prišla vám SMS z neznámeho čísla — prečítajte si ju v telefóne vľavo. Potom vpravo kliknite na to, čo by ste v tejto situácii naozaj urobili.",
+    flags: ["Neznáme číslo", "Naliehavosť", "Tajomstvo", "Tlak na rýchle konanie"],
+    safeTip: "Peniaze nikdy neposielajte len podľa SMS správy. Najprv si to overte — zavolajte na číslo, ktoré máte uložené vy, nie na to, ktoré vám niekto napíše.",
     start: "a",
     nodes: {
       a: {
         speaker: "Neznáme číslo (SMS)",
         text: "„Babka, mal som nehodu. Potrebujem súrne peniaze. Prosím, nikomu o tom nehovor.“",
+        choiceHint: "Čo urobíte?",
         choices: [
           { text: "Hneď pošlem peniaze, veď je to naliehavé.", to: "bad" },
           { text: "Zavolám vnukovi na číslo, ktoré mám uložené.", to: "good" },

@@ -22,6 +22,36 @@
     return e;
   }
 
+  // ---------- Lightbox — zväčšenie obrázka po kliknutí ----------
+
+  let lightboxEl = null;
+  function getLightbox() {
+    if (lightboxEl) return lightboxEl;
+    lightboxEl = el("div", "course-lightbox",
+      "<button type='button' class='course-lightbox-close' aria-label='Zavrieť'>" +
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M6 6l12 12M18 6 6 18'/></svg></button>" +
+      "<img class='course-lightbox-img' alt=''>");
+    document.body.appendChild(lightboxEl);
+    const close = () => lightboxEl.classList.remove("show");
+    lightboxEl.addEventListener("click", (e) => { if (e.target === lightboxEl) close(); });
+    lightboxEl.querySelector(".course-lightbox-close").addEventListener("click", close);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+    return lightboxEl;
+  }
+
+  function openLightbox(src, alt) {
+    const box = getLightbox();
+    const img = box.querySelector(".course-lightbox-img");
+    img.src = src;
+    img.alt = alt || "";
+    box.classList.add("show");
+  }
+
+  function makeZoomable(img) {
+    img.classList.add("course-zoomable");
+    img.addEventListener("click", () => openLightbox(img.src, img.alt));
+  }
+
   function Course(root, hooks) {
     this.root = root;
     this.hooks = hooks || {};
@@ -200,8 +230,9 @@
     img.src = evidenceImage.src;
     img.alt = evidenceImage.caption || "Skutočný príklad";
     img.loading = "lazy";
+    makeZoomable(img);
     fig.appendChild(img);
-    if (evidenceImage.caption) fig.appendChild(el("figcaption", null, evidenceImage.caption));
+    if (evidenceImage.caption) fig.appendChild(el("figcaption", null, evidenceImage.caption + " Kliknutím na obrázok ho zväčšíte."));
     card.appendChild(fig);
   }
 
@@ -214,8 +245,9 @@
       img.src = item.src;
       img.alt = item.caption || "Skutočný príklad";
       img.loading = "lazy";
+      makeZoomable(img);
       fig.appendChild(img);
-      if (item.caption) fig.appendChild(el("figcaption", null, item.caption));
+      if (item.caption) fig.appendChild(el("figcaption", null, item.caption + " Kliknutím na obrázok ho zväčšíte."));
       wrap.appendChild(fig);
     });
     card.appendChild(wrap);
@@ -543,6 +575,7 @@
       const img = el("img", "course-hotspot-photo");
       img.src = slide.evidenceImage.src;
       img.alt = slide.evidenceImage.caption || "";
+      makeZoomable(img);
       screen.appendChild(img);
     } else {
       const mock = el("div", "course-hotspot-mock",
@@ -778,6 +811,46 @@
     evidenceFigure(card, slide.evidenceImage);
   };
 
+  function storyFlagsRow(flags) {
+    if (!flags || !flags.length) return null;
+    const row = el("div", "course-story-flags");
+    row.appendChild(el("span", "course-story-flags-label", "Na čo si dať pozor:"));
+    flags.forEach((f) => row.appendChild(el("span", "course-story-flag-chip",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 9v4M12 17h.01'/><circle cx='12' cy='12' r='9'/></svg><span>" + f + "</span>")));
+    return row;
+  }
+
+  function storySafeTip(text) {
+    return el("div", "course-story-safe-tip",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'><path d='M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z'/><path d='M9 12l2 2 4-4'/></svg>" +
+      "<div><strong>Správny postup:</strong> " + text + "</div>");
+  }
+
+  function storyDecisionPanel(slide, node, onChoose) {
+    const panel = el("div", "course-story-decision");
+    panel.appendChild(el("p", "course-story-decision-eyebrow",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 17h.01M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5'/></svg><span>" +
+      (node.choiceHint || "Čo urobíte? Kliknite na jednu z možností.") + "</span>"));
+    const opts = el("div", "course-story-options");
+    node.choices.forEach((c) => {
+      const target = slide.nodes[c.to];
+      const good = target && target.end === "good";
+      const btn = el("button", "course-story-option " + (good ? "good" : "bad"),
+        "<span class='course-story-option-icon'>" +
+        (good
+          ? "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.6'><path d='M4 12l5 5L20 6'/></svg>"
+          : "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.6'><path d='M6 6l12 12M18 6 6 18'/></svg>") +
+        "</span><span class='course-story-option-text'>" + c.text + "</span>" +
+        "<svg class='course-story-option-arrow' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M9 6l6 6-6 6'/></svg>");
+      btn.type = "button";
+      btn.addEventListener("click", () => onChoose(c.to));
+      opts.appendChild(btn);
+    });
+    panel.appendChild(opts);
+    if (slide.safeTip) panel.appendChild(storySafeTip(slide.safeTip));
+    return panel;
+  }
+
   RENDERERS.story = function (slide, card, course) {
     header(card, slide);
     const medium = slide.medium;
@@ -787,65 +860,71 @@
       return;
     }
 
-    const box = el("div", medium === "sms" ? "phone-mock" : "course-story");
-    card.appendChild(box);
+    const grid = el("div", "course-story-grid");
+    const mediaCol = el("div", "course-story-media");
+    const panelCol = el("div", "course-story-panel-col");
+    grid.appendChild(mediaCol);
+    grid.appendChild(panelCol);
+    card.appendChild(grid);
+    const flagsRow = storyFlagsRow(slide.flags);
+    if (flagsRow) card.appendChild(flagsRow);
 
-    function renderNode(id) {
-      const node = slide.nodes[id];
-      box.innerHTML = "";
+    if (medium === "sms") {
+      const mock = el("div", "phone-mock");
+      const shell = el("div", "phone-shell");
+      shell.appendChild(el("div", "phone-statusbar", "<span>9:41</span><span>●●●●</span>"));
+      const inner = el("div", "phone-inner sms-thread");
+      shell.appendChild(inner);
+      mock.appendChild(shell);
+      mediaCol.appendChild(mock);
 
-      if (medium === "sms") {
-        const shell = el("div", "phone-shell");
-        shell.appendChild(el("div", "phone-statusbar", "<span>9:41</span><span>●●●●</span>"));
-        const inner = el("div", "phone-inner sms-thread");
-        shell.appendChild(inner);
-        box.appendChild(shell);
-
+      const renderNode = (id) => {
+        const node = slide.nodes[id];
+        panelCol.innerHTML = "";
         if (node.end) {
-          const result = el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text);
-          box.appendChild(result);
+          panelCol.appendChild(el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text));
           return;
         }
         inner.appendChild(el("div", "sms-bubble in", "<span class='sms-sender'>" + node.speaker + "</span>" + node.text));
-        const choices = el("div", "course-story-choices");
-        node.choices.forEach((c) => {
-          const b = el("button", "course-story-choice-btn", c.text);
-          b.type = "button";
-          b.addEventListener("click", () => {
-            inner.appendChild(el("div", "sms-bubble out", c.text));
-            setTimeout(() => renderNode(c.to), 250);
-          });
-          choices.appendChild(b);
-        });
-        box.appendChild(choices);
-        return;
-      }
-
-      // Fallback — obyčajná bublina rozhovoru (bez konkrétneho média).
-      if (node.end) {
-        box.appendChild(el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text));
-        return;
-      }
-      box.appendChild(el("div", "course-story-bubble", "<strong>" + node.speaker + ":</strong><br>" + node.text));
-      const choices = el("div", "course-story-choices");
-      node.choices.forEach((c) => {
-        const b = el("button", "course-story-choice-btn", c.text);
-        b.type = "button";
-        b.addEventListener("click", () => renderNode(c.to));
-        choices.appendChild(b);
-      });
-      box.appendChild(choices);
+        panelCol.appendChild(storyDecisionPanel(slide, node, (to) => {
+          const chosen = node.choices.find((c) => c.to === to);
+          inner.appendChild(el("div", "sms-bubble out", chosen.text));
+          setTimeout(() => renderNode(to), 250);
+        }));
+      };
+      renderNode(slide.start);
+      return;
     }
+
+    // Fallback — obyčajná bublina rozhovoru (bez konkrétneho média).
+    const renderNode = (id) => {
+      const node = slide.nodes[id];
+      mediaCol.innerHTML = "";
+      panelCol.innerHTML = "";
+      if (node.end) {
+        panelCol.appendChild(el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text));
+        return;
+      }
+      mediaCol.appendChild(el("div", "course-story-bubble", "<strong>" + node.speaker + ":</strong><br>" + node.text));
+      panelCol.appendChild(storyDecisionPanel(slide, node, (to) => renderNode(to)));
+    };
     renderNode(slide.start);
   };
 
   function renderCallStory(slide, card) {
+    const grid = el("div", "course-story-grid");
+    const mediaCol = el("div", "course-story-media");
+    const panelCol = el("div", "course-story-panel-col");
+    grid.appendChild(mediaCol);
+    grid.appendChild(panelCol);
+    card.appendChild(grid);
+    const flagsRow = storyFlagsRow(slide.flags);
+    if (flagsRow) card.appendChild(flagsRow);
+
     const shell = el("div", "call-shell");
     const inner = el("div", "call-inner");
     shell.appendChild(inner);
-    card.appendChild(shell);
-    const choicesBox = el("div", "course-story-choices");
-    card.appendChild(choicesBox);
+    mediaCol.appendChild(shell);
 
     function showRinging() {
       const node = slide.nodes[slide.start];
@@ -856,33 +935,33 @@
         "<div class='call-btn decline' id='call-decline'><div class='circle'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2'><path d='M22 2 2 22M2 2l20 20'/></svg></div>Odmietnuť</div>" +
         "<div class='call-btn accept' id='call-accept'><div class='circle'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2'><path d='M15.05 5A5 5 0 0 1 19 8.95m-3.95-7.95A9 9 0 0 1 23 8.94'/><path d='M9 5.5c-1.9.7-3.5 2.3-3.5 5.5 0 5 4.5 9.5 9.5 9.5 3.2 0 4.8-1.6 5.5-3.5'/></svg></div>Prijať</div>" +
         "</div>";
+      panelCol.innerHTML = "";
+      panelCol.appendChild(el("div", "course-story-hint-box",
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M7 10v4a5 5 0 0 0 10 0v-4M12 19v3M12 3v9'/></svg>" +
+        "<p>Kliknite na zelené tlačidlo <strong>„Prijať“</strong>, ak chcete hovor zdvihnúť — presne tak, ako by ste to urobili na svojom telefóne. Alebo kliknite na červené <strong>„Odmietnuť“</strong>, ak hovor nechcete prijať.</p>"));
       inner.querySelector("#call-accept").addEventListener("click", () => showNode(slide.start, node));
       inner.querySelector("#call-decline").addEventListener("click", () => {
-        choicesBox.innerHTML = "";
-        card.appendChild(el("div", "course-note", "<strong>Dobrá voľba aj toto:</strong> hovor od neznámeho čísla vôbec nemusíte prijímať. Ak je to niečo dôležité, ozvú sa iným spôsobom."));
+        panelCol.innerHTML = "";
+        panelCol.appendChild(el("div", "course-note", "<strong>Dobrá voľba aj toto:</strong> hovor od neznámeho čísla vôbec nemusíte prijímať. Ak je to niečo dôležité, ozvú sa iným spôsobom."));
       });
     }
 
     function showNode(id, preloadedNode) {
       const node = preloadedNode || slide.nodes[id];
-      choicesBox.innerHTML = "";
       if (node.end) {
         inner.innerHTML =
           "<div class='call-avatar'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8'/></svg></div>" +
           "<div class='caller'>Hovor ukončený</div>";
-        choicesBox.appendChild(el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text));
+        panelCol.innerHTML = "";
+        panelCol.appendChild(el("div", "course-story-result " + (node.end === "good" ? "good" : "warn"), node.text));
         return;
       }
       inner.innerHTML =
         "<div class='call-avatar'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8'/></svg></div>" +
         "<div class='caller'>" + node.speaker + "</div><div class='sub'>hovor prebieha…</div>" +
         "<div class='call-transcript'>„" + node.text + "“</div>";
-      node.choices.forEach((c) => {
-        const b = el("button", "course-story-choice-btn", c.text);
-        b.type = "button";
-        b.addEventListener("click", () => showNode(c.to));
-        choicesBox.appendChild(b);
-      });
+      panelCol.innerHTML = "";
+      panelCol.appendChild(storyDecisionPanel(slide, node, (to) => showNode(to)));
     }
 
     showRinging();
@@ -938,6 +1017,7 @@
         const img = el("img", "course-guess-photo-img");
         img.src = r.image;
         img.alt = "";
+        makeZoomable(img);
         roundBox.appendChild(img);
       } else {
         roundBox.appendChild(el("div", "course-guess-photo", r.prompt));
