@@ -458,11 +458,20 @@ window.COURSE_SLIDES = [
   {
     id: 29, part: 5, type: "sort",
     title: "Trezor: čo nikdy nezadávame",
-    lead: "Presuňte kartičky do TREZORA (nikdy nikomu — ani AI), alebo do CHATU s AI (v poriadku sa spýtať).",
+    lead: "Presuňte každú kartičku do TREZORA (nikdy nikomu — ani AI), alebo do CHATU s AI (v poriadku sa spýtať).",
+    tip: "Do AI sa pýtame na vysvetlenie. Nikdy nevkladáme citlivé osobné ani bankové údaje.",
     baskets: [
-      { id: "trezor", label: "Trezor — nikdy nezadávame" },
-      { id: "chat", label: "Chat s AI — v poriadku" },
+      { id: "trezor", label: "Trezor — nikdy nezadávame", desc: "Citlivé údaje, heslá, kódy, čísla kariet, neprekryté doklady.", tone: "danger" },
+      { id: "chat", label: "Chat s AI — v poriadku", desc: "Otázky, vysvetlenie pojmov, posúdenie podozrivého obsahu bez citlivých údajov.", tone: "safe" },
     ],
+    sideNote: {
+      title: "Zapamätajte si",
+      items: [
+        { tone: "good", text: "AI môže pomôcť vysvetliť alebo posúdiť obsah." },
+        { tone: "warn", text: "Nikdy nevpisujte citlivé osobné ani bankové údaje." },
+        { tone: "info", text: "Ak si nie ste istí, údaje najprv zakryte alebo sa poraďte s blízkym." },
+      ],
+    },
     items: [
       { text: "heslo do internetbankingu", basket: "trezor" },
       { text: "číslo karty, PIN a CVV/CVC", basket: "trezor" },
@@ -479,15 +488,16 @@ window.COURSE_SLIDES = [
   {
     id: 30, part: 5, type: "rewrite",
     title: "Ako sa pýtať bezpečne",
-    lead: "Kliknutím odstráňte z otázky citlivé údaje.",
+    lead: "V predošlom kroku ste sa naučili, čo sa nikdy nezdieľa. Skúsme teraz to isté pri otázke pre AI — odstrániť citlivé údaje a pritom dostať rovnako užitočnú odpoveď.",
     sentence: [
       { text: "Mám na účte", sensitive: false },
-      { text: "12 400 €", sensitive: true },
+      { text: "12 400 €", sensitive: true, why: "Presná suma nie je pre radu od AI potrebná — stačí povedať, že ide o peniaze." },
       { text: "a mám ich poslať na účet", sensitive: false },
-      { text: "SK44 0900 0000 0001 2345 6789", sensitive: true },
+      { text: "SK44 0900 0000 0001 2345 6789", sensitive: true, why: "Číslo účtu by v nesprávnych rukách stačilo na zneužitie — AI ho na posúdenie situácie nepotrebuje." },
       { text: "— je to bezpečné?", sensitive: false },
     ],
     safeVersion: "Niekto ma žiada, aby som poslal peniaze na neznámy účet. Je to bezpečné?",
+    takeaway: "Opíšte situáciu, nie čísla. AI vám poradí rovnako dobre aj bez konkrétnych údajov.",
   },
   {
     id: 31, part: 5, type: "match",
@@ -517,12 +527,17 @@ window.COURSE_SLIDES = [
     id: 33, part: 5, type: "quickfire", stamp: true,
     title: "Záverečná bleskovka",
     lead: "Posledných 5 situácií — vyberte správnu reakciu.",
+    tips: [
+      "Hľadajte znaky nátlaku, naliehavosti a podozrivého odkazu.",
+      "Neodpovedajte pod tlakom. Najprv sa zastavte a overte si informáciu.",
+      "Nejde o memorovanie, ale o rozpoznanie varovných signálov.",
+    ],
     questions: [
-      { text: "E-mail vás naháňa časom a žiada kliknúť na odkaz — je to podozrivé?", answer: true, why: "Časový nátlak a odkaz na kliknutie sú dva z najčastejších varovných znakov podvodu." },
-      { text: "Banka si od vás telefonicky pýta PIN — je to normálne?", answer: false, why: "Nie, žiadna banka si nikdy telefonicky ani e-mailom nepýta PIN, heslo ani kódy zo SMS." },
-      { text: "Ponuka sľubuje garantovaný zisk bez rizika — treba byť opatrný?", answer: true, why: "Áno — zaručený vysoký zisk bez rizika v skutočnosti neexistuje, je to typický znak podvodnej investície." },
-      { text: "Správa má veľa výkričníkov a žiada zdieľať ďalej — je to varovný signál?", answer: true, why: "Áno, presne takto vyzerajú hoaxy — čím viac výkričníkov, tým menej pravdy." },
-      { text: "Je v poriadku overiť si dôležitú informáciu na viacerých zdrojoch?", answer: true, why: "Áno, overenie z viacerých nezávislých zdrojov je vždy dobrý a bezpečný postup." },
+      { short: "E-mail vás naháňa časom a žiada kliknúť na odkaz", text: "E-mail vás naháňa časom a žiada kliknúť na odkaz — je to podozrivé?", answer: true, why: "Časový nátlak a odkaz na kliknutie sú dva z najčastejších varovných znakov podvodu." },
+      { short: "Banka si od vás telefonicky pýta PIN", text: "Banka si od vás telefonicky pýta PIN — je to normálne?", answer: false, why: "Nie, žiadna banka si nikdy telefonicky ani e-mailom nepýta PIN, heslo ani kódy zo SMS." },
+      { short: "Ponuka sľubuje garantovaný zisk bez rizika", text: "Ponuka sľubuje garantovaný zisk bez rizika — treba byť opatrný?", answer: true, why: "Áno — zaručený vysoký zisk bez rizika v skutočnosti neexistuje, je to typický znak podvodnej investície." },
+      { short: "Správa má veľa výkričníkov a žiada zdieľať ďalej", text: "Správa má veľa výkričníkov a žiada zdieľať ďalej — je to varovný signál?", answer: true, why: "Áno, presne takto vyzerajú hoaxy — čím viac výkričníkov, tým menej pravdy." },
+      { short: "Overiť si dôležitú informáciu na viacerých zdrojoch", text: "Je v poriadku overiť si dôležitú informáciu na viacerých zdrojoch?", answer: true, why: "Áno, overenie z viacerých nezávislých zdrojov je vždy dobrý a bezpečný postup." },
     ],
   },
   {

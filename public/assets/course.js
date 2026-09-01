@@ -311,21 +311,62 @@
     card.appendChild(grid);
   };
 
+  const BASKET_ICONS = {
+    danger: "<path d='M12 3l8 4v5c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V7l8-4Z'/><path d='M9.5 12l2 2 3.5-3.5'/>",
+    safe: "<path d='M21 11.5a8.4 8.4 0 0 1-8.5 8.4 8.6 8.6 0 0 1-3.7-.8L4 20l1-4.6a8.3 8.3 0 0 1-1-4A8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5Z'/>",
+    basket: "<path d='M4 10h16l-1.6 9.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8L4 10Z'/><path d='M2.5 10h19'/><path d='M8.5 10 10 4h4l1.5 6'/><path d='M10 14v3M14 14v3'/>",
+  };
+  const SIDENOTE_ICONS = {
+    good: "<path d='M4 12l5 5L20 6'/>",
+    warn: "<path d='M12 9v4M12 17h.01'/><circle cx='12' cy='12' r='9'/>",
+    info: "<circle cx='9' cy='7' r='3'/><path d='M2 20c0-3.3 3-6 7-6s7 2.7 7 6'/><path d='M17 8c1.7.4 3 2 3 4M20 20c0-2-1-3.6-2.5-4.5'/>",
+  };
+
+  function tipCallout(text) {
+    if (!text) return null;
+    return el("div", "course-tip",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 11v5M12 8h.01'/></svg>" +
+      "<p><strong>Tip:</strong> " + text + "</p>");
+  }
+
+  function sideNotePanel(sideNote) {
+    if (!sideNote) return null;
+    const panel = el("aside", "course-sidenote");
+    panel.appendChild(el("h3", null, sideNote.title || "Zapamätajte si"));
+    const list = el("div", "course-sidenote-list");
+    sideNote.items.forEach((it) => {
+      list.appendChild(el("div", "course-sidenote-item " + (it.tone || "info"),
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>" + (SIDENOTE_ICONS[it.tone] || SIDENOTE_ICONS.info) + "</svg><span>" + it.text + "</span>"));
+    });
+    panel.appendChild(list);
+    return panel;
+  }
+
   RENDERERS.sort = function (slide, card) {
     header(card, slide);
+    const tip = tipCallout(slide.tip);
+    if (tip) card.appendChild(tip);
+
+    const layout = el("div", "course-sort-layout" + (slide.sideNote ? " has-side" : ""));
+    const mainCol = el("div", "course-sort-main");
+    layout.appendChild(mainCol);
+    const sideNote = sideNotePanel(slide.sideNote);
+    if (sideNote) layout.appendChild(sideNote);
+    card.appendChild(layout);
+
     const items = shuffle(slide.items);
     const pool = el("div", "course-pool");
     const basketsWrap = el("div", "course-baskets course-baskets-" + slide.baskets.length);
     const baskets = {};
 
     slide.baskets.forEach((b) => {
-      const basket = el("div", "course-basket");
+      const basket = el("div", "course-basket" + (b.tone ? " tone-" + b.tone : ""));
       basket.dataset.basket = b.id;
+      const icon = BASKET_ICONS[b.tone] || BASKET_ICONS.basket;
       basket.appendChild(el("div", "course-basket-label",
-        "<svg class='course-basket-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'>" +
-        "<path d='M4 10h16l-1.6 9.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8L4 10Z'/>" +
-        "<path d='M2.5 10h19'/><path d='M8.5 10 10 4h4l1.5 6'/><path d='M10 14v3M14 14v3'/>" +
-        "</svg><span>" + b.label + "</span>"));
+        "<span class='course-basket-icon-wrap'><svg class='course-basket-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'>" + icon + "</svg></span>" +
+        "<span class='course-basket-text'><span class='course-basket-title'>" + b.label + "</span>" +
+        (b.desc ? "<span class='course-basket-desc'>" + b.desc + "</span>" : "") + "</span>"));
       const drop = el("div", "course-basket-drop");
       basket.appendChild(drop);
       basketsWrap.appendChild(basket);
@@ -334,7 +375,7 @@
 
     let selected = null;
     let remaining = items.length;
-    const status = el("p", "course-hint", "Zostáva umiestniť: " + remaining);
+    const status = el("p", "course-hint course-hint-pill", "Zostáva umiestniť: <strong>" + remaining + "</strong>");
 
     function place(cardEl, basketId) {
       const correct = cardEl.dataset.basket === basketId;
@@ -354,12 +395,12 @@
       if (!cardEl.dataset.counted) {
         cardEl.dataset.counted = "1";
         remaining--;
-        status.textContent = remaining > 0 ? "Zostáva umiestniť: " + remaining : "Hotovo — skontrolujte si červeno označené kartičky.";
+        status.innerHTML = remaining > 0 ? "Zostáva umiestniť: <strong>" + remaining + "</strong>" : "Hotovo — skontrolujte si červeno označené kartičky.";
       }
     }
 
-    items.forEach((item) => {
-      const it = el("div", "course-item", item.text);
+    items.forEach((item, i) => {
+      const it = el("div", "course-item", "<span class='course-item-num'>" + (i + 1) + "</span><span>" + item.text + "</span>");
       it.dataset.basket = item.basket;
       it.tabIndex = 0;
 
@@ -438,10 +479,10 @@
       });
     });
 
-    card.appendChild(pool);
-    card.appendChild(basketsWrap);
-    card.appendChild(status);
-    note(card, slide.note);
+    mainCol.appendChild(pool);
+    mainCol.appendChild(basketsWrap);
+    mainCol.appendChild(status);
+    note(mainCol, slide.note);
   };
 
   RENDERERS.match = function (slide, card) {
@@ -711,39 +752,100 @@
 
   RENDERERS.quickfire = function (slide, card, course) {
     header(card, slide);
-    let correct = 0, answered = 0;
-    const status = el("p", "course-hint", "Otázka 1 z " + slide.questions.length);
-    slide.questions.forEach((q, i) => {
-      const box = el("div", "course-belief-item");
-      box.appendChild(el("p", null, q.text));
-      const opts = el("div", "course-choice-opts course-choice-opts-row");
-      const yes = el("button", "course-choice-opt", "Áno");
-      const no = el("button", "course-choice-opt", "Nie");
+
+    const layout = el("div", "course-quickfire-layout");
+    const sidebar = el("div", "course-quickfire-sidebar");
+    const main = el("div", "course-quickfire-main");
+    layout.appendChild(sidebar);
+    layout.appendChild(main);
+    card.appendChild(layout);
+
+    if (slide.tips && slide.tips.length) {
+      card.appendChild(el("div", "course-quickfire-tips",
+        "<div class='course-quickfire-tips-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6'><path d='M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z'/><path d='M9 12l2 2 4-4'/></svg></div>" +
+        "<div><p class='course-quickfire-tips-title'>Na čo myslieť?</p><ul>" + slide.tips.map((t) => "<li>" + t + "</li>").join("") + "</ul></div>"));
+    }
+
+    let idx = 0, correct = 0;
+    const answered = new Array(slide.questions.length).fill(null);
+
+    const sideItems = slide.questions.map((q, i) => {
+      const item = el("div", "course-quickfire-side-item",
+        "<span class='course-quickfire-side-num'>" + (i + 1) + "</span><span>" + (q.short || q.text) + "</span>");
+      sidebar.appendChild(item);
+      return item;
+    });
+
+    function updateSidebar() {
+      sideItems.forEach((item, i) => {
+        item.classList.toggle("current", i === idx);
+        item.classList.toggle("done", answered[i] !== null);
+        item.classList.toggle("correct", answered[i] === true);
+        item.classList.toggle("incorrect", answered[i] === false);
+        if (answered[i] !== null) {
+          item.querySelector(".course-quickfire-side-num").innerHTML =
+            answered[i]
+              ? "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.6'><path d='M4 12l5 5L20 6'/></svg>"
+              : "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.6'><path d='M6 6l12 12M18 6 6 18'/></svg>";
+        }
+      });
+    }
+
+    function renderStep() {
+      main.innerHTML = "";
+      const q = slide.questions[idx];
+      const qCard = el("div", "course-quickfire-card");
+      qCard.appendChild(el("p", "course-quickfire-eyebrow",
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 17h.01M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5'/></svg>Otázka " + (idx + 1) + " z " + slide.questions.length));
+      qCard.appendChild(el("div", "course-quickfire-question",
+        "<span class='course-quickfire-bolt'><svg viewBox='0 0 24 24' fill='currentColor'><path d='M13 2 4 14h6l-1 8 9-12h-6l1-8Z'/></svg></span><span>" + q.text + "</span>"));
+
+      const opts = el("div", "course-quickfire-opts");
+      const yes = el("button", "course-quickfire-opt", "Áno");
+      const no = el("button", "course-quickfire-opt", "Nie");
       [yes, no].forEach((b) => (b.type = "button"));
-      const explain = el("div", "course-choice-result");
+      opts.appendChild(yes);
+      opts.appendChild(no);
+      qCard.appendChild(opts);
+
+      const hint = el("p", "course-quickfire-hint",
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 8h.01M11 12h1v4h1'/></svg>Po odpovedi sa zobrazí krátke vysvetlenie.");
+      qCard.appendChild(hint);
+
       function lock(val) {
         yes.disabled = true; no.disabled = true;
         const ok = val === q.answer;
         if (ok) correct++;
+        answered[idx] = ok;
         (val ? yes : no).classList.add(ok ? "correct" : "incorrect");
-        if (q.why) {
-          explain.textContent = q.why;
-          explain.classList.add("show");
-        }
-        answered++;
-        status.textContent = answered >= slide.questions.length
-          ? "Hotovo — správne ste odpovedali na " + correct + " z " + slide.questions.length + "."
-          : "Otázka " + (answered + 1) + " z " + slide.questions.length;
+        updateSidebar();
+        hint.remove();
+        qCard.appendChild(el("div", "course-quickfire-explain " + (ok ? "good" : "warn"),
+          "<strong>" + (ok ? "Správne." : "Nie celkom.") + "</strong> " + q.why));
+        const isLast = idx + 1 >= slide.questions.length;
+        const nextBtn = el("button", "btn btn-primary", isLast ? "Zobraziť výsledok" : "Ďalšia otázka");
+        nextBtn.type = "button";
+        nextBtn.style.marginTop = "1.1rem";
+        nextBtn.addEventListener("click", () => {
+          idx++;
+          if (isLast) renderSummary(); else renderStep();
+        });
+        qCard.appendChild(nextBtn);
       }
       yes.addEventListener("click", () => lock(true));
       no.addEventListener("click", () => lock(false));
-      opts.appendChild(yes);
-      opts.appendChild(no);
-      box.appendChild(opts);
-      box.appendChild(explain);
-      card.appendChild(box);
-    });
-    card.appendChild(status);
+
+      main.appendChild(qCard);
+      updateSidebar();
+    }
+
+    function renderSummary() {
+      main.innerHTML = "";
+      main.appendChild(el("div", "course-quickfire-card course-quickfire-summary",
+        "<h3>Hotovo!</h3><p>Správne ste odpovedali na <strong>" + correct + " z " + slide.questions.length + "</strong> otázok.</p>"));
+    }
+
+    renderStep();
   };
 
   function initialsOf(text) {
@@ -1064,7 +1166,27 @@
 
   RENDERERS.rewrite = function (slide, card) {
     header(card, slide);
+    card.appendChild(el("p", "course-hint", "Kliknite postupne na každé oranžovo zvýraznené slovo — vysvetlíme, prečo do otázky pre AI nepatrí."));
+
+    const grid = el("div", "course-rewrite-grid");
+    const unsafePanel = el("div", "course-rewrite-panel unsafe");
+    unsafePanel.appendChild(el("p", "course-rewrite-panel-label",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 9v4M12 17h.01'/><circle cx='12' cy='12' r='9'/></svg>Nebezpečná otázka"));
     const sentenceEl = el("p", "course-rewrite-sentence");
+    unsafePanel.appendChild(sentenceEl);
+    const reasons = el("div", "course-rewrite-reasons");
+    unsafePanel.appendChild(reasons);
+
+    const safePanel = el("div", "course-rewrite-panel safe");
+    safePanel.appendChild(el("p", "course-rewrite-panel-label",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M4 12l5 5L20 6'/></svg>Bezpečná otázka"));
+    const safeBody = el("p", "course-rewrite-safe-body", "Kliknite na citlivé údaje vľavo — bezpečná verzia sa objaví tu.");
+    safePanel.appendChild(safeBody);
+
+    grid.appendChild(unsafePanel);
+    grid.appendChild(safePanel);
+    card.appendChild(grid);
+
     const removed = new Set();
     slide.sentence.forEach((part, i) => {
       if (part.sensitive) {
@@ -1073,6 +1195,11 @@
           if (removed.has(i)) return;
           removed.add(i);
           span.classList.add("removed");
+          if (part.why) {
+            reasons.appendChild(el("div", "course-rewrite-reason",
+              "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 9v4M12 17h.01'/><circle cx='12' cy='12' r='9'/></svg>" +
+              "<span><strong>„" + part.text + "“</strong> — " + part.why + "</span>"));
+          }
           checkDone();
         });
         sentenceEl.appendChild(span);
@@ -1080,16 +1207,13 @@
         sentenceEl.appendChild(document.createTextNode(" " + part.text + " "));
       }
     });
-    card.appendChild(el("p", "course-hint", "Kliknutím odstráňte citlivé údaje (zvýraznené):"));
-    card.appendChild(sentenceEl);
-    const result = el("div", "course-feedback ok", "");
-    result.style.display = "none";
-    card.appendChild(result);
+
     const totalSensitive = slide.sentence.filter((p) => p.sensitive).length;
     function checkDone() {
       if (removed.size >= totalSensitive) {
-        result.style.display = "block";
-        result.innerHTML = "<strong>Bezpečná verzia:</strong> „" + slide.safeVersion + "“";
+        safePanel.classList.add("revealed");
+        safeBody.innerHTML = "„" + slide.safeVersion + "“";
+        if (slide.takeaway) card.appendChild(el("div", "course-note", "<strong>Zapamätajte si:</strong> " + slide.takeaway));
       }
     }
   };
