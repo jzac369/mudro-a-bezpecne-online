@@ -30,10 +30,8 @@
   .stepper button.locked { opacity:.45; cursor:not-allowed; }
   .stepper button.locked .lock { display:inline; width:14px; height:14px; }
   .stepper button .lock { display:none; }
-  .progress-wrap { margin:1rem 0 .4rem; }
   .progress-bar-bg { width:100%; height:10px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
   .progress-bar-fill { height:100%; background:var(--good); border-radius:999px; transition:width .3s ease; }
-  .progress-label { font-size:.85rem; color:var(--text-mute); margin-top:.35rem; }
   .step-panel { display:none; }
   .step-panel.active { display:block; }
   .video-wrap { position:relative; padding-top:56.25%; border-radius:14px; overflow:hidden; background:#000; }
@@ -86,11 +84,6 @@
   <p id="welcome" class="hint"></p>
   <p id="last-login" class="hint"></p>
   <h1 id="workshop-title">Načítavam kurz…</h1>
-
-  <div class="progress-wrap">
-    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
-    <div class="progress-label" id="progress-label"></div>
-  </div>
 
   <div id="continue-banner" class="continue-banner" style="display:none;">
     <span id="continue-text"></span>
@@ -227,13 +220,6 @@
     showSavedToast._timer = setTimeout(() => t.classList.remove("show"), 1600);
   }
 
-  function updateProgressBar() {
-    const pct = Math.round((state.doneSteps.size / STEPS.length) * 100);
-    document.getElementById("progress-fill").style.width = pct + "%";
-    document.getElementById("progress-label").textContent =
-      state.doneSteps.size + " zo " + STEPS.length + " krokov hotových (" + pct + " %)";
-  }
-
   function isCertUnlocked() {
     return CERT_REQUIRED_STEPS.every((s) => state.doneSteps.has(s));
   }
@@ -246,7 +232,6 @@
     if (unlocked && !state.doneSteps.has("certifikat")) {
       state.doneSteps.add("certifikat");
       btn.classList.add("done");
-      updateProgressBar();
       saveProgress({ completedSteps: Array.from(state.doneSteps) });
     }
   }
@@ -262,7 +247,6 @@
   function markStepDone(step) {
     state.doneSteps.add(step);
     document.querySelector('.stepper button[data-step="' + step + '"]').classList.add("done");
-    updateProgressBar();
     updateCertLock();
     saveProgress({ completedSteps: Array.from(state.doneSteps) });
   }
@@ -942,7 +926,6 @@ function renderBudgetExercise(ex) {
           }
         });
       }
-      updateProgressBar();
       updateCertLock();
 
       // Interaktívny kurz — pokračuje presne tam, kde senior naposledy skončil.
