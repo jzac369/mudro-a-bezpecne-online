@@ -94,9 +94,6 @@
 
   Course.prototype.renderMap = function (slide) {
     const map = el("div", "course-map");
-    const label = el("div", "course-map-label",
-      "Obrazovka " + (this.index + 1) + " z " + this.slides.length);
-    map.appendChild(label);
 
     const bar = el("div", "course-map-bar");
     this.parts.forEach((p) => {
@@ -113,10 +110,13 @@
     map.appendChild(bar);
 
     const pct = Math.round(((this.index + 1) / this.slides.length) * 100);
+    const row = el("div", "course-progress-row");
     const track = el("div", "course-progress-track");
     track.appendChild(el("div", "course-progress-fill"));
     track.firstChild.style.width = pct + "%";
-    map.appendChild(track);
+    row.appendChild(track);
+    row.appendChild(el("span", "course-map-count", (this.index + 1) + "/" + this.slides.length));
+    map.appendChild(row);
 
     return map;
   };
@@ -169,9 +169,8 @@
   }
 
   function header(card, slide) {
-    const partLabel = (window.COURSE_PARTS.find((p) => p.id === slide.part) || {}).label || "";
     const kicker = el("p", "course-kicker",
-      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'>" + (PART_ICONS[slide.part] || "") + "</svg> ČASŤ " + slide.part + " · " + partLabel);
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'>" + (PART_ICONS[slide.part] || "") + "</svg> ČASŤ " + slide.part);
     card.appendChild(kicker);
     card.appendChild(el("h2", null, slide.title));
     const badge = mediumBadge(slide.medium);

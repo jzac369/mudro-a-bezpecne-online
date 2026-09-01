@@ -258,7 +258,6 @@ label {
 .course-part-icon svg { width: 44px; height: 44px; color: #e3a35f; }
 
 .course-map { margin-bottom: .2rem; }
-.course-map-label { font-size: .9rem; color: var(--text-mute); margin-bottom: .5rem; font-weight: 700; }
 .course-map-bar { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .7rem; }
 .course-map-seg {
   flex: 1 1 0; min-width: 90px; display: flex; flex-direction: column; align-items: center;
@@ -270,8 +269,10 @@ label {
 .course-map-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: block; }
 .course-map-dot.earned { background: var(--accent, #c17a2e); box-shadow: 0 0 0 3px var(--accent-soft); }
 .course-map-seg-label { font-size: .74rem; text-align: center; color: var(--text-mute); font-weight: 700; line-height: 1.2; }
-.course-progress-track { width: 100%; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.course-progress-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .7rem; }
+.course-progress-track { flex: 1; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
 .course-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-deep, #8f5a1e), var(--accent, #c17a2e)); border-radius: 999px; transition: width .3s ease; }
+.course-map-count { font-family: "IBM Plex Mono", "Courier New", monospace; font-size: .78rem; color: var(--text-mute); flex: none; }
 
 .course-stage { min-height: 200px; }
 .course-card {
