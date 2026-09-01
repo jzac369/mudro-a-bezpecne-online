@@ -348,16 +348,19 @@ label {
 .course-tile p { margin: .55rem 0 0; font-size: .9rem; color: var(--text-mute); }
 
 /* flip cards */
-.course-flip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.1rem; margin-top: 1.1rem; perspective: 1300px; }
-.course-flip { height: 195px; cursor: pointer; }
-.course-flip-inner { position: relative; width: 100%; height: 100%; transition: transform .55s cubic-bezier(.2,.8,.3,1); transform-style: preserve-3d; }
+.course-flip-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.1rem; margin-top: 1.1rem; perspective: 1300px; }
+.course-flip { flex: 0 1 220px; min-height: 195px; cursor: pointer; }
+.course-flip-inner {
+  display: grid; width: 100%; height: 100%; min-height: inherit;
+  transition: transform .55s cubic-bezier(.2,.8,.3,1); transform-style: preserve-3d;
+}
 .course-flip.flipped .course-flip-inner { transform: rotateY(180deg); }
-.course-flip-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 16px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: center; }
+.course-flip-face { position: relative; grid-area: 1 / 1; backface-visibility: hidden; border-radius: 16px; padding: 1.2rem; display: flex; flex-direction: column; justify-content: center; }
 .course-flip-front { background: linear-gradient(160deg, var(--ink), var(--course-ink-deep)); color: #fff; text-align: center; box-shadow: 0 16px 32px -16px rgba(13,30,33,.6); }
 .course-flip-front::after { content: ""; position: absolute; inset: 0; border-radius: 16px; background-image: var(--course-noise); mix-blend-mode: overlay; }
 .course-flip-front h3 { color: #fff; font-size: 1.06rem; position: relative; }
 .course-flip-hint { font-size: .74rem; opacity: .7; margin-top: .5rem; display: block; position: relative; }
-.course-flip-back { background: var(--surface); border: 2px solid var(--accent, #c17a2e); transform: rotateY(180deg); overflow-y: auto; }
+.course-flip-back { background: var(--surface); border: 2px solid var(--accent, #c17a2e); transform: rotateY(180deg); }
 .course-flip-back p { margin: 0; font-size: .92rem; }
 
 /* sort / drag & drop */
@@ -375,12 +378,18 @@ label {
 .course-baskets { display: grid; gap: 1.1rem; margin-top: 1.1rem; }
 .course-baskets-2 { grid-template-columns: 1fr 1fr; }
 .course-basket { border-radius: 16px; padding: 1rem; min-height: 120px; border: 2px dashed var(--line); background: var(--surface-2); }
-.course-basket-label { font-weight: 700; margin-bottom: .7rem; text-align: center; }
+.course-basket-label {
+  display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  font-weight: 700; margin-bottom: .7rem; text-align: center; color: var(--ink-soft);
+}
+.course-basket-icon { width: 30px; height: 30px; color: var(--accent, #c17a2e); }
 .course-basket-drop { display: flex; flex-wrap: wrap; gap: .5rem; min-height: 60px; }
 
 /* match (spájanie dvojíc) */
-.course-match { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin-top: 1.1rem; }
-.course-match-col { display: flex; flex-direction: column; gap: .6rem; }
+.course-match { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin-top: 1.1rem; }
+.course-match-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; }
+.course-match-thread { fill: none; stroke: var(--accent, #c17a2e); stroke-width: 2; stroke-dasharray: 5 5; stroke-linecap: round; opacity: .85; }
+.course-match-col { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .6rem; }
 .course-match-item {
   background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
   padding: .75rem .95rem; font-size: .92rem; cursor: pointer; transition: border-color .15s ease, transform .15s ease;
@@ -394,13 +403,19 @@ label {
 /* sequence */
 .course-sequence { display: flex; flex-direction: column; gap: .65rem; margin-top: 1.1rem; }
 .course-seq-item {
+  display: flex; align-items: center; gap: .7rem;
   text-align: left; background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
   padding: .85rem 1.05rem; font: inherit; font-size: .95rem; cursor: pointer; font-weight: 400;
   box-shadow: var(--course-shadow-soft);
 }
 .course-seq-item.done { border-color: var(--good); background: var(--good-bg); cursor: default; }
 .course-seq-item.shake { animation: course-shake .4s; }
-.course-seq-num { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--good); color: #fff; font-weight: 700; font-size: .82rem; margin-right: .5rem; }
+.course-seq-num {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
+  border-radius: 50%; border: 2px solid var(--line); color: var(--text-mute); font-weight: 700; font-size: .82rem;
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+.course-seq-item.done .course-seq-num { background: var(--good); border-color: var(--good); color: #fff; }
 
 /* hotspot */
 .course-hotspot-screen { position: relative; background: var(--surface-2); border-radius: 18px; padding: 1rem; min-height: 260px; margin-top: 1.1rem; }
@@ -422,6 +437,22 @@ label {
 .course-hotspot-card { background: var(--surface-2); border-radius: 12px; padding: .85rem 1.05rem; }
 .course-hotspot-card h4 { margin: 0 0 .3rem; font-size: .98rem; }
 .course-hotspot-card p { margin: 0; font-size: .9rem; }
+
+.course-hotspot-screen.has-photo { padding: 0; background: none; min-height: 0; overflow: hidden; border-radius: 18px; }
+.course-hotspot-photo { display: block; width: 100%; border-radius: 18px; }
+.course-hotspot-legend { display: flex; flex-direction: column; gap: .7rem; margin-top: 1.2rem; }
+.course-hotspot-legend-item {
+  display: flex; gap: .8rem; align-items: flex-start; padding: .85rem 1.05rem;
+  background: var(--surface-2); border-radius: 12px; border: 2px solid transparent; transition: border-color .2s ease, background .2s ease;
+}
+.course-hotspot-legend-item.found { border-color: var(--good); background: var(--good-bg); }
+.course-hotspot-legend-num {
+  flex: none; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--accent, #c17a2e); color: #fff; font-weight: 700; font-size: .82rem;
+}
+.course-hotspot-legend-item.found .course-hotspot-legend-num { background: var(--good); }
+.course-hotspot-legend-text h4 { margin: 0 0 .25rem; font-size: .96rem; }
+.course-hotspot-legend-text p { margin: 0; font-size: .88rem; color: var(--text-mute); }
 
 /* choice / belief / quickfire */
 .course-choice-round, .course-belief-item { margin-top: 1.3rem; padding-top: 1.3rem; border-top: 1px solid var(--line); }

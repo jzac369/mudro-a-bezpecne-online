@@ -289,7 +289,11 @@
     slide.baskets.forEach((b) => {
       const basket = el("div", "course-basket");
       basket.dataset.basket = b.id;
-      basket.appendChild(el("div", "course-basket-label", b.label));
+      basket.appendChild(el("div", "course-basket-label",
+        "<svg class='course-basket-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'>" +
+        "<path d='M4 10h16l-1.6 9.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8L4 10Z'/>" +
+        "<path d='M2.5 10h19'/><path d='M8.5 10 10 4h4l1.5 6'/><path d='M10 14v3M14 14v3'/>" +
+        "</svg><span>" + b.label + "</span>"));
       const drop = el("div", "course-basket-drop");
       basket.appendChild(drop);
       basketsWrap.appendChild(basket);
@@ -411,6 +415,9 @@
   RENDERERS.match = function (slide, card) {
     header(card, slide);
     const wrap = el("div", "course-match");
+    const linesSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    linesSvg.setAttribute("class", "course-match-lines");
+    wrap.appendChild(linesSvg);
     const leftCol = el("div", "course-match-col");
     const rightCol = el("div", "course-match-col");
     const rightsShuffled = shuffle(slide.pairs.map((p, i) => ({ text: p.right, i })));
@@ -418,6 +425,21 @@
     let selLeft = null, selRight = null;
     let solved = 0;
     const status = el("p", "course-hint", "Spojené: 0 z " + slide.pairs.length);
+
+    function drawLine(leftEl, rightEl) {
+      const wrapRect = wrap.getBoundingClientRect();
+      linesSvg.setAttribute("width", wrapRect.width);
+      linesSvg.setAttribute("height", wrapRect.height);
+      const r1 = leftEl.getBoundingClientRect();
+      const r2 = rightEl.getBoundingClientRect();
+      const x1 = r1.right - wrapRect.left, y1 = r1.top + r1.height / 2 - wrapRect.top;
+      const x2 = r2.left - wrapRect.left, y2 = r2.top + r2.height / 2 - wrapRect.top;
+      const midX = (x1 + x2) / 2;
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "M " + x1 + " " + y1 + " C " + midX + " " + y1 + ", " + midX + " " + y2 + ", " + x2 + " " + y2);
+      path.setAttribute("class", "course-match-thread");
+      linesSvg.appendChild(path);
+    }
 
     const leftEls = slide.pairs.map((p, i) => {
       const e2 = el("div", "course-match-item", p.left);
@@ -454,6 +476,7 @@
         selRight.classList.remove("selected");
         selLeft.classList.add("solved");
         selRight.classList.add("solved");
+        drawLine(selLeft, selRight);
         solved++;
         status.textContent = solved >= slide.pairs.length
           ? "Výborne, všetko je spojené!"
@@ -486,13 +509,15 @@
     const status = el("p", "course-hint", "Kliknite na krok číslo 1.");
 
     shuffled.forEach((s) => {
-      const item = el("button", "course-seq-item", s.text);
+      const item = el("button", "course-seq-item",
+        "<span class='course-seq-num'></span><span class='course-seq-text'>" + s.text + "</span>");
       item.type = "button";
+      const numEl = item.querySelector(".course-seq-num");
       item.addEventListener("click", () => {
         if (item.classList.contains("done")) return;
         if (s.i === nextExpected) {
           item.classList.add("done");
-          item.insertAdjacentHTML("afterbegin", "<span class='course-seq-num'>" + (nextExpected + 1) + "</span> ");
+          numEl.textContent = nextExpected + 1;
           nextExpected++;
           status.textContent = nextExpected >= slide.steps.length
             ? "Presne v tomto poradí — výborne!"
@@ -512,24 +537,40 @@
 
   RENDERERS.hotspot = function (slide, card) {
     header(card, slide);
-    const screen = el("div", "course-hotspot-screen");
-    const mock = el("div", "course-hotspot-mock",
-      "<div class='chp-side'></div><div class='chp-main'><div class='chp-bubble'></div><div class='chp-bubble short'></div></div><div class='chp-input'></div>");
-    screen.appendChild(mock);
+    const hasPhoto = !!slide.evidenceImage;
+    const screen = el("div", "course-hotspot-screen" + (hasPhoto ? " has-photo" : ""));
+    if (hasPhoto) {
+      const img = el("img", "course-hotspot-photo");
+      img.src = slide.evidenceImage.src;
+      img.alt = slide.evidenceImage.caption || "";
+      screen.appendChild(img);
+    } else {
+      const mock = el("div", "course-hotspot-mock",
+        "<div class='chp-side'></div><div class='chp-main'><div class='chp-bubble'></div><div class='chp-bubble short'></div></div><div class='chp-input'></div>");
+      screen.appendChild(mock);
+    }
     let found = 0;
-    const status = el("p", "course-hint", "Nájdených: 0 z " + slide.spots.length);
-    const info = el("div", "course-hotspot-info");
+    const status = el("p", "course-hint", "Kliknite na očíslované miesta na obrázku — nájdených: 0 z " + slide.spots.length);
+    const legend = el("div", "course-hotspot-legend");
 
-    slide.spots.forEach((s) => {
-      const dot = el("button", "course-hotspot-dot", "+");
+    const legendItems = slide.spots.map((s, i) => {
+      const row = el("div", "course-hotspot-legend-item");
+      row.appendChild(el("div", "course-hotspot-legend-num", String(i + 1)));
+      row.appendChild(el("div", "course-hotspot-legend-text", "<h4>" + s.title + "</h4><p>" + s.text + "</p>"));
+      legend.appendChild(row);
+      return row;
+    });
+
+    slide.spots.forEach((s, i) => {
+      const dot = el("button", "course-hotspot-dot", String(i + 1));
       dot.type = "button";
       dot.style.left = s.x + "%";
       dot.style.top = s.y + "%";
       dot.addEventListener("click", () => {
         if (dot.classList.contains("found")) return;
         dot.classList.add("found");
+        legendItems[i].classList.add("found");
         found++;
-        info.appendChild(el("div", "course-hotspot-card", "<h4>" + s.title + "</h4><p>" + s.text + "</p>"));
         status.textContent = found >= slide.spots.length ? "Objavili ste všetko!" : "Nájdených: " + found + " z " + slide.spots.length;
       });
       screen.appendChild(dot);
@@ -537,8 +578,7 @@
 
     card.appendChild(screen);
     card.appendChild(status);
-    card.appendChild(info);
-    evidenceFigure(card, slide.evidenceImage);
+    card.appendChild(legend);
   };
 
   RENDERERS.choice = function (slide, card) {

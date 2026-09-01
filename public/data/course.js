@@ -60,7 +60,7 @@ window.COURSE_SLIDES = [
   {
     id: 5, part: 1, type: "match",
     title: "AI ako „druhý názor“ — vždy poruke",
-    lead: "Spojte situáciu s tým, ako vám v nej AI pomôže.",
+    lead: "Najprv kliknite na situáciu vľavo a potom na políčko vpravo, ktoré k nej patrí — spojí ich čiara.",
     pairs: [
       { left: "Dostali ste podozrivý e-mail", right: "Rozoberie ho vetu po vete a ukáže varovné znaky." },
       { left: "Volala vám „banka“", right: "Vysvetlí, ako banky v takých situáciách naozaj postupujú." },
@@ -87,9 +87,9 @@ window.COURSE_SLIDES = [
     title: "Takto vyzerá ChatGPT v praxi",
     lead: "Kliknite postupne na všetky tri označené miesta.",
     spots: [
-      { x: 18, y: 50, title: "Zoznam rozhovorov", text: "Vľavo — staršie otázky sa nestrácajú, kedykoľvek sa k nim vrátite." },
-      { x: 60, y: 85, title: "Okienko na písanie", text: "Dole — otázka sa píše rovnako ako SMS správa." },
-      { x: 60, y: 30, title: "Odpoveď po slovensky", text: "AI odpovie prehľadne, väčšinou v bodoch." },
+      { x: 13, y: 62, title: "Zoznam rozhovorov", text: "Vľavo — staršie otázky sa nestrácajú, kedykoľvek sa k nim vrátite." },
+      { x: 78, y: 91, title: "Okienko na písanie", text: "Dole — otázka sa píše rovnako ako SMS správa." },
+      { x: 58, y: 42, title: "Odpoveď po slovensky", text: "AI odpovie prehľadne, väčšinou v bodoch — tu napríklad rozpísaný plán výletu." },
     ],
     evidenceImage: {
       src: "assets/course-media/evidence/chatgpt-screenshot.jpg",
