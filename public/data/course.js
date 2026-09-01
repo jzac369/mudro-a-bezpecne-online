@@ -126,6 +126,7 @@ window.COURSE_SLIDES = [
     id: 9, part: 2, type: "belief",
     title: "Keď si AI vymýšľa: halucinácie",
     lead: "AI vám sebavedomo odpovedala. Uveríte hneď, alebo si to overíte?",
+    tip: "AI odpovedá sebavedomo aj vtedy, keď sa mýli. Pri faktoch — číslach, dátumoch, telefónnych číslach — si to vždy overte z druhého zdroja.",
     items: [
       { text: "„Táto banka má zákaznícku linku 0800 123 456.“", answer: "overim" },
       { text: "„Zázračný zisk 20 % mesačne? To znie ako podvod, buďte opatrní.“", answer: "uverim" },

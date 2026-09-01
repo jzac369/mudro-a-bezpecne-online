@@ -655,22 +655,30 @@
     card.appendChild(legend);
   };
 
+  const OPT_ICON_GOOD = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.6'><path d='M4 12l5 5L20 6'/></svg>";
+  const OPT_ICON_BAD = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.6'><path d='M6 6l12 12M18 6 6 18'/></svg>";
+
   RENDERERS.choice = function (slide, card) {
     header(card, slide);
-    if (slide.intro) card.appendChild(el("p", null, slide.intro));
+    if (slide.intro) card.appendChild(tipCallout(slide.intro));
     slide.rounds.forEach((r, idx) => {
       const box = el("div", "course-choice-round");
-      box.appendChild(el("p", "course-choice-num", "Otázka " + (idx + 1)));
+      box.appendChild(el("p", "course-choice-num",
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 17h.01M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5'/></svg>Otázka " + (idx + 1)));
       const opts = el("div", "course-choice-opts");
-      const weak = el("button", "course-choice-opt", r.weak);
-      const good = el("button", "course-choice-opt", r.good);
+      const weak = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>" + r.weak + "</span>");
+      const good = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>" + r.good + "</span>");
       [weak, good].forEach((b) => (b.type = "button"));
       const result = el("div", "course-choice-result");
 
       function lock(chosenGood) {
         weak.disabled = true; good.disabled = true;
         good.classList.add("correct");
-        if (!chosenGood) weak.classList.add("incorrect");
+        good.querySelector(".course-choice-opt-icon").innerHTML = OPT_ICON_GOOD;
+        if (!chosenGood) {
+          weak.classList.add("incorrect");
+          weak.querySelector(".course-choice-opt-icon").innerHTML = OPT_ICON_BAD;
+        }
         let html = "<p><strong>" + (chosenGood ? "Presne tak." : "Lepšia je druhá možnosť.") + "</strong> " + r.why + "</p>";
         if (r.answerPreview) html += "<p class='course-ai-answer'>„" + r.answerPreview + "“ — takto by mohla znieť odpoveď AI.</p>";
         result.innerHTML = html;
@@ -690,18 +698,23 @@
 
   RENDERERS.belief = function (slide, card) {
     header(card, slide);
-    slide.items.forEach((it) => {
+    if (slide.tip) card.appendChild(tipCallout(slide.tip));
+    slide.items.forEach((it, idx) => {
       const box = el("div", "course-belief-item");
-      box.appendChild(el("p", null, it.text));
-      const opts = el("div", "course-choice-opts");
-      const btnBelieve = el("button", "course-choice-opt", "Uverím");
-      const btnCheck = el("button", "course-choice-opt", "Overím si");
+      box.appendChild(el("p", "course-choice-num",
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M9 10.5c1-3.5 5-3.5 6 0M12 15h.01'/></svg>Výrok " + (idx + 1)));
+      box.appendChild(el("p", "course-belief-text", it.text));
+      const opts = el("div", "course-choice-opts course-choice-opts-row");
+      const btnBelieve = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>Uverím</span>");
+      const btnCheck = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>Overím si</span>");
       [btnBelieve, btnCheck].forEach((b) => (b.type = "button"));
       const result = el("div", "course-choice-result");
       function lock(chosen) {
         btnBelieve.disabled = true; btnCheck.disabled = true;
         const ok = chosen === it.answer;
-        (chosen === "uverim" ? btnBelieve : btnCheck).classList.add(ok ? "correct" : "incorrect");
+        const chosenBtn = chosen === "uverim" ? btnBelieve : btnCheck;
+        chosenBtn.classList.add(ok ? "correct" : "incorrect");
+        chosenBtn.querySelector(".course-choice-opt-icon").innerHTML = ok ? OPT_ICON_GOOD : OPT_ICON_BAD;
         result.textContent = ok ? "Správne." : (it.answer === "overim" ? "Toto si radšej overte z druhého zdroja." : "Toto je v poriadku, netreba sa báť opýtať.");
         result.classList.add("show", ok ? "ok" : "warn");
       }
@@ -1114,7 +1127,8 @@
         return;
       }
       const r = slide.rounds[round];
-      roundBox.appendChild(el("p", "course-choice-num", "Kolo " + (round + 1) + " z " + slide.rounds.length));
+      roundBox.appendChild(el("p", "course-choice-num",
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='3' y='5' width='18' height='14' rx='2'/><circle cx='9' cy='11' r='2'/><path d='M21 16l-5-4-4 3-3-2-6 5'/></svg>Kolo " + (round + 1) + " z " + slide.rounds.length));
       if (r.image) {
         const img = el("img", "course-guess-photo-img");
         img.src = r.image;
@@ -1124,15 +1138,17 @@
       } else {
         roundBox.appendChild(el("div", "course-guess-photo", r.prompt));
       }
-      const opts = el("div", "course-choice-opts");
-      const real = el("button", "course-choice-opt", "Skutočná fotografia");
-      const ai = el("button", "course-choice-opt", "Vytvorená umelou inteligenciou");
+      const opts = el("div", "course-choice-opts course-choice-opts-row");
+      const real = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>Skutočná fotografia</span>");
+      const ai = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>Vytvorená umelou inteligenciou</span>");
       [real, ai].forEach((b) => (b.type = "button"));
       const result = el("div", "course-choice-result");
       function lock(val) {
         real.disabled = true; ai.disabled = true;
         const ok = val === r.answer;
-        (val === "real" ? real : ai).classList.add(ok ? "correct" : "incorrect");
+        const chosenBtn = val === "real" ? real : ai;
+        chosenBtn.classList.add(ok ? "correct" : "incorrect");
+        chosenBtn.querySelector(".course-choice-opt-icon").innerHTML = ok ? OPT_ICON_GOOD : OPT_ICON_BAD;
         result.innerHTML = "<strong>" + (ok ? "Uhádli ste!" : "Tentoraz nie.") + "</strong> " + (r.explain || "");
         result.classList.add("show");
         const goNext = el("button", "btn btn-primary", round + 1 >= slide.rounds.length ? "Zobraziť znaky AI fotografie" : "Ďalšie kolo");
