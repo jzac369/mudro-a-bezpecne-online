@@ -1305,3 +1305,15 @@ label {
   from { transform: translateX(-50%); opacity: 1; }
   to   { transform: translateX(calc(-50% + 46px)); opacity: 0; }
 }
+
+/* Vysvetlenie, prečo certifikát ešte nie je dostupný */
+.cert-missing {
+  margin-top: 1.2rem; padding: 1.1rem 1.25rem; border-radius: 14px;
+  background: var(--warn-bg); border: 1px solid var(--warn);
+}
+.cert-missing-title { margin: 0 0 .6rem; font-weight: 700; color: var(--course-warn-deep); }
+.cert-missing-list { margin: 0 0 .8rem; padding-left: 1.3rem; color: var(--course-warn-deep); }
+.cert-missing-list li { margin-bottom: .25rem; }
+.cert-missing-hint { margin: 0 0 .9rem; font-size: .9rem; color: var(--course-warn-deep); }
+.cert-missing-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+.cert-missing-actions .btn { padding: .6rem 1.1rem; font-size: .92rem; }

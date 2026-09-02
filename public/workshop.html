@@ -15,6 +15,7 @@
 <script defer src="assets/course-schema.js"></script>
 <script defer src="assets/course.js"></script>
 <script defer src="assets/app.js"></script>
+<script defer src="assets/autosave.js"></script>
 <script defer src="data/exercises.js"></script>
 <script defer src="assets/worksheet.js"></script>
 <script defer src="assets/pdf-export.js"></script>
@@ -216,6 +217,11 @@
 (function () {
   const STEPS = ["video", "prezentacia", "kurz", "cvicenia", "brozurka", "kviz", "certifikat"];
   const CERT_REQUIRED_STEPS = STEPS.filter((s) => s !== "certifikat");
+  const STEP_NAMES = {
+    video: "Video", prezentacia: "Prezentácia", kurz: "Interaktívny kurz",
+    cvicenia: "Cvičenia", brozurka: "Brožúrka", kviz: "Záverečný kvíz",
+    certifikat: "Certifikát",
+  };
   const state = {
     workshop: null, workshopId: null, codeId: null, db: null, ytPlayer: null, course: null,
     sessionRef: null, sessionStart: null, doneSteps: new Set(), quizAnswers: [],
@@ -361,6 +367,7 @@
     state.exercisesApp = window.initExercises(body, {
       exercises: window.COURSE_EXERCISES,
       done: doneIds || [],
+      store: state.store,
       onDone: (ids) => saveProgress({ exercisesDone: ids }),
     });
   }
@@ -384,16 +391,67 @@
     document.getElementById("cert-area").style.display = "block";
   }
 
-  async function revealCertificateWithLoading(participantName) {
+  // Certifikát sa odomkne až po dokončení všetkých predošlých krokov.
+  // Ak niektorý chýba, povieme presne ktorý a ponúkneme naň prechod —
+  // predtým sa po kliknutí ticho nestalo nič.
+  function missingStepsForCertificate() {
+    return CERT_REQUIRED_STEPS.filter((s) => !state.doneSteps.has(s));
+  }
+
+  function showMissingStepsNotice(host) {
+    const missing = missingStepsForCertificate();
+    const notice = document.createElement("div");
+    notice.className = "cert-missing";
+    notice.innerHTML =
+      "<p class='cert-missing-title'>Certifikát sa odomkne, keď dokončíte aj tieto kroky:</p>" +
+      "<ul class='cert-missing-list'>" +
+      missing.map((s) => "<li>" + STEP_NAMES[s] + "</li>").join("") +
+      "</ul>" +
+      "<p class='cert-missing-hint'>Kliknite na krok nižšie, prejdite si ho a potom sa sem vráťte.</p>";
+    const row = document.createElement("div");
+    row.className = "cert-missing-actions";
+    missing.forEach((s) => {
+      const b = document.createElement("button");
+      b.className = "btn btn-secondary";
+      b.type = "button";
+      b.textContent = "Prejsť na „" + STEP_NAMES[s] + "“";
+      b.addEventListener("click", () => setActiveStep(s));
+      row.appendChild(b);
+    });
+    notice.appendChild(row);
+    host.appendChild(notice);
+  }
+
+  async function revealCertificateWithLoading(participantName, host) {
+    // Ak ešte niečo chýba, certifikát sa neotvorí — vysvetlíme prečo.
+    if (!isCertUnlocked()) {
+      if (host) showMissingStepsNotice(host);
+      return;
+    }
+
     setActiveStep("certifikat");
     document.getElementById("cert-locked-hint").style.display = "none";
     document.getElementById("cert-area").style.display = "none";
-    document.getElementById("cert-loading").style.display = "flex";
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-    await showCertificate(participantName);
-    document.getElementById("cert-loading").style.display = "none";
-    await markCourseCompleted();
+    const loading = document.getElementById("cert-loading");
+    loading.style.display = "flex";
+
+    try {
+      // Krátka pauza, aby bolo vidieť, že sa certifikát pripravuje.
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await showCertificate(participantName);
+      loading.style.display = "none";
+      await markCourseCompleted();
+    } catch (err) {
+      console.error("Certifikát sa nepodarilo pripraviť:", err);
+      loading.style.display = "none";
+      const area = document.getElementById("cert-area");
+      area.style.display = "block";
+      area.insertAdjacentHTML("afterbegin",
+        "<div class='cert-missing'><p class='cert-missing-title'>Certifikát sa nepodarilo pripraviť.</p>" +
+        "<p class='cert-missing-hint'>Skúste prosím obnoviť stránku. Ak to nepomôže, napíšte nám na info@digistart.sk — certifikát vám pošleme e-mailom.</p></div>");
+    }
   }
+
 
   async function markCourseCompleted() {
     if (state.courseCompletedSaved) return;
@@ -407,9 +465,24 @@
     if (state.quizAnswers.length !== allQuestions.length) {
       state.quizAnswers = new Array(allQuestions.length).fill(null);
     }
+    // Rozpracovaný kvíz obnovíme, aby sa po obnovení stránky nemusel
+    // vypĺňať odznova.
+    const savedQuiz = (!subsetIndexes && state.store) ? state.store.get("kviz", null) : null;
+    if (savedQuiz && Array.isArray(savedQuiz.answers) && savedQuiz.answers.length === allQuestions.length) {
+      state.quizAnswers = savedQuiz.answers;
+    }
     const body = document.getElementById("quiz-body");
     document.getElementById("cert-area").style.display = "none";
     let cursor = 0;
+    if (savedQuiz && Number.isInteger(savedQuiz.cursor)) {
+      cursor = Math.max(0, Math.min(savedQuiz.cursor, indexes.length - 1));
+    }
+
+    function persistQuiz() {
+      if (!subsetIndexes && state.store) {
+        state.store.set("kviz", { answers: state.quizAnswers, cursor: cursor });
+      }
+    }
 
     function renderCurrent() {
       const qi = indexes[cursor];
@@ -443,14 +516,15 @@
           label.classList.add("selected");
           state.quizAnswers[qi] = Number(label.dataset.o);
           nextBtn.disabled = false;
+          persistQuiz();
         });
       });
 
       const prevBtn = document.getElementById("quiz-prev");
-      if (prevBtn) prevBtn.addEventListener("click", () => { cursor--; renderCurrent(); });
+      if (prevBtn) prevBtn.addEventListener("click", () => { cursor--; persistQuiz(); renderCurrent(); });
 
       nextBtn.addEventListener("click", () => {
-        if (!isLast) { cursor++; renderCurrent(); return; }
+        if (!isLast) { cursor++; persistQuiz(); renderCurrent(); return; }
         submitQuiz();
       });
     }
@@ -525,7 +599,11 @@
           goCertBtn.className = "btn btn-primary";
           goCertBtn.style.marginTop = "1rem";
           goCertBtn.textContent = "Prejsť na certifikát";
-          goCertBtn.addEventListener("click", () => revealCertificateWithLoading(participantName));
+          goCertBtn.addEventListener("click", () => {
+            // Ak ešte niečo chýba, vysvetlenie sa vypíše sem, pod tlačidlo.
+            body.querySelectorAll(".cert-missing").forEach((n) => n.remove());
+            revealCertificateWithLoading(participantName, body);
+          });
           body.appendChild(goCertBtn);
         } else {
           const retryBtn = document.createElement("button");
@@ -708,6 +786,12 @@
       state.workshopId = new URLSearchParams(location.search).get("w") || tokenResult.claims.workshopId;
       state.workshop = window.WORKSHOPS[state.workshopId] ? Object.assign({}, window.WORKSHOPS[state.workshopId]) : null;
 
+      // Rozpracovaná práca (čísla v cvičení, odpovede v kvíze) sa drží aj
+      // v pamäti prehliadača, aby ju nechcené obnovenie stránky nezmazalo.
+      state.store = window.createCourseStore
+        ? window.createCourseStore(state.codeId, state.workshopId)
+        : null;
+
       if (!state.workshop) {
         document.getElementById("workshop-title").textContent = "Kurz sa nenašiel.";
         return;
@@ -868,10 +952,9 @@
       }
 
       const urlStep = new URLSearchParams(location.search).get("step");
-      const stepNames = { video: "Video", prezentacia: "Prezentácia", kurz: "Interaktívny kurz", cvicenia: "Cvičenia", brozurka: "Brožúrka", kviz: "Záverečný kvíz", certifikat: "Certifikát" };
       if (!urlStep && progressData && progressData.currentStep && STEPS.includes(progressData.currentStep) && progressData.currentStep !== "video") {
         document.getElementById("continue-text").textContent =
-          "Naposledy ste skončili v kroku „" + stepNames[progressData.currentStep] + "“.";
+          "Naposledy ste skončili v kroku „" + STEP_NAMES[progressData.currentStep] + "“.";
         document.getElementById("continue-banner").style.display = "flex";
         document.getElementById("continue-btn").addEventListener("click", () => {
           document.getElementById("continue-banner").style.display = "none";

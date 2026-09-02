@@ -1272,6 +1272,7 @@ window.addEventListener("load", function () {
 
   async function uploadCourseFile(workshopId, file, folder, patchFields, onStatus) {
     const stamp = Date.now();
+    let pagesError = null;
     const storageRef = adminApp.storage().ref(folder + "/" + workshopId + "/" + stamp + "_" + file.name);
     await storageRef.put(file);
     const url = await storageRef.getDownloadURL();
@@ -1302,13 +1303,13 @@ window.addEventListener("load", function () {
         patch[patchFields.pagesField || (folder === "presentations" ? "presentationPages" : "brochurePages")] = urls;
       } catch (err) {
         console.error("Strany na listovanie sa nepodarilo pripraviť:", err);
-        if (onStatus) onStatus("Súbor je nahratý, strany na listovanie sa však nepodarilo pripraviť.");
+        pagesError = err && err.message ? err.message : String(err);
       }
     }
 
     await db.collection("workshops").doc(workshopId).set(patch, { merge: true });
     logActivity("settings", "Kurz " + workshopId + " — nahraný súbor (" + folder + ")");
-    return url;
+    return { url: url, pagesError: pagesError };
   }
 
   function wireFileUpload(container, kind, folder, accept, allowedExts, patchFields) {
@@ -1327,9 +1328,19 @@ window.addEventListener("load", function () {
         btn.disabled = true;
         statusEl.textContent = "Nahrávam…";
         try {
-          await uploadCourseFile(id, file, folder, (url) => patchFields(url, file, ext), (msg) => { statusEl.textContent = msg; });
-          statusEl.textContent = "Nahraté ✓ (" + file.name + ")";
-          loadWorkshopSettings();
+          const res = await uploadCourseFile(id, file, folder, (url) => patchFields(url, file, ext), (msg) => { statusEl.textContent = msg; });
+          await loadWorkshopSettings();
+          // Zoznam sa medzitým prekreslil — hlášku preto vypíšeme až teraz,
+          // do nového prvku, nech ju nezmyže obnovenie.
+          const fresh = container.querySelector('[data-' + kind + '-status="' + id + '"]');
+          if (fresh) {
+            if (res && res.pagesError) {
+              fresh.style.color = "var(--warn)";
+              fresh.textContent = "Súbor je nahratý, ale strany na listovanie sa nepodarilo pripraviť: " + res.pagesError;
+            } else {
+              fresh.textContent = "Nahraté ✓ (" + file.name + ")";
+            }
+          }
         } catch (err) {
           statusEl.textContent = "Chyba: " + err.message;
         } finally {

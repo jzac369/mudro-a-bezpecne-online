@@ -46,8 +46,22 @@
     this.opts = opts || {};
     this.list = this.opts.exercises || window.COURSE_EXERCISES || [];
     this.done = new Set(this.opts.done || []);
-    this.answers = {};     // rozpracované odpovede, nech sa nestratia pri návrate
+    this.store = this.opts.store || null;
+    // Rozpracované odpovede držíme aj v pamäti prehliadača, aby ich
+    // nechcené obnovenie stránky nezmazalo.
+    this.answers = (this.store && this.store.get("cvicenia", null)) || {};
   }
+
+  // Uloží rozpracované odpovede. Volá sa pri každej zmene v políčkach,
+  // preto zápis trochu oneskoríme — pri písaní by inak bol pri každom písmene.
+  Exercises.prototype.persist = function () {
+    var self = this;
+    if (!this.store) return;
+    clearTimeout(this._persistTimer);
+    this._persistTimer = setTimeout(function () {
+      self.store.set("cvicenia", self.answers);
+    }, 350);
+  };
 
   Exercises.prototype.markDone = function (id) {
     if (this.done.has(id)) return;
@@ -227,6 +241,7 @@
         inp.addEventListener("input", function () {
           saved[bucket][i] = inp.value;
           recount();
+          app.persist();
         });
         row.appendChild(inp);
         row.appendChild(el("span", "ex-money-unit", "€"));
@@ -257,6 +272,7 @@
       var rest = income - expense;
       saved.income_total = income;
       saved.expense_total = expense;
+      app.persist();
 
       if (!income && !expense) { result.innerHTML = ""; promptBox.style.display = "none"; return; }
 
@@ -419,6 +435,7 @@
       b.type = "button";
       b.addEventListener("click", function () {
         state.situation = s.id;
+        app.persist();
         buttons.forEach(function (x) { x.classList.remove("active"); });
         b.classList.add("active");
         renderFields();
@@ -460,6 +477,7 @@
         inp.addEventListener("input", function () {
           state.values[s.id][f.key] = inp.value;
           renderOut();
+          app.persist();
         });
         row.appendChild(inp);
         fieldsWrap.appendChild(row);
@@ -645,6 +663,7 @@
         state.checked[i] = cb.checked;
         row.classList.toggle("checked", cb.checked);
         update();
+        app.persist();
       });
       row.appendChild(cb);
       var txt = el("span", "ex-check-text");
@@ -687,6 +706,7 @@
       inp.addEventListener("input", function () {
         state.values[f.key] = inp.value;
         renderCard();
+        app.persist();
       });
       row.appendChild(inp);
       fields.appendChild(row);
