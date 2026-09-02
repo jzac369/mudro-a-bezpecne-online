@@ -15,7 +15,10 @@
 <script defer src="assets/course-schema.js"></script>
 <script defer src="assets/course.js"></script>
 <script defer src="assets/app.js"></script>
+<script defer src="data/exercises.js"></script>
+<script defer src="assets/worksheet.js"></script>
 <script defer src="assets/pdf-export.js"></script>
+<script defer src="assets/exercises.js"></script>
 <script defer src="assets/certificate.js"></script>
 <script defer src="assets/flipbook.js"></script>
 <script defer src="assets/chat-widget.js"></script>
@@ -143,9 +146,8 @@
   </section>
 
   <section class="card step-panel" data-panel="cvicenia">
-    <h2>Interaktívne cvičenie</h2>
     <div id="exercise-body"></div>
-    <button class="btn btn-primary" id="exercise-done-btn" style="margin-top:1rem;">Pokračovať na brožúrku</button>
+    <button class="btn btn-primary" id="exercise-done-btn" style="margin-top:1.6rem;">Pokračovať na brožúrku</button>
   </section>
 
   <section class="card step-panel" data-panel="brozurka">
@@ -266,66 +268,9 @@
     showSavedToast();
   }
 
-function renderBudgetExercise(ex) {
-    const rowsHtml = (labels) =>
-      labels
-        .map(
-          (label, i) =>
-            "<div style='display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:.5rem;'>" +
-            "<label style='font-weight:400;flex:1;'>" + label + "</label>" +
-            '<input type="number" step="1" min="0" data-budget-input style="width:110px;" placeholder="0">' +
-            "</div>"
-        )
-        .join("");
-    return (
-      "<h3>" + ex.title + "</h3><p>" + ex.prompt + "</p>" +
-      "<h4 style='margin-top:1.2rem;'>Mesačné príjmy</h4>" + rowsHtml(ex.incomeLabels) +
-      "<h4 style='margin-top:1.2rem;'>Mesačné výdavky</h4>" + rowsHtml(ex.expenseLabels) +
-      '<button class="btn btn-secondary" id="budget-calc" type="button" style="margin-top:1rem;">Spočítať</button>' +
-      '<p id="budget-result" class="hint" style="margin-top:.8rem;font-weight:700;"></p>'
-    );
-  }
 
-  function wireBudgetExercise() {
-    const btn = document.getElementById("budget-calc");
-    if (!btn) return;
-    btn.addEventListener("click", () => {
-      const inputs = Array.from(document.querySelectorAll("[data-budget-input]"));
-      const incomeCount = state.workshop.exercises.find((e) => e.type === "budget").incomeLabels.length;
-      const income = inputs.slice(0, incomeCount).reduce((s, i) => s + (Number(i.value) || 0), 0);
-      const expense = inputs.slice(incomeCount).reduce((s, i) => s + (Number(i.value) || 0), 0);
-      const zostatok = income - expense;
-      document.getElementById("budget-result").textContent =
-        "Príjmy: " + income + " € · Výdavky: " + expense + " € · Zostatok na konci mesiaca: " + zostatok + " €";
-    });
-  }
 
-  function renderScamHuntExercise(ex) {
-    return (
-      "<h3>" + ex.title + "</h3><p>" + ex.prompt + "</p>" +
-      ex.messages
-        .map(
-          (m, i) =>
-            "<div class='card' style='background:var(--surface-2);margin-top:1rem;'>" +
-            "<p style='font-weight:700;margin-bottom:.4rem;'>" + m.label + "</p>" +
-            "<p style='font-style:italic;'>" + m.text + "</p>" +
-            '<button class="btn btn-secondary" data-reveal="' + i + '" type="button" style="padding:.4rem .8rem;font-size:.85rem;">Zobraziť riešenie</button>' +
-            "<p data-answer='" + i + "' class='hint' style='display:none;margin-top:.6rem;'>" + m.answer + "</p>" +
-            "</div>"
-        )
-        .join("")
-    );
-  }
 
-  function wireScamHuntExercise() {
-    document.querySelectorAll("[data-reveal]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const i = btn.dataset.reveal;
-        document.querySelector("[data-answer='" + i + "']").style.display = "block";
-        btn.style.display = "none";
-      });
-    });
-  }
 
   // Brožúrka sa listuje ako kniha. Ak by sa knižnica na čítanie PDF
   // nenačítala (napr. slabé pripojenie), padneme späť na vstavaný
@@ -353,6 +298,21 @@ function renderBudgetExercise(ex) {
       "<p class='hint'>Brožúrku si môžete prečítať v prehliadači vyššie alebo stiahnuť tlačidlom nižšie.</p>";
   }
 
+  // Praktické cvičenia — prehľad dlaždic, jedno cvičenie po kliknutí,
+  // každé sa dá stiahnuť aj ako pracovný list vo formáte PDF.
+  function renderExercise(doneIds) {
+    const body = document.getElementById("exercise-body");
+    if (!window.initExercises) {
+      body.innerHTML = "<p class='hint'>Cvičenia sa nepodarilo načítať. Skúste prosím obnoviť stránku.</p>";
+      return;
+    }
+    state.exercisesApp = window.initExercises(body, {
+      exercises: window.COURSE_EXERCISES,
+      done: doneIds || [],
+      onDone: (ids) => saveProgress({ exercisesDone: ids }),
+    });
+  }
+
   function renderPresentation() {
     const body = document.getElementById("presentation-body");
     const url = state.workshop.presentationUrl;
@@ -378,22 +338,6 @@ function renderBudgetExercise(ex) {
     }
   }
 
-  function renderExercise() {
-    const body = document.getElementById("exercise-body");
-    const exercises = state.workshop.exercises;
-    body.innerHTML = exercises
-      .map((ex) => {
-        if (ex.type === "budget") return renderBudgetExercise(ex);
-        if (ex.type === "spot-the-scam") return renderScamHuntExercise(ex);
-        return (
-          "<h3>" + ex.title + "</h3><p>" + ex.prompt + "</p>" +
-          '<textarea rows="4" style="width:100%;font:inherit;padding:.8rem;border-radius:10px;border:2px solid var(--line);" placeholder="Sem napíšte svoju odpoveď…"></textarea>'
-        );
-      })
-      .join("<hr style='margin:2rem 0;border:none;border-top:1px solid var(--line);'>");
-    wireBudgetExercise();
-    wireScamHuntExercise();
-  }
 
 
 
@@ -765,7 +709,6 @@ function renderBudgetExercise(ex) {
       initBrochure(state.workshop.brochureUrl);
 
       renderPresentation();
-      renderExercise();
       renderQuiz();
       setupFeedback();
       try {
@@ -854,6 +797,11 @@ function renderBudgetExercise(ex) {
         });
       }
       updateCertLock();
+
+      // Cvičenia — obnovíme, ktoré už má účastník hotové.
+      renderExercise(
+        progressData && Array.isArray(progressData.exercisesDone) ? progressData.exercisesDone : []
+      );
 
       // Interaktívny kurz — pokračuje presne tam, kde senior naposledy skončil.
       try {

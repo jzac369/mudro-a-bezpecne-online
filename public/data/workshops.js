@@ -15,52 +15,6 @@ window.WORKSHOPS = {
       "ako nám pri tom všetkom môže pomôcť umelá inteligencia ako „druhý názor na počkanie“.",
     youtubeId: "PLACEHOLDER_VIDEO_ID_1",
     brochureUrl: "assets/brozurky/bezpecne-financie.pdf",
-    exercises: [
-      {
-        id: "domaci-rozpocet",
-        type: "budget",
-        title: "Cvičenie A · Domáci rozpočet s pomocou AI",
-        prompt:
-          "Vyplňte tabuľku vašich mesačných príjmov a výdavkov — sumy môžu byť aj " +
-          "približné alebo vymyslené, ide len o nácvik. Potom skúste sformulovať " +
-          "otázku pre AI, presne ako v ukážke v brožúrke: „Spočítaj moje príjmy a " +
-          "výdavky. Je môj rozpočet vyrovnaný? Ktoré výdavky by som mohol znížiť?“",
-        incomeLabels: ["Dôchodok", "Iný príjem (brigáda, prenájom…)"],
-        expenseLabels: [
-          "Bývanie (nájom, energie, voda)",
-          "Potraviny a drogéria",
-          "Lieky a zdravie",
-          "Telefón, televízia, internet",
-          "Doprava",
-          "Ostatné (darčeky, koníčky…)",
-        ],
-      },
-      {
-        id: "lov-na-podvody",
-        type: "spot-the-scam",
-        title: "Cvičenie B · Lov na podvody",
-        prompt:
-          "Prečítajte si tri správy nižšie. Skúste sami rozhodnúť, či ide o podvod " +
-          "a prečo — potom kliknutím zobrazte riešenie.",
-        messages: [
-          {
-            label: "Správa č. 1 – SMS",
-            text: "„Slovenska posta: Vas balik #SK29174 caka na dorucenie. Uhradte colny poplatok 2,10 EUR: http://sk-posta.delivery-pay.com“",
-            answer: "Podvod (smishing) — podozrivá, neoficiálna adresa odkazu a malá „súrna“ platba, ktorá má uspať pozornosť.",
-          },
-          {
-            label: "Správa č. 2 – e-mail",
-            text: "„Vážený zákazník, Vaša platba za elektrinu neprešla. Aby sme predišli odpojeniu do 48 hodín, aktualizujte platobné údaje: kliknite TU. Váš dodávateľ energie.“",
-            answer: "Podvod (phishing) — vyvoláva strach z odpojenia a tlačí na rýchle kliknutie na odkaz.",
-          },
-          {
-            label: "Správa č. 3 – WhatsApp",
-            text: "„Ahoj mami, pokazil sa mi telefón, píšem z nového čísla. Súrne potrebujem zaplatiť faktúru, pošleš mi 380 € na tento účet? Neskôr ti vrátim. Nevolaj, nefunguje mi mikrofón.“",
-            answer: "Podvod („nové číslo“) — zámerne bráni telefonickému overeniu, na ktoré by ste inak siahli ako prví.",
-          },
-        ],
-      },
-    ],
     quiz: {
       passScore: 14,
       questions: [
@@ -99,13 +53,6 @@ window.WORKSHOPS = {
       "užitočná — od písania listov po hľadanie receptov.",
     youtubeId: "PLACEHOLDER_VIDEO_ID_2",
     brochureUrl: "assets/brozurky/zaciname-s-ai.pdf",
-    exercises: [
-      {
-        id: "prvy-prompt",
-        title: "Napíš svoju prvú otázku pre AI asistenta",
-        prompt: "Skús sformulovať jednoduchú otázku, ktorú by si položil(a) AI asistentovi.",
-      },
-    ],
     quiz: {
       passScore: 14,
       questions: [
