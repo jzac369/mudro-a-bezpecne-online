@@ -15,6 +15,8 @@
 <script defer src="assets/course-schema.js"></script>
 <script defer src="assets/course.js"></script>
 <script defer src="assets/app.js"></script>
+<script defer src="assets/pdf-export.js"></script>
+<script defer src="assets/certificate.js"></script>
 <script defer src="assets/flipbook.js"></script>
 <script defer src="assets/chat-widget.js"></script>
 <style>
@@ -175,7 +177,8 @@
       </div>
       <img id="cert-preview" class="cert-preview" alt="Náhľad certifikátu o absolvovaní">
       <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
-        <a class="btn btn-primary" id="cert-download" download="certifikat.png" style="text-decoration:none;display:inline-block;">Stiahnuť certifikát (PNG)</a>
+        <button class="btn btn-primary" type="button" id="cert-pdf-btn">Stiahnuť certifikát (PDF)</button>
+        <a class="btn btn-secondary" id="cert-download" download="certifikat.png" style="text-decoration:none;display:inline-block;">Stiahnuť ako obrázok (PNG)</a>
         <button class="btn btn-secondary" type="button" id="cert-print-btn">Vytlačiť certifikát</button>
       </div>
       <p class="hint" style="margin-top:1.2rem;">Chcete si niečo prebrať osobne? <a href="konzultacia.html">Dohodnite si konzultáciu s lektorom</a>.</p>
@@ -392,156 +395,18 @@ function renderBudgetExercise(ex) {
     wireScamHuntExercise();
   }
 
-  function loadImage(url) {
-    return new Promise((resolve) => {
-      if (!url) { resolve(null); return; }
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
-      img.src = url;
-    });
-  }
 
-  function blob(ctx, x, y, r, color) {
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, color);
-    g.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
 
-  async function drawCertificate(participantName) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1200;
-    canvas.height = 848;
-    const ctx = canvas.getContext("2d");
-    const W = canvas.width, H = canvas.height;
 
-    // Krémové pozadie + jemné farebné škvrny v rohoch (podľa vzoru certifikátu)
-    ctx.fillStyle = "#faf3e6";
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.55;
-    blob(ctx, 60, 40, 220, "#e7c98f");
-    blob(ctx, 40, 260, 180, "#8fae8f");
-    blob(ctx, W - 60, H - 60, 240, "#8fae8f");
-    blob(ctx, W - 100, H - 280, 170, "#e0a98f");
-    ctx.globalAlpha = 1;
 
-    ctx.textAlign = "center";
-
-    ctx.font = "700 15px 'Atkinson Hyperlegible', sans-serif";
-    ctx.fillStyle = "#c17a2e";
-    ctx.save();
-    ctx.textAlign = "left";
-    ctx.font = "700 14px 'Atkinson Hyperlegible', sans-serif";
-    ctx.fillText("M Ú D R O   A   B E Z P E Č N E   O N L I N E", 90, 90);
-    ctx.restore();
-
-    ctx.font = "700 64px Georgia, 'Times New Roman', serif";
-    ctx.fillStyle = "#1f3a3d";
-    ctx.fillText("Certifikát", W / 2, 250);
-
-    ctx.font = "italic 26px Georgia, serif";
-    ctx.fillStyle = "#5c5749";
-    ctx.fillText("o úspešnom absolvovaní kurzu", W / 2, 300);
-
-    ctx.strokeStyle = "#c17a2e";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(W / 2 - 160, 360);
-    ctx.lineTo(W / 2 + 160, 360);
-    ctx.stroke();
-
-    ctx.font = "20px 'Atkinson Hyperlegible', sans-serif";
-    ctx.fillStyle = "#332f28";
-    wrapText(ctx, "Tento certifikát vystavuje Múdro a Bezpečne Online za úspešné absolvovanie", W / 2, 410, 820, 28);
-    wrapText(ctx, "vzdelávacieho kurzu, ktorý absolvoval(a):", W / 2, 438, 820, 28);
-
-    ctx.font = "700 40px Georgia, serif";
-    ctx.fillStyle = "#c17a2e";
-    ctx.fillText(participantName, W / 2, 505);
-
-    // Zvýraznený rámček s názvom workshopu
-    ctx.fillStyle = "rgba(143,174,143,0.18)";
-    roundRect(ctx, W / 2 - 400, 540, 800, 95, 14);
-    ctx.fill();
-    ctx.font = "700 26px Georgia, serif";
-    ctx.fillStyle = "#1f3a3d";
-    wrapText(ctx, state.workshop.title, W / 2, 585, 740, 32);
-    ctx.font = "20px Georgia, serif";
-    ctx.fillStyle = "#5c5749";
-    ctx.fillText(state.workshop.subtitle || "", W / 2, 618);
-
-    // Pätička: dátum + podpis lektora
-    const dateStr = new Date().toLocaleDateString("sk-SK", { year: "numeric", month: "long", day: "numeric" });
-    const sigImg = await loadImage(state.workshop.lecturerSignatureUrl);
-
-    ctx.textAlign = "center";
-    const colLeftX = W / 2 - 220, colRightX = W / 2 + 220;
-
-    if (sigImg) {
-      const sigW = 160, sigH = (sigImg.height / sigImg.width) * sigW;
-      ctx.drawImage(sigImg, colRightX - sigW / 2, 690 - sigH, sigW, sigH);
-    } else {
-      ctx.font = "italic 26px Georgia, serif";
-      ctx.fillStyle = "#1f3a3d";
-      ctx.fillText("Lektor", colRightX, 685);
-    }
-    ctx.font = "700 22px Georgia, serif";
-    ctx.fillStyle = "#1f3a3d";
-    ctx.fillText(dateStr, colLeftX, 685);
-
-    ctx.strokeStyle = "#c9c0a8";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(colLeftX - 130, 705); ctx.lineTo(colLeftX + 130, 705);
-    ctx.moveTo(colRightX - 130, 705); ctx.lineTo(colRightX + 130, 705);
-    ctx.stroke();
-
-    ctx.font = "700 12px 'Atkinson Hyperlegible', sans-serif";
-    ctx.fillStyle = "#5c5749";
-    ctx.fillText("D Á T U M", colLeftX, 728);
-    ctx.fillText("L E K T O R", colRightX, 728);
-
-    ctx.font = "12px 'Atkinson Hyperlegible', sans-serif";
-    ctx.fillStyle = "#8a8474";
-    ctx.textAlign = "left";
-    ctx.fillText("mudroabezpecne.sk", 90, H - 50);
-
-    return canvas.toDataURL("image/png");
-  }
-
-  function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  function wrapText(ctx, text, cx, y, maxWidth, lineHeight) {
-    const words = text.split(" ");
-    let line = "", lines = [];
-    words.forEach((w) => {
-      const test = line ? line + " " + w : w;
-      if (ctx.measureText(test).width > maxWidth && line) {
-        lines.push(line);
-        line = w;
-      } else {
-        line = test;
-      }
-    });
-    if (line) lines.push(line);
-    lines.forEach((l, i) => ctx.fillText(l, cx, y + i * lineHeight));
-  }
 
   async function showCertificate(participantName) {
-    const dataUrl = await drawCertificate(participantName);
+    const dataUrl = await window.drawCertificate({
+      participantName: participantName,
+      workshopTitle: state.workshop.title,
+      workshopSubtitle: state.workshop.subtitle,
+      signatureUrl: state.workshop.lecturerSignatureUrl,
+    });
     document.getElementById("cert-preview").src = dataUrl;
     document.getElementById("cert-download").href = dataUrl;
     document.getElementById("cert-area").style.display = "block";
@@ -929,11 +794,44 @@ function renderBudgetExercise(ex) {
         markStepDone("brozurka");
         setActiveStep("kviz");
       });
+      document.getElementById("cert-pdf-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("cert-pdf-btn");
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Pripravujem PDF…";
+        try {
+          const src = document.getElementById("cert-preview").src;
+          // Certifikát je na šírku, preto stranu otočíme.
+          await window.savePdfFromImage(src, { filename: "certifikat.pdf", orientation: "landscape" });
+        } catch (err) {
+          console.error("PDF sa nepodarilo vytvoriť:", err);
+          alert("PDF sa nepodarilo vytvoriť. Skúste to prosím znova, alebo si certifikát stiahnite ako obrázok.");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      });
+
       document.getElementById("cert-print-btn").addEventListener("click", () => {
         const src = document.getElementById("cert-preview").src;
         const w = window.open("", "_blank");
-        if (!w) return;
-        w.document.write("<!doctype html><html><head><title>Certifikát</title></head><body style='margin:0;'><img src='" + src + "' style='width:100%;' onload='window.print()'></body></html>");
+        if (!w) {
+          alert("Prehliadač zablokoval otvorenie okna na tlač. Povoľte prosím vyskakovacie okná a skúste to znova, alebo si certifikát stiahnite tlačidlom vedľa.");
+          return;
+        }
+        // Certifikát je na šírku — stranu preto otočíme, aby sa vytlačil
+        // cez celý papier a nezostali okolo neho veľké biele okraje.
+        w.document.write(
+          "<!doctype html><html lang='sk'><head><meta charset='utf-8'><title>Certifikát</title>" +
+          "<style>" +
+          "@page { size: A4 landscape; margin: 8mm; }" +
+          "html,body { margin:0; padding:0; }" +
+          "img { display:block; width:100%; height:auto; }" +
+          "@media print { img { width:100%; height:auto; } }" +
+          "</style></head><body>" +
+          "<img src='" + src + "' alt='Certifikát' onload='window.focus();window.print();'>" +
+          "</body></html>"
+        );
         w.document.close();
       });
       document.getElementById("logout-btn").addEventListener("click", () => doLogout("manual"));
