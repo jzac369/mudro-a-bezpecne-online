@@ -223,6 +223,64 @@
     return f;
   }
 
+  // ---------- Zadanie úlohy — vždy viditeľné, vždy rovnaké miesto ----------
+
+  function taskBox(card, text) {
+    if (!text) return;
+    card.appendChild(el("div", "course-task",
+      "<span class='course-task-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M9 11l3 3 8-8'/><path d='M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9'/></svg></span>" +
+      "<div><span class='course-task-label'>Vaša úloha</span><p>" + text + "</p></div>"));
+  }
+
+  // ---------- Živá spätná väzba — vysvetlí, čo bolo dobre a čo nie ----------
+  // Vytvorí jedno miesto pod cvičením, kam sa vypisuje reakcia na poslednú
+  // odpoveď. Senior tak vždy vie, prečo bola odpoveď správna či nesprávna.
+
+  function createFeedbackArea(card) {
+    const area = el("div", "course-live-feedback");
+    card.appendChild(area);
+    return {
+      el: area,
+      show: function (ok, title, text) {
+        area.innerHTML =
+          "<div class='course-live-feedback-inner " + (ok ? "ok" : "warn") + "'>" +
+          "<span class='course-live-feedback-icon'>" + (ok ? OPT_ICON_GOOD : OPT_ICON_BAD) + "</span>" +
+          "<div><strong>" + title + "</strong>" + (text ? "<p>" + text + "</p>" : "") + "</div></div>";
+        area.classList.add("show");
+      },
+      hint: function (title, text) {
+        area.innerHTML =
+          "<div class='course-live-feedback-inner info'>" +
+          "<span class='course-live-feedback-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 8h.01M11 12h1v4h1'/></svg></span>" +
+          "<div><strong>" + title + "</strong>" + (text ? "<p>" + text + "</p>" : "") + "</div></div>";
+        area.classList.add("show");
+      },
+      clear: function () {
+        area.innerHTML = "";
+        area.classList.remove("show");
+      },
+    };
+  }
+
+  // Ukazovateľ postupu v rámci jedného cvičenia (napr. „Spojené 2 zo 4“).
+  function createProgressCounter(card, total, labelFn) {
+    const wrap = el("div", "course-exercise-progress");
+    const bar = el("div", "course-exercise-progress-bar");
+    const fill = el("div", "course-exercise-progress-fill");
+    bar.appendChild(fill);
+    const label = el("span", "course-exercise-progress-label");
+    wrap.appendChild(label);
+    wrap.appendChild(bar);
+    card.appendChild(wrap);
+    function set(done) {
+      fill.style.width = Math.round((done / total) * 100) + "%";
+      label.innerHTML = labelFn(done, total);
+      wrap.classList.toggle("complete", done >= total);
+    }
+    set(0);
+    return { set: set, el: wrap };
+  }
+
   function evidenceFigure(card, evidenceImage) {
     if (!evidenceImage) return;
     const fig = el("figure", "course-evidence");
@@ -267,6 +325,7 @@
     }
     header(card, slide);
     card.appendChild(el("p", null, slide.body));
+    taskBox(card, slide.task);
     const map = el("div", "course-intro-parts");
     window.COURSE_PARTS.forEach((p, i) => {
       map.appendChild(el("div", "course-intro-part", "<span>" + (i + 1) + "</span>" + p.label));
@@ -276,6 +335,7 @@
 
   RENDERERS.tiles = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     const grid = el("div", "course-tiles");
     const opened = new Set();
     slide.tiles.forEach((t, i) => {
@@ -285,19 +345,26 @@
         tile.classList.add("open");
         tile.innerHTML = "<h3>" + t.title + "</h3><p>" + t.text + "</p>";
         opened.add(i);
-        counter.textContent = opened.size >= slide.minOpened
-          ? "Skvelé, prezreli ste si dostatok kapitol."
-          : "Otvorené " + opened.size + " z " + slide.minOpened + " potrebných.";
+        progress.set(Math.min(opened.size, slide.minOpened));
+        if (opened.size >= slide.minOpened) {
+          fb.show(true, "Skvelé, prezreli ste si dostatok kapitol.",
+            "Pokojne si otvorte aj zvyšné — alebo pokračujte tlačidlom „Ď alej“ dole.");
+        } else {
+          fb.hint("Otvorili ste „" + t.title + "“.", t.text);
+        }
       });
       grid.appendChild(tile);
     });
     card.appendChild(grid);
-    const counter = el("p", "course-hint", "Otvorené 0 z " + slide.minOpened + " potrebných.");
-    card.appendChild(counter);
+    const progress = createProgressCounter(card, slide.minOpened, (done, all) =>
+      done >= all ? "Hotovo — prezreli ste si " + all + " kapitoly." : "Otvorené <strong>" + done + "</strong> z " + all + " potrebných");
+    const fb = createFeedbackArea(card);
   };
 
   RENDERERS.flip = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
+    const flipped = new Set();
     const grid = el("div", "course-flip-grid");
     slide.cards.forEach((c) => {
       const outer = el("div", "course-flip");
@@ -305,10 +372,23 @@
       inner.appendChild(el("div", "course-flip-face course-flip-front", "<h3>" + c.front + "</h3><span class='course-flip-hint'>Kliknite</span>"));
       inner.appendChild(el("div", "course-flip-face course-flip-back", "<p>" + c.back + "</p>"));
       outer.appendChild(inner);
-      outer.addEventListener("click", () => outer.classList.toggle("flipped"));
+      outer.addEventListener("click", () => {
+        outer.classList.toggle("flipped");
+        if (outer.classList.contains("flipped") && !flipped.has(c)) {
+          flipped.add(c);
+          progress.set(flipped.size);
+          if (flipped.size >= slide.cards.length) {
+            fb.show(true, "Prezreli ste si všetky karty.",
+              "Teraz už viete, čo od umelej inteligencie čakať — aj kde sú jej hranice.");
+          }
+        }
+      });
       grid.appendChild(outer);
     });
     card.appendChild(grid);
+    const progress = createProgressCounter(card, slide.cards.length, (done, all) =>
+      done >= all ? "Hotovo — otočili ste všetky " + all + " karty." : "Otočené <strong>" + done + "</strong> z " + all);
+    const fb = createFeedbackArea(card);
   };
 
   const BASKET_ICONS = {
@@ -344,6 +424,7 @@
 
   RENDERERS.sort = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     const tip = tipCallout(slide.tip);
     if (tip) card.appendChild(tip);
 
@@ -374,11 +455,14 @@
     });
 
     let selected = null;
-    let remaining = items.length;
-    const status = el("p", "course-hint course-hint-pill", "Zostáva umiestniť: <strong>" + remaining + "</strong>");
+    let placed = 0;
+    let mistakes = 0;
+    const total = items.length;
+    const itemByEl = new Map();
 
     function place(cardEl, basketId) {
       const correct = cardEl.dataset.basket === basketId;
+      const data = itemByEl.get(cardEl) || {};
       cardEl.classList.remove("selected");
       cardEl.draggable = false;
       cardEl.style.position = "";
@@ -388,14 +472,24 @@
       cardEl.style.zIndex = "";
       baskets[basketId].appendChild(cardEl);
       cardEl.classList.add(correct ? "placed-ok" : "placed-bad");
-      if (!correct) {
-        const correctLabel = (slide.baskets.find((b) => b.id === cardEl.dataset.basket) || {}).label;
-        cardEl.title = "Správne miesto: " + correctLabel;
+
+      const correctBasket = slide.baskets.find((b) => b.id === cardEl.dataset.basket) || {};
+      if (!correct) cardEl.title = "Správne miesto: " + correctBasket.label;
+
+      // Vysvetlíme každý ťah — aj správny, aj nesprávny.
+      if (correct) {
+        fb.show(true, "Správne — „" + data.text + "“ patrí sem.",
+          data.why || "Presne tak, toto patrí do „" + correctBasket.label + "“.");
+      } else {
+        mistakes++;
+        fb.show(false, "Toto patrí inam — správne miesto je „" + correctBasket.label + "“.",
+          data.why || "Kartička je teraz označená červeno, aby ste si všimli, kam v skutočnosti patrí.");
       }
+
       if (!cardEl.dataset.counted) {
         cardEl.dataset.counted = "1";
-        remaining--;
-        status.innerHTML = remaining > 0 ? "Zostáva umiestniť: <strong>" + remaining + "</strong>" : "Hotovo — skontrolujte si červeno označené kartičky.";
+        placed++;
+        progress.set(placed);
       }
     }
 
@@ -403,17 +497,21 @@
       const it = el("div", "course-item", "<span class='course-item-num'>" + (i + 1) + "</span><span>" + item.text + "</span>");
       it.dataset.basket = item.basket;
       it.tabIndex = 0;
+      itemByEl.set(it, item);
 
       it.addEventListener("click", () => {
         if (it.classList.contains("placed-ok") || it.classList.contains("placed-bad")) return;
         if (selected === it) {
           it.classList.remove("selected");
           selected = null;
+          fb.clear();
           return;
         }
         if (selected) selected.classList.remove("selected");
         selected = it;
         it.classList.add("selected");
+        fb.hint("Kartička „" + item.text + "“ je vybraná.",
+          "Teraz kliknite na políčko dole, do ktorého podľa vás patrí.");
       });
 
       it.addEventListener("pointerdown", (e) => {
@@ -481,12 +579,23 @@
 
     mainCol.appendChild(pool);
     mainCol.appendChild(basketsWrap);
-    mainCol.appendChild(status);
+
+    const progress = createProgressCounter(mainCol, total, (done, all) =>
+      done >= all
+        ? (mistakes === 0
+            ? "Hotovo — všetkých " + all + " kartičiek ste zaradili správne!"
+            : "Hotovo — " + (all - mistakes) + " z " + all + " správne. Červené kartičky sú v nesprávnom políčku, pozrite si ich.")
+        : "Umiestnené <strong>" + done + "</strong> z " + all);
+    const fb = createFeedbackArea(mainCol);
+    fb.hint("Ako na to?", "Kliknite na kartičku hore a potom na políčko dole, kam podľa vás patrí. Kartičku môžete aj chytiť a presunúť prstom alebo myšou.");
+
     note(mainCol, slide.note);
   };
 
   RENDERERS.match = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
+    if (slide.tip) card.appendChild(tipCallout(slide.tip));
     const wrap = el("div", "course-match");
     const linesSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     linesSvg.setAttribute("class", "course-match-lines");
@@ -497,7 +606,7 @@
 
     let selLeft = null, selRight = null;
     let solved = 0;
-    const status = el("p", "course-hint", "Spojené: 0 z " + slide.pairs.length);
+    let mistakes = 0;
 
     function drawLine(leftEl, rightEl) {
       const wrapRect = wrap.getBoundingClientRect();
@@ -522,6 +631,10 @@
         if (selLeft) selLeft.classList.remove("selected");
         selLeft = e2;
         e2.classList.add("selected");
+        if (!selRight) {
+          fb.hint("Vybrali ste „" + p.left + "“.",
+            "Teraz kliknite vpravo na políčko, ktoré k tomu podľa vás patrí.");
+        }
         tryMatch();
       });
       leftCol.appendChild(e2);
@@ -536,6 +649,10 @@
         if (selRight) selRight.classList.remove("selected");
         selRight = e2;
         e2.classList.add("selected");
+        if (!selLeft) {
+          fb.hint("Vybrali ste vysvetlenie vpravo.",
+            "Teraz kliknite vľavo na pojem alebo situáciu, ku ktorej patrí.");
+        }
         tryMatch();
       });
       rightCol.appendChild(e2);
@@ -544,6 +661,7 @@
 
     function tryMatch() {
       if (!selLeft || !selRight) return;
+      const pair = slide.pairs[Number(selLeft.dataset.i)];
       if (selLeft.dataset.i === selRight.dataset.i) {
         selLeft.classList.remove("selected");
         selRight.classList.remove("selected");
@@ -551,13 +669,17 @@
         selRight.classList.add("solved");
         drawLine(selLeft, selRight);
         solved++;
-        status.textContent = solved >= slide.pairs.length
-          ? "Výborne, všetko je spojené!"
-          : "Spojené: " + solved + " z " + slide.pairs.length;
+        fb.show(true, "Správne spojenie!",
+          pair.why || "„" + pair.left + "“ naozaj patrí k tomuto vysvetleniu.");
+        progress.set(solved);
         selLeft = null; selRight = null;
       } else {
+        mistakes++;
+        const wrongPair = slide.pairs[Number(selRight.dataset.i)];
         selLeft.classList.add("shake");
         selRight.classList.add("shake");
+        fb.show(false, "Táto dvojica k sebe nepatrí.",
+          "Vysvetlenie, ktoré ste vybrali, patrí k „" + wrongPair.left + "“. Skúste k „" + pair.left + "“ nájsť iné.");
         setTimeout(() => {
           if (selLeft) selLeft.classList.remove("selected", "shake");
           if (selRight) selRight.classList.remove("selected", "shake");
@@ -569,17 +691,27 @@
     wrap.appendChild(leftCol);
     wrap.appendChild(rightCol);
     card.appendChild(wrap);
-    card.appendChild(status);
+
+    const progress = createProgressCounter(card, slide.pairs.length, (done, all) =>
+      done >= all
+        ? (mistakes === 0
+            ? "Výborne — všetky dvojice ste spojili správne na prvý pokus!"
+            : "Hotovo — všetky dvojice sú spojené správne.")
+        : "Spojené <strong>" + done + "</strong> z " + all);
+    const fb = createFeedbackArea(card);
+    fb.hint("Ako na to?", "Kliknite najprv na políčko vľavo a potom na to vpravo, ktoré k nemu patrí. Ak sa dvojica trafí, spojí ich čiara.");
+
     note(card, slide.note);
     galleryBlock(card, slide.gallery);
   };
 
   RENDERERS.sequence = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     const list = el("div", "course-sequence");
     const shuffled = shuffle(slide.steps.map((s, i) => ({ text: s, i })));
     let nextExpected = 0;
-    const status = el("p", "course-hint", "Kliknite na krok číslo 1.");
+    let mistakes = 0;
 
     shuffled.forEach((s) => {
       const item = el("button", "course-seq-item",
@@ -592,11 +724,20 @@
           item.classList.add("done");
           numEl.textContent = nextExpected + 1;
           nextExpected++;
-          status.textContent = nextExpected >= slide.steps.length
-            ? "Presne v tomto poradí — výborne!"
-            : "Teraz kliknite na krok číslo " + (nextExpected + 1) + ".";
+          progress.set(nextExpected);
+          if (nextExpected >= slide.steps.length) {
+            fb.show(true, "Výborne — celý postup máte v správnom poradí!",
+              slide.doneText || "Presne takto to bude vyzerať, keď si ChatGPT otvoríte doma.");
+          } else {
+            fb.show(true, "Správne, toto je krok č. " + nextExpected + ".",
+              "Teraz nájdite krok, ktorý nasleduje ako " + (nextExpected + 1) + ". v poradí.");
+          }
         } else {
+          mistakes++;
           item.classList.add("shake");
+          const expectedText = slide.steps[nextExpected];
+          fb.show(false, "Tento krok ešte nie je na rade.",
+            "Najprv treba urobiť toto: „" + expectedText + "“ Až potom príde na rad krok, ktorý ste vybrali.");
           setTimeout(() => item.classList.remove("shake"), 400);
         }
       });
@@ -604,12 +745,18 @@
     });
 
     card.appendChild(list);
-    card.appendChild(status);
+
+    const progress = createProgressCounter(card, slide.steps.length, (done, all) =>
+      done >= all ? "Hotovo — všetkých " + all + " krokov v správnom poradí." : "Zoradené <strong>" + done + "</strong> z " + all);
+    const fb = createFeedbackArea(card);
+    fb.hint("Ako na to?", "Kroky sú zámerne pomiešané. Klikajte na ne v poradí, v akom by ste ich robili — začnite tým, čo urobíte úplne ako prvé.");
+
     note(card, slide.note);
   };
 
   RENDERERS.hotspot = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     const hasPhoto = !!slide.evidenceImage;
     const screen = el("div", "course-hotspot-screen" + (hasPhoto ? " has-photo" : ""));
     if (hasPhoto) {
@@ -660,6 +807,7 @@
 
   RENDERERS.choice = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     if (slide.intro) card.appendChild(tipCallout(slide.intro));
     slide.rounds.forEach((r, idx) => {
       const box = el("div", "course-choice-round");
@@ -698,6 +846,7 @@
 
   RENDERERS.belief = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     if (slide.tip) card.appendChild(tipCallout(slide.tip));
     slide.items.forEach((it, idx) => {
       const box = el("div", "course-belief-item");
@@ -731,6 +880,8 @@
 
   RENDERERS.reveal = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
+    const openedCells = new Set();
     const grid = el("div", "course-reveal course-reveal-" + slide.layout);
     slide.cells.forEach((c, i) => {
       const cell = el("div", "course-reveal-cell");
@@ -738,33 +889,63 @@
       btn.type = "button";
       const content = el("div", "course-reveal-content", "<h4>" + c.title + "</h4><p>" + c.text + "</p>");
       btn.addEventListener("click", () => {
+        if (cell.classList.contains("open")) return;
         cell.classList.add("open");
+        openedCells.add(i);
+        progress.set(openedCells.size);
+        if (openedCells.size >= slide.cells.length) {
+          fb.show(true, "Odkryli ste všetko.", slide.doneText || "Toto sú pravidlá, ktoré vám pomôžu overiť si akúkoľvek informáciu.");
+        } else {
+          fb.hint(c.title, c.text);
+        }
       });
       cell.appendChild(btn);
       cell.appendChild(content);
       grid.appendChild(cell);
     });
     card.appendChild(grid);
+    const progress = createProgressCounter(card, slide.cells.length, (done, all) =>
+      done >= all ? "Hotovo — odkryli ste všetky kľúče." : "Odkryté <strong>" + done + "</strong> z " + all);
+    const fb = createFeedbackArea(card);
     note(card, slide.note);
     evidenceFigure(card, slide.evidenceImage);
   };
 
   RENDERERS.revealgrid = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
+    const openedCells = new Set();
     const grid = el("div", "course-revealgrid");
     slide.cells.forEach((c, i) => {
       const cell = el("div", "course-revealgrid-cell");
       cell.appendChild(el("div", "course-revealgrid-num", String(i + 1)));
       const content = el("div", "course-revealgrid-content", "<h4>" + c.title + "</h4><p>" + c.text + "</p>");
       cell.appendChild(content);
-      cell.addEventListener("click", () => cell.classList.toggle("open"));
+      cell.addEventListener("click", () => {
+        cell.classList.toggle("open");
+        if (cell.classList.contains("open") && !openedCells.has(i)) {
+          openedCells.add(i);
+          progress.set(openedCells.size);
+          if (openedCells.size >= slide.cells.length) {
+            fb.show(true, "Prezreli ste si všetky znaky.",
+              "Nemusíte si ich pamätať naspamäť — stačí, aby vám napadli, keď príde podozrivá správa.");
+          } else {
+            fb.hint(c.title, c.text);
+          }
+        }
+      });
       grid.appendChild(cell);
     });
     card.appendChild(grid);
+    const progress = createProgressCounter(card, slide.cells.length, (done, all) =>
+      done >= all ? "Hotovo — prezreli ste si všetkých " + all + " znakov." : "Prezreté <strong>" + done + "</strong> z " + all);
+    const fb = createFeedbackArea(card);
+    note(card, slide.note);
   };
 
   RENDERERS.quickfire = function (slide, card, course) {
     header(card, slide);
+    taskBox(card, slide.task);
 
     const layout = el("div", "course-quickfire-layout");
     const sidebar = el("div", "course-quickfire-sidebar");
@@ -868,6 +1049,7 @@
 
   RENDERERS.spot = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task || ("Nájdite " + slide.clues.length + " varovných znakov. V správe nižšie sú <strong>oranžovo podčiarknuté</strong> — kliknite postupne na každý z nich a my vám vysvetlíme, prečo je podozrivý."));
     const medium = slide.medium || "email";
 
     const mock = el("div", "phone-mock");
@@ -894,14 +1076,23 @@
       if (m) {
         const idx = clueIndex++;
         const span = el("span", "course-clue", m[1]);
+        span.title = "Kliknutím zistíte, prečo je táto časť podozrivá";
         span.addEventListener("click", () => {
           if (foundSet.has(idx)) return;
           foundSet.add(idx);
           span.classList.add("found");
-          status.textContent = foundSet.size >= slide.clues.length
-            ? "Našli ste všetky varovné znaky!"
-            : "Nájdených: " + foundSet.size + " z " + slide.clues.length;
-          list.children[idx].classList.add("revealed");
+          progress.set(foundSet.size);
+          const clueText = slide.clues[idx] || "";
+          if (foundSet.size >= slide.clues.length) {
+            fb.show(true, "Našli ste všetky varovné znaky!", clueText);
+          } else {
+            fb.show(true, "Správne — toto je varovný znak č. " + foundSet.size + ".", clueText);
+          }
+          const row = list.children[idx];
+          if (row) {
+            row.classList.add("revealed");
+            row.querySelector(".clue-list-num").innerHTML = OPT_ICON_GOOD;
+          }
         });
         body.appendChild(span);
       } else {
@@ -913,16 +1104,20 @@
     mock.appendChild(shell);
     card.appendChild(mock);
 
-    const status = el("p", "course-hint", "Klikajte na podčiarknuté časti textu — nájdených: 0 z " + slide.clues.length);
-    card.appendChild(status);
+    const progress = createProgressCounter(card, slide.clues.length, (done, all) =>
+      done >= all ? "Hotovo — odhalili ste všetkých " + all + " varovných znakov." : "Nájdené <strong>" + done + "</strong> z " + all);
+    const fb = createFeedbackArea(card);
+    fb.hint("Ako na to?", "V správe vyššie sú podozrivé časti podčiarknuté oranžovou. Kliknite na každú z nich — hneď vám vysvetlíme, prečo je varovným znakom.");
+
+    card.appendChild(el("p", "course-clue-list-title", "Varovné znaky v tejto správe"));
     const list = el("div", "course-clue-list");
-    slide.clues.forEach((c) => {
+    slide.clues.forEach((c, i) => {
       const item = el("div", "clue-list-item",
-        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 9v4M12 17h.01'/><circle cx='12' cy='12' r='9'/></svg><span>" + c + "</span>");
+        "<span class='clue-list-num'>" + (i + 1) + "</span><span>" + c + "</span>");
       list.appendChild(item);
     });
     card.appendChild(list);
-    if (slide.footer) card.appendChild(el("p", "course-hint", slide.footer));
+    if (slide.footer) card.appendChild(el("div", "course-note", "<strong>Čo s tým:</strong> " + slide.footer));
     evidenceFigure(card, slide.evidenceImage);
   };
 
@@ -968,6 +1163,7 @@
 
   RENDERERS.story = function (slide, card, course) {
     header(card, slide);
+    taskBox(card, slide.task);
     const medium = slide.medium;
 
     if (medium === "call") {
@@ -1082,40 +1278,74 @@
     showRinging();
   }
 
+  // Posúdenie rizika — namiesto ťahania jazdca (pre seniorov ťažké na ovládanie)
+  // ponúkame tri veľké tlačidlá a ku každej voľbe vysvetlíme, prečo je správna.
   RENDERERS.slider = function (slide, card) {
     header(card, slide);
-    const quote = el("blockquote", "course-quote", slide.lead);
-    card.appendChild(quote);
-    card.appendChild(el("p", null, "<strong>" + slide.sliderQuestion + "</strong>"));
-    const track = el("div", "course-slider");
-    track.innerHTML =
-      "<div class='course-slider-track'><div class='course-slider-fill'></div></div>" +
-      "<div class='course-slider-labels'><span>Bezpečné</span><span>Veľmi rizikové</span></div>";
-    const input = el("input", "course-slider-input");
-    input.type = "range"; input.min = "0"; input.max = "100"; input.value = "50";
-    input.addEventListener("input", () => {
-      track.querySelector(".course-slider-fill").style.width = input.value + "%";
-    });
-    track.appendChild(input);
-    card.appendChild(track);
-    card.appendChild(el("p", "course-hint", slide.sliderHint));
+    taskBox(card, slide.task);
 
+    const adBox = el("div", "course-scam-ad");
+    adBox.appendChild(el("span", "course-scam-ad-label",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='3' y='4' width='18' height='16' rx='2'/><path d='M7 9h10M7 13h6'/></svg>Reklama, ktorá vám prišla"));
+    adBox.appendChild(el("blockquote", "course-scam-ad-text", slide.adText || slide.lead));
+    card.appendChild(adBox);
+
+    card.appendChild(el("p", "course-risk-question", slide.sliderQuestion));
+
+    const optsWrap = el("div", "course-risk-opts");
+    const levels = slide.riskLevels || [];
+    const buttons = [];
+    levels.forEach((lv) => {
+      const btn = el("button", "course-risk-opt tone-" + lv.tone,
+        "<span class='course-risk-opt-dot'></span><span class='course-risk-opt-label'>" + lv.label + "</span>");
+      btn.type = "button";
+      btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        buttons.forEach((b) => (b.disabled = true));
+        const ok = !!lv.correct;
+        buttons.forEach((b) => b.classList.remove("chosen"));
+        btn.classList.add("chosen", ok ? "correct" : "incorrect");
+        if (!ok) {
+          const right = buttons[levels.findIndex((x) => x.correct)];
+          if (right) right.classList.add("correct", "is-answer");
+        }
+        fb.show(ok, ok ? "Presne tak." : "Pozor — riziko je oveľa vyššie.", lv.why);
+        checklistWrap.classList.add("show");
+      });
+      buttons.push(btn);
+      optsWrap.appendChild(btn);
+    });
+    card.appendChild(optsWrap);
+
+    const fb = createFeedbackArea(card);
+    fb.hint("Ako na to?", "Prečítajte si ponuku vyššie a kliknite na jedno z troch tlačidiel — ako rizikovo na vás pôsobí. Potom vám vysvetlíme, prečo.");
+
+    const checklistWrap = el("div", "course-checklist-wrap");
+    checklistWrap.appendChild(el("p", "course-checklist-title",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M9 11l3 3 8-8'/><path d='M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9'/></svg>" +
+      "Tri otázky, ktoré si položte pri každej investičnej ponuke"));
     const checklist = el("div", "course-checklist");
-    slide.checklist.forEach((q) => {
+    slide.checklist.forEach((q, i) => {
       const row = el("label", "course-checklist-row");
       const cb = el("input"); cb.type = "checkbox";
       row.appendChild(cb);
-      row.appendChild(document.createTextNode(" " + q));
+      row.appendChild(el("span", "course-checklist-num", String(i + 1)));
+      row.appendChild(el("span", null, q));
       checklist.appendChild(row);
     });
-    card.appendChild(el("p", null, "<strong>Skôr než investujete, opýtajte sa:</strong>"));
-    card.appendChild(checklist);
+    checklistWrap.appendChild(checklist);
+    if (slide.checklistNote) {
+      checklistWrap.appendChild(el("p", "course-checklist-note", slide.checklistNote));
+    }
+    card.appendChild(checklistWrap);
+
     note(card, slide.note);
     evidenceFigure(card, slide.evidenceImage);
   };
 
   RENDERERS.guess = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     let round = 0;
     const roundBox = el("div", "course-guess-round");
     card.appendChild(roundBox);
@@ -1182,6 +1412,7 @@
 
   RENDERERS.rewrite = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     card.appendChild(el("p", "course-hint", "Kliknite postupne na každé oranžovo zvýraznené slovo — vysvetlíme, prečo do otázky pre AI nepatrí."));
 
     const grid = el("div", "course-rewrite-grid");
@@ -1236,6 +1467,7 @@
 
   RENDERERS.printcard = function (slide, card) {
     header(card, slide);
+    taskBox(card, slide.task);
     const paper = el("div", "course-paper");
     paper.appendChild(el("h3", null, "Šesť zlatých pravidiel"));
     const list = el("ol", "course-paper-list");
