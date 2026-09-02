@@ -1269,3 +1269,39 @@ label {
   .ex-msg-opt { min-width: 0; }
   .chatsim-thread { max-height: 380px; }
 }
+
+/* ---------- Prezentácia: snímky sa posúvajú vľavo/vpravo ---------- */
+.flipbook-stage.is-slides {
+  background: linear-gradient(180deg, #1a2f32, var(--course-ink-deep));
+  padding: 1.6rem 1.4rem;
+  perspective: none;
+}
+.flipbook.is-slides .flipbook-page {
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35), 0 26px 60px -24px rgba(0,0,0,.6);
+}
+.flipbook.is-slides .flipbook-page-img { cursor: zoom-in; }
+.flipbook-stage.is-slides .flipbook-pages { min-height: 180px; }
+
+/* Prechod medzi snímkami — posun do strany namiesto obracania strany */
+.flipbook.is-slides .flipbook-sheet.turn-in-next { animation: slide-in-next .38s cubic-bezier(.3,.8,.35,1) both; }
+.flipbook.is-slides .flipbook-sheet.turn-out-next { animation: slide-out-next .38s cubic-bezier(.3,.8,.35,1) both; }
+.flipbook.is-slides .flipbook-sheet.turn-in-prev { animation: slide-in-prev .38s cubic-bezier(.3,.8,.35,1) both; }
+.flipbook.is-slides .flipbook-sheet.turn-out-prev { animation: slide-out-prev .38s cubic-bezier(.3,.8,.35,1) both; }
+
+@keyframes slide-in-next {
+  from { transform: translateX(calc(-50% + 46px)); opacity: 0; }
+  to   { transform: translateX(-50%); opacity: 1; }
+}
+@keyframes slide-out-next {
+  from { transform: translateX(-50%); opacity: 1; }
+  to   { transform: translateX(calc(-50% - 46px)); opacity: 0; }
+}
+@keyframes slide-in-prev {
+  from { transform: translateX(calc(-50% - 46px)); opacity: 0; }
+  to   { transform: translateX(-50%); opacity: 1; }
+}
+@keyframes slide-out-prev {
+  from { transform: translateX(-50%); opacity: 1; }
+  to   { transform: translateX(calc(-50% + 46px)); opacity: 0; }
+}

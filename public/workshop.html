@@ -275,6 +275,12 @@
   // Brožúrka sa listuje ako kniha. Ak by sa knižnica na čítanie PDF
   // nenačítala (napr. slabé pripojenie), padneme späť na vstavaný
   // PDF prehliadač, aby si ju účastník vedel prečítať vždy.
+
+
+  // Brožúrka sa listuje ako kniha. Ak sú v nastaveniach kurzu pripravené
+  // strany (admin zóna ich vytvorí pri nahrávaní), použijeme ich — listovanie
+  // je potom okamžité. Inak skúsime vykresliť priamo z PDF a ak ani to nejde,
+  // zobrazíme aspoň vstavaný PDF prehliadač.
   function initBrochure(url) {
     var host = document.getElementById("brochure-flipbook");
     if (!url) {
@@ -287,6 +293,7 @@
     }
     window.initFlipbook(host, {
       url: url,
+      pages: Array.isArray(state.workshop.brochurePages) ? state.workshop.brochurePages : null,
       onFail: function () { showBrochureFallback(url, host); },
     });
   }
@@ -296,6 +303,51 @@
       "<iframe id='brochure-frame' src='" + url + "' " +
       "style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>" +
       "<p class='hint'>Brožúrku si môžete prečítať v prehliadači vyššie alebo stiahnuť tlačidlom nižšie.</p>";
+  }
+
+  // Prezentácia sa prepína snímka po snímke šípkami — rovnaký ovládač ako
+  // brožúrka, len v režime prezentácie (vždy jedna snímka na šírku).
+  function renderPresentation() {
+    const body = document.getElementById("presentation-body");
+    const url = state.workshop.presentationUrl;
+    if (!url) {
+      body.innerHTML = "<p class='hint'>Prezentácia sa čoskoro pridá.</p>";
+      return;
+    }
+    const type = state.workshop.presentationType;
+    if (type !== "pdf") {
+      // PPT/PPTX sa nedá bezpečne zobraziť len na prezeranie bez umožnenia
+      // stiahnutia — prezentácie preto musia byť nahraté vo formáte PDF.
+      body.innerHTML =
+        "<div class='card' style='background:var(--surface-2);text-align:center;padding:2.5rem 1.5rem;'>" +
+        "<p>Táto prezentácia je vo formáte PowerPoint, ktorý sa nedá zobraziť len na prezeranie. Kontaktujte nás prosím na info@digistart.sk, čoskoro ju nahradíme verziou vo formáte PDF.</p>" +
+        "</div>";
+      return;
+    }
+
+    body.innerHTML = "<p>Snímky prepínate šípkami vpravo a vľavo — alebo potiahnutím prsta.</p>";
+    const host = document.createElement("div");
+    body.appendChild(host);
+
+    if (!window.initFlipbook) {
+      showPresentationFallback(url, body);
+      return;
+    }
+    window.initFlipbook(host, {
+      url: url,
+      mode: "slides",
+      pages: Array.isArray(state.workshop.presentationPages) ? state.workshop.presentationPages : null,
+      onFail: function () { showPresentationFallback(url, body); },
+    });
+  }
+
+  function showPresentationFallback(url, body) {
+    // Prezentácia sa zámerne neponúka na stiahnutie — preto skrývame
+    // vstavané tlačidlá prehliadača.
+    body.innerHTML =
+      "<p>Prezentáciu si môžete prezrieť priamo tu.</p>" +
+      "<iframe src='" + url + "#toolbar=0&navpanes=0' oncontextmenu='return false;' " +
+      "style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>";
   }
 
   // Praktické cvičenia — prehľad dlaždic, jedno cvičenie po kliknutí,
@@ -313,30 +365,6 @@
     });
   }
 
-  function renderPresentation() {
-    const body = document.getElementById("presentation-body");
-    const url = state.workshop.presentationUrl;
-    if (!url) {
-      body.innerHTML = "<p class='hint'>Prezentácia sa čoskoro pridá.</p>";
-      return;
-    }
-    const type = state.workshop.presentationType;
-    if (type === "pdf") {
-      // Len na prezeranie — #toolbar=0&navpanes=0 skryje vstavané tlačidlo
-      // na stiahnutie vo vnútornom PDF prehliadači prehliadača. Žiadny odkaz
-      // na stiahnutie sa zámerne neponúka.
-      body.innerHTML =
-        "<p>Prezentáciu si môžete prezrieť priamo tu.</p>" +
-        "<iframe src='" + url + "#toolbar=0&navpanes=0' oncontextmenu='return false;' style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>";
-    } else {
-      // PPT/PPTX sa nedá bezpečne zobraziť len na prezeranie bez umožnenia
-      // stiahnutia — prezentácie preto musia byť nahraté vo formáte PDF.
-      body.innerHTML =
-        "<div class='card' style='background:var(--surface-2);text-align:center;padding:2.5rem 1.5rem;'>" +
-        "<p>Táto prezentácia je vo formáte PowerPoint, ktorý sa nedá zobraziť len na prezeranie. Kontaktujte nás prosím na info@digistart.sk, čoskoro ju nahradíme verziou vo formáte PDF.</p>" +
-        "</div>";
-    }
-  }
 
 
 

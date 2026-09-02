@@ -55,6 +55,8 @@
     this.drawToken = 0;
     this.destroyed = false;
     this.imageBase = null;
+    this.pageUrls = null;      // hotové adresy strán (napr. z Firestore)
+    this.mode = (this.opts.mode === "slides") ? "slides" : "book";
     this.justSwiped = false;
   }
 
@@ -65,6 +67,14 @@
     if (this.cache[pageNum]) return Promise.resolve(this.cache[pageNum]);
     if (this.rendering[pageNum]) return this.rendering[pageNum];
     if (pageNum < 1 || pageNum > this.total) return Promise.resolve(null);
+
+    // Ak máme hotové adresy strán (pripravené pri nahrávaní v admin zóne),
+    // použijeme ich priamo. Obrázky sa cez `img` načítajú aj z iného servera,
+    // na rozdiel od PDF, ktoré by prehliadač bez povolenia CORS nepustil.
+    if (this.pageUrls) {
+      this.cache[pageNum] = { url: this.pageUrls[pageNum - 1] };
+      return Promise.resolve(this.cache[pageNum]);
+    }
 
     // Ak sú strany pripravené vopred ako obrázky, netreba nič počítať —
     // listovanie je potom okamžité aj na staršom tablete.
@@ -105,6 +115,7 @@
   };
 
   Flipbook.prototype.renderPageUrl = function (pageNum) {
+    if (this.pageUrls) return this.pageUrls[pageNum - 1];
     return this.imageBase + "page-" + (pageNum < 10 ? "0" : "") + pageNum + ".jpg";
   };
 
@@ -137,7 +148,7 @@
       if (next > self.total) return;              // všetko je pripravené
       if (self.busy) { idle(step); return; }      // nechme prednosť tomu, čo používateľ práve číta
       var page = next++;
-      if (self.imageBase) {
+      if (self.imageBase || self.pageUrls) {
         // Obrázok si necháme stiahnuť do medzipamäte prehliadača.
         var pre = new Image();
         pre.onload = pre.onerror = function () { idle(step); };
@@ -155,10 +166,10 @@
   Flipbook.prototype.build = function () {
     var self = this;
     this.container.innerHTML = "";
-    var root = el("div", "flipbook");
+    var root = el("div", "flipbook" + (this.mode === "slides" ? " is-slides" : ""));
 
     // Plocha knihy
-    var stage = el("div", "flipbook-stage");
+    var stage = el("div", "flipbook-stage" + (this.mode === "slides" ? " is-slides" : ""));
     this.stage = stage;
     this.pagesWrap = el("div", "flipbook-pages");
     stage.appendChild(this.pagesWrap);
@@ -170,7 +181,7 @@
     this.prevBtn = el("button", "flipbook-btn flipbook-prev",
       "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M15 6l-6 6 6 6'/></svg><span>Predošlá</span>");
     this.prevBtn.type = "button";
-    this.prevBtn.setAttribute("aria-label", "Predošlá strana");
+    this.prevBtn.setAttribute("aria-label", self.mode === "slides" ? "Predošlá snímka" : "Predošlá strana");
     this.prevBtn.addEventListener("click", function () { self.go(-1); });
 
     this.indicator = el("div", "flipbook-indicator");
@@ -178,7 +189,7 @@
     this.nextBtn = el("button", "flipbook-btn flipbook-next",
       "<span>Ďalšia</span><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M9 6l6 6-6 6'/></svg>");
     this.nextBtn.type = "button";
-    this.nextBtn.setAttribute("aria-label", "Ďalšia strana");
+    this.nextBtn.setAttribute("aria-label", self.mode === "slides" ? "Ďalšia snímka" : "Ďalšia strana");
     this.nextBtn.addEventListener("click", function () { self.go(1); });
 
     nav.appendChild(this.prevBtn);
@@ -192,20 +203,22 @@
     this.slider.type = "range";
     this.slider.min = "1";
     this.slider.step = "1";
-    this.slider.setAttribute("aria-label", "Skok na stranu");
+    this.slider.setAttribute("aria-label", self.mode === "slides" ? "Skok na snímku" : "Skok na stranu");
     this.slider.addEventListener("input", function () {
       var target = Number(self.slider.value) - 1;
       if (self.spread) target = target - (target % 2);
       self.index = Math.max(0, Math.min(target, self.lastIndex()));
       self.draw(0);
     });
-    jump.appendChild(el("span", "flipbook-jump-label", "Rýchly skok na stranu"));
+    jump.appendChild(el("span", "flipbook-jump-label", self.mode === "slides" ? "Rýchly skok na snímku" : "Rýchly skok na stranu"));
     jump.appendChild(this.slider);
     root.appendChild(jump);
 
     root.appendChild(el("p", "flipbook-hint",
       "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M9 11V6a2 2 0 1 1 4 0v5'/><path d='M13 9V5a2 2 0 1 1 4 0v6'/><path d='M17 9.5a2 2 0 1 1 4 0V15a6 6 0 0 1-6 6h-2a7 7 0 0 1-7-7v-4a2 2 0 1 1 4 0'/></svg>" +
-      "Stranu obrátite tlačidlami, potiahnutím prsta alebo šípkami na klávesnici. Kliknutím na stranu si ju zväčšíte."));
+      (self.mode === "slides"
+        ? "Snímky prepínate tlačidlami, potiahnutím prsta alebo šípkami na klávesnici. Kliknutím na snímku si ju zväčšíte."
+        : "Stranu obrátite tlačidlami, potiahnutím prsta alebo šípkami na klávesnici. Kliknutím na stranu si ju zväčšíte.")));
 
     this.container.appendChild(root);
     this.root = root;
@@ -360,9 +373,11 @@
   Flipbook.prototype.updateControls = function () {
     var first = this.index + 1;
     var last = this.spread ? Math.min(this.index + 2, this.total) : first;
+    var one = this.mode === "slides" ? "Snímka" : "Strana";
+    var many = this.mode === "slides" ? "Snímky" : "Strany";
     this.indicator.innerHTML = (first === last)
-      ? "Strana <strong>" + first + "</strong> z " + this.total
-      : "Strany <strong>" + first + "–" + last + "</strong> z " + this.total;
+      ? one + " <strong>" + first + "</strong> z " + this.total
+      : many + " <strong>" + first + "–" + last + "</strong> z " + this.total;
     this.prevBtn.disabled = this.index <= 0;
     this.nextBtn.disabled = this.index >= this.lastIndex();
     this.slider.max = String(this.total);
@@ -372,13 +387,14 @@
   // ---------- Prispôsobenie šírke okna ----------
 
   Flipbook.prototype.applyLayout = function () {
+    // Snímky prezentácie sú na šírku — tých zobrazujeme vždy len jednu.
     // Dve strany vedľa seba dávajú zmysel až od šírky, kde je text čitateľný.
-    var wide = window.innerWidth >= 900;
+    var wide = this.mode !== "slides" && window.innerWidth >= 900;
     if (wide === this.spread) return false;
     this.spread = wide;
     // Pri prepnutí sa zmení cieľová šírka vykreslenia — cache zahodíme.
     // Vopred pripravené obrázky sú na šírke nezávislé, tých sa to netýka.
-    if (!this.imageBase) this.cache = {};
+    if (!this.imageBase && !this.pageUrls) this.cache = {};
     if (this.spread) this.index = this.index - (this.index % 2);
     this.index = Math.max(0, Math.min(this.index, this.lastIndex()));
     return true;
@@ -402,6 +418,17 @@
       "<div class='flipbook-spinner' aria-hidden='true'></div><p>Pripravujeme brožúrku na listovanie…</p>");
     this.container.appendChild(loading);
 
+    // 1. Hotové adresy strán (pripravené v admin zóne pri nahrávaní).
+    if (this.opts.pages && this.opts.pages.length) {
+      this.pageUrls = this.opts.pages;
+      this.total = this.opts.pages.length;
+      this.applyLayout();
+      this.build();
+      return this.draw(0).then(function () {
+        self.afterStart();
+      });
+    }
+
     return this.tryImages(url).then(function (imgs) {
       if (imgs) {
         self.imageBase = imgs.base;
@@ -421,17 +448,7 @@
         return self.draw(0);
       });
     }).then(function () {
-      // Pri zmene veľkosti okna prepneme medzi jednou a dvomi stranami.
-      var resizeTimer = null;
-      self._onResize = function () {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function () {
-          if (self.applyLayout()) { self.build(); self.draw(0); }
-        }, 250);
-      };
-      window.addEventListener("resize", self._onResize);
-      self.startBackgroundPrefetch();
-      if (self.opts.onReady) self.opts.onReady(self.total);
+      self.afterStart();
     }).catch(function (err) {
       console.error("Brožúrku sa nepodarilo otvoriť na listovanie:", err);
       if (self.opts.onFail) self.opts.onFail(err);
@@ -445,6 +462,21 @@
     if (this._onKey) document.removeEventListener("keydown", this._onKey);
     if (this._onResize) window.removeEventListener("resize", this._onResize);
     this.cache = {};
+  };
+
+  // Spoločné dokončenie štártu — nezávisle od toho, odkiaľ strany prišli.
+  Flipbook.prototype.afterStart = function () {
+    var self = this;
+    var resizeTimer = null;
+    this._onResize = function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        if (self.applyLayout()) { self.build(); self.draw(0); }
+      }, 250);
+    };
+    window.addEventListener("resize", this._onResize);
+    this.startBackgroundPrefetch();
+    if (this.opts.onReady) this.opts.onReady(this.total);
   };
 
   window.initFlipbook = function (container, opts) {

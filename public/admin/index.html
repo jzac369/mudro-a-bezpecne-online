@@ -15,6 +15,7 @@
 <script defer src="../data/workshops.js"></script>
 <script defer src="../data/course.js"></script>
 <script defer src="../assets/course-schema.js"></script>
+<script defer src="../assets/pdf-pages.js"></script>
 <style>
   html { font-size: 16px; } /* admin zóna má vlastnú, kompaktnejšiu mierku nezávislú od A+/A- účastníka */
   body { min-height: 100vh; }
@@ -1253,11 +1254,58 @@ window.addEventListener("load", function () {
     return trimmed;
   }
 
-  async function uploadCourseFile(workshopId, file, folder, patchFields) {
-    const storageRef = adminApp.storage().ref(folder + "/" + workshopId + "/" + Date.now() + "_" + file.name);
+  // Listovanie na stránke kurzu funguje z pripravených obrázkov strán.
+  // Pri súboroch nahratých pred týmto vylepšením ešte nie sú — doplnia sa
+  // až opätovným nahratím, lebo prehliadač si už nahraté PDF z úložiska
+  // prečítať nemôže.
+  function pagesNotice(fileUrl, pages, labelWhat) {
+    if (!fileUrl) return "";
+    if (Array.isArray(pages) && pages.length) {
+      return '<p class="hint" style="margin-top:.35rem;color:var(--good);">Listovanie pripravené — ' +
+        pages.length + ' strán.</p>';
+    }
+    return '<p class="hint" style="margin-top:.35rem;color:var(--warn);">' +
+      'Listovanie zatiaľ nie je pripravené — ' + labelWhat +
+      ' sa účastníkom zobrazí v obyčajnom PDF prehliadači. ' +
+      'Nahrajte súbor znova a strany sa pripraví automaticky.</p>';
+  }
+
+  async function uploadCourseFile(workshopId, file, folder, patchFields, onStatus) {
+    const stamp = Date.now();
+    const storageRef = adminApp.storage().ref(folder + "/" + workshopId + "/" + stamp + "_" + file.name);
     await storageRef.put(file);
     const url = await storageRef.getDownloadURL();
     const patch = Object.assign({}, patchFields(url, file));
+
+    // Pri PDF pripravíme aj jednotlivé strany ako obrázky, aby sa dokument
+    // dal na stránke kurzu pohodlne listovať. Samotné PDF sa z úložiska
+    // nedá načítať priamo (chýbajú povolenia CORS), obrázky áno.
+    if (file.name.toLowerCase().endsWith(".pdf") && window.renderPdfFileToPages) {
+      try {
+        const pages = await window.renderPdfFileToPages(file, {
+          width: folder === "presentations" ? 1400 : 1000,
+          quality: 0.72,
+          onProgress: (done, total) => {
+            if (onStatus) onStatus("Pripravujem strany na listovanie… " + done + " z " + total);
+          },
+        });
+        const urls = [];
+        for (let i = 0; i < pages.length; i++) {
+          if (onStatus) onStatus("Ukladám strany… " + (i + 1) + " z " + pages.length);
+          const pageRef = adminApp.storage().ref(
+            folder + "/" + workshopId + "/" + stamp + "_strany/page-" +
+            String(pages[i].index).padStart(3, "0") + ".jpg"
+          );
+          await pageRef.put(pages[i].blob, { contentType: "image/jpeg" });
+          urls.push(await pageRef.getDownloadURL());
+        }
+        patch[patchFields.pagesField || (folder === "presentations" ? "presentationPages" : "brochurePages")] = urls;
+      } catch (err) {
+        console.error("Strany na listovanie sa nepodarilo pripraviť:", err);
+        if (onStatus) onStatus("Súbor je nahratý, strany na listovanie sa však nepodarilo pripraviť.");
+      }
+    }
+
     await db.collection("workshops").doc(workshopId).set(patch, { merge: true });
     logActivity("settings", "Kurz " + workshopId + " — nahraný súbor (" + folder + ")");
     return url;
@@ -1279,7 +1327,7 @@ window.addEventListener("load", function () {
         btn.disabled = true;
         statusEl.textContent = "Nahrávam…";
         try {
-          await uploadCourseFile(id, file, folder, (url) => patchFields(url, file, ext));
+          await uploadCourseFile(id, file, folder, (url) => patchFields(url, file, ext), (msg) => { statusEl.textContent = msg; });
           statusEl.textContent = "Nahraté ✓ (" + file.name + ")";
           loadWorkshopSettings();
         } catch (err) {
@@ -1329,6 +1377,7 @@ window.addEventListener("load", function () {
         '<button class="btn btn-secondary" type="button" data-presentation-upload="' + id + '" style="margin-top:.5rem;">Nahrať prezentáciu</button> ' +
         (data.presentationUrl ? '<a href="' + data.presentationUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a> <button class="btn btn-secondary" type="button" data-presentation-remove="' + id + '" style="font-size:.8rem;">Odstrániť</button>' : "") +
         '<p class="hint" data-presentation-status="' + id + '" style="margin-top:.5rem;">' + (data.presentationName ? "Aktuálny súbor: " + data.presentationName : "Zatiaľ nenahraná.") + '</p>' +
+        pagesNotice(data.presentationUrl, data.presentationPages, "prezentácia") +
         '</div>' +
 
         '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
@@ -1337,6 +1386,7 @@ window.addEventListener("load", function () {
         '<button class="btn btn-secondary" type="button" data-brochure-upload="' + id + '" style="margin-top:.5rem;">Nahrať brožúrku</button> ' +
         (data.brochureUrl ? '<a href="' + data.brochureUrl + '" target="_blank" rel="noopener">Zobraziť aktuálnu</a> <button class="btn btn-secondary" type="button" data-brochure-remove="' + id + '" style="font-size:.8rem;">Odstrániť</button>' : "") +
         '<p class="hint" data-brochure-status="' + id + '" style="margin-top:.5rem;">' + (data.brochureName ? "Aktuálny súbor: " + data.brochureName : "Zatiaľ nenahraná.") + '</p>' +
+        pagesNotice(data.brochureUrl, data.brochurePages, "brožúrka") +
         '</div>' +
 
         '<div class="field" style="margin-top:1rem;border-top:1px solid var(--line);padding-top:1rem;">' +
@@ -1410,8 +1460,8 @@ window.addEventListener("load", function () {
         });
       });
     }
-    wireFileRemove("presentation", "Naozaj odstrániť nahratú prezentáciu?", { presentationUrl: null, presentationType: null, presentationName: null });
-    wireFileRemove("brochure", "Naozaj odstrániť nahratú brožúrku?", { brochureUrl: null, brochureName: null });
+    wireFileRemove("presentation", "Naozaj odstrániť nahratú prezentáciu?", { presentationUrl: null, presentationType: null, presentationName: null, presentationPages: null });
+    wireFileRemove("brochure", "Naozaj odstrániť nahratú brožúrku?", { brochureUrl: null, brochureName: null, brochurePages: null });
     wireFileRemove("signature", "Naozaj odstrániť nahratý podpis?", { lecturerSignatureUrl: null, lecturerSignatureName: null });
   }
 
