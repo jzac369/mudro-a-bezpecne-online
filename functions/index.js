@@ -2,7 +2,7 @@ const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 const { getStorage } = require("firebase-admin/storage");
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
@@ -15,6 +15,12 @@ initializeApp();
 const db = getFirestore();
 
 const EMAILJS_PRIVATE_KEY = defineSecret("EMAILJS_PRIVATE_KEY");
+
+// Kľúče k platobnej bráne. Do kódu ani do databázy sa nikdy neukladajú —
+// nastavujú sa príkazom `firebase functions:secrets:set`.
+const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
+
 const EMAILJS_SERVICE_ID = "service_qnxes8j";
 const EMAILJS_TEMPLATE_ID = "template_aspeze7";
 const EMAILJS_PUBLIC_KEY = "eOd4Q1os_TN-pSs2S";
@@ -36,6 +42,7 @@ const DEFAULT_SETTINGS = {
   remindUnfinishedEnabled: false,
   remindUnfinishedDays: 7,
   staleOrderEmailEnabled: false,
+  cardPaymentEnabled: false, // platba kartou cez Stripe
   notifyEmail: "",
 };
 
@@ -91,6 +98,24 @@ function computeFreeSlots(dateStr, durationMin, availability, existingBookings) 
     }
   });
   return slots;
+}
+
+
+// Po zaplatení sa účastník vracia späť na našu stránku. Adresu prijímame
+// z prehliadača, preto ju porovnáme so zoznamom povolených domén — inak by
+// sa cez ňu dal niekto presmerovať na cudziu stránku.
+const ALLOWED_RETURN_ORIGINS = [
+  "https://jzac369.github.io/mudro-a-bezpecne-online",
+  "https://mudroabezpecne.sk",
+  "https://www.mudroabezpecne.sk",
+];
+
+function pickAllowedOrigin(candidate) {
+  if (typeof candidate === "string") {
+    const clean = candidate.replace(/\/+$/, "");
+    if (ALLOWED_RETURN_ORIGINS.includes(clean)) return clean;
+  }
+  return ALLOWED_RETURN_ORIGINS[0];
 }
 
 async function getSettings() {
@@ -253,6 +278,8 @@ exports.createOrder = onCall(async (request) => {
     orderId: orderRef.id,
     variableSymbol,
     amount,
+    // Kartu ponúkneme len vtedy, keď je platba kartou zapnutá v nastaveniach.
+    cardPaymentAvailable: settings.cardPaymentEnabled === true,
     breakdown: {
       basePrice,
       groupSize,
@@ -265,6 +292,85 @@ exports.createOrder = onCall(async (request) => {
     },
   };
 });
+
+/**
+ * Vydá prístupové kódy pre objednávku a pošle ich e-mailom.
+ *
+ * Funkcia je zámerne idempotentná: objednávku si najprv „zaberie“
+ * v transakcii, takže ani dve súbežné volania (napríklad webhook doručený
+ * dvakrát, čo Stripe bežne robí) nevydajú kódy dvakrát. Ak by vydávanie
+ * neskôr zlyhalo, stav sa vráti späť na čakajúcu platbu, aby sa dalo
+ * zopakovať z admin zóny.
+ */
+async function issueCodesForOrder(orderId, paymentMethod, extra) {
+  const orderRef = db.collection("orders").doc(orderId);
+
+  const claim = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    if (!snap.exists) return { missing: true };
+    const data = snap.data();
+    if (data.status !== "pending_payment") {
+      return { order: data, alreadyHandled: true };
+    }
+    tx.update(orderRef, Object.assign({
+      status: "code_sent",
+      paidAt: FieldValue.serverTimestamp(),
+      codeIssuedAt: FieldValue.serverTimestamp(),
+      paymentMethod,
+    }, extra || {}));
+    return { order: data, alreadyHandled: false };
+  });
+
+  if (claim.missing) {
+    throw new HttpsError("not-found", "Objednávka neexistuje.");
+  }
+  if (claim.alreadyHandled) {
+    // Kódy už boli vydané skôr — vrátime tie existujúce.
+    const existing = await db.collection("accessCodes").where("orderId", "==", orderId).get();
+    return { codes: existing.docs.map((d) => d.id), alreadyIssued: true };
+  }
+
+  const order = claim.order;
+  try {
+    const participantsList = [
+      { firstName: order.firstName || order.name, lastName: order.lastName || "" },
+      ...(Array.isArray(order.participants) ? order.participants : []),
+    ];
+
+    const codes = [];
+    for (const p of participantsList) {
+      const code = await issueUniqueCode();
+      await db.collection("accessCodes").doc(code).set({
+        code,
+        workshopId: order.workshopId,
+        orderId,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        participantName: fullName(p.firstName, p.lastName),
+        createdAt: FieldValue.serverTimestamp(),
+        active: true,
+      });
+      codes.push(code);
+    }
+
+    await sendCodeEmail({
+      to: order.email,
+      name: order.firstName || order.name,
+      codes,
+      workshopId: order.workshopId,
+    });
+
+    return { codes, alreadyIssued: false };
+  } catch (err) {
+    // Objednávku vrátime medzi čakajúce, nech sa dá vydanie zopakovať.
+    console.error("Vydanie kódov zlyhalo, vraciam objednávku medzi čakajúce:", err);
+    await orderRef.update({
+      status: "pending_payment",
+      codeIssueError: String(err && err.message ? err.message : err).slice(0, 500),
+    });
+    throw err;
+  }
+}
 
 /**
  * Označí objednávku ako uhradenú a vygeneruje prístupový kód pre každého
@@ -281,42 +387,11 @@ exports.markOrderPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (reques
   if (!["card", "transfer", "cash"].includes(paymentMethod)) {
     throw new HttpsError("invalid-argument", "Neplatný spôsob úhrady.");
   }
-  const orderRef = db.collection("orders").doc(orderId);
-  const orderSnap = await orderRef.get();
-  if (!orderSnap.exists) {
-    throw new HttpsError("not-found", "Objednávka neexistuje.");
-  }
-  const order = orderSnap.data();
-  if (order.status !== "pending_payment") {
+  const result = await issueCodesForOrder(orderId, paymentMethod);
+  if (result.alreadyIssued) {
     throw new HttpsError("failed-precondition", "Táto objednávka už bola spracovaná.");
   }
-
-  const participantsList = [
-    { firstName: order.firstName || order.name, lastName: order.lastName || "" },
-    ...(Array.isArray(order.participants) ? order.participants : []),
-  ];
-
-  const codes = [];
-  for (const p of participantsList) {
-    const code = await issueUniqueCode();
-    await db.collection("accessCodes").doc(code).set({
-      code,
-      workshopId: order.workshopId,
-      orderId,
-      firstName: p.firstName,
-      lastName: p.lastName,
-      participantName: fullName(p.firstName, p.lastName),
-      createdAt: FieldValue.serverTimestamp(),
-      active: true,
-    });
-    codes.push(code);
-  }
-
-  await orderRef.update({ status: "code_sent", codeIssuedAt: FieldValue.serverTimestamp(), paidAt: FieldValue.serverTimestamp(), paymentMethod });
-
-  await sendCodeEmail({ to: order.email, name: order.firstName || order.name, codes, workshopId: order.workshopId });
-
-  return { codes };
+  return { codes: result.codes };
 });
 
 /**
@@ -1337,3 +1412,211 @@ exports.sendPaymentConfirmationEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }
 
   return { pozNumber, url };
 });
+
+/* ============================================================
+   Platba kartou cez Stripe Checkout
+   ============================================================
+
+   Celá platba prebieha na zabezpečenej stránke Stripe — údaje o karte
+   sa nikdy nedostanú na náš server ani do našej databázy. My len
+   pripravíme platbu a počkáme, kým nám Stripe potvrdí jej prijatie.
+
+   Kľúče sa nikdy neukladajú do kódu, čítajú sa z tajomstiev Firebase:
+     firebase functions:secrets:set STRIPE_SECRET_KEY
+     firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
+*/
+
+function getStripe() {
+  const key = STRIPE_SECRET_KEY.value();
+  if (!key) {
+    throw new HttpsError("failed-precondition", "Platba kartou zatiaľ nie je nastavená.");
+  }
+  // eslint-disable-next-line global-require
+  return require("stripe")(key, { apiVersion: "2024-06-20" });
+}
+
+/**
+ * Pripraví platbu kartou pre existujúcu objednávku a vráti adresu
+ * platobnej stránky Stripe.
+ *
+ * Sumu berieme výhradne z objednávky uloženej v databáze — nikdy nie
+ * z prehliadača, aby sa nedala podvrhnúť.
+ */
+exports.createStripeCheckout = onCall({ secrets: [STRIPE_SECRET_KEY] }, async (request) => {
+  const { orderId, returnOrigin } = request.data || {};
+  if (!orderId || typeof orderId !== "string") {
+    throw new HttpsError("invalid-argument", "Chýba číslo objednávky.");
+  }
+
+  const orderRef = db.collection("orders").doc(orderId);
+  const snap = await orderRef.get();
+  if (!snap.exists) {
+    throw new HttpsError("not-found", "Objednávka neexistuje.");
+  }
+  const order = snap.data();
+  if (order.status !== "pending_payment") {
+    throw new HttpsError("failed-precondition", "Táto objednávka už bola uhradená.");
+  }
+
+  const amount = Number(order.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new HttpsError("failed-precondition", "Objednávku nie je možné uhradiť kartou.");
+  }
+
+  const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
+  const workshopTitle = workshopSnap.exists
+    ? (workshopSnap.data().title || "Online kurz")
+    : "Online kurz";
+
+  // Adresu na návrat obmedzíme na povolené domény, aby sa cez ňu nedalo
+  // presmerovať účastníka na cudziu stránku.
+  const origin = pickAllowedOrigin(returnOrigin);
+
+  const stripe = getStripe();
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    locale: "sk",
+    customer_email: order.email || undefined,
+    client_reference_id: orderId,
+    metadata: { orderId, variableSymbol: order.variableSymbol || "" },
+    line_items: [{
+      quantity: 1,
+      price_data: {
+        currency: "eur",
+        unit_amount: Math.round(amount * 100),
+        product_data: {
+          name: workshopTitle,
+          description: order.groupSize > 1
+            ? "Online kurz pre " + order.groupSize + " účastníkov"
+            : "Online kurz pre 1 účastníka",
+        },
+      },
+    }],
+    success_url: origin + "/platba-uspesna.html?objednavka=" + encodeURIComponent(orderId),
+    cancel_url: origin + "/objednavka.html?zrusene=1&objednavka=" + encodeURIComponent(orderId),
+  });
+
+  await orderRef.update({
+    stripeSessionId: session.id,
+    stripeCheckoutStartedAt: FieldValue.serverTimestamp(),
+  });
+
+  return { url: session.url };
+});
+
+/**
+ * Prijíma potvrdenia o platbe priamo od Stripe.
+ *
+ * Toto je jediné miesto, kde sa objednávka označí ako uhradená kartou —
+ * prehliadaču sa v tejto veci nedá veriť, lebo návrat na stránku „platba
+ * úspešná“ vie ktokoľvek otvoriť aj bez zaplatenia. Pravosť správy overuje
+ * podpis, ktorý Stripe posiela v hlavičke.
+ */
+exports.stripeWebhook = onRequest(
+  { secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET], cors: false },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    let event;
+    try {
+      const stripe = require("stripe")(STRIPE_SECRET_KEY.value(), { apiVersion: "2024-06-20" });
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,                       // podpis sa overuje z pôvodného tela požiadavky
+        req.headers["stripe-signature"],
+        STRIPE_WEBHOOK_SECRET.value()
+      );
+    } catch (err) {
+      console.error("Neplatný podpis správy od Stripe:", err && err.message);
+      res.status(400).send("Neplatný podpis.");
+      return;
+    }
+
+    // Odpoveď posielame až po spracovaní, aby Stripe vedel správu zopakovať,
+    // ak by sa vydanie kódov nepodarilo.
+    try {
+      if (event.type === "checkout.session.completed" ||
+          event.type === "checkout.session.async_payment_succeeded") {
+        const session = event.data.object;
+        if (session.payment_status === "paid") {
+          await handlePaidCheckout(session);
+        }
+      }
+      res.status(200).send("ok");
+    } catch (err) {
+      console.error("Spracovanie platby zlyhalo:", err);
+      res.status(500).send("Spracovanie zlyhalo.");
+    }
+  }
+);
+
+async function handlePaidCheckout(session) {
+  const orderId = (session.metadata && session.metadata.orderId) || session.client_reference_id;
+  if (!orderId) {
+    console.error("Platba bez čísla objednávky, session:", session.id);
+    return;
+  }
+
+  const orderSnap = await db.collection("orders").doc(orderId).get();
+  if (!orderSnap.exists) {
+    console.error("Platba pre neexistujúcu objednávku:", orderId);
+    return;
+  }
+  const order = orderSnap.data();
+
+  // Druhá kontrola sumy — chráni pred prípadom, že by sa platba spárovala
+  // s inou objednávkou, než na akú bola vytvorená.
+  const expectedCents = Math.round(Number(order.amount) * 100);
+  if (Number(session.amount_total) !== expectedCents) {
+    console.error(
+      "Uhradená suma nesedí s objednávkou:", orderId,
+      "očakávané:", expectedCents, "prijaté:", session.amount_total
+    );
+    await db.collection("orders").doc(orderId).update({
+      paymentMismatch: true,
+      paymentMismatchAmount: session.amount_total,
+    });
+    return;
+  }
+
+  await issueCodesForOrder(orderId, "card", {
+    stripeSessionId: session.id,
+    stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null,
+  });
+}
+
+/**
+ * Zistí stav objednávky pre stránku po návrate z platby.
+ *
+ * Číslo objednávky je náhodný neuhádnuteľný identifikátor, takže slúži ako
+ * kľúč k tejto jedinej objednávke. Zámerne vraciame len to najnutnejšie —
+ * žiadne osobné údaje ani prístupové kódy.
+ */
+exports.getOrderPaymentStatus = onCall(async (request) => {
+  const { orderId } = request.data || {};
+  if (!orderId || typeof orderId !== "string") {
+    throw new HttpsError("invalid-argument", "Chýba číslo objednávky.");
+  }
+  const snap = await db.collection("orders").doc(orderId).get();
+  if (!snap.exists) {
+    throw new HttpsError("not-found", "Objednávka neexistuje.");
+  }
+  const order = snap.data();
+  return {
+    status: order.status || null,
+    paid: order.status === "code_sent",
+    emailMasked: maskEmail(order.email || ""),
+  };
+});
+
+function maskEmail(email) {
+  const at = email.indexOf("@");
+  if (at < 1) return "";
+  const name = email.slice(0, at);
+  const domain = email.slice(at);
+  const shown = name.slice(0, Math.min(2, name.length));
+  return shown + "•".repeat(Math.max(name.length - shown.length, 1)) + domain;
+}

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platba prijatá — Múdro a Bezpečne Online</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Múdro a Bezpečne Online
+    </a>
+    <div class="text-tools">
+      <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+      <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+    </div>
+  </div>
+</header>
+
+<main class="container" style="padding:2.5rem 1.5rem 5rem;max-width:640px;">
+
+  <!-- Kým čakáme na potvrdenie platby zo Stripe -->
+  <div id="state-waiting">
+    <div class="card" style="text-align:center;padding:2.5rem 1.5rem;">
+      <div class="pay-spinner" aria-hidden="true"></div>
+      <h1 style="margin-top:1.2rem;">Ďakujeme, spracúvame vašu platbu</h1>
+      <p class="lead">Potvrdenie od banky nám zvyčajne príde do niekoľkých sekúnd. Stránku prosím nezatvárajte.</p>
+      <p class="hint" id="waiting-note" style="margin-top:1rem;"></p>
+    </div>
+  </div>
+
+  <!-- Platba potvrdená, kód odoslaný -->
+  <div id="state-done" style="display:none;">
+    <span class="chip good" style="margin-bottom:1rem;">Platba prijatá</span>
+    <h1>Hotovo! Kurz máte zaplatený</h1>
+    <p class="lead">Prístupový kód sme vám práve poslali e-mailom<span id="done-email"></span>. Príde do niekoľkých minút.</p>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.8rem;">Ako sa prihlásite</h2>
+      <ol style="margin:0;padding-left:1.2rem;">
+        <li style="margin-bottom:.5rem;">Otvorte e-mail od nás a nájdite v ňom <strong>6-miestny prístupový kód</strong>.</li>
+        <li style="margin-bottom:.5rem;">Kliknite na tlačidlo nižšie a zadajte svoje meno a ten kód.</li>
+        <li>A môžete začať — kurz si prejdete vlastným tempom, kedykoľvek sa doň viete vrátiť.</li>
+      </ol>
+      <a class="btn btn-primary btn-block" style="margin-top:1.5rem;text-decoration:none;" href="prihlasenie.html">Prejsť na prihlásenie</a>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;background:var(--surface-2);">
+      <h2 style="margin-bottom:.6rem;font-size:1.05rem;">E-mail vám neprišiel?</h2>
+      <p class="hint" style="margin:0;">Pozrite sa prosím aj do priečinka nevyžiadaná pošta (spam). Ak by kód ani tak nedorazil, ozvite sa nám — kód vám radi pošleme znova.</p>
+      <p class="hint" id="done-contact" style="margin-top:.6rem;"></p>
+    </div>
+  </div>
+
+  <!-- Potvrdenie zatiaľ nedorazilo -->
+  <div id="state-slow" style="display:none;">
+    <span class="chip info" style="margin-bottom:1rem;">Platba sa spracúva</span>
+    <h1>Platba sa ešte spracúva</h1>
+    <p class="lead">Vaša platba prebehla, ale potvrdenie k nám zatiaľ nedorazilo. Nemusíte nič robiť — prístupový kód vám pošleme e-mailom hneď, ako potvrdenie príde. Zvyčajne to trvá pár minút.</p>
+    <div class="card" style="margin-top:1.5rem;">
+      <p style="margin:0 0 1rem;">Túto stránku môžete pokojne zavrieť. Ak by kód neprišiel ani do hodiny, ozvite sa nám.</p>
+      <p class="hint" id="slow-contact" style="margin:0;"></p>
+      <a class="btn btn-secondary btn-block" style="margin-top:1.2rem;text-decoration:none;" href="index.html">Späť na úvodnú stránku</a>
+    </div>
+  </div>
+
+  <!-- Objednávku sa nepodarilo nájsť -->
+  <div id="state-error" style="display:none;">
+    <span class="chip warn" style="margin-bottom:1rem;">Nenašli sme objednávku</span>
+    <h1>Túto objednávku sa nám nepodarilo nájsť</h1>
+    <p class="lead">Skontrolujte prosím, či ste stránku otvorili z odkazu po zaplatení. Ak ste už zaplatili, nič sa nedeje — ozvite sa nám a všetko vyriešime.</p>
+    <div class="card" style="margin-top:1.5rem;">
+      <p class="hint" id="error-contact" style="margin:0;"></p>
+      <a class="btn btn-secondary btn-block" style="margin-top:1.2rem;text-decoration:none;" href="index.html">Späť na úvodnú stránku</a>
+    </div>
+  </div>
+
+</main>
+
+<a class="help-fab" href="tel:+421900000000">
+  <svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M12 5a7 7 0 0 1 7 7c0 4-3 6-3 8H8c0-2-3-4-3-8a7 7 0 0 1 7-7Z"/><path d="M10 20h4"/></svg>
+  Potrebujem pomoc
+</a>
+
+<style>
+  .pay-spinner {
+    width: 52px; height: 52px; border-radius: 50%; margin: 0 auto;
+    border: 5px solid var(--surface-2); border-top-color: var(--good);
+    animation: pay-spin 1s linear infinite;
+  }
+  @keyframes pay-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .pay-spinner { animation: none; } }
+</style>
+
+<script>
+(function () {
+  // Potvrdenie o platbe nám posiela priamo Stripe na server. Táto stránka
+  // sa len pýta, či už dorazilo — samotný návrat sem nie je dôkazom
+  // zaplatenia, preto sa podľa neho nič neodomyká.
+  const orderId = new URLSearchParams(location.search).get("objednavka");
+
+  function show(id) {
+    ["state-waiting", "state-done", "state-slow", "state-error"].forEach((s) => {
+      document.getElementById(s).style.display = s === id ? "block" : "none";
+    });
+  }
+
+  window.addEventListener("load", async () => {
+    if (!orderId) { show("state-error"); return; }
+
+    const contactText = "Napíšte nám na info@digistart.sk alebo zavolajte — radi pomôžeme.";
+    ["done-contact", "slow-contact", "error-contact"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = contactText;
+    });
+
+    const getStatus = firebase.app().functions("europe-west1").httpsCallable("getOrderPaymentStatus");
+
+    // Skúšame opakovane, s narastajúcou pauzou — potvrdenie od Stripe
+    // zvyčajne príde do pár sekúnd, výnimočne to trvá dlhšie.
+    const delays = [1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 8000];
+    for (let i = 0; i < delays.length; i++) {
+      try {
+        const res = await getStatus({ orderId });
+        if (res.data && res.data.paid) {
+          const emailEl = document.getElementById("done-email");
+          if (res.data.emailMasked) emailEl.textContent = " na adresu " + res.data.emailMasked;
+          show("state-done");
+          return;
+        }
+      } catch (err) {
+        console.error("Stav objednávky sa nepodarilo zistiť:", err);
+        show("state-error");
+        return;
+      }
+      const waitingNote = document.getElementById("waiting-note");
+      if (i >= 3 && waitingNote) {
+        waitingNote.textContent = "Ešte chvíľku, prosím — potvrdenie od banky niekedy trvá o čosi dlhšie.";
+      }
+      await new Promise((r) => setTimeout(r, delays[i]));
+    }
+
+    // Potvrdenie zatiaľ nedorazilo — účastníka nenecháme čakať donekonečna.
+    show("state-slow");
+  });
+})();
+</script>
+
+</body>
+</html>

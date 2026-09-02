@@ -1317,3 +1317,27 @@ label {
 .cert-missing-hint { margin: 0 0 .9rem; font-size: .9rem; color: var(--course-warn-deep); }
 .cert-missing-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
 .cert-missing-actions .btn { padding: .6rem 1.1rem; font-size: .92rem; }
+
+/* ============================================================
+   Výber spôsobu platby
+   ============================================================ */
+.pay-methods { display: flex; flex-direction: column; gap: .8rem; }
+.pay-method {
+  display: flex; gap: .8rem; align-items: flex-start; cursor: pointer; font-weight: 400;
+  padding: 1rem 1.15rem; border: 2px solid var(--line); border-radius: 14px; background: var(--surface);
+  transition: border-color .15s ease, background .15s ease;
+}
+.pay-method:hover { border-color: var(--ink-soft); }
+.pay-method.is-selected { border-color: var(--focus); background: var(--surface-2); }
+.pay-method input[type="radio"] { width: auto; flex: none; margin-top: .25rem; accent-color: var(--focus); }
+.pay-method-body { display: flex; flex-direction: column; gap: .25rem; }
+.pay-method-title { font-weight: 700; color: var(--ink); font-size: 1.02rem; }
+.pay-method-desc { font-size: .9rem; color: var(--text-mute); line-height: 1.5; }
+
+.pay-cancelled {
+  display: flex; gap: .7rem; align-items: flex-start; margin-bottom: 1.2rem;
+  padding: 1rem 1.15rem; border-radius: 14px; background: var(--warn-bg); border: 1px solid var(--warn);
+  color: var(--course-warn-deep);
+}
+.pay-cancelled svg { width: 20px; height: 20px; flex: none; margin-top: .15rem; }
+.pay-cancelled p { margin: 0; font-size: .94rem; line-height: 1.55; }

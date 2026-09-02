@@ -84,6 +84,10 @@
   </div>
 
   <div id="step-payment" style="display:none;">
+    <div class="pay-cancelled" id="pay-cancelled" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+      <p><strong>Platba nebola dokončená.</strong> Nič sa nestalo a nič vám nebolo stržené — objednávka stále platí. Môžete to skúsiť znova alebo zaplatiť bankovým prevodom.</p>
+    </div>
     <span class="chip warn" style="margin-bottom:1rem;">Čaká na úhradu</span>
     <h1>Posledný krok — úhrada</h1>
     <p class="lead">Ďakujeme za objednávku! Zostáva už len uhradiť platbu podľa údajov nižšie — prístupový kód vám pošleme hneď po jej prijatí.</p>
@@ -94,21 +98,36 @@
     </div>
 
     <div class="card" style="margin-top:1.5rem;">
-      <h2 style="margin-bottom:.8rem;">Spôsob platby</h2>
-      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-        <label style="flex:1;min-width:180px;display:flex;align-items:center;gap:.6rem;padding:.9rem 1rem;border:2px solid var(--line);border-radius:10px;opacity:.55;cursor:not-allowed;">
-          <input type="radio" name="pay-method" disabled style="width:auto;">
-          <span>Platobná karta<br><span class="hint">Čoskoro dostupné</span></span>
+      <h2 style="margin-bottom:.8rem;">Ako chcete zaplatiť?</h2>
+      <div class="pay-methods">
+        <label class="pay-method" id="pay-method-card-label" style="display:none;">
+          <input type="radio" name="pay-method" value="card" id="pay-method-card">
+          <span class="pay-method-body">
+            <span class="pay-method-title">Platobnou kartou</span>
+            <span class="pay-method-desc">Zaplatíte hneď teraz a prístupový kód vám príde e-mailom do niekoľkých minút.</span>
+          </span>
         </label>
-        <label style="flex:1;min-width:180px;display:flex;align-items:center;gap:.6rem;padding:.9rem 1rem;border:2px solid var(--focus);border-radius:10px;background:var(--surface-2);">
-          <input type="radio" name="pay-method" checked disabled style="width:auto;">
-          <span>Bankový prevod</span>
+        <label class="pay-method">
+          <input type="radio" name="pay-method" value="transfer" id="pay-method-transfer" checked>
+          <span class="pay-method-body">
+            <span class="pay-method-title">Bankovým prevodom</span>
+            <span class="pay-method-desc">Zaplatíte z internetbankingu podľa údajov nižšie. Kód vám pošleme po prijatí platby, zvyčajne do 1 pracovného dňa.</span>
+          </span>
         </label>
+      </div>
+
+      <div id="pay-card-area" style="display:none;margin-top:1.2rem;">
+        <button class="btn btn-primary btn-block" type="button" id="pay-card-btn">Zaplatiť kartou</button>
+        <p class="hint" style="margin-top:.7rem;display:flex;align-items:center;gap:.45rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex:none;"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          Platba prebieha na zabezpečenej stránke služby Stripe. Údaje o vašej karte sa k nám nikdy nedostanú.
+        </p>
+        <p class="hint" id="pay-card-error" style="display:none;color:var(--warn);margin-top:.6rem;"></p>
       </div>
     </div>
 
-    <div class="card" style="margin-top:1.5rem;">
-      <h2 style="margin-bottom:.8rem;">Platobné údaje</h2>
+    <div class="card" id="pay-transfer-details" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.8rem;">Platobné údaje na prevod</h2>
       <table style="width:100%;border-collapse:collapse;">
         <tr><td style="padding:.4rem 0;color:var(--text-mute);">Suma</td><td style="padding:.4rem 0;font-weight:700;" id="pay-amount"></td></tr>
         <tr><td style="padding:.4rem 0;color:var(--text-mute);">Číslo účtu (IBAN)</td><td style="padding:.4rem 0;font-weight:700;" id="pay-iban"></td></tr>
@@ -119,9 +138,14 @@
 
     <div class="card" style="margin-top:1.5rem;">
       <h2 style="margin-bottom:.8rem;">Čo bude nasledovať</h2>
-      <ol style="margin:0;padding-left:1.2rem;">
+      <ol style="margin:0;padding-left:1.2rem;" id="pay-next-transfer">
         <li style="margin-bottom:.5rem;">Odošlete platbu podľa údajov vyššie.</li>
         <li style="margin-bottom:.5rem;">Po prijatí platby (zvyčajne do 1 pracovného dňa) vám na e-mail pošleme 6-miestny prístupový kód.</li>
+        <li>Prihlásite sa menom a kódom a môžete začať.</li>
+      </ol>
+      <ol style="margin:0;padding-left:1.2rem;display:none;" id="pay-next-card">
+        <li style="margin-bottom:.5rem;">Kliknete na <strong>Zaplatiť kartou</strong> a zadáte údaje na stránke služby Stripe.</li>
+        <li style="margin-bottom:.5rem;">Po zaplatení vám do niekoľkých minút príde na e-mail 6-miestny prístupový kód.</li>
         <li>Prihlásite sa menom a kódom a môžete začať.</li>
       </ol>
       <p class="hint" id="pay-contact" style="margin-top:1rem;"></p>
@@ -326,12 +350,97 @@
           : "";
         document.getElementById("step-form").style.display = "none";
         document.getElementById("step-payment").style.display = "block";
+        setupPayment(result.data.orderId, result.data.cardPaymentAvailable);
       } catch (err) {
         errorEl.textContent = "Objednávku sa nepodarilo vytvoriť. Skúste to prosím znova alebo nám zavolajte.";
         errorEl.style.display = "block";
       }
     });
   });
+
+  // Prepínanie medzi platbou kartou a prevodom + spustenie platby.
+  function setupPayment(orderId, cardAvailable) {
+    const cardLabel = document.getElementById("pay-method-card-label");
+    const cardRadio = document.getElementById("pay-method-card");
+    const transferRadio = document.getElementById("pay-method-transfer");
+    const cardArea = document.getElementById("pay-card-area");
+    const transferDetails = document.getElementById("pay-transfer-details");
+    const nextTransfer = document.getElementById("pay-next-transfer");
+    const nextCard = document.getElementById("pay-next-card");
+    const payBtn = document.getElementById("pay-card-btn");
+    const errorEl = document.getElementById("pay-card-error");
+
+    // Kartu ponúkneme len vtedy, keď je platobná brána naozaj nastavená.
+    if (!cardAvailable) return;
+    cardLabel.style.display = "";
+
+    function refresh() {
+      const card = cardRadio.checked;
+      cardArea.style.display = card ? "block" : "none";
+      transferDetails.style.display = card ? "none" : "block";
+      nextCard.style.display = card ? "block" : "none";
+      nextTransfer.style.display = card ? "none" : "block";
+      cardLabel.classList.toggle("is-selected", card);
+      transferRadio.closest(".pay-method").classList.toggle("is-selected", !card);
+    }
+    cardRadio.addEventListener("change", refresh);
+    transferRadio.addEventListener("change", refresh);
+    refresh();
+
+    payBtn.addEventListener("click", async () => {
+      payBtn.disabled = true;
+      payBtn.textContent = "Pripravujem platbu…";
+      errorEl.style.display = "none";
+      try {
+        const createCheckout = firebase.app().functions("europe-west1").httpsCallable("createStripeCheckout");
+        const res = await createCheckout({
+          orderId: orderId,
+          returnOrigin: location.origin + location.pathname.replace(/\/[^/]*$/, ""),
+        });
+        if (res.data && res.data.url) {
+          window.location.href = res.data.url;   // presmerovanie na stránku Stripe
+          return;
+        }
+        throw new Error("Chýba adresa platobnej stránky.");
+      } catch (err) {
+        console.error("Platbu sa nepodarilo spustiť:", err);
+        errorEl.textContent =
+          "Platbu sa nepodarilo spustiť. Skúste to prosím znova, alebo použite bankový prevod podľa údajov nižšie.";
+        errorEl.style.display = "block";
+        transferDetails.style.display = "block";
+        payBtn.disabled = false;
+        payBtn.textContent = "Zaplatiť kartou";
+      }
+    });
+  }
+
+
+  // Návrat zo zrušenej platby — objednávku znovu zobrazíme aj s vysvetlením.
+  (function handleCancelledPayment() {
+    const params = new URLSearchParams(location.search);
+    if (params.get("zrusene") !== "1") return;
+    const orderId = params.get("objednavka");
+    if (!orderId) return;
+
+    window.addEventListener("load", async () => {
+      try {
+        const getStatus = firebase.app().functions("europe-west1").httpsCallable("getOrderPaymentStatus");
+        const res = await getStatus({ orderId });
+        // Ak medzitým platba predsa len prešla, pošleme účastníka na potvrdenie.
+        if (res.data && res.data.paid) {
+          location.replace("platba-uspesna.html?objednavka=" + encodeURIComponent(orderId));
+          return;
+        }
+      } catch (err) {
+        console.error("Stav objednávky sa nepodarilo zistiť:", err);
+      }
+      document.getElementById("pay-cancelled").style.display = "flex";
+      document.getElementById("step-form").style.display = "none";
+      document.getElementById("step-payment").style.display = "block";
+      document.getElementById("step-payment").scrollIntoView({ block: "start" });
+    });
+  })();
+
 </script>
 
 </body>

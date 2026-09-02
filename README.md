@@ -13,7 +13,8 @@ v priloženom Artifacte z plánovacej fázy (odkaz máš v konverzácii s Claude
 
 Fáza 1 — základná kostra: statické stránky, prihlásenie kódom (front-end časť),
 Cloud Functions stuby, Firestore pravidlá, GitHub Actions deploy na Pages.
-Platba kartou (Stripe) je pripravená ako fáza 2, zatiaľ nezapojená.
+Platba kartou cez Stripe Checkout je naprogramovaná — zapne sa po
+nastavení kľúčov a webhooku, postup je v `NASTAVENIE-STRIPE.md`.
 
 ## Štruktúra
 

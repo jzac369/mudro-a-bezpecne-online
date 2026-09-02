@@ -821,6 +821,13 @@
                 <label for="s-inv-iban">IBAN</label>
                 <input type="text" id="s-inv-iban" placeholder="SK50 8330 0000 0025 0342 5536">
               </div>
+              <div class="field" style="border-top:1px solid var(--line);padding-top:1rem;">
+                <label style="display:flex;align-items:flex-start;gap:.6rem;font-weight:400;">
+                  <input type="checkbox" id="s-card-payment" style="width:auto;margin-top:.25rem;">
+                  <span><strong>Povoliť platbu kartou (Stripe)</strong><br>
+                  <span class="hint">Zákazníkom sa pri objednávke ponúkne aj platba kartou. Zapnite až vtedy, keď sú vo Firebase nastavené kľúče STRIPE_SECRET_KEY a STRIPE_WEBHOOK_SECRET — inak tlačidlo nebude fungovať.</span></span>
+                </label>
+              </div>
               <div class="field">
                 <label for="s-inv-email">E-mail dodávateľa</label>
                 <input type="email" id="s-inv-email" placeholder="info@digistart.sk">
@@ -1090,6 +1097,7 @@ window.addEventListener("load", function () {
       document.getElementById("s-inv-dic").value = data.invoiceDic || "";
       document.getElementById("s-inv-icdph").value = data.invoiceIcDph || "";
       document.getElementById("s-inv-iban").value = data.invoiceIban || "";
+      document.getElementById("s-card-payment").checked = !!data.cardPaymentEnabled;
       document.getElementById("s-inv-email").value = data.invoiceEmail || "";
       document.getElementById("s-inv-web").value = data.invoiceWeb || "";
       document.getElementById("s-inv-phone").value = data.invoicePhone || "";
@@ -1121,6 +1129,7 @@ window.addEventListener("load", function () {
       invoiceDic: document.getElementById("s-inv-dic").value.trim(),
       invoiceIcDph: document.getElementById("s-inv-icdph").value.trim(),
       invoiceIban: document.getElementById("s-inv-iban").value.trim(),
+      cardPaymentEnabled: document.getElementById("s-card-payment").checked,
       invoiceEmail: document.getElementById("s-inv-email").value.trim(),
       invoiceWeb: document.getElementById("s-inv-web").value.trim(),
       invoicePhone: document.getElementById("s-inv-phone").value.trim(),
