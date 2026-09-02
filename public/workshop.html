@@ -15,6 +15,7 @@
 <script defer src="assets/course-schema.js"></script>
 <script defer src="assets/course.js"></script>
 <script defer src="assets/app.js"></script>
+<script defer src="assets/flipbook.js"></script>
 <script defer src="assets/chat-widget.js"></script>
 <style>
   .stepper { display:flex; gap:.5rem; flex-wrap:wrap; margin:1.2rem 0 .8rem; }
@@ -146,11 +147,13 @@
   </section>
 
   <section class="card step-panel" data-panel="brozurka">
-    <h2>Brožúrka na stiahnutie</h2>
-    <p>Brožúrku si môžete prelistovať priamo tu, alebo si ju stiahnuť do počítača či tabletu. Po prvom otvorení zostane dostupná aj bez internetu.</p>
-    <iframe id="brochure-frame" style="width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;"></iframe>
-    <a class="btn btn-primary" id="brochure-download" style="margin-top:1rem;display:inline-block;text-decoration:none;" download>Stiahnuť brožúrku (PDF)</a>
-    <button class="btn btn-secondary" type="button" id="brochure-done-btn" style="margin-top:1rem;margin-left:.6rem;">Pokračovať na kvíz</button>
+    <h2>Brožúrka</h2>
+    <p>Brožúrku si môžete prelistovať priamo tu ako skutočnú knižku — alebo si ju stiahnuť do počítača či tabletu. Po prvom otvorení zostane dostupná aj bez internetu.</p>
+    <div id="brochure-flipbook"></div>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1.2rem;">
+      <a class="btn btn-primary" id="brochure-download" style="text-decoration:none;display:inline-block;" download>Stiahnuť brožúrku (PDF)</a>
+      <button class="btn btn-secondary" type="button" id="brochure-done-btn">Pokračovať na kvíz</button>
+    </div>
   </section>
 
   <section class="card step-panel" data-panel="kviz">
@@ -319,6 +322,32 @@ function renderBudgetExercise(ex) {
         btn.style.display = "none";
       });
     });
+  }
+
+  // Brožúrka sa listuje ako kniha. Ak by sa knižnica na čítanie PDF
+  // nenačítala (napr. slabé pripojenie), padneme späť na vstavaný
+  // PDF prehliadač, aby si ju účastník vedel prečítať vždy.
+  function initBrochure(url) {
+    var host = document.getElementById("brochure-flipbook");
+    if (!url) {
+      host.innerHTML = "<p class='hint'>Brožúrka sa čoskoro pridá.</p>";
+      return;
+    }
+    if (!window.initFlipbook) {
+      showBrochureFallback(url, host);
+      return;
+    }
+    window.initFlipbook(host, {
+      url: url,
+      onFail: function () { showBrochureFallback(url, host); },
+    });
+  }
+
+  function showBrochureFallback(url, host) {
+    host.innerHTML =
+      "<iframe id='brochure-frame' src='" + url + "' " +
+      "style='width:100%;height:70vh;border:1px solid var(--line);border-radius:10px;'></iframe>" +
+      "<p class='hint'>Brožúrku si môžete prečítať v prehliadači vyššie alebo stiahnuť tlačidlom nižšie.</p>";
   }
 
   function renderPresentation() {
@@ -867,8 +896,8 @@ function renderBudgetExercise(ex) {
       const firstName = sessionStorage.getItem("mbo_participant_firstname") || sessionStorage.getItem("mbo_participant_name");
       document.getElementById("welcome").textContent = firstName ? "Vitajte späť, " + firstName + "." : "";
 
-      document.getElementById("brochure-frame").src = state.workshop.brochureUrl;
       document.getElementById("brochure-download").href = state.workshop.brochureUrl;
+      initBrochure(state.workshop.brochureUrl);
 
       renderPresentation();
       renderExercise();
