@@ -1341,7 +1341,7 @@ function documentEmailShell(bodyHtml) {
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#fffdf7;border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
           <tr>
             <td style="background-color:#1f3a3d;padding:28px 32px;text-align:center;">
-              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">Múdro a Bezpečne Online</div>
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">DigiStart online vzdelávanie</div>
               <div style="font-size:13px;color:#c9b98f;margin-top:4px;">Kurzy, ktoré vám dávajú istotu v online svete</div>
             </td>
           </tr>
@@ -1369,7 +1369,7 @@ ${bodyHtml}
 const DEFAULT_INVOICE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
               <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">posielame Vám <strong>{{doc_label}} č. {{doc_number}}</strong> k Vašej objednávke kurzu <strong>„{{workshop_title}}“</strong>.</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">posielame Vám <strong>faktúru č. {{doc_number}}</strong> k Vašej objednávke kurzu <strong>„{{workshop_title}}“</strong>.</p>
             </td>
           </tr>
           <tr>
@@ -1389,12 +1389,20 @@ const DEFAULT_INVOICE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:18px 40px 0;">
               <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{extra_line}}</p>
             </td>
+          </tr>
+          <tr>
+            <td style="padding:10px 40px 0;">
+              <p style="margin:0;font-size:14px;line-height:1.55;color:#8a5a1f;background-color:#fbf1de;border-radius:8px;padding:.7rem .9rem;">
+                Pri úhrade bankovým prevodom prosím vždy uvádzajte správny variabilný symbol uvedený vyššie —
+                bez neho sa nám platba nemusí podariť správne priradiť k vašej objednávke.
+              </p>
+            </td>
           </tr>`);
 
 const DEFAULT_POZ_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
               <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">potvrdzujeme, že sme prijali platbu za kurz <strong>„{{workshop_title}}“</strong>. V prílohe nižšie nájdete oficiálne <strong>{{doc_label}} č. {{doc_number}}</strong> na stiahnutie.</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">potvrdzujeme, že sme prijali platbu za kurz <strong>„{{workshop_title}}“</strong>. V prílohe nižšie nájdete oficiálne <strong>potvrdenie o zaplatení č. {{doc_number}}</strong> na stiahnutie.</p>
             </td>
           </tr>
           <tr>
@@ -1602,6 +1610,75 @@ exports.saveEmailSettings = onCall(async (request) => {
 
   await db.collection("emailConfig").doc("smtp").set(update, { merge: true });
   return { ok: true };
+});
+
+// Testovací e-mail pre KONKRÉTNU šablónu (faktúra/POZ/poukaz) — posiela
+// presne to, čo je práve rozpísané v editore, aj keď to ešte nie je
+// uložené. Vzorové údaje sa použijú rovnaké ako pri živom náhľade.
+const TEMPLATE_TEST_SAMPLES = {
+  invoice: {
+    to_name: "Mária Nováková", doc_label: "faktúra", doc_number: "FA20260903001",
+    workshop_title: "Ako nenaletieť podvodníkom", doc_url: "https://mudroabezpecne.sk/",
+    extra_line: "Suma: 39 € · VS: 20260903001",
+  },
+  poz: {
+    to_name: "Mária Nováková", doc_label: "potvrdenie o zaplatení", doc_number: "UH20260903001",
+    workshop_title: "Ako nenaletieť podvodníkom", doc_url: "https://mudroabezpecne.sk/",
+    extra_line: "Spôsob úhrady: Bankovým prevodom · Dátum úhrady: 3. 9. 2026",
+  },
+  voucher: {
+    to_name: "Peter Kilpa", workshop_title: "Ako nenaletieť podvodníkom", code: "BYVNNN",
+    doc_url: "https://mudroabezpecne.sk/",
+    extra_line: "Poukaz je pripravený pre: Janka. Váš odkaz na poukaze: „K narodeninám!“",
+  },
+};
+const TEMPLATE_TEST_SUBJECTS = {
+  invoice: "[TEST] Faktúra",
+  poz: "[TEST] Potvrdenie o zaplatení",
+  voucher: "[TEST] Darčekový poukaz",
+};
+
+exports.sendTestTemplateEmail = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže odosielať testovacie e-maily.");
+  }
+  const { type, template } = request.data || {};
+  if (!TEMPLATE_TEST_SAMPLES[type] || typeof template !== "string" || !template.trim()) {
+    throw new HttpsError("invalid-argument", "Chýba typ šablóny alebo jej obsah.");
+  }
+  const to = request.auth.token.email;
+  if (!to) throw new HttpsError("failed-precondition", "Chýba e-mail prihláseného administrátora.");
+
+  const html = renderDocumentEmailHtml(template, TEMPLATE_TEST_SAMPLES[type]);
+  let status = "sent";
+  let errorMessage = "";
+  try {
+    const { transporter, cfg } = await getSmtpTransporter();
+    await transporter.sendMail(buildMailOptions(cfg, {
+      to,
+      subject: TEMPLATE_TEST_SUBJECTS[type],
+      html,
+    }));
+  } catch (err) {
+    status = "failed";
+    errorMessage = String((err && err.message) || err).slice(0, 300);
+    console.error("Testovací e-mail šablóny zlyhal:", err);
+  }
+
+  try {
+    await db.collection("mail").add({
+      to, docLabel: "test šablóny — " + (TEMPLATE_TEST_SUBJECTS[type] || type), docNumber: null, status, via: "smtp",
+      error: status === "failed" ? errorMessage : null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
+
+  if (status === "failed") {
+    throw new HttpsError("internal", "Odoslanie zlyhalo: " + errorMessage);
+  }
+  return { ok: true, to };
 });
 
 exports.getEmailStats = onCall(async (request) => {

@@ -234,6 +234,13 @@
   }
   .template-code { font-family: 'Courier New', monospace; font-size: .8rem; padding: .8rem; resize: vertical; }
   .template-preview { background: #fff; }
+
+  /* Formulár SMTP nastavení — mriežka namiesto flex-wrap, nech sa polia
+     zarovnajú aj keď sa niektorý popisok zalomí na dva riadky. */
+  .smtp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem 1.2rem; align-items: start; }
+  .smtp-grid .field { display: flex; flex-direction: column; }
+  .smtp-grid .field label { min-height: 2.7em; display: flex; align-items: flex-end; margin-bottom: .35rem; line-height: 1.25; }
+  .smtp-grid .field-actions { grid-column: 1 / -1; }
 </style>
 </head>
 <body>
@@ -963,47 +970,47 @@
 
         <div class="card" style="margin-top:1.5rem;">
           <h2 style="margin-bottom:.8rem;">SMTP pripojenie</h2>
-          <form id="smtp-settings-form" style="display:flex;gap:1rem;flex-wrap:wrap;">
-            <div class="field" style="flex:1;min-width:220px;">
+          <form id="smtp-settings-form" class="smtp-grid">
+            <div class="field">
               <label for="smtp-host">SMTP server</label>
               <input type="text" id="smtp-host" placeholder="smtp.mail.webnode.com" required>
             </div>
-            <div class="field" style="width:110px;">
+            <div class="field">
               <label for="smtp-port">Port</label>
               <input type="number" id="smtp-port" placeholder="465" required>
             </div>
-            <div class="field" style="width:170px;">
+            <div class="field">
               <label for="smtp-secure">Šifrovanie</label>
               <select id="smtp-secure">
                 <option value="ssl">SSL/TLS (zvyčajne 465)</option>
                 <option value="starttls">STARTTLS (zvyčajne 587)</option>
               </select>
             </div>
-            <div class="field" style="flex:1;min-width:220px;">
+            <div class="field">
               <label for="smtp-user">Prihlasovacia e-mailová adresa</label>
               <input type="email" id="smtp-user" placeholder="info@mudroabezpecne.sk" required>
             </div>
-            <div class="field" style="flex:1;min-width:220px;">
+            <div class="field">
               <label for="smtp-from-name">Meno odosielateľa (zobrazí sa v e-maile)</label>
               <input type="text" id="smtp-from-name" placeholder="DigiStart kurzy">
             </div>
-            <div class="field" style="flex:1;min-width:220px;">
+            <div class="field">
               <label for="smtp-password">Heslo</label>
               <input type="password" id="smtp-password" placeholder="Nastaviť/zmeniť heslo" autocomplete="new-password">
               <p class="hint" id="smtp-password-hint" style="margin-top:.3rem;"></p>
             </div>
-            <div class="field" style="flex:1;min-width:220px;">
+            <div class="field">
               <label for="smtp-reply-to">Adresa na odpoveď (Reply-To, nepovinné)</label>
               <input type="email" id="smtp-reply-to" placeholder="Nechajte prázdne, ak rovnaká ako odosielacia">
             </div>
-            <div class="field" style="flex:1;min-width:220px;">
-              <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;">
+            <div class="field">
+              <label style="display:flex;align-items:flex-end;gap:.5rem;font-weight:400;">
                 <input type="checkbox" id="smtp-bcc-enabled" style="width:auto;">
                 Posielať skrytú kópiu (BCC) na:
               </label>
-              <input type="email" id="smtp-bcc-address" placeholder="napr. vlastný e-mail pre archív" style="margin-top:.4rem;">
+              <input type="email" id="smtp-bcc-address" placeholder="napr. vlastný e-mail pre archív">
             </div>
-            <div style="flex-basis:100%;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;">
+            <div class="field-actions" style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;padding-top:.4rem;">
               <button class="btn btn-primary" type="submit">Uložiť nastavenia</button>
               <button class="btn btn-secondary" type="button" id="smtp-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="smtp-dns-btn">Skontrolovať SPF/DKIM/DMARC</button>
@@ -1032,6 +1039,7 @@
             </div>
             <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
               <button class="btn btn-primary" type="button" id="tpl-invoice-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-invoice-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-invoice-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-invoice-result" class="hint"></span>
             </div>
@@ -1045,6 +1053,7 @@
             </div>
             <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
               <button class="btn btn-primary" type="button" id="tpl-poz-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-poz-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-poz-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-poz-result" class="hint"></span>
             </div>
@@ -1058,6 +1067,7 @@
             </div>
             <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
               <button class="btn btn-primary" type="button" id="tpl-voucher-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-voucher-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-voucher-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-voucher-result" class="hint"></span>
             </div>
@@ -1373,6 +1383,30 @@ window.addEventListener("load", function () {
       if (!confirm("Obnoviť pôvodnú šablónu? Neuložené zmeny sa stratia.")) return;
       document.getElementById("tpl-" + type + "-code").value = templateDefaults[type];
       updateTemplatePreview(type);
+    });
+
+    document.getElementById("tpl-" + type + "-test-btn").addEventListener("click", async () => {
+      const resultEl = document.getElementById("tpl-" + type + "-result");
+      const btn = document.getElementById("tpl-" + type + "-test-btn");
+      btn.disabled = true;
+      resultEl.textContent = "Odosielam testovací e-mail…";
+      resultEl.style.color = "";
+      try {
+        const sendTestTemplateEmail = functions.httpsCallable("sendTestTemplateEmail");
+        const res = await sendTestTemplateEmail({
+          type,
+          template: document.getElementById("tpl-" + type + "-code").value,
+        });
+        resultEl.textContent = "Testovací e-mail odoslaný na " + res.data.to + " (aj s prípadnými neuloženými zmenami).";
+        resultEl.style.color = "var(--good)";
+        loadSentEmails();
+        loadEmailStats();
+      } catch (err) {
+        resultEl.textContent = "Zlyhalo: " + err.message;
+        resultEl.style.color = "var(--warn)";
+      } finally {
+        btn.disabled = false;
+      }
     });
   });
 
