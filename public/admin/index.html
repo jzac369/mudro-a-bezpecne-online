@@ -3094,6 +3094,8 @@ window.addEventListener("load", function () {
           sendFn: async () => {
             const sendGiftVoucherEmail = functions.httpsCallable("sendGiftVoucherEmail");
             await sendGiftVoucherEmail({ orderId, codeId });
+            voucherEmailBtn.textContent = "Odoslané ✓";
+            voucherEmailBtn.disabled = true;
           },
         });
       });
@@ -3472,6 +3474,8 @@ window.addEventListener("load", function () {
             sendFn: async () => {
               const sendInvoiceEmail = functions.httpsCallable("sendInvoiceEmail");
               await sendInvoiceEmail({ orderId: doc.id });
+              sendInvoiceBtn.textContent = "Odoslané ✓";
+              sendInvoiceBtn.disabled = true;
             },
           });
         });
@@ -3489,6 +3493,8 @@ window.addEventListener("load", function () {
             sendFn: async () => {
               const sendPaymentConfirmationEmail = functions.httpsCallable("sendPaymentConfirmationEmail");
               await sendPaymentConfirmationEmail({ orderId: doc.id });
+              sendPozBtn.textContent = "Odoslané ✓";
+              sendPozBtn.disabled = true;
             },
           });
         });

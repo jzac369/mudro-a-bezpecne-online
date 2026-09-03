@@ -1149,6 +1149,7 @@ function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
   const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
   const workshop = order.workshopTitleSnapshot || order.workshopId;
   const amount = order.amount != null ? order.amount : 0;
+  const baseAmount = order.baseAmount != null ? order.baseAmount : amount;
 
   doc.font(FONT_BOLD).fontSize(20).text("Faktúra č. " + invoiceNumber);
   doc.moveDown(0.3);
@@ -1165,16 +1166,31 @@ function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
   doc.text("Suma", 480, tableTop);
   doc.moveTo(56, tableTop + 16).lineTo(539, tableTop + 16).strokeColor("#ddd5c2").stroke();
 
-  doc.font(FONT_REGULAR).fontSize(10);
-  const itemY = tableTop + 24;
+  // Riadky faktúry — základná cena a pod ňou prípadné zľavy (skupinová,
+  // zľavový kód), nech je z faktúry vidno, ako sa konečná suma vypočítala,
+  // nielen výsledná cena po odpočítaní.
+  const rows = [];
   const itemLabel = workshop + (order.groupSize > 1 ? " (" + order.groupSize + " účastníci)" : "");
-  doc.text(itemLabel, 56, itemY, { width: 400 });
-  doc.text(amount + " €", 480, itemY);
-  doc.moveTo(56, itemY + 24).lineTo(539, itemY + 24).strokeColor("#ddd5c2").stroke();
+  rows.push({ label: itemLabel, value: baseAmount + " €" });
+  if (order.groupDiscountAmount > 0) {
+    rows.push({ label: "Skupinová zľava (" + (order.groupDiscountPercent || 0) + " %)", value: "−" + order.groupDiscountAmount + " €" });
+  }
+  if (order.couponDiscountAmount > 0) {
+    rows.push({ label: "Zľavový kód" + (order.couponApplied ? " (" + order.couponApplied + ")" : ""), value: "−" + order.couponDiscountAmount + " €" });
+  }
 
-  doc.font(FONT_BOLD).fontSize(13).text("Spolu: " + amount + " €", 56, itemY + 36);
+  doc.font(FONT_REGULAR).fontSize(10);
+  let itemY = tableTop + 24;
+  rows.forEach((row) => {
+    doc.text(row.label, 56, itemY, { width: 400 });
+    doc.text(row.value, 480, itemY);
+    itemY += 20;
+  });
+  doc.moveTo(56, itemY + 4).lineTo(539, itemY + 4).strokeColor("#ddd5c2").stroke();
+
+  doc.font(FONT_BOLD).fontSize(13).text("Spolu: " + amount + " €", 56, itemY + 16);
   doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
-    .text("Variabilný symbol: " + invoiceNumber.slice(2), 56, itemY + 60);
+    .text("Variabilný symbol: " + invoiceNumber.slice(2), 56, itemY + 40);
 }
 
 const PAYMENT_METHOD_LABELS = { card: "Platobnou kartou", transfer: "Bankovým prevodom", cash: "V hotovosti" };
