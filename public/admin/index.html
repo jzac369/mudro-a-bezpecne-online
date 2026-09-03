@@ -573,7 +573,7 @@
                   <th>Akcia</th>
                 </tr>
               </thead>
-              <tbody id="orders-body"></tbody>
+              <tbody id="orders-body"><tr><td colspan="10" class="hint">Načítavam registrácie…</td></tr></tbody>
             </table>
           </div>
           <button class="btn btn-secondary" id="load-more" style="margin-top:1rem;">Načítať ďalšie</button>
@@ -647,8 +647,8 @@
           </div>
           <div style="overflow-x:auto;margin-top:1rem;">
             <table class="dash">
-              <thead><tr><th>Kedy</th><th>Účastník</th><th>Kurz</th><th>Suma</th></tr></thead>
-              <tbody id="transfer-transactions-body"><tr><td colspan="4" class="hint">Načítavam…</td></tr></tbody>
+              <thead><tr><th>Dátum objednávky / platby</th><th>Účastník</th><th>Prístupový kód</th><th>E-mail</th><th>Kurz</th><th>Suma</th></tr></thead>
+              <tbody id="transfer-transactions-body"><tr><td colspan="6" class="hint">Načítavam…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1353,7 +1353,7 @@ window.addEventListener("load", function () {
 
   async function loadTransferPayments(days) {
     const body = document.getElementById("transfer-transactions-body");
-    body.innerHTML = "<tr><td colspan='4' class='hint'>Načítavam…</td></tr>";
+    body.innerHTML = "<tr><td colspan='6' class='hint'>Načítavam…</td></tr>";
     try {
       // Filtrujeme podľa spôsobu platby až v JS (nie vo Firestore dotaze) —
       // kombinácia "!=" s "==" filtrom by vo Firestore vyžadovala zložený
@@ -1363,9 +1363,9 @@ window.addEventListener("load", function () {
       const snap = await db.collection("orders").where("status", "==", "code_sent").get();
 
       const rows = snap.docs
-        .map((d) => d.data())
-        .filter((o) => o.paymentMethod !== "card" && o.paidAt && o.paidAt.toDate() >= since)
-        .sort((a, b) => b.paidAt.toDate() - a.paidAt.toDate());
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((o) => o.paymentMethod !== "card" && ((o.paidAt && o.paidAt.toDate() >= since) || (!o.paidAt && o.createdAt && o.createdAt.toDate() >= since)))
+        .sort((a, b) => (b.paidAt || b.createdAt).toDate() - (a.paidAt || a.createdAt).toDate());
 
       const count = rows.length;
       const total = rows.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
@@ -1373,18 +1373,30 @@ window.addEventListener("load", function () {
       document.getElementById("transfer-total").textContent = total.toFixed(2) + " €";
 
       if (!rows.length) {
-        body.innerHTML = "<tr><td colspan='4' class='hint'>Za toto obdobie žiadne platby prevodom.</td></tr>";
+        body.innerHTML = "<tr><td colspan='6' class='hint'>Za toto obdobie žiadne platby prevodom.</td></tr>";
         return;
       }
+
+      // Prístupové kódy sú uložené v osobitnej kolekcii — dotiahneme ich
+      // hromadne (po 10 orderId, limit Firestore "in" dotazu), nie po jednom.
+      const codeByOrderId = {};
+      const orderIds = rows.map((o) => o.id);
+      for (let i = 0; i < orderIds.length; i += 10) {
+        const chunk = orderIds.slice(i, i + 10);
+        const codeSnap = await db.collection("accessCodes").where("orderId", "in", chunk).get();
+        codeSnap.docs.forEach((cd) => { codeByOrderId[cd.data().orderId] = cd.id; });
+      }
+
       body.innerHTML = rows.map((o) => {
-        const when = o.paidAt.toDate().toLocaleString("sk-SK");
-        return "<tr><td>" + when + "</td><td>" + escapeHtml(o.name || "—") + "</td><td>" +
+        const when = (o.paidAt || o.createdAt).toDate().toLocaleString("sk-SK");
+        return "<tr><td>" + when + "</td><td>" + escapeHtml(o.name || "—") + "</td><td class='mono'>" +
+          escapeHtml(codeByOrderId[o.id] || "—") + "</td><td>" + escapeHtml(o.email || "—") + "</td><td>" +
           escapeHtml(workshopTitle(o.workshopId)) + "</td><td>" + (Number(o.amount) || 0).toFixed(2) + " €" +
           (o.paymentMethod ? " <span class='hint'>(" + (PAYMENT_METHOD_LABELS_PLATBY[o.paymentMethod] || o.paymentMethod) + ")</span>" : "") +
           "</td></tr>";
       }).join("");
     } catch (err) {
-      body.innerHTML = "<tr><td colspan='4' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
+      body.innerHTML = "<tr><td colspan='6' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
     }
   }
 
@@ -3339,16 +3351,18 @@ window.addEventListener("load", function () {
     try {
       const auditSnap = await db.collection("orderAuditLog").where("orderId", "==", orderId).orderBy("editedAt", "desc").limit(10).get();
       if (!auditSnap.empty) {
-        auditHtml = "<h3 style='margin-top:1.4rem;'>História úprav údajov</h3>" +
+        auditHtml = "<h3 style='margin-top:1.4rem;'>História a udalosti</h3>" +
           auditSnap.docs.map((d) => {
             const a = d.data();
             const when = a.editedAt ? a.editedAt.toDate().toLocaleString("sk-SK") : "—";
-            const changeLines = Object.entries(a.changes || {}).map(([field, c]) =>
-              escapeHtml(field) + ": „" + escapeHtml(c.from || "—") + "“ → „" + escapeHtml(c.to || "—") + "“"
-            ).join("<br>");
+            const line = a.note
+              ? escapeHtml(a.note)
+              : Object.entries(a.changes || {}).map(([field, c]) =>
+                  escapeHtml(field) + ": „" + escapeHtml(c.from || "—") + "“ → „" + escapeHtml(c.to || "—") + "“"
+                ).join("<br>");
             return "<div class='session-row' style='flex-direction:column;align-items:flex-start;gap:.2rem;padding:.5rem 0;'>" +
               "<div class='hint'>" + when + " · " + escapeHtml(a.editedBy || "—") + "</div>" +
-              "<div style='font-size:.9rem;'>" + changeLines + "</div></div>";
+              "<div style='font-size:.9rem;'>" + line + "</div></div>";
           }).join("");
       }
     } catch (err) {

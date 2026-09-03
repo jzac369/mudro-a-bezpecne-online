@@ -579,14 +579,16 @@ exports.resendCode = onCall(async (request) => {
     .get();
 
   if (!ordersSnap.empty) {
+    const orderId = ordersSnap.docs[0].id;
     const order = ordersSnap.docs[0].data();
     const codesSnap = await db
       .collection("accessCodes")
-      .where("orderId", "==", ordersSnap.docs[0].id)
+      .where("orderId", "==", orderId)
       .get();
     if (!codesSnap.empty) {
       const codes = codesSnap.docs.map((d) => d.data().code);
       await sendWelcomeSmtpEmail({ to: email, name: order.firstName || order.name, codes, workshopId: order.workshopId });
+      await logOrderEvent(orderId, "Účastník požiadal o opätovné poslanie kódu („Nemôžem nájsť svoj kód“).", email);
     }
   }
 
@@ -2119,6 +2121,8 @@ exports.sendGiftVoucherEmail = onCall(async (request) => {
     giftMessage: order.giftMessage || null,
   });
 
+  await logOrderEvent(orderId, "Darčekový poukaz odoslaný e-mailom.", request.auth.token.email);
+
   return { url };
 });
 
@@ -2155,6 +2159,8 @@ exports.sendInvoiceEmail = onCall(async (request) => {
     extraLine: "Suma: " + (order.amount != null ? order.amount : "—") + " € · VS: " + invoiceNumber.slice(2),
     docType: "invoice",
   });
+
+  await logOrderEvent(orderId, "Faktúra č. " + invoiceNumber + " odoslaná e-mailom.", request.auth.token.email);
 
   return { invoiceNumber, url };
 });
@@ -2195,6 +2201,8 @@ exports.sendPaymentConfirmationEmail = onCall(async (request) => {
     extraLine: "Spôsob úhrady: " + paymentMethodLabel + " · Dátum úhrady: " + paidDate,
     docType: "poz",
   });
+
+  await logOrderEvent(orderId, "Potvrdenie o zaplatení č. " + pozNumber + " odoslané e-mailom.", request.auth.token.email);
 
   return { pozNumber, url };
 });
@@ -2397,6 +2405,24 @@ exports.getOrderPaymentStatus = onCall(async (request) => {
     emailMasked: maskEmail(order.email || ""),
   };
 });
+
+// Zápis udalosti do histórie konkrétnej objednávky (zobrazuje sa v
+// admin zóne v detaile účastníka). Na rozdiel od zmien kontaktných
+// údajov (pole changes) ide o jednoduchú textovú poznámku — napr.
+// "Faktúra odoslaná e-mailom". Zámerne nehádže chybu pri zlyhaní, nech
+// zápis do histórie nikdy nezablokuje samotnú akciu (odoslanie e-mailu a pod.).
+async function logOrderEvent(orderId, note, editedBy) {
+  try {
+    await db.collection("orderAuditLog").add({
+      orderId,
+      note,
+      editedBy: editedBy || "systém",
+      editedAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("Nepodarilo sa zapísať udalosť do histórie objednávky:", err);
+  }
+}
 
 function maskEmail(email) {
   const at = email.indexOf("@");
