@@ -116,8 +116,8 @@ function computeFreeSlots(dateStr, durationMin, availability, existingBookings) 
 // sa cez ňu dal niekto presmerovať na cudziu stránku.
 const ALLOWED_RETURN_ORIGINS = [
   "https://jzac369.github.io/mudro-a-bezpecne-online",
-  "https://mudroabezpecne.sk",
-  "https://www.mudroabezpecne.sk",
+  "https://kurzy.digistart.sk",
+  "https://www.kurzy.digistart.sk",
 ];
 
 function pickAllowedOrigin(candidate) {
@@ -1306,7 +1306,7 @@ function drawGiftVoucherPdf(doc, { s, order, code }) {
 
   y += 40;
   doc.font(FONT_BOLD).fontSize(9).fillColor(MUTED)
-    .text("MÚDRO A BEZPEČNE ONLINE", 0, y, { width: W, align: "center", characterSpacing: 1.5 });
+    .text("VZDELÁVACIE KURZY DIGISTART", 0, y, { width: W, align: "center", characterSpacing: 1.5 });
 
   y += 20;
   doc.font(FONT_BOLD).fontSize(28).fillColor(INK)
@@ -1353,7 +1353,7 @@ function drawGiftVoucherPdf(doc, { s, order, code }) {
   y += codeBoxH + 16;
 
   doc.font(FONT_REGULAR).fontSize(10).fillColor(MUTED)
-    .text("Kód zadajte na stránke mudroabezpecne.sk/prihlasenie.html", 0, y, { width: W, align: "center" });
+    .text("Kód zadajte na stránke www.kurzy.digistart.sk/prihlasenie.html", 0, y, { width: W, align: "center" });
 
   y += 50;
   doc.font(FONT_REGULAR).fontSize(10).fillColor(MUTED)
@@ -1403,7 +1403,7 @@ function documentEmailShell(bodyHtml) {
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#fffdf7;border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
           <tr>
             <td style="background-color:#1f3a3d;padding:28px 32px;text-align:center;">
-              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">DigiStart online vzdelávanie</div>
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">Vzdelávacie kurzy DigiStart</div>
               <div style="font-size:13px;color:#c9b98f;margin-top:4px;">Kurzy, ktoré vám dávajú istotu v online svete</div>
             </td>
           </tr>
@@ -1418,7 +1418,7 @@ ${bodyHtml}
           <tr><td style="height:1px;background-color:#ddd5c2;line-height:1px;font-size:0;">&nbsp;</td></tr>
           <tr>
             <td align="center" style="padding:18px 24px;">
-              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na mudroabezpecne.sk.</p>
+              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na www.kurzy.digistart.sk.</p>
             </td>
           </tr>
         </table>
@@ -1435,7 +1435,7 @@ const DEFAULT_WELCOME_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;backgroun
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#fffdf7;border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
           <tr>
             <td style="background-color:#1f3a3d;padding:28px 32px;text-align:center;">
-              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">DigiStart online vzdelávanie</div>
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">Vzdelávacie kurzy DigiStart</div>
               <div style="font-size:13px;color:#c9b98f;margin-top:4px;">Kurzy, ktoré vám dávajú istotu v online svete</div>
             </td>
           </tr>
@@ -1480,7 +1480,7 @@ const DEFAULT_WELCOME_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;backgroun
           </tr>
           <tr>
             <td align="center" style="padding:28px 40px 8px;">
-              <a href="https://mudroabezpecne.sk/prihlasenie.html" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 36px;border-radius:999px;">Prihlásiť sa do kurzu</a>
+              <a href="https://kurzy.digistart.sk/prihlasenie.html" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 36px;border-radius:999px;">Prihlásiť sa do kurzu</a>
             </td>
           </tr>
           <tr>
@@ -1497,7 +1497,7 @@ const DEFAULT_WELCOME_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;backgroun
           <tr><td style="height:1px;background-color:#ddd5c2;line-height:1px;font-size:0;">&nbsp;</td></tr>
           <tr>
             <td align="center" style="padding:18px 24px;">
-              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na mudroabezpecne.sk.</p>
+              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na www.kurzy.digistart.sk.</p>
             </td>
           </tr>
         </table>
@@ -1762,17 +1762,17 @@ exports.saveEmailSettings = onCall(async (request) => {
 const TEMPLATE_TEST_SAMPLES = {
   invoice: {
     to_name: "Mária Nováková", doc_label: "faktúra", doc_number: "FA20260903001",
-    workshop_title: "Ako nenaletieť podvodníkom", doc_url: "https://mudroabezpecne.sk/",
+    workshop_title: "Ako nenaletieť podvodníkom", doc_url: "https://kurzy.digistart.sk/",
     extra_line: "Suma: 39 € · VS: 20260903001",
   },
   poz: {
     to_name: "Mária Nováková", doc_label: "potvrdenie o zaplatení", doc_number: "UH20260903001",
-    workshop_title: "Ako nenaletieť podvodníkom", doc_url: "https://mudroabezpecne.sk/",
+    workshop_title: "Ako nenaletieť podvodníkom", doc_url: "https://kurzy.digistart.sk/",
     extra_line: "Spôsob úhrady: Bankovým prevodom · Dátum úhrady: 3. 9. 2026",
   },
   voucher: {
     to_name: "Peter Kilpa", workshop_title: "Ako nenaletieť podvodníkom", code: "BYVNNN",
-    doc_url: "https://mudroabezpecne.sk/",
+    doc_url: "https://kurzy.digistart.sk/",
     extra_line: "Poukaz je pripravený pre: Janka. Váš odkaz na poukaze: „K narodeninám!“",
   },
   welcome: {
@@ -1920,7 +1920,7 @@ exports.sendTestSmtpEmail = onCall(async (request) => {
       subject: "Testovací e-mail — SMTP nastavenia fungujú",
       html:
         "<p style='font-family:Arial,sans-serif;font-size:15px;color:#1f3a3d;'>" +
-        "Toto je testovací e-mail z admin zóny mudroabezpecne.sk (sekcia E-maily).<br>" +
+        "Toto je testovací e-mail z admin zóny www.kurzy.digistart.sk (sekcia E-maily).<br>" +
         "Ak ho vidíte, SMTP nastavenia sú funkčné.</p>",
     }));
   } catch (err) {

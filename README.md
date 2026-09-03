@@ -1,4 +1,4 @@
-# Múdro a Bezpečne Online
+# Vzdelávacie kurzy DigiStart
 
 Portál pre dva platené online workshopy pre seniorov:
 

@@ -142,7 +142,7 @@
     ctx.textAlign = "left";
     ctx.font = "700 14px 'Atkinson Hyperlegible', sans-serif";
     ctx.fillStyle = "#c17a2e";
-    ctx.fillText("M Ú D R O   A   B E Z P E Č N E   O N L I N E", 90, 90);
+    ctx.fillText("V Z D E L Á V A C I E   K U R Z Y   D I G I S T A R T", 90, 90);
 
     ctx.textAlign = "center";
 
@@ -163,7 +163,7 @@
 
     ctx.font = "20px 'Atkinson Hyperlegible', sans-serif";
     ctx.fillStyle = "#332f28";
-    ctx.fillText("Tento certifikát vystavuje Múdro a Bezpečne Online za úspešné absolvovanie", W / 2, 410);
+    ctx.fillText("Tento certifikát vystavuje Vzdelávacie kurzy DigiStart za úspešné absolvovanie", W / 2, 410);
     ctx.fillText("vzdelávacieho kurzu, ktorý absolvoval(a):", W / 2, 438);
 
     // Meno účastníka — pri dlhom mene zmenšíme písmo, aby sa zmestilo.
@@ -251,7 +251,7 @@
     ctx.font = "12px 'Atkinson Hyperlegible', sans-serif";
     ctx.fillStyle = "#8a8474";
     ctx.textAlign = "left";
-    ctx.fillText("mudroabezpecne.sk", 90, H - 50);
+    ctx.fillText("www.kurzy.digistart.sk", 90, H - 50);
 
     return canvas.toDataURL("image/png");
   };

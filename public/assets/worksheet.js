@@ -303,7 +303,7 @@
     ctx.font = "11px 'Atkinson Hyperlegible', Arial, sans-serif";
     ctx.fillStyle = "#8a8474";
     ctx.textAlign = "left";
-    ctx.fillText("mudroabezpecne.sk", M, H - 40);
+    ctx.fillText("www.kurzy.digistart.sk", M, H - 40);
     ctx.textAlign = "right";
     ctx.fillText(spec.footer || "Pracovný list ku kurzu", W - M, H - 40);
 
