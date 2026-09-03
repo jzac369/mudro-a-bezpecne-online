@@ -600,8 +600,8 @@
     const linesSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     linesSvg.setAttribute("class", "course-match-lines");
     wrap.appendChild(linesSvg);
-    const leftCol = el("div", "course-match-col");
-    const rightCol = el("div", "course-match-col");
+    const leftCol = el("div", "course-match-col side-left");
+    const rightCol = el("div", "course-match-col side-right");
     const rightsShuffled = shuffle(slide.pairs.map((p, i) => ({ text: p.right, i })));
 
     let selLeft = null, selRight = null;
@@ -760,6 +760,14 @@
     const hasPhoto = !!slide.evidenceImage;
     const screen = el("div", "course-hotspot-screen" + (hasPhoto ? " has-photo" : ""));
     if (hasPhoto) {
+      // Ak fotka zobrazuje konkrétnu aplikáciu (napr. ChatGPT), pridáme
+      // nad ňu malý pruh ako v okne aplikácie, nech je hneď jasné, čo je
+      // na obrázku vidno — inak splýva priamo so stránkou.
+      if (slide.evidenceImage.appLabel) {
+        screen.appendChild(el("div", "course-hotspot-titlebar",
+          "<span class='course-hotspot-dots'><i></i><i></i><i></i></span>" +
+          "<span class='course-hotspot-titlebar-label'>" + slide.evidenceImage.appLabel + "</span>"));
+      }
       const img = el("img", "course-hotspot-photo");
       img.src = slide.evidenceImage.src;
       img.alt = slide.evidenceImage.caption || "";

@@ -62,6 +62,18 @@
     var y = (pageH - h) / 2;
 
     doc.addImage(dataUrl, "PNG", x, y, w, h, undefined, "FAST");
+
+    // Predvolene sa PDF rovno stiahne. Pri opts.action === "open" sa namiesto
+    // toho otvorí v novej karte (natívny PDF prehliadač) — použité pri tlači,
+    // aby sa dala využiť skutočná tlač prehliadača na presne jednu stranu,
+    // namiesto starého postupu cez prázdne okno + document.write, do ktorého
+    // vedeli zasahovať rozšírenia prehliadača a pridávať ďalšie strany navyše.
+    if (opts.action === "open") {
+      var blobUrl = doc.output("bloburl");
+      var w2 = window.open(blobUrl, "_blank");
+      return !!w2;
+    }
+
     doc.save(filename);
     return true;
   };

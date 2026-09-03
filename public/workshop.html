@@ -867,27 +867,30 @@
         }
       });
 
-      document.getElementById("cert-print-btn").addEventListener("click", () => {
-        const src = document.getElementById("cert-preview").src;
-        const w = window.open("", "_blank");
-        if (!w) {
-          alert("Prehliadač zablokoval otvorenie okna na tlač. Povoľte prosím vyskakovacie okná a skúste to znova, alebo si certifikát stiahnite tlačidlom vedľa.");
-          return;
+      document.getElementById("cert-print-btn").addEventListener("click", async () => {
+        const btn = document.getElementById("cert-print-btn");
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Pripravujem…";
+        try {
+          const src = document.getElementById("cert-preview").src;
+          // Otvoríme skutočné jednostranové PDF v novej karte (rovnaká
+          // príprava ako pri "Stiahnuť certifikát"), nech tlač ide z
+          // natívneho PDF prehliadača — vždy presne jedna strana A4.
+          // Pôvodný postup (prázdne okno + document.write) niekedy
+          // pridával ďalšie prázdne strany navyše kvôli zásahu rozšírení
+          // prehliadača do prázdneho okna.
+          const opened = await window.savePdfFromImage(src, { filename: "certifikat.pdf", orientation: "landscape", action: "open" });
+          if (!opened) {
+            alert("Prehliadač zablokoval otvorenie okna na tlač. Povoľte prosím vyskakovacie okná a skúste to znova, alebo si certifikát stiahnite tlačidlom vedľa.");
+          }
+        } catch (err) {
+          console.error("Certifikát sa nepodarilo pripraviť na tlač:", err);
+          alert("Certifikát sa nepodarilo pripraviť na tlač. Skúste to prosím znova, alebo si ho stiahnite tlačidlom vedľa.");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = original;
         }
-        // Certifikát je na šírku — stranu preto otočíme, aby sa vytlačil
-        // cez celý papier a nezostali okolo neho veľké biele okraje.
-        w.document.write(
-          "<!doctype html><html lang='sk'><head><meta charset='utf-8'><title>Certifikát</title>" +
-          "<style>" +
-          "@page { size: A4 landscape; margin: 8mm; }" +
-          "html,body { margin:0; padding:0; }" +
-          "img { display:block; width:100%; height:auto; }" +
-          "@media print { img { width:100%; height:auto; } }" +
-          "</style></head><body>" +
-          "<img src='" + src + "' alt='Certifikát' onload='window.focus();window.print();'>" +
-          "</body></html>"
-        );
-        w.document.close();
       });
       document.getElementById("logout-btn").addEventListener("click", () => doLogout("manual"));
 

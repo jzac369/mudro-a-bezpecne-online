@@ -118,6 +118,7 @@ window.COURSE_SLIDES = [
     evidenceImage: {
       src: "assets/course-media/evidence/chatgpt-screenshot.jpg",
       caption: "Skutočná obrazovka aplikácie ChatGPT na tablete — presne takto to uvidíte aj vy.",
+      appLabel: "ChatGPT",
     },
   },
   {

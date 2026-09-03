@@ -402,7 +402,7 @@ label {
 .course-sidenote-item.info svg { color: var(--focus); }
 
 /* sort / drag & drop */
-.course-pool { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1.1rem; min-height: 50px; }
+.course-pool { display: flex; flex-direction: column; gap: .65rem; margin-top: 1.1rem; min-height: 50px; }
 .course-item {
   display: flex; align-items: center; gap: .55rem;
   background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
@@ -432,7 +432,10 @@ label {
 .course-basket-text { display: flex; flex-direction: column; gap: .2rem; padding-top: .1rem; }
 .course-basket-title { font-weight: 700; }
 .course-basket-desc { font-size: .82rem; color: var(--text-mute); font-weight: 400; line-height: 1.4; }
-.course-basket-drop { display: flex; flex-wrap: wrap; gap: .5rem; min-height: 60px; }
+/* Umiestnené kartičky idú pod seba (nie vedľa seba) — inak sa dlhší
+   text v úzkom stĺpci zalamuje na drobné, neprehľadné kúsky. */
+.course-basket-drop { display: flex; flex-direction: column; gap: .5rem; min-height: 60px; }
+.course-basket-drop .course-item { width: 100%; }
 
 .course-basket.tone-danger { border: 2px solid var(--warn); background: var(--warn-bg); }
 .course-basket.tone-danger .course-basket-icon-wrap { background: var(--warn); }
@@ -454,14 +457,19 @@ label {
 .course-match-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; }
 .course-match-thread { fill: none; stroke: var(--accent, #c17a2e); stroke-width: 2; stroke-dasharray: 5 5; stroke-linecap: round; opacity: .85; }
 .course-match-col { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .6rem; }
+/* Farebný prúžok na kartičkách — nech je na prvý pohľad jasné, že ľavý
+   a pravý stĺpec sú dve odlišné skupiny (kartičky, ktoré k sebe treba
+   priradiť, nie dva rovnaké zoznamy). */
 .course-match-item {
   background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
-  padding: .75rem .95rem; font-size: .92rem; cursor: pointer; transition: border-color .15s ease, transform .15s ease;
-  box-shadow: var(--course-shadow-soft);
+  padding: .75rem .95rem .75rem 1.1rem; font-size: .92rem; cursor: pointer; transition: border-color .15s ease, transform .15s ease;
+  box-shadow: var(--course-shadow-soft); border-left-width: 5px;
 }
+.course-match-col.side-left .course-match-item { border-left-color: var(--ink-soft, #3d5a5e); }
+.course-match-col.side-right .course-match-item { border-left-color: var(--accent, #c17a2e); }
 .course-match-item:hover { transform: translateY(-2px); }
-.course-match-item.selected { border-color: var(--focus); background: var(--surface-2); }
-.course-match-item.solved { border-color: var(--good); background: var(--good-bg); cursor: default; transform: none; }
+.course-match-item.selected { border-color: var(--focus); border-left-color: var(--focus); background: var(--surface-2); }
+.course-match-item.solved { border-color: var(--good); border-left-color: var(--good); background: var(--good-bg); cursor: default; transform: none; }
 .course-match-item.shake { animation: course-shake .4s; }
 
 /* sequence */
@@ -502,8 +510,20 @@ label {
 .course-hotspot-card h4 { margin: 0 0 .3rem; font-size: .98rem; }
 .course-hotspot-card p { margin: 0; font-size: .9rem; }
 
-.course-hotspot-screen.has-photo { padding: 0; background: none; min-height: 0; overflow: hidden; border-radius: 18px; }
-.course-hotspot-photo { display: block; width: 100%; border-radius: 18px; }
+.course-hotspot-screen.has-photo {
+  padding: 0; background: var(--surface); min-height: 0; overflow: hidden; border-radius: 18px;
+  border: 2px solid var(--line); box-shadow: var(--course-shadow-soft, 0 6px 18px rgba(0,0,0,.1));
+}
+.course-hotspot-photo { display: block; width: 100%; }
+/* Malý pruh ako v okne aplikácie nad screenshotom (napr. ChatGPT) —
+   jasne označí, čo účastník na obrázku vidí. */
+.course-hotspot-titlebar {
+  display: flex; align-items: center; gap: .6rem; padding: .55rem .8rem;
+  background: var(--surface-2); border-bottom: 1px solid var(--line);
+}
+.course-hotspot-dots { display: flex; gap: .3rem; flex: none; }
+.course-hotspot-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--line); display: block; }
+.course-hotspot-titlebar-label { font-size: .82rem; font-weight: 700; color: var(--text-mute); }
 .course-hotspot-legend { display: flex; flex-direction: column; gap: .7rem; margin-top: 1.2rem; }
 .course-hotspot-legend-item {
   display: flex; gap: .8rem; align-items: flex-start; padding: .85rem 1.05rem;
