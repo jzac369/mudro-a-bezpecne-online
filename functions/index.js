@@ -200,26 +200,29 @@ exports.createOrder = onCall(async (request) => {
     if (codeId) {
       try {
         const codeRef = db.collection("discountCodes").doc(codeId);
-        const discountAmount = await db.runTransaction(async (tx) => {
+        // Kód sa započíta (pre affiliate štatistiky aj usedCount), aj keď
+        // je jeho hodnota 0 % / 0 € — partnerský kód môže slúžiť len na
+        // sledovanie provízie bez toho, aby dával zákazníkovi zľavu.
+        const result = await db.runTransaction(async (tx) => {
           const codeSnap = await tx.get(codeRef);
-          if (!codeSnap.exists) return 0;
+          if (!codeSnap.exists) return { valid: false };
           const c = codeSnap.data();
-          if (!c.active) return 0;
+          if (!c.active) return { valid: false };
           const today = new Date().toISOString().slice(0, 10);
-          if (c.validFrom && today < c.validFrom) return 0;
-          if (c.validUntil && today > c.validUntil) return 0;
-          if (c.appliesTo && c.appliesTo !== "all" && c.appliesTo !== workshopId) return 0;
-          if (c.maxUses > 0 && (c.usedCount || 0) >= c.maxUses) return 0;
+          if (c.validFrom && today < c.validFrom) return { valid: false };
+          if (c.validUntil && today > c.validUntil) return { valid: false };
+          if (c.appliesTo && c.appliesTo !== "all" && c.appliesTo !== workshopId) return { valid: false };
+          if (c.maxUses > 0 && (c.usedCount || 0) >= c.maxUses) return { valid: false };
 
           const raw = c.type === "fixed" ? Number(c.value) : amount * (Number(c.value) / 100);
           const discount = Math.round(Math.min(Math.max(raw, 0), amount) * 100) / 100;
           tx.update(codeRef, { usedCount: FieldValue.increment(1) });
-          return discount;
+          return { valid: true, discount };
         });
-        if (discountAmount > 0) {
-          amount = Math.round((amount - discountAmount) * 100) / 100;
+        if (result.valid) {
+          amount = Math.round((amount - result.discount) * 100) / 100;
           couponApplied = codeId;
-          couponDiscountAmount = discountAmount;
+          couponDiscountAmount = result.discount;
         }
       } catch (err) {
         console.error("Overenie zľavového kódu zlyhalo:", err);
