@@ -454,30 +454,6 @@
       <section class="dash-section active" data-section="registracie">
         <h1>Registrácie</h1>
 
-        <div class="card" style="margin-bottom:1.5rem;" id="generate-card">
-          <h2>Vygenerovať prístupový kód ručne</h2>
-          <form id="generate-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
-            <div class="field" style="flex:1;min-width:140px;">
-              <label for="g-firstname">Meno</label><input type="text" id="g-firstname" required>
-            </div>
-            <div class="field" style="flex:1;min-width:140px;">
-              <label for="g-lastname">Priezvisko</label><input type="text" id="g-lastname">
-            </div>
-            <div class="field" style="flex:1;min-width:160px;">
-              <label for="g-email">E-mail (nepovinné)</label><input type="email" id="g-email">
-            </div>
-            <div class="field" style="min-width:200px;">
-              <label for="g-workshop">Kurz</label>
-              <select id="g-workshop">
-                <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
-                <option value="zaciname-s-ai">Začíname s umelou inteligenciou</option>
-              </select>
-            </div>
-            <button class="btn btn-primary" type="submit">Vygenerovať kód</button>
-          </form>
-          <p id="generate-result" class="hint" style="margin-top:1rem;"></p>
-        </div>
-
         <div class="card">
           <div class="toolbar">
             <div class="field">
@@ -498,8 +474,34 @@
             </div>
             <div style="flex:1;"></div>
             <button class="btn btn-secondary" id="delete-selected" style="display:none;">Vymazať vybrané (<span id="delete-selected-count">0</span>)</button>
+            <button class="btn btn-secondary" id="toggle-generate-card">Vygenerovať kód ručne</button>
             <button class="btn btn-secondary" id="export-csv">Export CSV</button>
           </div>
+
+          <div class="card" style="margin:1rem 0 1.5rem;background:var(--surface-2);display:none;" id="generate-card">
+            <h2>Vygenerovať prístupový kód ručne</h2>
+            <form id="generate-form" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:end;">
+              <div class="field" style="flex:1;min-width:140px;">
+                <label for="g-firstname">Meno</label><input type="text" id="g-firstname" required>
+              </div>
+              <div class="field" style="flex:1;min-width:140px;">
+                <label for="g-lastname">Priezvisko</label><input type="text" id="g-lastname">
+              </div>
+              <div class="field" style="flex:1;min-width:160px;">
+                <label for="g-email">E-mail (nepovinné)</label><input type="email" id="g-email">
+              </div>
+              <div class="field" style="min-width:200px;">
+                <label for="g-workshop">Kurz</label>
+                <select id="g-workshop">
+                  <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
+                  <option value="zaciname-s-ai">Začíname s umelou inteligenciou</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" type="submit">Vygenerovať kód</button>
+            </form>
+            <p id="generate-result" class="hint" style="margin-top:1rem;"></p>
+          </div>
+
           <div style="overflow-x:auto;">
             <table class="dash" id="orders-table">
               <thead>
@@ -2554,7 +2556,7 @@ window.addEventListener("load", function () {
           : "bez obmedzenia";
         const tr = document.createElement("tr");
         tr.innerHTML =
-          "<td><span class='mono'>" + escapeHtml(id) + "</span></td>" +
+          "<td><span class='mono code-copy' data-copy-code='" + escapeHtml(id) + "' title='Kliknutím skopírovať'>" + escapeHtml(id) + "</span></td>" +
           "<td>" + valueLabel + " <span class='chip " + st.chip + "' style='font-size:.7rem;'>" + st.label + "</span></td>" +
           "<td>" + (WORKSHOP_LABELS_DC[c.appliesTo] || "Všetky kurzy") + "</td>" +
           "<td>" + usesLabel + "</td>" +
@@ -2571,6 +2573,18 @@ window.addEventListener("load", function () {
 
       if (activeCount === 0) activeBody.innerHTML = "<tr><td colspan='7' class='hint'>Žiadne aktívne kódy.</td></tr>";
       if (inactiveCount === 0) inactiveBody.innerHTML = "<tr><td colspan='7' class='hint'>Žiadne neaktívne/vypršané kódy.</td></tr>";
+
+      document.querySelectorAll("#dc-active-body [data-copy-code], #dc-inactive-body [data-copy-code]").forEach((copyEl) => {
+        copyEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const code = copyEl.dataset.copyCode;
+          navigator.clipboard.writeText(code).then(() => {
+            const original = copyEl.textContent;
+            copyEl.textContent = "Skopírované ✓";
+            setTimeout(() => { copyEl.textContent = original; }, 1200);
+          }).catch(() => {});
+        });
+      });
 
       document.querySelectorAll("[data-dc-edit]").forEach((btn) => {
         btn.addEventListener("click", async () => {
@@ -3603,6 +3617,13 @@ window.addEventListener("load", function () {
       th.querySelector(".arrow").textContent = sortDir === 1 ? "▲" : "▼";
       if (lastSnapshot) renderOrders(lastSnapshot);
     });
+  });
+
+  document.getElementById("toggle-generate-card").addEventListener("click", (e) => {
+    const card = document.getElementById("generate-card");
+    const isHidden = card.style.display === "none";
+    card.style.display = isHidden ? "block" : "none";
+    if (isHidden) document.getElementById("g-firstname").focus();
   });
 
   document.getElementById("export-csv").addEventListener("click", async () => {
