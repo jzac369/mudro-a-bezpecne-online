@@ -157,5 +157,20 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if isAdmin();
     }
+
+    // SMTP prihlasovacie údaje (vrátane hesla) na odosielanie faktúr a
+    // potvrdení o zaplatení. Zámerne READ AJ WRITE VŽDY false — číta a
+    // zapisuje výhradne Admin SDK cez getEmailSettings/saveEmailSettings,
+    // ktoré heslo z odpovede vynechávajú. Priamy klientský prístup
+    // (aj adminovi) by heslo posielal do prehliadača zbytočne.
+    match /emailConfig/{docId} {
+      allow read, write: if false;
+    }
+
+    // Log odoslaných e-mailov (kód, faktúra, POZ, poukaz) — číta sa cez
+    // funkciu listSentEmails (Admin SDK), zapisuje výhradne server.
+    match /mail/{mailId} {
+      allow read, write: if false;
+    }
   }
 }

@@ -290,6 +290,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
         <span class="nav-label">Nastavenia</span>
       </button>
+      <button data-section="emaily" type="button" title="E-maily">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 6 8 7 8-7"/></svg>
+        <span class="nav-label">E-maily</span>
+      </button>
       <button data-section="aktivita" type="button" title="Aktivita">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
         <span class="nav-label">Aktivita</span>
@@ -922,6 +926,79 @@
         </div>
       </section>
 
+      <section class="dash-section" data-section="emaily">
+        <h1>E-maily</h1>
+        <p class="hint" style="margin-bottom:1rem;">
+          Uvítací e-mail s prístupovým kódom (po objednávke) naďalej ide cez EmailJS.
+          Nastavenia nižšie sa týkajú len tlačidiel <strong>Poslať FA</strong> a <strong>Poslať POZ</strong>
+          v Registráciách — tie idú priamo z vášho vlastného e-mailu cez SMTP.
+        </p>
+
+        <div class="card">
+          <h2 style="margin-bottom:.8rem;">SMTP pripojenie</h2>
+          <form id="smtp-settings-form" style="display:flex;gap:1rem;flex-wrap:wrap;">
+            <div class="field" style="flex:1;min-width:220px;">
+              <label for="smtp-host">SMTP server</label>
+              <input type="text" id="smtp-host" placeholder="smtp.mail.webnode.com" required>
+            </div>
+            <div class="field" style="width:110px;">
+              <label for="smtp-port">Port</label>
+              <input type="number" id="smtp-port" placeholder="465" required>
+            </div>
+            <div class="field" style="width:170px;">
+              <label for="smtp-secure">Šifrovanie</label>
+              <select id="smtp-secure">
+                <option value="ssl">SSL/TLS (zvyčajne 465)</option>
+                <option value="starttls">STARTTLS (zvyčajne 587)</option>
+              </select>
+            </div>
+            <div class="field" style="flex:1;min-width:220px;">
+              <label for="smtp-user">Prihlasovacia e-mailová adresa</label>
+              <input type="email" id="smtp-user" placeholder="info@mudroabezpecne.sk" required>
+            </div>
+            <div class="field" style="flex:1;min-width:220px;">
+              <label for="smtp-from-name">Meno odosielateľa (zobrazí sa v e-maile)</label>
+              <input type="text" id="smtp-from-name" placeholder="Múdro a Bezpečne Online">
+            </div>
+            <div class="field" style="flex:1;min-width:220px;">
+              <label for="smtp-password">Heslo</label>
+              <input type="password" id="smtp-password" placeholder="Nastaviť/zmeniť heslo" autocomplete="new-password">
+              <p class="hint" id="smtp-password-hint" style="margin-top:.3rem;"></p>
+            </div>
+            <div style="flex-basis:100%;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;">
+              <button class="btn btn-primary" type="submit">Uložiť nastavenia</button>
+              <button class="btn btn-secondary" type="button" id="smtp-test-btn">Odoslať testovací e-mail</button>
+              <span id="smtp-settings-result" class="hint"></span>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" style="margin-top:1.5rem;">
+          <h2 style="margin-bottom:.4rem;">Šablóna e-mailu pre faktúru a potvrdenie o zaplatení</h2>
+          <p class="hint" style="margin-bottom:.8rem;">
+            Dostupné premenné: <code>{{to_name}}</code>, <code>{{doc_label}}</code>, <code>{{doc_number}}</code>,
+            <code>{{workshop_title}}</code>, <code>{{doc_url}}</code>, <code>{{extra_line}}</code>.
+          </p>
+          <textarea id="smtp-template" rows="16" spellcheck="false"
+            style="width:100%;font-family:'Courier New',monospace;font-size:.82rem;padding:.8rem;border-radius:10px;border:2px solid var(--line);"></textarea>
+          <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
+            <button class="btn btn-primary" type="button" id="smtp-template-save-btn">Uložiť šablónu</button>
+            <button class="btn btn-secondary" type="button" id="smtp-template-reset-btn">Obnoviť pôvodnú šablónu</button>
+            <span id="smtp-template-result" class="hint"></span>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.5rem;">
+          <h2 style="margin-bottom:.8rem;">Naposledy odoslané</h2>
+          <div style="overflow-x:auto;">
+            <table class="dash">
+              <thead><tr><th>Kedy</th><th>Komu</th><th>Čo</th><th>Cez</th><th>Stav</th></tr></thead>
+              <tbody id="sent-emails-body"><tr><td colspan="5" class="hint">Načítavam…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section class="dash-section" data-section="aktivita">
         <h1>Aktivita</h1>
         <p class="hint" style="margin-bottom:1rem;">Prihlásenia do admin zóny a zmeny nastavení (aj drobné) — kto a kedy ich urobil.</p>
@@ -981,8 +1058,162 @@ window.addEventListener("load", function () {
         activityLogLoaded = true;
         loadActivityLog(false);
       }
+      if (btn.dataset.section === "emaily" && !emailSettingsLoaded) {
+        emailSettingsLoaded = true;
+        loadEmailSettings();
+        loadSentEmails();
+      }
     }
   });
+
+  // ---------- Sekcia E-maily (SMTP nastavenia pre FA/POZ) ----------
+  let emailSettingsLoaded = false;
+  let emailDefaultTemplate = "";
+
+  function smtpPortForSecure(secure) {
+    return secure === "starttls" ? 587 : 465;
+  }
+
+  async function loadEmailSettings() {
+    const resultEl = document.getElementById("smtp-settings-result");
+    try {
+      const getEmailSettings = functions.httpsCallable("getEmailSettings");
+      const res = await getEmailSettings();
+      const d = res.data;
+      document.getElementById("smtp-host").value = d.host || "";
+      document.getElementById("smtp-port").value = d.port || 465;
+      document.getElementById("smtp-secure").value = d.secure === false ? "starttls" : "ssl";
+      document.getElementById("smtp-user").value = d.user || "";
+      document.getElementById("smtp-from-name").value = d.fromName || "";
+      document.getElementById("smtp-password").placeholder = d.passwordSet ? "Heslo je nastavené — nechajte prázdne, ak sa nemení" : "Nastaviť heslo";
+      document.getElementById("smtp-password-hint").textContent = d.passwordSet ? "Heslo je uložené. Zadajte nové len ak ho chcete zmeniť." : "Heslo zatiaľ nie je nastavené.";
+      emailDefaultTemplate = d.documentEmailTemplate || "";
+      document.getElementById("smtp-template").value = emailDefaultTemplate;
+    } catch (err) {
+      resultEl.textContent = "Nastavenia sa nepodarilo načítať: " + err.message;
+      resultEl.style.color = "var(--warn)";
+    }
+  }
+
+  document.getElementById("smtp-secure").addEventListener("change", (e) => {
+    const portInput = document.getElementById("smtp-port");
+    const current = Number(portInput.value);
+    if (!current || current === 465 || current === 587) {
+      portInput.value = smtpPortForSecure(e.target.value);
+    }
+  });
+
+  document.getElementById("smtp-settings-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const resultEl = document.getElementById("smtp-settings-result");
+    const submitBtn = e.target.querySelector("button[type='submit']");
+    resultEl.textContent = "Ukladám…";
+    resultEl.style.color = "";
+    submitBtn.disabled = true;
+    try {
+      const saveEmailSettings = functions.httpsCallable("saveEmailSettings");
+      await saveEmailSettings({
+        host: document.getElementById("smtp-host").value.trim(),
+        port: Number(document.getElementById("smtp-port").value) || 465,
+        secure: document.getElementById("smtp-secure").value !== "starttls",
+        user: document.getElementById("smtp-user").value.trim(),
+        fromName: document.getElementById("smtp-from-name").value.trim(),
+        password: document.getElementById("smtp-password").value,
+      });
+      document.getElementById("smtp-password").value = "";
+      resultEl.textContent = "Uložené.";
+      resultEl.style.color = "var(--good)";
+      await loadEmailSettings();
+    } catch (err) {
+      resultEl.textContent = "Zlyhalo: " + err.message;
+      resultEl.style.color = "var(--warn)";
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  document.getElementById("smtp-test-btn").addEventListener("click", async () => {
+    const resultEl = document.getElementById("smtp-settings-result");
+    const btn = document.getElementById("smtp-test-btn");
+    btn.disabled = true;
+    resultEl.textContent = "Odosielam testovací e-mail…";
+    resultEl.style.color = "";
+    try {
+      const sendTestSmtpEmail = functions.httpsCallable("sendTestSmtpEmail");
+      const res = await sendTestSmtpEmail();
+      resultEl.textContent = "Testovací e-mail odoslaný na " + res.data.to + ". Skontrolujte schránku.";
+      resultEl.style.color = "var(--good)";
+      loadSentEmails();
+    } catch (err) {
+      resultEl.textContent = "Zlyhalo: " + err.message;
+      resultEl.style.color = "var(--warn)";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("smtp-template-save-btn").addEventListener("click", async () => {
+    const resultEl = document.getElementById("smtp-template-result");
+    const btn = document.getElementById("smtp-template-save-btn");
+    btn.disabled = true;
+    resultEl.textContent = "Ukladám…";
+    resultEl.style.color = "";
+    try {
+      const saveEmailSettings = functions.httpsCallable("saveEmailSettings");
+      const host = document.getElementById("smtp-host").value.trim();
+      const user = document.getElementById("smtp-user").value.trim();
+      if (!host || !user) {
+        throw new Error("Najprv vyplňte a uložte SMTP server a prihlasovaciu adresu vyššie.");
+      }
+      await saveEmailSettings({
+        host,
+        port: Number(document.getElementById("smtp-port").value) || 465,
+        secure: document.getElementById("smtp-secure").value !== "starttls",
+        user,
+        fromName: document.getElementById("smtp-from-name").value.trim(),
+        password: "",
+        documentEmailTemplate: document.getElementById("smtp-template").value,
+      });
+      resultEl.textContent = "Šablóna uložená.";
+      resultEl.style.color = "var(--good)";
+    } catch (err) {
+      resultEl.textContent = "Zlyhalo: " + err.message;
+      resultEl.style.color = "var(--warn)";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById("smtp-template-reset-btn").addEventListener("click", () => {
+    if (!confirm("Obnoviť pôvodnú šablónu? Neuložené zmeny sa stratia.")) return;
+    document.getElementById("smtp-template").value = emailDefaultTemplate;
+  });
+
+  const EMAIL_STATUS_LABELS = { sent: "Odoslané", failed: "Zlyhalo" };
+  const EMAIL_VIA_LABELS = { smtp: "SMTP", emailjs: "EmailJS" };
+
+  async function loadSentEmails() {
+    const body = document.getElementById("sent-emails-body");
+    try {
+      const listSentEmails = functions.httpsCallable("listSentEmails");
+      const res = await listSentEmails({ limit: 50 });
+      const items = res.data.items || [];
+      if (!items.length) {
+        body.innerHTML = "<tr><td colspan='5' class='hint'>Zatiaľ nič neodoslané.</td></tr>";
+        return;
+      }
+      body.innerHTML = items.map((it) => {
+        const when = it.createdAt ? new Date(it.createdAt).toLocaleString("sk-SK") : "—";
+        const what = [it.docLabel, it.docNumber].filter(Boolean).join(" č. ") || (it.code ? "kód " + it.code : "—");
+        const statusChip = "<span class='chip " + (it.status === "sent" ? "good" : "warn") + "'>" +
+          (EMAIL_STATUS_LABELS[it.status] || it.status || "—") + "</span>";
+        return "<tr><td>" + when + "</td><td>" + escapeHtml(it.to || "—") + "</td><td>" +
+          escapeHtml(what) + "</td><td>" + (EMAIL_VIA_LABELS[it.via] || it.via) + "</td><td>" + statusChip + "</td></tr>";
+      }).join("");
+    } catch (err) {
+      body.innerHTML = "<tr><td colspan='5' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
+    }
+  }
 
   let deletedRegistrationsLoaded = false;
   document.getElementById("toggle-deleted-registrations").addEventListener("click", (e) => {
