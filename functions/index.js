@@ -10,6 +10,7 @@ const { defineSecret } = require("firebase-functions/params");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const dns = require("dns").promises;
+const archiver = require("archiver");
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
@@ -2047,6 +2048,120 @@ exports.getStorageUsage = onCall(async (request) => {
   const [files] = await getStorage().bucket().getFiles();
   const totalBytes = files.reduce((sum, f) => sum + Number(f.metadata.size || 0), 0);
   return { totalBytes, fileCount: files.length };
+});
+
+/**
+ * Záloha databázy a nahratých súborov (prezentácie, brožúrky, podpisy) —
+ * stiahnuteľná ako jeden .zip súbor. Databázové kolekcie sa ukladajú ako
+ * čitateľné JSON súbory, nahraté súbory sa kopírujú do zálohy tak, ako sú.
+ */
+const BACKUP_COLLECTIONS = [
+  "orders", "accessCodes", "discountCodes", "workshops", "settings",
+  "testimonials", "consultationBookings", "orderAuditLog", "activityLog",
+  "deletedRegistrations", "courseContent",
+];
+
+function serializeForBackup(value) {
+  if (value == null) return value;
+  if (typeof value.toDate === "function") return value.toDate().toISOString(); // Firestore Timestamp
+  if (Array.isArray(value)) return value.map(serializeForBackup);
+  if (typeof value === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = serializeForBackup(v);
+    return out;
+  }
+  return value;
+}
+
+async function generateBackupZip(auto) {
+  const archive = archiver("zip", { zlib: { level: 9 } });
+  const chunks = [];
+  archive.on("data", (chunk) => chunks.push(chunk));
+  const done = new Promise((resolve, reject) => {
+    archive.on("end", resolve);
+    archive.on("error", reject);
+  });
+
+  for (const name of BACKUP_COLLECTIONS) {
+    const snap = await db.collection(name).get();
+    const docs = {};
+    snap.forEach((d) => { docs[d.id] = serializeForBackup(d.data()); });
+    archive.append(JSON.stringify(docs, null, 2), { name: "database/" + name + ".json" });
+  }
+
+  const bucket = getStorage().bucket();
+  const [files] = await bucket.getFiles();
+  for (const file of files) {
+    if (file.name.startsWith("backups/")) continue; // predošlé zálohy do seba nezabaľujeme
+    const [buffer] = await file.download();
+    archive.append(buffer, { name: "files/" + file.name });
+  }
+
+  archive.finalize();
+  await done;
+  const zipBuffer = Buffer.concat(chunks);
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const storagePath = "backups/" + timestamp + ".zip";
+  await bucket.file(storagePath).save(zipBuffer, { contentType: "application/zip", resumable: false });
+
+  const backupRef = await db.collection("backups").add({
+    createdAt: FieldValue.serverTimestamp(),
+    sizeBytes: zipBuffer.length,
+    storagePath,
+    auto: !!auto,
+  });
+
+  return { backupId: backupRef.id, sizeBytes: zipBuffer.length };
+}
+
+exports.runBackupNow = onCall({ timeoutSeconds: 300, memory: "512MiB" }, async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže spustiť zálohu.");
+  }
+  const result = await generateBackupZip(false);
+  return result;
+});
+
+exports.scheduledBackup = onSchedule({ schedule: "every 24 hours", timeoutSeconds: 300, memory: "512MiB" }, async () => {
+  const settingsSnap = await db.collection("settings").doc("general").get();
+  const frequencyDays = Number(settingsSnap.exists ? settingsSnap.data().backupFrequencyDays : 0) || 0;
+  if (frequencyDays <= 0) return; // automatická záloha je vypnutá
+
+  const lastAutoSnap = await db.collection("backups").where("auto", "==", true).orderBy("createdAt", "desc").limit(1).get();
+  if (!lastAutoSnap.empty) {
+    const last = lastAutoSnap.docs[0].data();
+    const lastDate = last.createdAt ? last.createdAt.toDate() : null;
+    if (lastDate && Date.now() - lastDate.getTime() < frequencyDays * 24 * 60 * 60 * 1000) return;
+  }
+  await generateBackupZip(true);
+});
+
+exports.getBackupDownloadUrl = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže sťahovať zálohy.");
+  }
+  const { backupId } = request.data || {};
+  const snap = await db.collection("backups").doc(backupId || "").get();
+  if (!snap.exists) throw new HttpsError("not-found", "Záloha sa nenašla.");
+  const [url] = await getStorage().bucket().file(snap.data().storagePath).getSignedUrl({
+    action: "read",
+    expires: Date.now() + 60 * 60 * 1000, // 1 hodina
+  });
+  return { url };
+});
+
+exports.deleteBackup = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže mazať zálohy.");
+  }
+  const { backupId } = request.data || {};
+  const ref = db.collection("backups").doc(backupId || "");
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Záloha sa nenašla.");
+  await getStorage().bucket().file(snap.data().storagePath).delete({ ignoreNotFound: true });
+  await ref.delete();
+  return { ok: true };
 });
 
 exports.updateOrderContact = onCall(async (request) => {

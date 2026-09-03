@@ -420,6 +420,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
         <span class="nav-label">Aktivita</span>
       </button>
+      <button data-section="zalohy" type="button" title="Zálohy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <span class="nav-label">Zálohy</span>
+      </button>
     </nav>
     <div class="sidebar-utility">
       <a href="../index.html" target="_blank" rel="noopener" class="sidebar-util-link" title="Objednávka">
@@ -1002,6 +1006,16 @@
                 <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-maintenance" style="width:auto;"> Režim údržby (verejný web nedostupný)</label>
                 <p class="hint">Účastníci s existujúcim kódom sa naďalej vedia prihlásiť do kurzu — zablokuje sa len úvodná stránka, objednávka a prihlásenie.</p>
               </div>
+              <div class="field">
+                <label for="s-backup-frequency">Automatická záloha databázy a súborov</label>
+                <select id="s-backup-frequency">
+                  <option value="0">Vypnutá</option>
+                  <option value="1">Denne</option>
+                  <option value="7">Týždenne</option>
+                  <option value="30">Mesačne</option>
+                </select>
+                <p class="hint">Zálohy nájdete a stiahnete v sekcii Zálohy.</p>
+              </div>
             </div>
           </div>
 
@@ -1333,6 +1347,26 @@
         </div>
       </section>
 
+      <section class="dash-section" data-section="zalohy">
+        <h1>Zálohy</h1>
+        <p class="hint" style="margin-bottom:1rem;">Záloha obsahuje celú databázu (registrácie, kódy, kurzy, zľavové kódy...) a nahraté súbory (prezentácie, brožúrky, podpisy) v jednom .zip súbore, stiahnuteľnom do počítača. Frekvenciu automatickej zálohy nastavíte v sekcii Nastavenia.</p>
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-primary" type="button" id="backup-now-btn">Zálohovať teraz</button>
+            <span id="backup-now-result" class="hint"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h2 style="margin-bottom:.8rem;">História záloh</h2>
+          <div style="overflow-x:auto;">
+            <table class="dash">
+              <thead><tr><th>Dátum</th><th>Typ</th><th>Veľkosť</th><th>Akcia</th></tr></thead>
+              <tbody id="backups-body"><tr><td colspan="4" class="hint">Načítavam…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     </div>
   </div>
 </div>
@@ -1387,6 +1421,10 @@ window.addEventListener("load", function () {
       if (btn.dataset.section === "platby" && !platbyLoaded) {
         platbyLoaded = true;
         loadPlatby();
+      }
+      if (btn.dataset.section === "zalohy" && !backupsLoaded) {
+        backupsLoaded = true;
+        loadBackups();
       }
     }
   });
@@ -1496,6 +1534,91 @@ window.addEventListener("load", function () {
       body.innerHTML = "<tr><td colspan='6' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
     }
   }
+
+  // ---------- Sekcia Zálohy ----------
+  let backupsLoaded = false;
+
+  function formatBytes(bytes) {
+    if (!bytes) return "0 B";
+    const units = ["B", "KB", "MB", "GB"];
+    let i = 0, n = bytes;
+    while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+    return n.toFixed(i === 0 ? 0 : 1) + " " + units[i];
+  }
+
+  async function loadBackups() {
+    const body = document.getElementById("backups-body");
+    body.innerHTML = "<tr><td colspan='4' class='hint'>Načítavam…</td></tr>";
+    try {
+      const snap = await db.collection("backups").orderBy("createdAt", "desc").limit(30).get();
+      if (snap.empty) {
+        body.innerHTML = "<tr><td colspan='4' class='hint'>Zatiaľ žiadne zálohy — vytvorte prvú tlačidlom vyššie.</td></tr>";
+        return;
+      }
+      body.innerHTML = snap.docs.map((d) => {
+        const b = d.data();
+        const when = b.createdAt ? b.createdAt.toDate().toLocaleString("sk-SK") : "—";
+        return "<tr><td>" + when + "</td><td>" + (b.auto ? "Automatická" : "Manuálna") + "</td><td>" + formatBytes(b.sizeBytes) + "</td>" +
+          "<td class='row-actions'>" +
+          "<button class='btn btn-secondary' data-backup-download='" + d.id + "'>Stiahnuť</button>" +
+          "<button class='btn btn-secondary' data-backup-delete='" + d.id + "'>Vymazať</button>" +
+          "</td></tr>";
+      }).join("");
+      document.querySelectorAll("[data-backup-download]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const original = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = "Pripravujem…";
+          try {
+            const getBackupDownloadUrl = functions.httpsCallable("getBackupDownloadUrl");
+            const res = await getBackupDownloadUrl({ backupId: btn.dataset.backupDownload });
+            window.open(res.data.url, "_blank");
+          } catch (err) {
+            alert("Sťahovanie zlyhalo: " + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = original;
+          }
+        });
+      });
+      document.querySelectorAll("[data-backup-delete]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("Naozaj natrvalo vymazať túto zálohu?")) return;
+          try {
+            const deleteBackup = functions.httpsCallable("deleteBackup");
+            await deleteBackup({ backupId: btn.dataset.backupDelete });
+            logActivity("settings", "Záloha vymazaná");
+            loadBackups();
+          } catch (err) {
+            alert("Vymazanie zlyhalo: " + err.message);
+          }
+        });
+      });
+    } catch (err) {
+      body.innerHTML = "<tr><td colspan='4' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
+    }
+  }
+
+  document.getElementById("backup-now-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("backup-now-btn");
+    const resultEl = document.getElementById("backup-now-result");
+    btn.disabled = true;
+    resultEl.textContent = "Zálohujem — pri väčšom množstve dát to môže chvíľu trvať…";
+    resultEl.style.color = "";
+    try {
+      const runBackupNow = functions.httpsCallable("runBackupNow", { timeout: 300000 });
+      await runBackupNow();
+      resultEl.textContent = "Záloha vytvorená ✓";
+      resultEl.style.color = "var(--good)";
+      logActivity("settings", "Manuálna záloha vytvorená");
+      loadBackups();
+    } catch (err) {
+      resultEl.textContent = "Zlyhalo: " + err.message;
+      resultEl.style.color = "var(--warn)";
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   // ---------- Sekcia E-maily (SMTP nastavenia pre FA/POZ/poukaz) ----------
   let platbyLoaded = false;
@@ -2022,6 +2145,7 @@ window.addEventListener("load", function () {
       document.getElementById("s-sound").checked = data.soundOnNewReg !== false;
       document.getElementById("s-stale-days").value = data.staleOrderDays ?? 3;
       document.getElementById("s-maintenance").checked = !!data.maintenanceMode;
+      document.getElementById("s-backup-frequency").value = String(data.backupFrequencyDays || 0);
       document.getElementById("s-email-msg").value = data.emailCustomMessage || "";
       document.getElementById("s-remind-neverlogged").checked = !!data.remindNeverLoggedEnabled;
       document.getElementById("s-remind-neverlogged-days").value = data.remindNeverLoggedDays ?? 3;
@@ -2054,6 +2178,7 @@ window.addEventListener("load", function () {
       soundOnNewReg: document.getElementById("s-sound").checked,
       staleOrderDays: Number(document.getElementById("s-stale-days").value) || 3,
       maintenanceMode: document.getElementById("s-maintenance").checked,
+      backupFrequencyDays: Number(document.getElementById("s-backup-frequency").value) || 0,
       emailCustomMessage: document.getElementById("s-email-msg").value.trim(),
       remindNeverLoggedEnabled: document.getElementById("s-remind-neverlogged").checked,
       remindNeverLoggedDays: Number(document.getElementById("s-remind-neverlogged-days").value) || 3,

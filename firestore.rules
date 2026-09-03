@@ -172,5 +172,12 @@ service cloud.firestore {
     match /mail/{mailId} {
       allow read, write: if false;
     }
+
+    // Metadáta záloh databázy/súborov (runBackupNow/scheduledBackup) —
+    // samotný súbor zálohy je v Storage, sem sa zapisuje len záznam o ňom.
+    match /backups/{backupId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
   }
 }
