@@ -3639,7 +3639,10 @@ window.addEventListener("load", function () {
     const workshopFilter = document.getElementById("filter-workshop").value;
     const searchQuery = document.getElementById("search-input").value.trim().toLowerCase();
     const tbody = document.getElementById("orders-body");
-    tbody.innerHTML = "";
+    // Načítanie detailov ku každej registrácii (kód, čas strávený, postup...)
+    // beží sekvenčne a pri väčšom počte registrácií chvíľu trvá — bez tohto
+    // riadku by tabuľka počas toho vyzerala prázdna/nefunkčná.
+    tbody.innerHTML = "<tr><td colspan='10' class='hint'>Načítavam registrácie…</td></tr>";
 
     let paid = 0, revenue = 0, completed = 0, todayCount = 0;
     const now = Date.now();
@@ -3730,17 +3733,24 @@ window.addEventListener("load", function () {
       });
     }
 
+    tbody.innerHTML = rows.length ? "" : "<tr><td colspan='10' class='hint'>Žiadne registrácie nezodpovedajú filtru.</td></tr>";
+
     rows.forEach(({ doc, order, codeId, codeActive, timeSpent, progressPct, quizCell, isStale, expiryBadge }) => {
       const paymentMethodLabels = { card: "Karta", transfer: "Prevod", cash: "Hotovosť" };
+      const sentHint = (label, at) => at
+        ? "<span class='hint' style='display:block;'>" + label + " odoslané ✓ " + at.toDate().toLocaleString("sk-SK") + "</span>"
+        : "";
       const statusChip =
         (order.status === "pending_payment"
           ? '<span class="chip warn">Čaká na úhradu' + (isStale ? " · staré" : "") + "</span>"
           : '<span class="chip good">Uhradené</span>' + (paymentMethodLabels[order.paymentMethod] ? " <span class='chip info'>" + paymentMethodLabels[order.paymentMethod] + "</span>" : "")) +
         (expiryBadge ? "<br>" + expiryBadge : "") +
+        sentHint("FA", order.lastInvoiceSentAt) +
+        sentHint("POZ", order.lastPozSentAt) +
         "<div class='row-actions' style='margin-top:.4rem;'>" +
         (order.status !== "pending_payment" ?
-          "<button class='btn btn-secondary' data-send-invoice='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Poslať FA</button>" +
-          "<button class='btn btn-secondary' data-send-poz='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Poslať POZ</button>" : "") +
+          "<button class='btn btn-secondary' data-send-invoice='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>" + (order.lastInvoiceSentAt ? "Poslať FA znova" : "Poslať FA") + "</button>" +
+          "<button class='btn btn-secondary' data-send-poz='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>" + (order.lastPozSentAt ? "Poslať POZ znova" : "Poslať POZ") + "</button>" : "") +
         "<button class='btn btn-secondary' data-edit-contact='" + doc.id + "' style='font-size:.78rem;padding:.3rem .5rem;'>Upraviť</button>" +
         "</div>";
 

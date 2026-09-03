@@ -2122,6 +2122,10 @@ exports.sendGiftVoucherEmail = onCall(async (request) => {
   });
 
   await logOrderEvent(orderId, "Darčekový poukaz odoslaný e-mailom.", request.auth.token.email);
+  await db.collection("orders").doc(orderId).set(
+    { lastVoucherSentAt: FieldValue.serverTimestamp(), lastVoucherSentBy: request.auth.token.email },
+    { merge: true }
+  );
 
   return { url };
 });
@@ -2161,6 +2165,10 @@ exports.sendInvoiceEmail = onCall(async (request) => {
   });
 
   await logOrderEvent(orderId, "Faktúra č. " + invoiceNumber + " odoslaná e-mailom.", request.auth.token.email);
+  await db.collection("orders").doc(orderId).set(
+    { lastInvoiceSentAt: FieldValue.serverTimestamp(), lastInvoiceSentBy: request.auth.token.email, lastInvoiceNumber: invoiceNumber },
+    { merge: true }
+  );
 
   return { invoiceNumber, url };
 });
@@ -2203,6 +2211,10 @@ exports.sendPaymentConfirmationEmail = onCall(async (request) => {
   });
 
   await logOrderEvent(orderId, "Potvrdenie o zaplatení č. " + pozNumber + " odoslané e-mailom.", request.auth.token.email);
+  await db.collection("orders").doc(orderId).set(
+    { lastPozSentAt: FieldValue.serverTimestamp(), lastPozSentBy: request.auth.token.email, lastPozNumber: pozNumber },
+    { merge: true }
+  );
 
   return { pozNumber, url };
 });
