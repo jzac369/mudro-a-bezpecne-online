@@ -6,6 +6,18 @@
   }
 })();
 
+// --- Affiliate/partnerský odkaz: ?ref=KOD si zapamätáme, aby sa dal
+// zľavový kód automaticky predvyplniť pri neskoršej objednávke ---
+(function affiliateRef() {
+  try {
+    const ref = new URLSearchParams(location.search).get("ref");
+    if (ref) {
+      localStorage.setItem("mbo_ref_code", ref.trim().toUpperCase());
+      localStorage.setItem("mbo_ref_code_at", String(Date.now()));
+    }
+  } catch (err) { /* localStorage nemusí byť dostupný, nevadí */ }
+})();
+
 // --- Veľkosť textu (A+ / A-), uložená per zariadenie ---
 (function textScale() {
   const STORAGE_KEY = "mbo_font_scale";

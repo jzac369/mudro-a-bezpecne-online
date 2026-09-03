@@ -160,6 +160,17 @@
   const params = new URLSearchParams(location.search);
   const workshopId = params.get("w");
 
+  // Ak návštevník prišiel cez partnerský/affiliate odkaz (?ref=KOD), kód
+  // sa mu predvyplní — stačí, keď objednávku dokončí do 30 dní.
+  try {
+    const refAt = Number(localStorage.getItem("mbo_ref_code_at") || 0);
+    const refCode = localStorage.getItem("mbo_ref_code");
+    if (refCode && refAt && Date.now() - refAt < 30 * 24 * 60 * 60 * 1000) {
+      const couponInput = document.getElementById("coupon");
+      if (couponInput && !couponInput.value) couponInput.value = refCode;
+    }
+  } catch (err) { /* nevadí */ }
+
   window.addEventListener("load", async () => {
     const workshop = window.WORKSHOPS && window.WORKSHOPS[workshopId];
     if (!workshop) {
