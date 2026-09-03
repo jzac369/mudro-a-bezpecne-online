@@ -541,7 +541,7 @@
         <div id="workshop-settings"></div>
 
         <div class="card" style="margin-top:1.5rem;">
-          <h2 style="margin-bottom:.3rem;">Obsah interaktívneho kurzu</h2>
+          <h2 style="margin-bottom:.3rem;">Obsah lekcií (krok 3)</h2>
           <p class="hint" style="margin-bottom:1.2rem;">Tento obsah (35 obrazoviek) je momentálne spoločný pre všetky kurzy vyššie — úprava textu sa prejaví vo všetkých. Herné nastavenie (napr. ktorá odpoveď je správna) sa cez tento formulár meniť nedá.</p>
           <div class="grid-2" style="align-items:start;gap:1.2rem;">
             <div class="card" style="max-height:70vh;overflow-y:auto;background:var(--surface-2);">
@@ -1029,6 +1029,7 @@
             <button type="button" class="template-tab-btn active" data-template-tab="invoice">Faktúra</button>
             <button type="button" class="template-tab-btn" data-template-tab="poz">Potvrdenie o zaplatení</button>
             <button type="button" class="template-tab-btn" data-template-tab="voucher">Darčekový poukaz</button>
+            <button type="button" class="template-tab-btn" data-template-tab="welcome">Uvítací e-mail</button>
           </div>
 
           <div class="template-tab-panel" data-template-panel="invoice">
@@ -1070,6 +1071,23 @@
               <button class="btn btn-secondary" type="button" id="tpl-voucher-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-voucher-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-voucher-result" class="hint"></span>
+            </div>
+          </div>
+
+          <div class="template-tab-panel" data-template-panel="welcome" style="display:none;">
+            <p class="hint" style="margin-bottom:.6rem;">
+              Tento e-mail príde hneď po zaplatení (aj pri ručnom vytvorení kódu a pri opätovnom poslaní kódu).
+              Premenné: <code>{{to_name}}</code>, <code>{{code}}</code>, <code>{{workshop_title}}</code>, <code>{{custom_message}}</code>.
+            </p>
+            <div class="template-editor-grid">
+              <textarea id="tpl-welcome-code" rows="18" spellcheck="false" class="template-code"></textarea>
+              <iframe id="tpl-welcome-preview" class="template-preview" title="Náhľad — uvítací e-mail"></iframe>
+            </div>
+            <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
+              <button class="btn btn-primary" type="button" id="tpl-welcome-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-welcome-test-btn">Odoslať testovací e-mail</button>
+              <button class="btn btn-secondary" type="button" id="tpl-welcome-reset-btn">Obnoviť pôvodnú</button>
+              <span id="tpl-welcome-result" class="hint"></span>
             </div>
           </div>
         </div>
@@ -1155,7 +1173,7 @@ window.addEventListener("load", function () {
 
   // ---------- Sekcia E-maily (SMTP nastavenia pre FA/POZ/poukaz) ----------
   let emailSettingsLoaded = false;
-  const TEMPLATE_TYPES = ["invoice", "poz", "voucher"];
+  const TEMPLATE_TYPES = ["invoice", "poz", "voucher", "welcome"];
   const templateDefaults = {};
 
   // Vzorové údaje pre živý náhľad — nič sa nimi neodosiela, slúžia len
@@ -1175,6 +1193,9 @@ window.addEventListener("load", function () {
     voucher: {
       to_name: "Peter Kilpa", workshop_title: "Ako nenaletieť podvodníkom", code: "BYVNNN", doc_url: "#",
       extra_line: "Poukaz je pripravený pre: Janka. Váš odkaz na poukaze: „K narodeninám!“",
+    },
+    welcome: {
+      to_name: "Miška", code: "JBLYWM", workshop_title: "Ako nenaletieť podvodníkom", custom_message: "",
     },
   };
 
@@ -1221,6 +1242,7 @@ window.addEventListener("load", function () {
       templateDefaults.invoice = d.invoiceEmailTemplate || "";
       templateDefaults.poz = d.pozEmailTemplate || "";
       templateDefaults.voucher = d.voucherEmailTemplate || "";
+      templateDefaults.welcome = d.welcomeEmailTemplate || "";
       TEMPLATE_TYPES.forEach((type) => {
         document.getElementById("tpl-" + type + "-code").value = templateDefaults[type];
         updateTemplatePreview(type);
@@ -3170,7 +3192,7 @@ window.addEventListener("load", function () {
     } else {
       html += "<div class='session-row'><span>Stav kurzu</span><span class='chip warn'>Neukončený</span></div>";
     }
-    html += "<h3 style='margin-top:1.4rem;'>Interaktívny kurz</h3>";
+    html += "<h3 style='margin-top:1.4rem;'>Lekcie</h3>";
     if (progressSnap.exists && Number.isInteger(progressSnap.data().courseIndex)) {
       const pdata = progressSnap.data();
       const COURSE_TOTAL = (window.COURSE_SLIDES && window.COURSE_SLIDES.length) || 35;

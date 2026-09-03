@@ -316,7 +316,7 @@
   const RENDERERS = {};
 
   RENDERERS.intro = function (slide, card) {
-    card.appendChild(el("div", "course-badge", "Interaktívny kurz"));
+    card.appendChild(el("div", "course-badge", "Lekcie"));
     if (slide.image) {
       const img = el("img", "course-intro-photo");
       img.src = slide.image;
