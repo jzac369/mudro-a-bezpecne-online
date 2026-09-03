@@ -26,7 +26,12 @@
     --sb-top: #1d5c8f; --sb-bottom: #081826;
     width: 232px; min-width: 232px; flex: none; background: linear-gradient(180deg, var(--sb-top) 0%, var(--sb-bottom) 100%);
     padding: 1.2rem 1rem; display: flex; flex-direction: column; gap: 1rem;
-    transition: width .2s ease, min-width .2s ease; position: relative;
+    transition: width .2s ease, min-width .2s ease;
+    /* Prilepené na obrazovku — inak sa bočný panel naťahoval na výšku
+       obsahu (ktorý je oveľa dlhší ako obrazovka) a "Objednávka" aj
+       "Odhlásiť sa" dole v paneli boli vidieť až po odscrollovaní celej
+       stránky nadol. */
+    position: sticky; top: 0; height: 100vh; overflow: hidden;
   }
   .dash-sidebar.collapsed { width: 76px; min-width: 76px; padding: 1.2rem .6rem; }
   .sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: 0 .3rem; }
@@ -82,7 +87,10 @@
 
   @media (max-width: 900px) {
     .dash-shell { flex-direction: column; }
-    .dash-sidebar, .dash-sidebar.collapsed { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: .8rem; }
+    .dash-sidebar, .dash-sidebar.collapsed {
+      width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: .8rem;
+      position: static; height: auto;
+    }
     .sidebar-top, .sidebar-toggle-btn, .sidebar-utility, .sidebar-footer { display: none; }
     .dash-nav { flex-direction: row; flex: none; overflow: visible; }
     .dash-nav button { white-space: nowrap; }
