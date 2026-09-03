@@ -55,6 +55,20 @@
     }
   }
 
+  // Jedinečné číslo certifikátu — odvodené (nie náhodné) z prístupového
+  // kódu účastníka a kurzu, takže rovnaký certifikát má vždy to isté
+  // číslo, aj keď si ho účastník znovu otvorí alebo vytlačí opakovane.
+  function certificateNumber(codeId, workshopId) {
+    const seed = String(codeId || "") + "|" + String(workshopId || "");
+    let h = 2166136261; // FNV-1a
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    const n = (h >>> 0) % 10000000000; // 10 číslic
+    return String(n).padStart(10, "0");
+  }
+
   function blob(ctx, x, y, r, color) {
     var g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, color);
@@ -120,6 +134,26 @@
     // by vyzeral inak pri každom otvorení.
     if (document.fonts && document.fonts.ready) {
       try { await document.fonts.ready; } catch (err) { /* nevadí */ }
+    }
+
+    // Jedinečné číslo a QR kód — QR obsahuje overiteľné údaje priamo (bez
+    // závislosti na webovej stránke), aby fungoval, aj keby sa web zmenil.
+    var certNumber = certificateNumber(opts.codeId, opts.workshopId);
+    var qrImg = null;
+    if (window.QRCode) {
+      try {
+        var qrText =
+          "Certifikát — Vzdelávacie kurzy DigiStart\n" +
+          "Číslo certifikátu: " + certNumber + "\n" +
+          "Účastník: " + participantName + "\n" +
+          "Kurz: " + workshopTitle + "\n" +
+          "Prístupový kód: " + (opts.codeId || "—");
+        var qrDataUrl = await window.QRCode.toDataURL(qrText, {
+          margin: 1, width: 240,
+          color: { dark: "#1f3a3dff", light: "#00000000" },
+        });
+        qrImg = await loadImage(qrDataUrl);
+      } catch (err) { /* QR knižnica sa nenačítala — certifikát sa vykreslí aj bez QR kódu */ }
     }
 
     var canvas = document.createElement("canvas");
@@ -252,6 +286,19 @@
     ctx.fillStyle = "#8a8474";
     ctx.textAlign = "left";
     ctx.fillText("www.kurzy.digistart.sk", 90, H - 50);
+
+    // QR kód a jedinečné číslo certifikátu — vpravo dole, mimo ostatného
+    // obsahu, aby nezasahovali do rámčeka s názvom kurzu ani do pätičky.
+    var qrSize = 72;
+    var qrX = W - 90 - qrSize;
+    var qrY = H - 46 - qrSize;
+    if (qrImg) {
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+    }
+    ctx.font = "10px 'Atkinson Hyperlegible', sans-serif";
+    ctx.fillStyle = "#8a8474";
+    ctx.textAlign = "right";
+    ctx.fillText("Certifikát č. " + certNumber, W - 90, H - 46 + 14);
 
     return canvas.toDataURL("image/png");
   };
