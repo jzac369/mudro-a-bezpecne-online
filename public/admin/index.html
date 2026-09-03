@@ -294,6 +294,8 @@
   }
   .template-code { font-family: 'Courier New', monospace; font-size: .8rem; padding: .8rem; resize: vertical; }
   .template-preview { background: #fff; }
+  .tpl-toolbar { display: none; gap: .4rem; margin-bottom: .6rem; }
+  .tpl-toolbar button { padding: .4rem .7rem; font-size: .85rem; }
 
   /* Formulár SMTP nastavení — mriežka namiesto flex-wrap, nech sa polia
      zarovnajú aj keď sa niektorý popisok zalomí na dva riadky. */
@@ -1220,12 +1222,19 @@
 
           <div class="template-tab-panel" data-template-panel="invoice">
             <p class="hint" style="margin-bottom:.6rem;">Premenné: <code>{{to_name}}</code>, <code>{{doc_label}}</code>, <code>{{doc_number}}</code>, <code>{{workshop_title}}</code>, <code>{{doc_url}}</code>, <code>{{extra_line}}</code>.</p>
+            <div class="tpl-toolbar" id="tpl-invoice-toolbar">
+              <button type="button" data-tpl-cmd="bold" style="font-weight:700;">B</button>
+              <button type="button" data-tpl-cmd="italic" style="font-style:italic;">I</button>
+              <button type="button" data-tpl-cmd="createLink">Odkaz</button>
+              <button type="button" data-tpl-cmd="unlink">Zrušiť odkaz</button>
+            </div>
             <div class="template-editor-grid">
               <textarea id="tpl-invoice-code" rows="18" spellcheck="false" class="template-code"></textarea>
               <iframe id="tpl-invoice-preview" class="template-preview" title="Náhľad — faktúra"></iframe>
             </div>
             <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
               <button class="btn btn-primary" type="button" id="tpl-invoice-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-invoice-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-invoice-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-invoice-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-invoice-result" class="hint"></span>
@@ -1234,12 +1243,19 @@
 
           <div class="template-tab-panel" data-template-panel="poz" style="display:none;">
             <p class="hint" style="margin-bottom:.6rem;">Premenné: <code>{{to_name}}</code>, <code>{{doc_label}}</code>, <code>{{doc_number}}</code>, <code>{{workshop_title}}</code>, <code>{{doc_url}}</code>, <code>{{extra_line}}</code>.</p>
+            <div class="tpl-toolbar" id="tpl-poz-toolbar">
+              <button type="button" data-tpl-cmd="bold" style="font-weight:700;">B</button>
+              <button type="button" data-tpl-cmd="italic" style="font-style:italic;">I</button>
+              <button type="button" data-tpl-cmd="createLink">Odkaz</button>
+              <button type="button" data-tpl-cmd="unlink">Zrušiť odkaz</button>
+            </div>
             <div class="template-editor-grid">
               <textarea id="tpl-poz-code" rows="18" spellcheck="false" class="template-code"></textarea>
               <iframe id="tpl-poz-preview" class="template-preview" title="Náhľad — potvrdenie o zaplatení"></iframe>
             </div>
             <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
               <button class="btn btn-primary" type="button" id="tpl-poz-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-poz-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-poz-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-poz-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-poz-result" class="hint"></span>
@@ -1248,12 +1264,19 @@
 
           <div class="template-tab-panel" data-template-panel="voucher" style="display:none;">
             <p class="hint" style="margin-bottom:.6rem;">Premenné: <code>{{to_name}}</code>, <code>{{workshop_title}}</code>, <code>{{code}}</code>, <code>{{doc_url}}</code>, <code>{{extra_line}}</code>.</p>
+            <div class="tpl-toolbar" id="tpl-voucher-toolbar">
+              <button type="button" data-tpl-cmd="bold" style="font-weight:700;">B</button>
+              <button type="button" data-tpl-cmd="italic" style="font-style:italic;">I</button>
+              <button type="button" data-tpl-cmd="createLink">Odkaz</button>
+              <button type="button" data-tpl-cmd="unlink">Zrušiť odkaz</button>
+            </div>
             <div class="template-editor-grid">
               <textarea id="tpl-voucher-code" rows="18" spellcheck="false" class="template-code"></textarea>
               <iframe id="tpl-voucher-preview" class="template-preview" title="Náhľad — darčekový poukaz"></iframe>
             </div>
             <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
               <button class="btn btn-primary" type="button" id="tpl-voucher-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-voucher-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-voucher-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-voucher-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-voucher-result" class="hint"></span>
@@ -1265,12 +1288,19 @@
               Tento e-mail príde hneď po zaplatení (aj pri ručnom vytvorení kódu a pri opätovnom poslaní kódu).
               Premenné: <code>{{to_name}}</code>, <code>{{code}}</code>, <code>{{workshop_title}}</code>, <code>{{custom_message}}</code>.
             </p>
+            <div class="tpl-toolbar" id="tpl-welcome-toolbar">
+              <button type="button" data-tpl-cmd="bold" style="font-weight:700;">B</button>
+              <button type="button" data-tpl-cmd="italic" style="font-style:italic;">I</button>
+              <button type="button" data-tpl-cmd="createLink">Odkaz</button>
+              <button type="button" data-tpl-cmd="unlink">Zrušiť odkaz</button>
+            </div>
             <div class="template-editor-grid">
               <textarea id="tpl-welcome-code" rows="18" spellcheck="false" class="template-code"></textarea>
               <iframe id="tpl-welcome-preview" class="template-preview" title="Náhľad — uvítací e-mail"></iframe>
             </div>
             <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
               <button class="btn btn-primary" type="button" id="tpl-welcome-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-welcome-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-welcome-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-welcome-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-welcome-result" class="hint"></span>
@@ -1515,6 +1545,75 @@ window.addEventListener("load", function () {
     iframe.srcdoc = renderTemplatePreview(code, TEMPLATE_SAMPLE_DATA[type]);
   }
 
+  // ---------- Grafický (WYSIWYG) editor šablón — upravuje sa priamo v náhľade ----------
+  // Premenné ({{to_name}} a pod.) sa dočasne nahradia neupraviteľnými
+  // "čipmi" so vzorovým textom, aby ich admin nemohol omylom rozbiť pri
+  // písaní — pri uložení/prepnutí späť na kód sa znovu zamenia za {{...}}.
+  const templateMode = {};
+  const TPL_DOC_URL_PLACEHOLDER = "https://tpl-doc-url-placeholder.invalid/";
+
+  function buildEditableTemplateHtml(type) {
+    const raw = document.getElementById("tpl-" + type + "-code").value;
+    const vars = TEMPLATE_SAMPLE_DATA[type];
+    let html = raw;
+    for (const [key, value] of Object.entries(vars)) {
+      if (key === "doc_url") {
+        html = html.split("{{doc_url}}").join(TPL_DOC_URL_PLACEHOLDER);
+        continue;
+      }
+      const display = escapeForPreview(value || key);
+      const token = "<span class=\"tpl-var-token\" contenteditable=\"false\" data-tpl-var=\"" + key + "\">" + display + "</span>";
+      html = html.split("{{" + key + "}}").join(token);
+    }
+    // Štýl čipov musí ísť do <head>, nie pred obsah — inak by skončil
+    // ako súčasť body.innerHTML a pri každej úprave by sa trvalo zapísal
+    // do uloženej šablóny.
+    return "<head><style>.tpl-var-token{background:#fde9c8;border-radius:4px;padding:1px 5px;color:#7a5a1e;font-weight:600;white-space:nowrap;}body{cursor:text;}</style></head>" + html;
+  }
+
+  function extractRawTemplateFromEditable(iframe) {
+    const html = iframe.contentDocument.body.innerHTML;
+    const withVars = html.replace(/<span[^>]*data-tpl-var="([^"]+)"[^>]*>[\s\S]*?<\/span>/g, (m, key) => "{{" + key + "}}");
+    return withVars.split(TPL_DOC_URL_PLACEHOLDER).join("{{doc_url}}");
+  }
+
+  function setTemplateGraphicMode(type, on) {
+    const iframe = document.getElementById("tpl-" + type + "-preview");
+    const textarea = document.getElementById("tpl-" + type + "-code");
+    const toolbar = document.getElementById("tpl-" + type + "-toolbar");
+    const modeBtn = document.getElementById("tpl-" + type + "-mode-btn");
+
+    if (on) {
+      templateMode[type] = "graphic";
+      modeBtn.textContent = "Zobraziť HTML kód";
+      textarea.style.display = "none";
+      toolbar.style.display = "flex";
+      iframe.style.flex = "1 1 100%";
+      const onLoad = () => {
+        iframe.removeEventListener("load", onLoad);
+        const doc = iframe.contentDocument;
+        doc.body.contentEditable = "true";
+        let syncTimer = null;
+        doc.body.addEventListener("input", () => {
+          clearTimeout(syncTimer);
+          syncTimer = setTimeout(() => { textarea.value = extractRawTemplateFromEditable(iframe); }, 300);
+        });
+      };
+      iframe.addEventListener("load", onLoad);
+      iframe.srcdoc = buildEditableTemplateHtml(type);
+    } else {
+      if (templateMode[type] === "graphic") {
+        textarea.value = extractRawTemplateFromEditable(iframe);
+      }
+      templateMode[type] = "code";
+      modeBtn.textContent = "Grafický editor";
+      textarea.style.display = "";
+      toolbar.style.display = "none";
+      iframe.style.flex = "";
+      updateTemplatePreview(type);
+    }
+  }
+
   function smtpPortForSecure(secure) {
     return secure === "starttls" ? 587 : 465;
   }
@@ -1664,6 +1763,9 @@ window.addEventListener("load", function () {
     document.getElementById("tpl-" + type + "-save-btn").addEventListener("click", async () => {
       const resultEl = document.getElementById("tpl-" + type + "-result");
       const btn = document.getElementById("tpl-" + type + "-save-btn");
+      if (templateMode[type] === "graphic") {
+        document.getElementById("tpl-" + type + "-code").value = extractRawTemplateFromEditable(document.getElementById("tpl-" + type + "-preview"));
+      }
       btn.disabled = true;
       resultEl.textContent = "Ukladám…";
       resultEl.style.color = "";
@@ -1701,12 +1803,36 @@ window.addEventListener("load", function () {
     document.getElementById("tpl-" + type + "-reset-btn").addEventListener("click", () => {
       if (!confirm("Obnoviť pôvodnú šablónu? Neuložené zmeny sa stratia.")) return;
       document.getElementById("tpl-" + type + "-code").value = templateDefaults[type];
-      updateTemplatePreview(type);
+      if (templateMode[type] === "graphic") setTemplateGraphicMode(type, true);
+      else updateTemplatePreview(type);
+    });
+
+    document.getElementById("tpl-" + type + "-mode-btn").addEventListener("click", () => {
+      setTemplateGraphicMode(type, templateMode[type] !== "graphic");
+    });
+
+    document.querySelectorAll("#tpl-" + type + "-toolbar [data-tpl-cmd]").forEach((cmdBtn) => {
+      cmdBtn.addEventListener("click", () => {
+        const iframe = document.getElementById("tpl-" + type + "-preview");
+        const doc = iframe.contentDocument;
+        iframe.contentWindow.focus();
+        const cmd = cmdBtn.dataset.tplCmd;
+        if (cmd === "createLink") {
+          const url = prompt("Adresa odkazu (napr. https://kurzy.digistart.sk):", "https://");
+          if (url) doc.execCommand(cmd, false, url);
+        } else {
+          doc.execCommand(cmd, false, null);
+        }
+        document.getElementById("tpl-" + type + "-code").value = extractRawTemplateFromEditable(iframe);
+      });
     });
 
     document.getElementById("tpl-" + type + "-test-btn").addEventListener("click", async () => {
       const resultEl = document.getElementById("tpl-" + type + "-result");
       const btn = document.getElementById("tpl-" + type + "-test-btn");
+      if (templateMode[type] === "graphic") {
+        document.getElementById("tpl-" + type + "-code").value = extractRawTemplateFromEditable(document.getElementById("tpl-" + type + "-preview"));
+      }
       btn.disabled = true;
       resultEl.textContent = "Odosielam testovací e-mail…";
       resultEl.style.color = "";
