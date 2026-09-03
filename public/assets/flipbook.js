@@ -262,7 +262,7 @@
     stage.addEventListener("click", function (e) {
       if (self.justSwiped) { self.justSwiped = false; return; }
       var img = e.target.closest ? e.target.closest(".flipbook-page-img") : null;
-      if (img) self.zoom(img.src, img.alt);
+      if (img) self.zoom(Number(img.dataset.page));
     });
   };
 
@@ -271,6 +271,9 @@
     this._onKey = function (e) {
       // Reagujeme len keď je brožúrka naozaj na obrazovke.
       if (!self.root || !self.root.offsetParent) return;
+      // Keď je otvorené zväčšenie, listuje sa v ňom — nie pod ním.
+      var box = document.getElementById("flipbook-lightbox");
+      if (box && box.classList.contains("show")) return;
       if (e.key === "ArrowRight" || e.key === "PageDown") { self.go(1); e.preventDefault(); }
       if (e.key === "ArrowLeft" || e.key === "PageUp") { self.go(-1); e.preventDefault(); }
     };
@@ -278,25 +281,127 @@
   };
 
   // ---------- Zväčšenie strany ----------
+  //
+  // V zväčšenom zobrazení sa dá listovať rovnako ako v knihe — tlačidlami,
+  // šípkami na klávesnici alebo potiahnutím prsta. Vždy ukazujeme jednu
+  // stranu, aj keď je kniha inak otvorená na dvojstrane, lebo pri čítaní
+  // zblízka je jedna strana prehľadnejšia.
 
-  Flipbook.prototype.zoom = function (src, alt) {
+  Flipbook.prototype.buildLightbox = function () {
     var box = document.getElementById("flipbook-lightbox");
-    if (!box) {
-      box = el("div", "flipbook-lightbox",
-        "<button type='button' class='flipbook-lightbox-close' aria-label='Zavrieť'>" +
-        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M6 6l12 12M18 6 6 18'/></svg></button>" +
-        "<img class='flipbook-lightbox-img' alt=''>");
-      box.id = "flipbook-lightbox";
-      document.body.appendChild(box);
-      var close = function () { box.classList.remove("show"); };
-      box.addEventListener("click", function (e) { if (e.target === box) close(); });
-      box.querySelector(".flipbook-lightbox-close").addEventListener("click", close);
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    if (box) return box;
+
+    box = el("div", "flipbook-lightbox");
+    box.id = "flipbook-lightbox";
+    box.innerHTML =
+      "<button type='button' class='flipbook-lightbox-close' aria-label='Zavrieť'>" +
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M6 6l12 12M18 6 6 18'/></svg></button>" +
+      "<button type='button' class='flipbook-lb-nav prev' aria-label='Predošlá strana'>" +
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M15 6l-6 6 6 6'/></svg></button>" +
+      "<img class='flipbook-lightbox-img' alt=''>" +
+      "<button type='button' class='flipbook-lb-nav next' aria-label='Ďalšia strana'>" +
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M9 6l6 6-6 6'/></svg></button>" +
+      "<div class='flipbook-lb-bar'><span class='flipbook-lb-count'></span>" +
+      "<span class='flipbook-lb-hint'>Listujte šípkami, tlačidlami alebo potiahnutím prsta</span></div>";
+    document.body.appendChild(box);
+
+    function owner() { return box._owner; }
+
+    function close() {
+      box.classList.remove("show");
+      var o = owner();
+      // Po zatvorení necháme knihu otvorenú tam, kde účastník skončil.
+      if (o && typeof box._page === "number") o.goToPage(box._page);
     }
-    var img = box.querySelector(".flipbook-lightbox-img");
-    img.src = src;
-    img.alt = alt || "Zväčšená strana brožúrky";
+
+    box.querySelector(".flipbook-lightbox-close").addEventListener("click", close);
+    box.addEventListener("click", function (e) {
+      if (e.target === box || e.target.classList.contains("flipbook-lightbox-img")) close();
+    });
+    box.querySelector(".flipbook-lb-nav.prev").addEventListener("click", function (e) {
+      e.stopPropagation();
+      var o = owner(); if (o) o.zoomStep(-1);
+    });
+    box.querySelector(".flipbook-lb-nav.next").addEventListener("click", function (e) {
+      e.stopPropagation();
+      var o = owner(); if (o) o.zoomStep(1);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (!box.classList.contains("show")) return;
+      var o = owner();
+      if (e.key === "Escape") { close(); e.preventDefault(); return; }
+      if (!o) return;
+      if (e.key === "ArrowRight" || e.key === "PageDown") { o.zoomStep(1); e.preventDefault(); }
+      if (e.key === "ArrowLeft" || e.key === "PageUp") { o.zoomStep(-1); e.preventDefault(); }
+    });
+
+    // Potiahnutie prsta v zväčšenom zobrazení
+    var startX = null, startY = null, moved = false;
+    box.addEventListener("pointerdown", function (e) { startX = e.clientX; startY = e.clientY; moved = false; });
+    box.addEventListener("pointermove", function (e) {
+      if (startX !== null && Math.abs(e.clientX - startX) > 12) moved = true;
+    });
+    box.addEventListener("pointerup", function (e) {
+      if (startX === null) return;
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      startX = null; startY = null;
+      if (moved && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+        var o = owner();
+        if (o) o.zoomStep(dx < 0 ? 1 : -1);
+      }
+    });
+
+    return box;
+  };
+
+  Flipbook.prototype.zoom = function (pageNum) {
+    var box = this.buildLightbox();
+    box._owner = this;
+    this.showZoomPage(box, pageNum);
     box.classList.add("show");
+  };
+
+  Flipbook.prototype.showZoomPage = function (box, pageNum) {
+    var self = this;
+    pageNum = Math.max(1, Math.min(pageNum, this.total));
+    box._page = pageNum;
+
+    var one = this.mode === "slides" ? "Snímka" : "Strana";
+    box.querySelector(".flipbook-lb-count").innerHTML =
+      one + " <strong>" + pageNum + "</strong> z " + this.total;
+    box.querySelector(".flipbook-lb-nav.prev").disabled = pageNum <= 1;
+    box.querySelector(".flipbook-lb-nav.next").disabled = pageNum >= this.total;
+
+    var img = box.querySelector(".flipbook-lightbox-img");
+    this.renderPage(pageNum).then(function (r) {
+      if (box._page !== pageNum) return;   // medzitým sa listovalo ďalej
+      if (r) {
+        img.src = r.url;
+        img.alt = one + " " + pageNum;
+      }
+    });
+    // Susedné strany si pripravíme dopredu, nech listovanie neseká.
+    if (pageNum + 1 <= this.total) this.renderPage(pageNum + 1);
+    if (pageNum - 1 >= 1) this.renderPage(pageNum - 1);
+  };
+
+  Flipbook.prototype.zoomStep = function (dir) {
+    var box = document.getElementById("flipbook-lightbox");
+    if (!box) return;
+    var next = (box._page || 1) + dir;
+    if (next < 1 || next > this.total) return;
+    this.showZoomPage(box, next);
+  };
+
+  // Otvorí knihu na danej strane (pri dvojstrane na tej, kde sa nachádza).
+  Flipbook.prototype.goToPage = function (pageNum) {
+    var target = pageNum - 1;
+    if (this.spread) target = target - (target % 2);
+    target = Math.max(0, Math.min(target, this.lastIndex()));
+    if (target === this.index) return;
+    this.index = target;
+    this.draw(0);
   };
 
   // ---------- Listovanie ----------
@@ -333,7 +438,8 @@
         if (r) {
           var img = el("img", "flipbook-page-img");
           img.src = r.url;
-          img.alt = "Strana " + pages[i] + " brožúrky";
+          img.alt = (self.mode === "slides" ? "Snímka " : "Strana ") + pages[i];
+          img.dataset.page = pages[i];
           img.draggable = false;
           slot.appendChild(img);
         } else {

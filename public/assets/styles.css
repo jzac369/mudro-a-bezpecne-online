@@ -1049,13 +1049,46 @@ label {
 /* Zväčšená strana */
 .flipbook-lightbox {
   position: fixed; inset: 0; z-index: 1000; background: rgba(13,20,20,.9);
-  display: none; align-items: center; justify-content: center; padding: 2.5rem 1rem;
+  display: none; align-items: center; justify-content: center;
+  /* Po stranách necháme miesto na šípky, dole na lištu s číslom strany. */
+  padding: 3rem 5.5rem 4.8rem;
   overflow: auto;
 }
 .flipbook-lightbox.show { display: flex; }
 .flipbook-lightbox-img {
   max-width: 100%; max-height: 100%; border-radius: 8px; cursor: zoom-out;
   box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  user-select: none; -webkit-user-drag: none;
+}
+
+/* Listovanie priamo v zväčšenom zobrazení */
+.flipbook-lb-nav {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,.16); color: #fff;
+  display: flex; align-items: center; justify-content: center; z-index: 2;
+}
+.flipbook-lb-nav svg { width: 26px; height: 26px; }
+.flipbook-lb-nav:hover:not(:disabled) { background: rgba(255,255,255,.3); }
+.flipbook-lb-nav:disabled { opacity: .25; cursor: default; }
+.flipbook-lb-nav.prev { left: 1.2rem; }
+.flipbook-lb-nav.next { right: 1.2rem; }
+
+.flipbook-lb-bar {
+  position: fixed; left: 50%; bottom: 1.1rem; transform: translateX(-50%);
+  display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; justify-content: center;
+  background: rgba(0,0,0,.55); color: #fff; padding: .55rem 1.1rem; border-radius: 999px;
+  font-size: .9rem; max-width: calc(100% - 2rem); text-align: center;
+}
+.flipbook-lb-count strong { font-size: 1.05rem; }
+.flipbook-lb-hint { opacity: .75; font-size: .82rem; }
+
+@media (max-width: 720px) {
+  .flipbook-lightbox { padding: 3.5rem .6rem 4.6rem; }
+  .flipbook-lb-nav { width: 48px; height: 48px; }
+  .flipbook-lb-nav.prev { left: .4rem; }
+  .flipbook-lb-nav.next { right: .4rem; }
+  .flipbook-lb-hint { display: none; }
 }
 .flipbook-lightbox-close {
   position: fixed; top: 1.2rem; right: 1.2rem; width: 48px; height: 48px; border-radius: 50%;
