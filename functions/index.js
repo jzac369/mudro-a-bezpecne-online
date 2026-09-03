@@ -622,6 +622,98 @@ exports.createAdmin = onCall(async (request) => {
   return { uid: user.uid };
 });
 
+/**
+ * Vytvorí (alebo obnoví heslo) prihlasovací účet pre affiliate partnera.
+ * Partner sa potom prihlasuje na tej istej adrese ako administrátor
+ * (/admin/), ale s vlastným claimom "affiliateCode" namiesto "admin" —
+ * na strane klienta ho to nasmeruje do obmedzeného partnerského pohľadu.
+ */
+exports.createAffiliateLogin = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže vytvárať partnerské prihlásenia.");
+  }
+  const { code, email, password } = request.data || {};
+  if (!code || !email || !password || password.length < 6) {
+    throw new HttpsError("invalid-argument", "Zadaj kód, e-mail a heslo (aspoň 6 znakov).");
+  }
+  const codeId = String(code).trim().toUpperCase();
+  const codeRef = db.collection("discountCodes").doc(codeId);
+  const codeSnap = await codeRef.get();
+  if (!codeSnap.exists || !codeSnap.data().isAffiliate) {
+    throw new HttpsError("not-found", "Partnerský kód sa nenašiel.");
+  }
+
+  let user;
+  try {
+    user = await getAuth().getUserByEmail(email);
+    // Bezpečnostná poistka: nikdy neprepíšeme existujúci administrátorský účet.
+    if (user.customClaims && user.customClaims.admin === true) {
+      throw new HttpsError("failed-precondition", "Tento e-mail už patrí administrátorskému účtu.");
+    }
+    await getAuth().updateUser(user.uid, { password });
+  } catch (err) {
+    if (err instanceof HttpsError) throw err;
+    user = await getAuth().createUser({ email, password });
+  }
+  await getAuth().setCustomUserClaims(user.uid, { affiliateCode: codeId });
+  await codeRef.set(
+    { affiliateUid: user.uid, affiliateLoginEmail: email, affiliateLoginCreatedAt: FieldValue.serverTimestamp() },
+    { merge: true }
+  );
+
+  return { uid: user.uid };
+});
+
+/**
+ * Dáta pre partnerský (affiliate) portál — dostupné len prihlásenému
+ * partnerovi, obmedzené na jeho vlastný kód. Zámerne vracia len súhrnné
+ * údaje o objednávkach (dátum, kurz, suma, provízia) bez mena/e-mailu
+ * zákazníka, aby sa k osobným údajom zákazníkov partner nedostal.
+ */
+exports.getAffiliatePortalStats = onCall(async (request) => {
+  const code = request.auth?.token?.affiliateCode;
+  if (!code) {
+    throw new HttpsError("permission-denied", "Toto je dostupné len prihláseným partnerom.");
+  }
+  const codeSnap = await db.collection("discountCodes").doc(code).get();
+  if (!codeSnap.exists) {
+    throw new HttpsError("not-found", "Partnerský kód sa nenašiel.");
+  }
+  const c = codeSnap.data();
+  const commissionPercent = Number(c.commissionPercent) || 0;
+
+  const ordersSnap = await db.collection("orders").where("couponApplied", "==", code).where("status", "==", "code_sent").get();
+  const orders = ordersSnap.docs
+    .map((d) => d.data())
+    .sort((a, b) => (b.paidAt ? b.paidAt.toMillis() : 0) - (a.paidAt ? a.paidAt.toMillis() : 0));
+
+  const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+  const totalCommission = Math.round(totalRevenue * (commissionPercent / 100) * 100) / 100;
+
+  const since30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const orders30 = orders.filter((o) => o.paidAt && o.paidAt.toMillis() >= since30);
+  const revenue30 = orders30.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+  const commission30 = Math.round(revenue30 * (commissionPercent / 100) * 100) / 100;
+
+  return {
+    code,
+    name: c.affiliateName || "",
+    commissionPercent,
+    totalOrders: orders.length,
+    totalRevenue,
+    totalCommission,
+    orders30Count: orders30.length,
+    revenue30,
+    commission30,
+    orders: orders.map((o) => ({
+      paidAt: o.paidAt ? o.paidAt.toMillis() : null,
+      workshopId: o.workshopId,
+      amount: Number(o.amount) || 0,
+      commission: Math.round((Number(o.amount) || 0) * (commissionPercent / 100) * 100) / 100,
+    })),
+  };
+});
+
 // Uvítací e-mail s prístupovým kódom hneď po zaplatení — ide priamo cez
 // vlastný SMTP a editovateľnú šablónu z admin zóny (E-maily). Zámerne
 // NEVYHADZUJE chybu pri zlyhaní — kódy

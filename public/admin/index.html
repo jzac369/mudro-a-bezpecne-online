@@ -321,6 +321,42 @@
   </div>
 </div>
 
+<div id="affiliate-view" class="container" style="display:none;padding-top:2.5rem;padding-bottom:3rem;max-width:900px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;gap:.6rem;">
+    <div>
+      <h1 style="margin-bottom:.2rem;">Partnerský portál</h1>
+      <p class="hint" id="aff-welcome"></p>
+    </div>
+    <button class="btn btn-secondary" id="aff-logout-btn" type="button">Odhlásiť sa</button>
+  </div>
+
+  <div class="card" style="margin-bottom:1.2rem;">
+    <h2 style="margin-bottom:.4rem;">Váš odkaz</h2>
+    <p class="hint" style="margin-bottom:.6rem;">Zdieľajte tento odkaz — objednávky cez neho (aj pri ručnom zadaní vášho kódu) sa vám automaticky započítajú.</p>
+    <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+      <span class="mono code-copy" id="aff-link" style="background:var(--surface-2);padding:.5rem .8rem;border-radius:8px;word-break:break-all;" title="Kliknutím skopírovať"></span>
+    </div>
+    <p class="hint" style="margin-top:.6rem;">Váš kód: <span class="mono" id="aff-code"></span> · provízia: <span id="aff-commission"></span></p>
+  </div>
+
+  <div class="summary-grid" style="margin-bottom:1.2rem;">
+    <div class="card summary-card"><div class="num" id="aff-total-orders">—</div><div class="label">Objednávky spolu</div></div>
+    <div class="card summary-card"><div class="num" id="aff-total-revenue">—</div><div class="label">Tržby spolu</div></div>
+    <div class="card summary-card"><div class="num" id="aff-total-commission">—</div><div class="label">Provízia spolu</div></div>
+    <div class="card summary-card"><div class="num" id="aff-commission-30">—</div><div class="label">Provízia (30 dní)</div></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:.8rem;">Vaše objednávky</h2>
+    <div style="overflow-x:auto;">
+      <table class="dash">
+        <thead><tr><th>Dátum</th><th>Kurz</th><th>Suma</th><th>Provízia</th></tr></thead>
+        <tbody id="aff-orders-body"><tr><td colspan="4" class="hint">Načítavam…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div id="dashboard-view" class="dash-shell" style="display:none;">
   <aside class="dash-sidebar" id="dash-sidebar">
     <div class="sidebar-top">
@@ -855,11 +891,11 @@
 
         <div class="card" style="margin-bottom:1.5rem;">
           <h2 style="margin-bottom:.4rem;">Affiliate program</h2>
-          <p class="hint" style="margin-bottom:.8rem;">Partnerský kód označíte vyššie vo formulári zaškrtnutím „Toto je partnerský (affiliate) kód“. Partnerovi pošlite jeho odkaz — pri objednávke cez odkaz sa jeho kód automaticky predvyplní.</p>
+          <p class="hint" style="margin-bottom:.8rem;">Partnerský kód označíte vyššie vo formulári zaškrtnutím „Toto je partnerský (affiliate) kód“. Partnerovi pošlite jeho odkaz — pri objednávke cez odkaz (aj pri ručnom zadaní kódu) sa mu provízia automaticky započíta. Prihlasovacie údaje mu umožnia sledovať vlastné štatistiky na <span class="mono">kurzy.digistart.sk/admin/</span>.</p>
           <div style="overflow-x:auto;">
             <table class="dash">
-              <thead><tr><th>Kód</th><th>Partner</th><th>Odkaz</th><th>Provízia</th><th>Objednávky</th><th>Tržby</th><th>Provízia spolu</th></tr></thead>
-              <tbody id="dc-affiliate-body"><tr><td colspan="7" class="hint">Načítavam…</td></tr></tbody>
+              <thead><tr><th>Kód</th><th>Partner</th><th>Odkaz</th><th>Provízia</th><th>Objednávky</th><th>Tržby</th><th>Provízia spolu</th><th>Prihlásenie partnera</th></tr></thead>
+              <tbody id="dc-affiliate-body"><tr><td colspan="8" class="hint">Načítavam…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -2895,13 +2931,69 @@ window.addEventListener("load", function () {
     }
   }
 
+  function generatePassword() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    let pass = "";
+    for (let i = 0; i < 10; i++) pass += chars[Math.floor(Math.random() * chars.length)];
+    return pass;
+  }
+
+  function showAffiliateLoginModal(codeId, defaultEmail, hasLogin) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    const suggested = generatePassword();
+    overlay.innerHTML =
+      "<div class='modal-box' style='max-width:420px;'><button class='modal-close' data-close>&times;</button>" +
+      "<h2>" + (hasLogin ? "Obnoviť heslo pre " : "Vytvoriť prihlásenie pre ") + escapeHtml(codeId) + "</h2>" +
+      "<p class='hint'>Partner sa prihlási na <span class='mono'>kurzy.digistart.sk/admin/</span> týmto e-mailom a heslom — uvidí len svoj vlastný partnerský portál.</p>" +
+      "<div class='field'><label for='aff-login-email'>E-mail partnera</label><input type='email' id='aff-login-email' value='" + escapeHtml(defaultEmail || "") + "' required></div>" +
+      "<div class='field'><label for='aff-login-pass'>Heslo</label><input type='text' id='aff-login-pass' value='" + escapeHtml(suggested) + "'></div>" +
+      "<button class='btn btn-primary btn-block' type='button' id='aff-login-submit'>" + (hasLogin ? "Obnoviť heslo" : "Vytvoriť prihlásenie") + "</button>" +
+      "<p id='aff-login-error' class='hint' style='color:var(--warn);display:none;margin-top:.6rem;'></p>" +
+      "<p id='aff-login-success' class='hint' style='display:none;margin-top:.6rem;'></p>" +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay || e.target.hasAttribute("data-close")) overlay.remove();
+    });
+    overlay.querySelector("#aff-login-submit").addEventListener("click", async (e) => {
+      const btn = e.target;
+      const errorEl = overlay.querySelector("#aff-login-error");
+      const successEl = overlay.querySelector("#aff-login-success");
+      errorEl.style.display = "none";
+      const email = overlay.querySelector("#aff-login-email").value.trim();
+      const password = overlay.querySelector("#aff-login-pass").value;
+      if (!email || !password || password.length < 6) {
+        errorEl.textContent = "Zadajte e-mail a heslo (aspoň 6 znakov).";
+        errorEl.style.display = "block";
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = "Ukladám…";
+      try {
+        const createAffiliateLogin = functions.httpsCallable("createAffiliateLogin");
+        await createAffiliateLogin({ code: codeId, email, password });
+        successEl.textContent = "Hotovo ✓ Pošlite partnerovi tieto prihlasovacie údaje (heslo sa už nedá znova zobraziť): e-mail „" + email + "“, heslo „" + password + "“.";
+        successEl.style.display = "block";
+        btn.style.display = "none";
+        logActivity("settings", "Vytvorené/obnovené prihlásenie partnera pre kód " + codeId);
+        loadDiscountCodes();
+      } catch (err) {
+        errorEl.textContent = "Zlyhalo: " + err.message;
+        errorEl.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = hasLogin ? "Obnoviť heslo" : "Vytvoriť prihlásenie";
+      }
+    });
+  }
+
   async function loadAffiliateStats(affiliateRows) {
     const body = document.getElementById("dc-affiliate-body");
     if (!affiliateRows.length) {
-      body.innerHTML = "<tr><td colspan='7' class='hint'>Zatiaľ žiadne partnerské kódy — vytvorte kód vyššie a zaškrtnite „Toto je partnerský (affiliate) kód“.</td></tr>";
+      body.innerHTML = "<tr><td colspan='8' class='hint'>Zatiaľ žiadne partnerské kódy — vytvorte kód vyššie a zaškrtnite „Toto je partnerský (affiliate) kód“.</td></tr>";
       return;
     }
-    body.innerHTML = "<tr><td colspan='7' class='hint'>Načítavam…</td></tr>";
+    body.innerHTML = "<tr><td colspan='8' class='hint'>Načítavam…</td></tr>";
     try {
       const codes = affiliateRows.map((r) => r.id);
       const ordersByCode = {};
@@ -2920,13 +3012,17 @@ window.addEventListener("load", function () {
         const commissionPct = c.commissionPercent || 0;
         const commission = revenue * (commissionPct / 100);
         const link = affiliateLink(id);
+        const loginCell = c.affiliateUid
+          ? "<span class='hint'>Vytvorené (" + escapeHtml(c.affiliateLoginEmail || "") + ")</span><br><button class='btn btn-secondary' data-aff-login='" + escapeHtml(id) + "' data-aff-email='" + escapeHtml(c.affiliateLoginEmail || c.affiliateEmail || "") + "' data-aff-has-login='1' style='font-size:.78rem;padding:.3rem .5rem;margin-top:.3rem;'>Obnoviť heslo</button>"
+          : "<button class='btn btn-secondary' data-aff-login='" + escapeHtml(id) + "' data-aff-email='" + escapeHtml(c.affiliateEmail || "") + "' style='font-size:.78rem;padding:.3rem .5rem;'>Vytvoriť prihlásenie</button>";
         return "<tr><td class='mono'>" + escapeHtml(id) + "</td>" +
           "<td>" + escapeHtml(c.affiliateName || "—") + (c.affiliateEmail ? "<br><span class='hint'>" + escapeHtml(c.affiliateEmail) + "</span>" : "") + "</td>" +
           "<td><span class='mono code-copy' data-copy-code='" + escapeHtml(link) + "' title='Kliknutím skopírovať odkaz' style='font-size:.8rem;word-break:break-all;'>" + escapeHtml(link) + "</span></td>" +
           "<td>" + commissionPct + " %</td>" +
           "<td>" + orders.length + "</td>" +
           "<td>" + revenue.toFixed(2) + " €</td>" +
-          "<td><strong>" + commission.toFixed(2) + " €</strong></td></tr>";
+          "<td><strong>" + commission.toFixed(2) + " €</strong></td>" +
+          "<td>" + loginCell + "</td></tr>";
       }).join("");
       document.querySelectorAll("#dc-affiliate-body [data-copy-code]").forEach((copyEl) => {
         copyEl.addEventListener("click", (e) => {
@@ -2938,8 +3034,13 @@ window.addEventListener("load", function () {
           }).catch(() => {});
         });
       });
+      document.querySelectorAll("#dc-affiliate-body [data-aff-login]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          showAffiliateLoginModal(btn.dataset.affLogin, btn.dataset.affEmail, btn.dataset.affHasLogin === "1");
+        });
+      });
     } catch (err) {
-      body.innerHTML = "<tr><td colspan='7' class='hint' style='color:var(--warn);'>Štatistiky sa nepodarilo načítať: " + escapeHtml(err.message) + "</td></tr>";
+      body.innerHTML = "<tr><td colspan='8' class='hint' style='color:var(--warn);'>Štatistiky sa nepodarilo načítať: " + escapeHtml(err.message) + "</td></tr>";
       console.error(err);
     }
   }
@@ -4260,6 +4361,47 @@ window.addEventListener("load", function () {
     });
   }
 
+  async function loadAffiliatePortal() {
+    const body = document.getElementById("aff-orders-body");
+    try {
+      const getAffiliatePortalStats = functions.httpsCallable("getAffiliatePortalStats");
+      const res = await getAffiliatePortalStats();
+      const d = res.data;
+      document.getElementById("aff-welcome").textContent = d.name ? "Vitajte, " + d.name + "." : "";
+      document.getElementById("aff-link").textContent = affiliateLink(d.code);
+      document.getElementById("aff-link").dataset.copyCode = affiliateLink(d.code);
+      document.getElementById("aff-code").textContent = d.code;
+      document.getElementById("aff-commission").textContent = d.commissionPercent + " %";
+      document.getElementById("aff-total-orders").textContent = d.totalOrders;
+      document.getElementById("aff-total-revenue").textContent = d.totalRevenue.toFixed(2) + " €";
+      document.getElementById("aff-total-commission").textContent = d.totalCommission.toFixed(2) + " €";
+      document.getElementById("aff-commission-30").textContent = d.commission30.toFixed(2) + " €";
+
+      document.getElementById("aff-link").addEventListener("click", () => {
+        navigator.clipboard.writeText(affiliateLink(d.code)).then(() => {
+          const el = document.getElementById("aff-link");
+          const original = el.textContent;
+          el.textContent = "Skopírované ✓";
+          setTimeout(() => { el.textContent = original; }, 1200);
+        }).catch(() => {});
+      });
+
+      if (!d.orders.length) {
+        body.innerHTML = "<tr><td colspan='4' class='hint'>Zatiaľ žiadne objednávky cez váš kód.</td></tr>";
+        return;
+      }
+      body.innerHTML = d.orders.map((o) => {
+        const when = o.paidAt ? new Date(o.paidAt).toLocaleDateString("sk-SK") : "—";
+        return "<tr><td>" + when + "</td><td>" + escapeHtml(workshopTitle(o.workshopId)) + "</td><td>" +
+          o.amount.toFixed(2) + " €</td><td>" + o.commission.toFixed(2) + " €</td></tr>";
+      }).join("");
+    } catch (err) {
+      body.innerHTML = "<tr><td colspan='4' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
+    }
+  }
+
+  document.getElementById("aff-logout-btn").addEventListener("click", () => auth.signOut());
+
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       if (unsubscribeOrders) { unsubscribeOrders(); unsubscribeOrders = null; }
@@ -4269,16 +4411,27 @@ window.addEventListener("load", function () {
       lastSnapshot = null;
       document.getElementById("login-view").style.display = "block";
       document.getElementById("dashboard-view").style.display = "none";
+      document.getElementById("affiliate-view").style.display = "none";
       return;
     }
     const token = await user.getIdTokenResult();
+
+    if (token.claims.affiliateCode) {
+      document.getElementById("login-view").style.display = "none";
+      document.getElementById("dashboard-view").style.display = "none";
+      document.getElementById("affiliate-view").style.display = "block";
+      loadAffiliatePortal();
+      return;
+    }
+
     if (token.claims.admin !== true) {
-      document.getElementById("admin-login-error").textContent = "Tento účet nemá administrátorské práva.";
+      document.getElementById("admin-login-error").textContent = "Tento účet nemá administrátorské ani partnerské práva.";
       document.getElementById("admin-login-error").style.display = "block";
       await auth.signOut();
       return;
     }
     document.getElementById("login-view").style.display = "none";
+    document.getElementById("affiliate-view").style.display = "none";
     document.getElementById("dashboard-view").style.display = "flex";
     document.getElementById("admin-email-label").textContent = user.email;
     showSection("registracie");
