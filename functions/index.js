@@ -9,6 +9,7 @@ const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
+const dns = require("dns").promises;
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
@@ -1332,7 +1333,8 @@ async function uploadPdfAndGetUrl(buffer, path) {
    nikdy neposiela späť do prehliadača.
 */
 
-const DEFAULT_DOCUMENT_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;background-color:#efe6d3;">
+function documentEmailShell(bodyHtml) {
+  return `<div style="margin:0;padding:0;background-color:#efe6d3;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efe6d3;">
     <tr>
       <td align="center" style="padding:32px 16px;">
@@ -1344,7 +1346,27 @@ const DEFAULT_DOCUMENT_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;backgrou
             </td>
           </tr>
           <tr><td style="height:4px;background-color:#c17a2e;line-height:4px;font-size:0;">&nbsp;</td></tr>
+${bodyHtml}
           <tr>
+            <td style="padding:28px 40px 36px;">
+              <p style="margin:0 0 4px;font-size:15px;line-height:1.6;color:#1f3a3d;">Ak by ste mali akúkoľvek otázku k dokumentu alebo k platbe, pokojne nám napíšte — radi pomôžeme.</p>
+              <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#1f3a3d;">S pozdravom,<br><strong>Tím DigiStart kurzy</strong></p>
+            </td>
+          </tr>
+          <tr><td style="height:1px;background-color:#ddd5c2;line-height:1px;font-size:0;">&nbsp;</td></tr>
+          <tr>
+            <td align="center" style="padding:18px 24px;">
+              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na mudroabezpecne.sk.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>`;
+}
+
+const DEFAULT_INVOICE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
               <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
               <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">posielame Vám <strong>{{doc_label}} č. {{doc_number}}</strong> k Vašej objednávke kurzu <strong>„{{workshop_title}}“</strong>.</p>
@@ -1367,24 +1389,57 @@ const DEFAULT_DOCUMENT_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;backgrou
             <td style="padding:18px 40px 0;">
               <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{extra_line}}</p>
             </td>
-          </tr>
-          <tr>
-            <td style="padding:28px 40px 36px;">
-              <p style="margin:0 0 4px;font-size:15px;line-height:1.6;color:#1f3a3d;">Ak by ste mali akúkoľvek otázku k dokumentu alebo k platbe, pokojne nám napíšte — radi pomôžeme.</p>
-              <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#1f3a3d;">S pozdravom,<br><strong>Tím Múdro a Bezpečne Online</strong></p>
+          </tr>`);
+
+const DEFAULT_POZ_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
+            <td style="padding:36px 40px 8px;">
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">potvrdzujeme, že sme prijali platbu za kurz <strong>„{{workshop_title}}“</strong>. V prílohe nižšie nájdete oficiálne <strong>{{doc_label}} č. {{doc_number}}</strong> na stiahnutie.</p>
             </td>
           </tr>
-          <tr><td style="height:1px;background-color:#ddd5c2;line-height:1px;font-size:0;">&nbsp;</td></tr>
           <tr>
-            <td align="center" style="padding:18px 24px;">
-              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na mudroabezpecne.sk.</p>
+            <td style="padding:8px 40px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="background-color:#eef4ee;border:2px solid #5c8a5c;border-radius:12px;padding:24px 20px;">
+                    <div style="font-size:11px;letter-spacing:.15em;color:#4a6b4a;text-transform:uppercase;margin-bottom:6px;">{{doc_label}}</div>
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#1f3a3d;margin-bottom:16px;">č. {{doc_number}}</div>
+                    <a href="{{doc_url}}" style="display:inline-block;background-color:#5c8a5c;color:#fffdf7;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť PDF</a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</div>`;
+          <tr>
+            <td style="padding:18px 40px 0;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{extra_line}}</p>
+            </td>
+          </tr>`);
+
+const DEFAULT_VOUCHER_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
+            <td style="padding:36px 40px 8px;">
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">pripravili sme pre Vás <strong>darčekový poukaz</strong> na kurz <strong>„{{workshop_title}}“</strong>.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 40px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="background-color:#f6ecd9;border:2px solid #c17a2e;border-radius:12px;padding:24px 20px;">
+                    <div style="font-size:11px;letter-spacing:.15em;color:#6b6350;text-transform:uppercase;margin-bottom:6px;">Prihlasovací kód</div>
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;letter-spacing:.12em;color:#1f3a3d;margin-bottom:16px;">{{code}}</div>
+                    <a href="{{doc_url}}" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť poukaz (PDF)</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 40px 0;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{extra_line}}</p>
+            </td>
+          </tr>`);
 
 async function getSmtpConfig() {
   const snap = await db.collection("emailConfig").doc("smtp").get();
@@ -1409,6 +1464,21 @@ async function getSmtpTransporter() {
   return { transporter, cfg };
 }
 
+// Zloží spoločné časti e-mailu (odosielateľ, kópia, adresa na odpoveď)
+// na jednom mieste, nech sa nastavenia BCC/Reply-To nemusia opakovať
+// v každej funkcii, ktorá cez SMTP niečo posiela.
+function buildMailOptions(cfg, { to, subject, html }) {
+  const opts = {
+    from: (cfg.fromName ? cfg.fromName + " " : "") + "<" + cfg.user + ">",
+    to,
+    subject,
+    html,
+  };
+  if (cfg.replyTo && String(cfg.replyTo).trim()) opts.replyTo = String(cfg.replyTo).trim();
+  if (cfg.bccEnabled && cfg.bccAddress && String(cfg.bccAddress).trim()) opts.bcc = String(cfg.bccAddress).trim();
+  return opts;
+}
+
 function renderDocumentEmailHtml(template, vars) {
   let html = template;
   for (const [key, value] of Object.entries(vars)) {
@@ -1418,12 +1488,18 @@ function renderDocumentEmailHtml(template, vars) {
   return html;
 }
 
-async function sendDocumentSmtpEmail({ to, name, docLabel, docNumber, workshopTitle, url, extraLine }) {
+// docType rozhoduje, ktorá zo samostatných šablón sa použije. Ak admin
+// ešte neuložil vlastnú verziu pre daný typ, skúsi sa najprv staršie
+// spoločné pole documentEmailTemplate (z čias, keď bola šablóna len
+// jedna — nech sa prípadná skoršia úprava nestratí), až potom predvolená.
+async function sendDocumentSmtpEmail({ to, name, docLabel, docNumber, workshopTitle, url, extraLine, docType }) {
   let status = "sent";
   let errorMessage = "";
   try {
     const { transporter, cfg } = await getSmtpTransporter();
-    const template = cfg.documentEmailTemplate || DEFAULT_DOCUMENT_EMAIL_TEMPLATE;
+    const template = docType === "poz"
+      ? (cfg.pozEmailTemplate || cfg.documentEmailTemplate || DEFAULT_POZ_EMAIL_TEMPLATE)
+      : (cfg.invoiceEmailTemplate || cfg.documentEmailTemplate || DEFAULT_INVOICE_EMAIL_TEMPLATE);
     const html = renderDocumentEmailHtml(template, {
       to_name: name,
       doc_label: docLabel,
@@ -1432,13 +1508,11 @@ async function sendDocumentSmtpEmail({ to, name, docLabel, docNumber, workshopTi
       doc_url: url,
       extra_line: extraLine || "",
     });
-    const fromHeader = (cfg.fromName ? cfg.fromName + " " : "") + "<" + cfg.user + ">";
-    await transporter.sendMail({
-      from: fromHeader,
+    await transporter.sendMail(buildMailOptions(cfg, {
       to,
       subject: "Váš dokument je pripravený — " + docLabel + " č. " + docNumber,
       html,
-    });
+    }));
   } catch (err) {
     status = "failed";
     errorMessage = String((err && err.message) || err).slice(0, 300);
@@ -1476,7 +1550,12 @@ exports.getEmailSettings = onCall(async (request) => {
     user: data.user || "",
     fromName: data.fromName || "",
     passwordSet: !!data.password,
-    documentEmailTemplate: data.documentEmailTemplate || DEFAULT_DOCUMENT_EMAIL_TEMPLATE,
+    replyTo: data.replyTo || "",
+    bccEnabled: !!data.bccEnabled,
+    bccAddress: data.bccAddress || "",
+    invoiceEmailTemplate: data.invoiceEmailTemplate || data.documentEmailTemplate || DEFAULT_INVOICE_EMAIL_TEMPLATE,
+    pozEmailTemplate: data.pozEmailTemplate || data.documentEmailTemplate || DEFAULT_POZ_EMAIL_TEMPLATE,
+    voucherEmailTemplate: data.voucherEmailTemplate || DEFAULT_VOUCHER_EMAIL_TEMPLATE,
   };
 });
 
@@ -1484,7 +1563,11 @@ exports.saveEmailSettings = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže upravovať nastavenia e-mailu.");
   }
-  const { host, port, secure, user, fromName, password, documentEmailTemplate } = request.data || {};
+  const {
+    host, port, secure, user, fromName, password,
+    replyTo, bccEnabled, bccAddress,
+    invoiceEmailTemplate, pozEmailTemplate, voucherEmailTemplate,
+  } = request.data || {};
   if (!host || !String(host).trim() || !user || !String(user).trim()) {
     throw new HttpsError("invalid-argument", "Chýba SMTP server alebo prihlasovacia e-mailová adresa.");
   }
@@ -1495,6 +1578,9 @@ exports.saveEmailSettings = onCall(async (request) => {
     secure: secure !== false,
     user: String(user).trim(),
     fromName: String(fromName || "").trim(),
+    replyTo: String(replyTo || "").trim(),
+    bccEnabled: !!bccEnabled,
+    bccAddress: String(bccAddress || "").trim(),
     updatedAt: FieldValue.serverTimestamp(),
     updatedBy: request.auth.token.email || request.auth.uid,
   };
@@ -1504,12 +1590,92 @@ exports.saveEmailSettings = onCall(async (request) => {
   if (typeof password === "string" && password.length > 0) {
     update.password = password;
   }
-  if (typeof documentEmailTemplate === "string" && documentEmailTemplate.trim()) {
-    update.documentEmailTemplate = documentEmailTemplate;
+  if (typeof invoiceEmailTemplate === "string" && invoiceEmailTemplate.trim()) {
+    update.invoiceEmailTemplate = invoiceEmailTemplate;
+  }
+  if (typeof pozEmailTemplate === "string" && pozEmailTemplate.trim()) {
+    update.pozEmailTemplate = pozEmailTemplate;
+  }
+  if (typeof voucherEmailTemplate === "string" && voucherEmailTemplate.trim()) {
+    update.voucherEmailTemplate = voucherEmailTemplate;
   }
 
   await db.collection("emailConfig").doc("smtp").set(update, { merge: true });
   return { ok: true };
+});
+
+exports.getEmailStats = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže vidieť štatistiky e-mailov.");
+  }
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayOfWeek = (startOfDay.getDay() + 6) % 7; // pondelok = začiatok týždňa
+  const startOfWeek = new Date(startOfDay);
+  startOfWeek.setDate(startOfDay.getDate() - dayOfWeek);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const mailRef = db.collection("mail");
+  const [dayCount, weekCount, monthCount] = await Promise.all([
+    mailRef.where("createdAt", ">=", startOfDay).count().get(),
+    mailRef.where("createdAt", ">=", startOfWeek).count().get(),
+    mailRef.where("createdAt", ">=", startOfMonth).count().get(),
+  ]);
+  return {
+    today: dayCount.data().count,
+    week: weekCount.data().count,
+    month: monthCount.data().count,
+  };
+});
+
+// Overí, či doména odosielacej adresy má nastavené SPF a DMARC (presné
+// TXT záznamy, jednoznačne definované), a skúsi nájsť DKIM na
+// niekoľkých bežných selektoroch — presný selektor Webnode nezverejňuje,
+// takže pri "nenájdené" to nemusí nutne znamenať chybu, len sa nedal
+// uhádnuť názov. Slúži len ako orientačná kontrola pre lepšiu
+// doručiteľnosť, nič nemení ani nenastavuje.
+exports.checkEmailDns = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže overovať DNS záznamy.");
+  }
+  const snap = await db.collection("emailConfig").doc("smtp").get();
+  const cfgUser = snap.exists ? snap.data().user : null;
+  const emailAddr = (request.data && request.data.email) || cfgUser || "";
+  const atIdx = String(emailAddr).indexOf("@");
+  if (atIdx === -1) {
+    throw new HttpsError("failed-precondition", "Najprv nastavte a uložte SMTP prihlasovaciu e-mailovú adresu.");
+  }
+  const domain = String(emailAddr).slice(atIdx + 1).trim();
+
+  async function lookupTxt(host) {
+    try {
+      const records = await dns.resolveTxt(host);
+      return records.map((r) => r.join(""));
+    } catch (err) {
+      return [];
+    }
+  }
+
+  const rootTxt = await lookupTxt(domain);
+  const spfRecord = rootTxt.find((r) => r.toLowerCase().startsWith("v=spf1"));
+
+  const dmarcTxt = await lookupTxt("_dmarc." + domain);
+  const dmarcRecord = dmarcTxt.find((r) => r.toLowerCase().startsWith("v=dmarc1"));
+
+  const dkimSelectors = ["default", "selector1", "selector2", "webnode", "smtp", "mail", "dkim", "s1"];
+  let dkim = null;
+  for (const sel of dkimSelectors) {
+    const txt = await lookupTxt(sel + "._domainkey." + domain);
+    const rec = txt.find((r) => r.toLowerCase().includes("v=dkim1") || r.toLowerCase().includes("p="));
+    if (rec) { dkim = { selector: sel, record: rec }; break; }
+  }
+
+  return {
+    domain,
+    spf: { found: !!spfRecord, record: spfRecord || null },
+    dmarc: { found: !!dmarcRecord, record: dmarcRecord || null },
+    dkim: dkim ? { found: true, selector: dkim.selector, record: dkim.record } : { found: false, selector: null, record: null },
+  };
 });
 
 exports.sendTestSmtpEmail = onCall(async (request) => {
@@ -1520,20 +1686,35 @@ exports.sendTestSmtpEmail = onCall(async (request) => {
   if (!to) throw new HttpsError("failed-precondition", "Chýba e-mail prihláseného administrátora.");
 
   const { transporter, cfg } = await getSmtpTransporter();
-  const fromHeader = (cfg.fromName ? cfg.fromName + " " : "") + "<" + cfg.user + ">";
+  let status = "sent";
+  let errorMessage = "";
   try {
-    await transporter.sendMail({
-      from: fromHeader,
+    await transporter.sendMail(buildMailOptions(cfg, {
       to,
       subject: "Testovací e-mail — SMTP nastavenia fungujú",
       html:
         "<p style='font-family:Arial,sans-serif;font-size:15px;color:#1f3a3d;'>" +
         "Toto je testovací e-mail z admin zóny mudroabezpecne.sk (sekcia E-maily).<br>" +
         "Ak ho vidíte, SMTP nastavenia sú funkčné.</p>",
+    }));
+  } catch (err) {
+    status = "failed";
+    errorMessage = String((err && err.message) || err).slice(0, 300);
+    console.error("Testovací SMTP e-mail zlyhal:", err);
+  }
+
+  try {
+    await db.collection("mail").add({
+      to, docLabel: "testovací e-mail", docNumber: null, status, via: "smtp",
+      error: status === "failed" ? errorMessage : null,
+      createdAt: FieldValue.serverTimestamp(),
     });
   } catch (err) {
-    console.error("Testovací SMTP e-mail zlyhal:", err);
-    throw new HttpsError("internal", "Odoslanie zlyhalo: " + String((err && err.message) || err).slice(0, 300));
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
+
+  if (status === "failed") {
+    throw new HttpsError("internal", "Odoslanie zlyhalo: " + errorMessage);
   }
   return { ok: true, to };
 });
@@ -1665,58 +1846,54 @@ exports.previewDocumentPdf = onCall(async (request) => {
 
 // Odoslanie darčekového poukazu (PDF) e-mailom kupujúcemu — vygeneruje sa
 // rovnaký dokument ako pri náhľade, uloží sa a pošle sa naň odkaz.
-async function sendGiftVoucherLinkEmail({ to, name, workshopTitle, url, code, recipientName, giftMessage }) {
-  const lines = [
-    "Pripravili sme pre Vás darčekový poukaz na kurz „" + workshopTitle + "“ — na stiahnutie a vytlačenie (PDF):",
-    url,
-  ];
-  if (recipientName) lines.splice(1, 0, "Poukaz je pripravený pre: " + recipientName + ".");
-  lines.push("", "Prihlasovací kód pre obdarovaného: " + code);
-  if (giftMessage) lines.push("", "Váš odkaz na poukaze: „" + giftMessage + "“");
-  const message = lines.join("\n");
-
+async function sendVoucherSmtpEmail({ to, name, workshopTitle, url, code, recipientName, giftMessage }) {
   let status = "sent";
+  let errorMessage = "";
+  const extraParts = [];
+  if (recipientName) extraParts.push("Poukaz je pripravený pre: " + recipientName + ".");
+  if (giftMessage) extraParts.push("Váš odkaz na poukaze: „" + giftMessage + "“");
+  const extraLine = extraParts.join(" ");
+
   try {
-    const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID,
-        template_id: EMAILJS_TEMPLATE_ID,
-        user_id: EMAILJS_PUBLIC_KEY,
-        accessToken: EMAILJS_PRIVATE_KEY.value(),
-        template_params: {
-          to_email: to,
-          to_name: name,
-          name,
-          email: to,
-          code,
-          workshop_title: workshopTitle,
-          custom_message: message,
-        },
-      }),
+    const { transporter, cfg } = await getSmtpTransporter();
+    const template = cfg.voucherEmailTemplate || DEFAULT_VOUCHER_EMAIL_TEMPLATE;
+    const html = renderDocumentEmailHtml(template, {
+      to_name: name,
+      workshop_title: workshopTitle,
+      doc_url: url,
+      code,
+      extra_line: extraLine,
     });
-    if (!res.ok) {
-      status = "failed";
-      console.error("EmailJS odoslanie poukazu zlyhalo:", res.status, await res.text());
-    }
+    await transporter.sendMail(buildMailOptions(cfg, {
+      to,
+      subject: "Darčekový poukaz — kurz „" + workshopTitle + "“",
+      html,
+    }));
   } catch (err) {
     status = "failed";
-    console.error("EmailJS odoslanie poukazu zlyhalo:", err);
+    errorMessage = String((err && err.message) || err).slice(0, 300);
+    console.error("SMTP odoslanie poukazu zlyhalo:", err);
   }
 
   try {
-    await db.collection("mail").add({ to, docLabel: "darčekový poukaz", code, status, createdAt: FieldValue.serverTimestamp() });
+    await db.collection("mail").add({
+      to, docLabel: "darčekový poukaz", code, status, via: "smtp",
+      error: status === "failed" ? errorMessage : null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
   } catch (err) {
     console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
   }
 
   if (status === "failed") {
-    throw new HttpsError("internal", "Odoslanie e-mailu zlyhalo. Skúste to prosím znova.");
+    throw new HttpsError(
+      "internal",
+      "Odoslanie e-mailu zlyhalo (" + errorMessage + "). Skontrolujte SMTP nastavenia v admin zóne (E-maily)."
+    );
   }
 }
 
-exports.sendGiftVoucherEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.sendGiftVoucherEmail = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže odosielať darčekové poukazy.");
   }
@@ -1740,7 +1917,7 @@ exports.sendGiftVoucherEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async 
   );
   const url = await uploadPdfAndGetUrl(buffer, "vouchers/" + orderId + "/" + codeId + ".pdf");
 
-  await sendGiftVoucherLinkEmail({
+  await sendVoucherSmtpEmail({
     to: order.email,
     name: order.firstName || order.name,
     workshopTitle: order.workshopTitleSnapshot,
@@ -1753,7 +1930,7 @@ exports.sendGiftVoucherEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async 
   return { url };
 });
 
-exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.sendInvoiceEmail = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže odosielať faktúry.");
   }
@@ -1784,12 +1961,13 @@ exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (req
     workshopTitle: order.workshopTitleSnapshot,
     url,
     extraLine: "Suma: " + (order.amount != null ? order.amount : "—") + " € · VS: " + invoiceNumber.slice(2),
+    docType: "invoice",
   });
 
   return { invoiceNumber, url };
 });
 
-exports.sendPaymentConfirmationEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.sendPaymentConfirmationEmail = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže odosielať potvrdenia o zaplatení.");
   }
@@ -1813,6 +1991,8 @@ exports.sendPaymentConfirmationEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }
   const buffer = await pdfToBuffer((doc) => drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }));
   const url = await uploadPdfAndGetUrl(buffer, "poz/" + orderId + "/" + pozNumber + ".pdf");
 
+  const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
+  const paymentMethodLabel = PAYMENT_METHOD_LABELS[order.paymentMethod] || "—";
   await sendDocumentSmtpEmail({
     to: order.email,
     name: order.firstName || order.name,
@@ -1820,6 +2000,8 @@ exports.sendPaymentConfirmationEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }
     docNumber: pozNumber,
     workshopTitle: order.workshopTitleSnapshot,
     url,
+    extraLine: "Spôsob úhrady: " + paymentMethodLabel + " · Dátum úhrady: " + paidDate,
+    docType: "poz",
   });
 
   return { pozNumber, url };

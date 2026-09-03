@@ -221,6 +221,19 @@
   .sk-region:hover { opacity:.8; }
   .sk-region-label { font-size:11px; font-weight:700; fill:var(--ink); pointer-events:none; text-anchor:middle; }
   .sk-region-count { font-size:10px; fill:var(--text-mute); pointer-events:none; text-anchor:middle; }
+
+  .template-tab-btn {
+    padding: .6rem 1.1rem; border: none; background: none; cursor: pointer;
+    font: inherit; font-weight: 700; color: var(--text-mute);
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+  }
+  .template-tab-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .template-editor-grid { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .template-code, .template-preview {
+    flex: 1 1 360px; min-width: 300px; height: 480px; border-radius: 10px; border: 2px solid var(--line);
+  }
+  .template-code { font-family: 'Courier New', monospace; font-size: .8rem; padding: .8rem; resize: vertical; }
+  .template-preview { background: #fff; }
 </style>
 </head>
 <body>
@@ -930,11 +943,25 @@
         <h1>E-maily</h1>
         <p class="hint" style="margin-bottom:1rem;">
           Uvítací e-mail s prístupovým kódom (po objednávke) naďalej ide cez EmailJS.
-          Nastavenia nižšie sa týkajú len tlačidiel <strong>Poslať FA</strong> a <strong>Poslať POZ</strong>
-          v Registráciách — tie idú priamo z vášho vlastného e-mailu cez SMTP.
+          Nastavenia nižšie sa týkajú tlačidiel <strong>Poslať FA</strong>, <strong>Poslať POZ</strong>
+          a <strong>Poslať poukaz e-mailom</strong> — tie idú priamo z vášho vlastného e-mailu cez SMTP.
         </p>
 
+        <div id="email-fail-warning" class="pay-cancelled" style="display:none;margin-bottom:1.2rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <p><strong>Posledné e-maily zlyhávajú.</strong> Skontrolujte prosím SMTP nastavenia nižšie a skúste odoslať testovací e-mail.</p>
+        </div>
+
         <div class="card">
+          <h2 style="margin-bottom:.8rem;">Odoslané e-maily</h2>
+          <div style="display:flex;gap:2rem;flex-wrap:wrap;">
+            <div><div style="font-size:1.8rem;font-weight:700;color:var(--ink);" id="stat-today">—</div><div class="hint">Dnes</div></div>
+            <div><div style="font-size:1.8rem;font-weight:700;color:var(--ink);" id="stat-week">—</div><div class="hint">Tento týždeň</div></div>
+            <div><div style="font-size:1.8rem;font-weight:700;color:var(--ink);" id="stat-month">—</div><div class="hint">Tento mesiac</div></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.5rem;">
           <h2 style="margin-bottom:.8rem;">SMTP pripojenie</h2>
           <form id="smtp-settings-form" style="display:flex;gap:1rem;flex-wrap:wrap;">
             <div class="field" style="flex:1;min-width:220px;">
@@ -958,33 +985,82 @@
             </div>
             <div class="field" style="flex:1;min-width:220px;">
               <label for="smtp-from-name">Meno odosielateľa (zobrazí sa v e-maile)</label>
-              <input type="text" id="smtp-from-name" placeholder="Múdro a Bezpečne Online">
+              <input type="text" id="smtp-from-name" placeholder="DigiStart kurzy">
             </div>
             <div class="field" style="flex:1;min-width:220px;">
               <label for="smtp-password">Heslo</label>
               <input type="password" id="smtp-password" placeholder="Nastaviť/zmeniť heslo" autocomplete="new-password">
               <p class="hint" id="smtp-password-hint" style="margin-top:.3rem;"></p>
             </div>
+            <div class="field" style="flex:1;min-width:220px;">
+              <label for="smtp-reply-to">Adresa na odpoveď (Reply-To, nepovinné)</label>
+              <input type="email" id="smtp-reply-to" placeholder="Nechajte prázdne, ak rovnaká ako odosielacia">
+            </div>
+            <div class="field" style="flex:1;min-width:220px;">
+              <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;">
+                <input type="checkbox" id="smtp-bcc-enabled" style="width:auto;">
+                Posielať skrytú kópiu (BCC) na:
+              </label>
+              <input type="email" id="smtp-bcc-address" placeholder="napr. vlastný e-mail pre archív" style="margin-top:.4rem;">
+            </div>
             <div style="flex-basis:100%;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;">
               <button class="btn btn-primary" type="submit">Uložiť nastavenia</button>
               <button class="btn btn-secondary" type="button" id="smtp-test-btn">Odoslať testovací e-mail</button>
+              <button class="btn btn-secondary" type="button" id="smtp-dns-btn">Skontrolovať SPF/DKIM/DMARC</button>
               <span id="smtp-settings-result" class="hint"></span>
             </div>
           </form>
+          <div id="smtp-dns-result" style="margin-top:1rem;display:none;"></div>
         </div>
 
         <div class="card" style="margin-top:1.5rem;">
-          <h2 style="margin-bottom:.4rem;">Šablóna e-mailu pre faktúru a potvrdenie o zaplatení</h2>
+          <h2 style="margin-bottom:.4rem;">Šablóny e-mailov</h2>
           <p class="hint" style="margin-bottom:.8rem;">
-            Dostupné premenné: <code>{{to_name}}</code>, <code>{{doc_label}}</code>, <code>{{doc_number}}</code>,
-            <code>{{workshop_title}}</code>, <code>{{doc_url}}</code>, <code>{{extra_line}}</code>.
+            Vľavo je HTML kód, vpravo živý náhľad (so vzorovými údajmi). Náhľad sa aktualizuje priebežne, ako píšete.
           </p>
-          <textarea id="smtp-template" rows="16" spellcheck="false"
-            style="width:100%;font-family:'Courier New',monospace;font-size:.82rem;padding:.8rem;border-radius:10px;border:2px solid var(--line);"></textarea>
-          <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
-            <button class="btn btn-primary" type="button" id="smtp-template-save-btn">Uložiť šablónu</button>
-            <button class="btn btn-secondary" type="button" id="smtp-template-reset-btn">Obnoviť pôvodnú šablónu</button>
-            <span id="smtp-template-result" class="hint"></span>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;border-bottom:2px solid var(--line);">
+            <button type="button" class="template-tab-btn active" data-template-tab="invoice">Faktúra</button>
+            <button type="button" class="template-tab-btn" data-template-tab="poz">Potvrdenie o zaplatení</button>
+            <button type="button" class="template-tab-btn" data-template-tab="voucher">Darčekový poukaz</button>
+          </div>
+
+          <div class="template-tab-panel" data-template-panel="invoice">
+            <p class="hint" style="margin-bottom:.6rem;">Premenné: <code>{{to_name}}</code>, <code>{{doc_label}}</code>, <code>{{doc_number}}</code>, <code>{{workshop_title}}</code>, <code>{{doc_url}}</code>, <code>{{extra_line}}</code>.</p>
+            <div class="template-editor-grid">
+              <textarea id="tpl-invoice-code" rows="18" spellcheck="false" class="template-code"></textarea>
+              <iframe id="tpl-invoice-preview" class="template-preview" title="Náhľad — faktúra"></iframe>
+            </div>
+            <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
+              <button class="btn btn-primary" type="button" id="tpl-invoice-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-invoice-reset-btn">Obnoviť pôvodnú</button>
+              <span id="tpl-invoice-result" class="hint"></span>
+            </div>
+          </div>
+
+          <div class="template-tab-panel" data-template-panel="poz" style="display:none;">
+            <p class="hint" style="margin-bottom:.6rem;">Premenné: <code>{{to_name}}</code>, <code>{{doc_label}}</code>, <code>{{doc_number}}</code>, <code>{{workshop_title}}</code>, <code>{{doc_url}}</code>, <code>{{extra_line}}</code>.</p>
+            <div class="template-editor-grid">
+              <textarea id="tpl-poz-code" rows="18" spellcheck="false" class="template-code"></textarea>
+              <iframe id="tpl-poz-preview" class="template-preview" title="Náhľad — potvrdenie o zaplatení"></iframe>
+            </div>
+            <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
+              <button class="btn btn-primary" type="button" id="tpl-poz-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-poz-reset-btn">Obnoviť pôvodnú</button>
+              <span id="tpl-poz-result" class="hint"></span>
+            </div>
+          </div>
+
+          <div class="template-tab-panel" data-template-panel="voucher" style="display:none;">
+            <p class="hint" style="margin-bottom:.6rem;">Premenné: <code>{{to_name}}</code>, <code>{{workshop_title}}</code>, <code>{{code}}</code>, <code>{{doc_url}}</code>, <code>{{extra_line}}</code>.</p>
+            <div class="template-editor-grid">
+              <textarea id="tpl-voucher-code" rows="18" spellcheck="false" class="template-code"></textarea>
+              <iframe id="tpl-voucher-preview" class="template-preview" title="Náhľad — darčekový poukaz"></iframe>
+            </div>
+            <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
+              <button class="btn btn-primary" type="button" id="tpl-voucher-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-voucher-reset-btn">Obnoviť pôvodnú</button>
+              <span id="tpl-voucher-result" class="hint"></span>
+            </div>
           </div>
         </div>
 
@@ -1062,13 +1138,54 @@ window.addEventListener("load", function () {
         emailSettingsLoaded = true;
         loadEmailSettings();
         loadSentEmails();
+        loadEmailStats();
       }
     }
   });
 
-  // ---------- Sekcia E-maily (SMTP nastavenia pre FA/POZ) ----------
+  // ---------- Sekcia E-maily (SMTP nastavenia pre FA/POZ/poukaz) ----------
   let emailSettingsLoaded = false;
-  let emailDefaultTemplate = "";
+  const TEMPLATE_TYPES = ["invoice", "poz", "voucher"];
+  const templateDefaults = {};
+
+  // Vzorové údaje pre živý náhľad — nič sa nimi neodosiela, slúžia len
+  // na to, aby bolo v náhľade vidieť, ako bude e-mail vyzerať s reálnym
+  // obsahom.
+  const TEMPLATE_SAMPLE_DATA = {
+    invoice: {
+      to_name: "Mária Nováková", doc_label: "faktúra", doc_number: "FA20260903001",
+      workshop_title: "Ako nenaletieť podvodníkom", doc_url: "#",
+      extra_line: "Suma: 39 € · VS: 20260903001",
+    },
+    poz: {
+      to_name: "Mária Nováková", doc_label: "potvrdenie o zaplatení", doc_number: "UH20260903001",
+      workshop_title: "Ako nenaletieť podvodníkom", doc_url: "#",
+      extra_line: "Spôsob úhrady: Bankovým prevodom · Dátum úhrady: 3. 9. 2026",
+    },
+    voucher: {
+      to_name: "Peter Kilpa", workshop_title: "Ako nenaletieť podvodníkom", code: "BYVNNN", doc_url: "#",
+      extra_line: "Poukaz je pripravený pre: Janka. Váš odkaz na poukaze: „K narodeninám!“",
+    },
+  };
+
+  function escapeForPreview(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function renderTemplatePreview(template, vars) {
+    let html = template;
+    for (const [key, value] of Object.entries(vars)) {
+      const safe = key === "doc_url" ? String(value || "") : escapeForPreview(value);
+      html = html.split("{{" + key + "}}").join(safe);
+    }
+    return html;
+  }
+
+  function updateTemplatePreview(type) {
+    const code = document.getElementById("tpl-" + type + "-code").value;
+    const iframe = document.getElementById("tpl-" + type + "-preview");
+    iframe.srcdoc = renderTemplatePreview(code, TEMPLATE_SAMPLE_DATA[type]);
+  }
 
   function smtpPortForSecure(secure) {
     return secure === "starttls" ? 587 : 465;
@@ -1085,10 +1202,19 @@ window.addEventListener("load", function () {
       document.getElementById("smtp-secure").value = d.secure === false ? "starttls" : "ssl";
       document.getElementById("smtp-user").value = d.user || "";
       document.getElementById("smtp-from-name").value = d.fromName || "";
+      document.getElementById("smtp-reply-to").value = d.replyTo || "";
+      document.getElementById("smtp-bcc-enabled").checked = !!d.bccEnabled;
+      document.getElementById("smtp-bcc-address").value = d.bccAddress || "";
       document.getElementById("smtp-password").placeholder = d.passwordSet ? "Heslo je nastavené — nechajte prázdne, ak sa nemení" : "Nastaviť heslo";
       document.getElementById("smtp-password-hint").textContent = d.passwordSet ? "Heslo je uložené. Zadajte nové len ak ho chcete zmeniť." : "Heslo zatiaľ nie je nastavené.";
-      emailDefaultTemplate = d.documentEmailTemplate || "";
-      document.getElementById("smtp-template").value = emailDefaultTemplate;
+
+      templateDefaults.invoice = d.invoiceEmailTemplate || "";
+      templateDefaults.poz = d.pozEmailTemplate || "";
+      templateDefaults.voucher = d.voucherEmailTemplate || "";
+      TEMPLATE_TYPES.forEach((type) => {
+        document.getElementById("tpl-" + type + "-code").value = templateDefaults[type];
+        updateTemplatePreview(type);
+      });
     } catch (err) {
       resultEl.textContent = "Nastavenia sa nepodarilo načítať: " + err.message;
       resultEl.style.color = "var(--warn)";
@@ -1119,6 +1245,9 @@ window.addEventListener("load", function () {
         user: document.getElementById("smtp-user").value.trim(),
         fromName: document.getElementById("smtp-from-name").value.trim(),
         password: document.getElementById("smtp-password").value,
+        replyTo: document.getElementById("smtp-reply-to").value.trim(),
+        bccEnabled: document.getElementById("smtp-bcc-enabled").checked,
+        bccAddress: document.getElementById("smtp-bcc-address").value.trim(),
       });
       document.getElementById("smtp-password").value = "";
       resultEl.textContent = "Uložené.";
@@ -1144,6 +1273,7 @@ window.addEventListener("load", function () {
       resultEl.textContent = "Testovací e-mail odoslaný na " + res.data.to + ". Skontrolujte schránku.";
       resultEl.style.color = "var(--good)";
       loadSentEmails();
+      loadEmailStats();
     } catch (err) {
       resultEl.textContent = "Zlyhalo: " + err.message;
       resultEl.style.color = "var(--warn)";
@@ -1152,30 +1282,31 @@ window.addEventListener("load", function () {
     }
   });
 
-  document.getElementById("smtp-template-save-btn").addEventListener("click", async () => {
-    const resultEl = document.getElementById("smtp-template-result");
-    const btn = document.getElementById("smtp-template-save-btn");
+  document.getElementById("smtp-dns-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("smtp-dns-btn");
+    const resultEl = document.getElementById("smtp-settings-result");
+    const box = document.getElementById("smtp-dns-result");
     btn.disabled = true;
-    resultEl.textContent = "Ukladám…";
+    resultEl.textContent = "Kontrolujem DNS záznamy…";
     resultEl.style.color = "";
+    box.style.display = "none";
     try {
-      const saveEmailSettings = functions.httpsCallable("saveEmailSettings");
-      const host = document.getElementById("smtp-host").value.trim();
-      const user = document.getElementById("smtp-user").value.trim();
-      if (!host || !user) {
-        throw new Error("Najprv vyplňte a uložte SMTP server a prihlasovaciu adresu vyššie.");
+      const checkEmailDns = functions.httpsCallable("checkEmailDns");
+      const res = await checkEmailDns();
+      const d = res.data;
+      resultEl.textContent = "";
+      function row(label, found, extra) {
+        return "<div class='session-row'><span>" + label + "</span><span class='chip " + (found ? "good" : "warn") + "'>" +
+          (found ? "Nájdené" : "Nenájdené") + "</span></div>" +
+          (extra ? "<div class='hint' style='margin:.2rem 0 .6rem;word-break:break-all;'>" + escapeHtml(extra) + "</div>" : "");
       }
-      await saveEmailSettings({
-        host,
-        port: Number(document.getElementById("smtp-port").value) || 465,
-        secure: document.getElementById("smtp-secure").value !== "starttls",
-        user,
-        fromName: document.getElementById("smtp-from-name").value.trim(),
-        password: "",
-        documentEmailTemplate: document.getElementById("smtp-template").value,
-      });
-      resultEl.textContent = "Šablóna uložená.";
-      resultEl.style.color = "var(--good)";
+      box.innerHTML =
+        "<h3 style='margin-bottom:.4rem;'>Doména: " + escapeHtml(d.domain) + "</h3>" +
+        row("SPF", d.spf.found, d.spf.record) +
+        row("DMARC", d.dmarc.found, d.dmarc.record) +
+        row("DKIM" + (d.dkim.found ? " (selektor „" + escapeHtml(d.dkim.selector) + "“)" : ""), d.dkim.found, d.dkim.record) +
+        (!d.dkim.found ? "<p class='hint'>DKIM sa nenašiel na žiadnom bežnom selektore — nemusí to nutne znamenať chybu, presný názov selektora vám vie potvrdiť podpora Webnode.</p>" : "");
+      box.style.display = "block";
     } catch (err) {
       resultEl.textContent = "Zlyhalo: " + err.message;
       resultEl.style.color = "var(--warn)";
@@ -1184,20 +1315,96 @@ window.addEventListener("load", function () {
     }
   });
 
-  document.getElementById("smtp-template-reset-btn").addEventListener("click", () => {
-    if (!confirm("Obnoviť pôvodnú šablónu? Neuložené zmeny sa stratia.")) return;
-    document.getElementById("smtp-template").value = emailDefaultTemplate;
+  // Prepínanie záložiek šablón
+  document.querySelectorAll(".template-tab-btn").forEach((tabBtn) => {
+    tabBtn.addEventListener("click", () => {
+      document.querySelectorAll(".template-tab-btn").forEach((b) => b.classList.toggle("active", b === tabBtn));
+      document.querySelectorAll(".template-tab-panel").forEach((p) => {
+        p.style.display = p.dataset.templatePanel === tabBtn.dataset.templateTab ? "block" : "none";
+      });
+    });
   });
+
+  TEMPLATE_TYPES.forEach((type) => {
+    let previewTimer = null;
+    document.getElementById("tpl-" + type + "-code").addEventListener("input", () => {
+      clearTimeout(previewTimer);
+      previewTimer = setTimeout(() => updateTemplatePreview(type), 250);
+    });
+
+    document.getElementById("tpl-" + type + "-save-btn").addEventListener("click", async () => {
+      const resultEl = document.getElementById("tpl-" + type + "-result");
+      const btn = document.getElementById("tpl-" + type + "-save-btn");
+      btn.disabled = true;
+      resultEl.textContent = "Ukladám…";
+      resultEl.style.color = "";
+      try {
+        const host = document.getElementById("smtp-host").value.trim();
+        const user = document.getElementById("smtp-user").value.trim();
+        if (!host || !user) {
+          throw new Error("Najprv vyplňte a uložte SMTP server a prihlasovaciu adresu vyššie.");
+        }
+        const saveEmailSettings = functions.httpsCallable("saveEmailSettings");
+        const payload = {
+          host,
+          port: Number(document.getElementById("smtp-port").value) || 465,
+          secure: document.getElementById("smtp-secure").value !== "starttls",
+          user,
+          fromName: document.getElementById("smtp-from-name").value.trim(),
+          replyTo: document.getElementById("smtp-reply-to").value.trim(),
+          bccEnabled: document.getElementById("smtp-bcc-enabled").checked,
+          bccAddress: document.getElementById("smtp-bcc-address").value.trim(),
+          password: "",
+        };
+        payload[type + "EmailTemplate"] = document.getElementById("tpl-" + type + "-code").value;
+        await saveEmailSettings(payload);
+        templateDefaults[type] = document.getElementById("tpl-" + type + "-code").value;
+        resultEl.textContent = "Šablóna uložená.";
+        resultEl.style.color = "var(--good)";
+      } catch (err) {
+        resultEl.textContent = "Zlyhalo: " + err.message;
+        resultEl.style.color = "var(--warn)";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("tpl-" + type + "-reset-btn").addEventListener("click", () => {
+      if (!confirm("Obnoviť pôvodnú šablónu? Neuložené zmeny sa stratia.")) return;
+      document.getElementById("tpl-" + type + "-code").value = templateDefaults[type];
+      updateTemplatePreview(type);
+    });
+  });
+
+  async function loadEmailStats() {
+    try {
+      const getEmailStats = functions.httpsCallable("getEmailStats");
+      const res = await getEmailStats();
+      document.getElementById("stat-today").textContent = res.data.today;
+      document.getElementById("stat-week").textContent = res.data.week;
+      document.getElementById("stat-month").textContent = res.data.month;
+    } catch (err) {
+      console.error("Štatistiky e-mailov sa nepodarilo načítať:", err);
+    }
+  }
 
   const EMAIL_STATUS_LABELS = { sent: "Odoslané", failed: "Zlyhalo" };
   const EMAIL_VIA_LABELS = { smtp: "SMTP", emailjs: "EmailJS" };
 
   async function loadSentEmails() {
     const body = document.getElementById("sent-emails-body");
+    const warningBox = document.getElementById("email-fail-warning");
     try {
       const listSentEmails = functions.httpsCallable("listSentEmails");
       const res = await listSentEmails({ limit: 50 });
       const items = res.data.items || [];
+
+      // Ak posledné 3 e-maily za sebou zlyhali, upozorníme nápadne hore —
+      // môže to signalizovať pokazené SMTP nastavenia.
+      const lastThree = items.slice(0, 3);
+      const allFailed = lastThree.length === 3 && lastThree.every((it) => it.status === "failed");
+      warningBox.style.display = allFailed ? "flex" : "none";
+
       if (!items.length) {
         body.innerHTML = "<tr><td colspan='5' class='hint'>Zatiaľ nič neodoslané.</td></tr>";
         return;
@@ -1206,7 +1413,8 @@ window.addEventListener("load", function () {
         const when = it.createdAt ? new Date(it.createdAt).toLocaleString("sk-SK") : "—";
         const what = [it.docLabel, it.docNumber].filter(Boolean).join(" č. ") || (it.code ? "kód " + it.code : "—");
         const statusChip = "<span class='chip " + (it.status === "sent" ? "good" : "warn") + "'>" +
-          (EMAIL_STATUS_LABELS[it.status] || it.status || "—") + "</span>";
+          (EMAIL_STATUS_LABELS[it.status] || it.status || "—") + "</span>" +
+          (it.status === "failed" && it.error ? " <span class='hint' title='" + escapeHtml(it.error) + "'>ⓘ</span>" : "");
         return "<tr><td>" + when + "</td><td>" + escapeHtml(it.to || "—") + "</td><td>" +
           escapeHtml(what) + "</td><td>" + (EMAIL_VIA_LABELS[it.via] || it.via) + "</td><td>" + statusChip + "</td></tr>";
       }).join("");
