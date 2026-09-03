@@ -363,7 +363,7 @@ async function issueCodesForOrder(orderId, paymentMethod, extra) {
       codes.push(code);
     }
 
-    await sendCodeEmail({
+    await sendWelcomeSmtpEmail({
       to: order.email,
       name: order.firstName || order.name,
       codes,
@@ -388,7 +388,7 @@ async function issueCodesForOrder(orderId, paymentMethod, extra) {
  * Volané z admin zóny (ručné spárovanie prevodu) alebo z platobného
  * webhooku (fáza 2 — platba kartou).
  */
-exports.markOrderPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.markOrderPaid = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže potvrdiť platbu.");
   }
@@ -408,7 +408,7 @@ exports.markOrderPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (reques
  * Ručné vygenerovanie kódu z admin zóny (darčekové poukazy, opravy,
  * testovanie) — bez naviazania na objednávku.
  */
-exports.generateCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.generateCode = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže generovať kódy.");
   }
@@ -453,7 +453,7 @@ exports.generateCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request
   });
 
   if (email) {
-    await sendCodeEmail({ to: email, name: firstName, codes: [code], workshopId });
+    await sendWelcomeSmtpEmail({ to: email, name: firstName, codes: [code], workshopId });
   }
 
   return { code };
@@ -572,7 +572,7 @@ exports.verifyCode = onCall(async (request) => {
  * Odpoveď je zámerne rovnaká pri úspechu aj neúspechu, aby sa cez formulár
  * nedalo zisťovať, ktoré e-maily sú v systéme zaregistrované.
  */
-exports.resendCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.resendCode = onCall(async (request) => {
   const { email } = request.data || {};
   if (!email) throw new HttpsError("invalid-argument", "Zadaj e-mail.");
 
@@ -592,7 +592,7 @@ exports.resendCode = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) 
       .get();
     if (!codesSnap.empty) {
       const codes = codesSnap.docs.map((d) => d.data().code);
-      await sendCodeEmail({ to: email, name: order.firstName || order.name, codes, workshopId: order.workshopId });
+      await sendWelcomeSmtpEmail({ to: email, name: order.firstName || order.name, codes, workshopId: order.workshopId });
     }
   }
 
@@ -694,6 +694,68 @@ async function sendCodeEmail({ to, name, codes, workshopId, messageOverride }) {
   } catch (err) {
     // sendCodeEmail je zámerne "best-effort" a nesmie zhodiť volajúcu funkciu —
     // aj keby zápis logu zlyhal, e-mail sa už mohol odoslať.
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
+}
+
+// Uvítací e-mail s prístupovým kódom hneď po zaplatení — na rozdiel od
+// sendCodeEmail (ktorá zostáva na EmailJS pre pripomienky a interné
+// upozornenia) ide priamo cez vlastný SMTP a editovateľnú šablónu z
+// admin zóny (E-maily). Zámerne NEVYHADZUJE chybu pri zlyhaní — kódy
+// v accessCodes sú už vytvorené a nechceme kvôli výpadku e-mailu
+// vracať celú platnú objednávku medzi neuhradené (rovnaké správanie,
+// aké malo pôvodné sendCodeEmail).
+async function sendWelcomeSmtpEmail({ to, name, codes, workshopId, messageOverride }) {
+  let workshopTitle = workshopId || "";
+  if (workshopId) {
+    try {
+      const workshopSnap = await db.collection("workshops").doc(workshopId).get();
+      if (workshopSnap.exists) workshopTitle = workshopSnap.data().title || workshopId;
+    } catch (err) {
+      console.error("Nepodarilo sa načítať názov workshopu pre uvítací e-mail:", err);
+    }
+  }
+
+  let customMessage = messageOverride || "";
+  if (!messageOverride) {
+    try {
+      const settings = await getSettings();
+      customMessage = settings.emailCustomMessage || "";
+    } catch (err) {
+      console.error("Nepodarilo sa načítať vlastnú správu pre e-mail:", err);
+    }
+  }
+
+  const codeList = codes.join(", ");
+  let status = "sent";
+  let errorMessage = "";
+  try {
+    const { transporter, cfg } = await getSmtpTransporter();
+    const template = cfg.welcomeEmailTemplate || DEFAULT_WELCOME_EMAIL_TEMPLATE;
+    const html = renderDocumentEmailHtml(template, {
+      to_name: name,
+      code: codeList,
+      workshop_title: workshopTitle,
+      custom_message: customMessage,
+    });
+    await transporter.sendMail(buildMailOptions(cfg, {
+      to,
+      subject: "Váš prístupový kód — " + workshopTitle,
+      html,
+    }));
+  } catch (err) {
+    status = "failed";
+    errorMessage = String((err && err.message) || err).slice(0, 300);
+    console.error("SMTP odoslanie uvítacieho e-mailu zlyhalo:", err);
+  }
+
+  try {
+    await db.collection("mail").add({
+      to, code: codes[0] || null, codes, workshopId, status, via: "smtp",
+      error: status === "failed" ? errorMessage : null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
     console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
   }
 }
@@ -1366,6 +1428,84 @@ ${bodyHtml}
 </div>`;
 }
 
+const DEFAULT_WELCOME_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;background-color:#efe6d3;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efe6d3;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#fffdf7;border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+          <tr>
+            <td style="background-color:#1f3a3d;padding:28px 32px;text-align:center;">
+              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">DigiStart online vzdelávanie</div>
+              <div style="font-size:13px;color:#c9b98f;margin-top:4px;">Kurzy, ktoré vám dávajú istotu v online svete</div>
+            </td>
+          </tr>
+          <tr><td style="height:4px;background-color:#c17a2e;line-height:4px;font-size:0;">&nbsp;</td></tr>
+          <tr>
+            <td style="padding:36px 40px 8px;">
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">ďakujeme, že ste si zakúpili kurz <strong>„{{workshop_title}}“</strong>. Sme radi, že sa k nám pridávate, a veríme, že vám prinesie veľa užitočného.</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">Nižšie nájdete svoj prístupový kód — budete ho potrebovať pri prihlásení do kurzu.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 40px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="background-color:#f6ecd9;border:2px solid #c17a2e;border-radius:12px;padding:20px;">
+                    <div style="font-size:11px;letter-spacing:.15em;color:#6b6350;text-transform:uppercase;margin-bottom:8px;">Váš prístupový kód</div>
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:bold;letter-spacing:.12em;color:#1f3a3d;">{{code}}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 40px 8px;">
+              <p style="margin:0 0 12px;font-size:15px;font-weight:bold;color:#1f3a3d;">Ako začať:</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="32" valign="top" style="padding-bottom:10px;"><div style="width:22px;height:22px;border-radius:50%;background-color:#1f3a3d;color:#fffdf7;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">1</div></td>
+                  <td valign="top" style="padding-bottom:10px;font-size:15px;line-height:1.55;color:#1f3a3d;">Otvorte stránku prihlásenia (tlačidlo nižšie).</td>
+                </tr>
+                <tr>
+                  <td width="32" valign="top" style="padding-bottom:10px;"><div style="width:22px;height:22px;border-radius:50%;background-color:#1f3a3d;color:#fffdf7;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">2</div></td>
+                  <td valign="top" style="padding-bottom:10px;font-size:15px;line-height:1.55;color:#1f3a3d;">Zadajte svoje meno a kód, ktorý ste dostali vyššie.</td>
+                </tr>
+                <tr>
+                  <td width="32" valign="top"><div style="width:22px;height:22px;border-radius:50%;background-color:#1f3a3d;color:#fffdf7;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">3</div></td>
+                  <td valign="top" style="font-size:15px;line-height:1.55;color:#1f3a3d;">Kurzom si prejdete vlastným tempom — kedykoľvek sa môžete vrátiť presne tam, kde ste skončili.</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:28px 40px 8px;">
+              <a href="https://mudroabezpecne.sk/prihlasenie.html" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 36px;border-radius:999px;">Prihlásiť sa do kurzu</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 40px 0;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{custom_message}}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 40px 36px;">
+              <p style="margin:0 0 4px;font-size:15px;line-height:1.6;color:#1f3a3d;">Ak by ste mali akúkoľvek otázku, pokojne nám napíšte — radi pomôžeme.</p>
+              <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#1f3a3d;">Prajeme vám príjemné a bezpečné vzdelávanie.<br><strong>Tím DigiStart kurzy</strong></p>
+            </td>
+          </tr>
+          <tr><td style="height:1px;background-color:#ddd5c2;line-height:1px;font-size:0;">&nbsp;</td></tr>
+          <tr>
+            <td align="center" style="padding:18px 24px;">
+              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na mudroabezpecne.sk.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>`;
+
 const DEFAULT_INVOICE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
               <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
@@ -1564,6 +1704,7 @@ exports.getEmailSettings = onCall(async (request) => {
     invoiceEmailTemplate: data.invoiceEmailTemplate || data.documentEmailTemplate || DEFAULT_INVOICE_EMAIL_TEMPLATE,
     pozEmailTemplate: data.pozEmailTemplate || data.documentEmailTemplate || DEFAULT_POZ_EMAIL_TEMPLATE,
     voucherEmailTemplate: data.voucherEmailTemplate || DEFAULT_VOUCHER_EMAIL_TEMPLATE,
+    welcomeEmailTemplate: data.welcomeEmailTemplate || DEFAULT_WELCOME_EMAIL_TEMPLATE,
   };
 });
 
@@ -1574,7 +1715,7 @@ exports.saveEmailSettings = onCall(async (request) => {
   const {
     host, port, secure, user, fromName, password,
     replyTo, bccEnabled, bccAddress,
-    invoiceEmailTemplate, pozEmailTemplate, voucherEmailTemplate,
+    invoiceEmailTemplate, pozEmailTemplate, voucherEmailTemplate, welcomeEmailTemplate,
   } = request.data || {};
   if (!host || !String(host).trim() || !user || !String(user).trim()) {
     throw new HttpsError("invalid-argument", "Chýba SMTP server alebo prihlasovacia e-mailová adresa.");
@@ -1607,6 +1748,9 @@ exports.saveEmailSettings = onCall(async (request) => {
   if (typeof voucherEmailTemplate === "string" && voucherEmailTemplate.trim()) {
     update.voucherEmailTemplate = voucherEmailTemplate;
   }
+  if (typeof welcomeEmailTemplate === "string" && welcomeEmailTemplate.trim()) {
+    update.welcomeEmailTemplate = welcomeEmailTemplate;
+  }
 
   await db.collection("emailConfig").doc("smtp").set(update, { merge: true });
   return { ok: true };
@@ -1631,11 +1775,16 @@ const TEMPLATE_TEST_SAMPLES = {
     doc_url: "https://mudroabezpecne.sk/",
     extra_line: "Poukaz je pripravený pre: Janka. Váš odkaz na poukaze: „K narodeninám!“",
   },
+  welcome: {
+    to_name: "Miška", code: "JBLYWM", workshop_title: "Ako nenaletieť podvodníkom",
+    custom_message: "",
+  },
 };
 const TEMPLATE_TEST_SUBJECTS = {
   invoice: "[TEST] Faktúra",
   poz: "[TEST] Potvrdenie o zaplatení",
   voucher: "[TEST] Darčekový poukaz",
+  welcome: "[TEST] Váš prístupový kód",
 };
 
 exports.sendTestTemplateEmail = onCall(async (request) => {
