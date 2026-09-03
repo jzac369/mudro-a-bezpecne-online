@@ -39,6 +39,11 @@
     --focus: #0f6e56;
   }
 
+  /* Odznaky spôsobu platby (Karta/Prevod) — zámerne neutrálna sivá,
+     nie farba zhodná so stavom "Uhradené". Zelená tak zostáva jasným
+     signálom "zaplatené", sivá je len doplňujúca informácia. */
+  .chip.info { background: #e3e9ea; color: #3c4a4d; }
+
   html { font-size: 16px; } /* admin zóna má vlastnú, kompaktnejšiu mierku nezávislú od A+/A- účastníka */
   body { min-height: 100vh; zoom: 75%; background: var(--bg); }
 
@@ -340,6 +345,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         <span class="nav-label">Kurzy</span>
       </button>
+      <button data-section="platby" type="button" title="Platby">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
+        <span class="nav-label">Platby</span>
+      </button>
       <button data-section="zlavovekody" type="button" title="Zľavové kódy">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.6 12.3 12.3 20.6a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.4A2 2 0 0 1 13 3h6a2 2 0 0 1 2 2v6a2 2 0 0 1-.4 1.3Z"/><circle cx="16.5" cy="7.5" r="1.5"/></svg>
         <span class="nav-label">Zľavové kódy</span>
@@ -590,6 +599,56 @@
                 </tr>
               </thead>
               <tbody id="deleted-registrations-body"><tr><td colspan="5" class="hint">Načítavam…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="dash-section" data-section="platby">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.9rem;">
+          <h1 style="margin-bottom:0;">Platby</h1>
+          <div class="field" style="min-width:160px;margin-bottom:0;">
+            <select id="platby-range">
+              <option value="7">Posledných 7 dní</option>
+              <option value="30" selected>Posledných 30 dní</option>
+              <option value="90">Posledných 90 dní</option>
+              <option value="365">Posledný rok</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;margin-bottom:.8rem;">
+            <h2 style="margin-bottom:0;">Platby kartou (Stripe)</h2>
+            <span id="platby-stripe-status" class="hint"></span>
+          </div>
+          <div class="summary-grid" id="platby-stripe-stats">
+            <div class="card summary-card"><div class="num" id="stripe-count">—</div><div class="label">Úspešných platieb</div></div>
+            <div class="card summary-card"><div class="num" id="stripe-total">—</div><div class="label">Tržby</div></div>
+            <div class="card summary-card"><div class="num" id="stripe-refunded">—</div><div class="label">Refundované</div></div>
+            <div class="card summary-card"><div class="num" id="stripe-fees">—</div><div class="label">Poplatky Stripe</div></div>
+            <div class="card summary-card"><div class="num" id="stripe-net">—</div><div class="label">Čistý príjem</div></div>
+            <div class="card summary-card"><div class="num" id="stripe-failed">—</div><div class="label">Neúspešných pokusov</div></div>
+          </div>
+          <div style="overflow-x:auto;margin-top:1rem;">
+            <table class="dash">
+              <thead><tr><th>Kedy</th><th>E-mail</th><th>Suma</th><th>Karta</th><th>Stav</th></tr></thead>
+              <tbody id="stripe-transactions-body"><tr><td colspan="5" class="hint">Načítavam…</td></tr></tbody>
+            </table>
+          </div>
+          <p class="hint" id="platby-stripe-more" style="margin-top:.6rem;display:none;"></p>
+        </div>
+
+        <div class="card" style="margin-top:1.5rem;">
+          <h2 style="margin-bottom:.8rem;">Platby bankovým prevodom</h2>
+          <div class="summary-grid" id="platby-transfer-stats">
+            <div class="card summary-card"><div class="num" id="transfer-count">—</div><div class="label">Prijatých platieb</div></div>
+            <div class="card summary-card"><div class="num" id="transfer-total">—</div><div class="label">Tržby</div></div>
+          </div>
+          <div style="overflow-x:auto;margin-top:1rem;">
+            <table class="dash">
+              <thead><tr><th>Kedy</th><th>Účastník</th><th>Kurz</th><th>Suma</th></tr></thead>
+              <tbody id="transfer-transactions-body"><tr><td colspan="4" class="hint">Načítavam…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1228,10 +1287,109 @@ window.addEventListener("load", function () {
         loadSentEmails();
         loadEmailStats();
       }
+      if (btn.dataset.section === "platby" && !platbyLoaded) {
+        platbyLoaded = true;
+        loadPlatby();
+      }
     }
   });
 
+  // ---------- Sekcia Platby (Stripe + bankový prevod, oddelene) ----------
+  const PAYMENT_METHOD_LABELS_PLATBY = { card: "Karta", transfer: "Bankový prevod", cash: "Hotovosť" };
+
+  function loadPlatby() {
+    const range = document.getElementById("platby-range");
+    loadStripePayments(range.value);
+    loadTransferPayments(range.value);
+    range.addEventListener("change", () => {
+      loadStripePayments(range.value);
+      loadTransferPayments(range.value);
+    });
+  }
+
+  async function loadStripePayments(days) {
+    const statusEl = document.getElementById("platby-stripe-status");
+    const body = document.getElementById("stripe-transactions-body");
+    const moreEl = document.getElementById("platby-stripe-more");
+    statusEl.textContent = "Načítavam z platobnej brány…";
+    statusEl.style.color = "";
+    moreEl.style.display = "none";
+    body.innerHTML = "<tr><td colspan='5' class='hint'>Načítavam…</td></tr>";
+    try {
+      const getStripePaymentsSummary = functions.httpsCallable("getStripePaymentsSummary");
+      const res = await getStripePaymentsSummary({ days: Number(days) });
+      const d = res.data;
+      document.getElementById("stripe-count").textContent = d.successCount;
+      document.getElementById("stripe-total").textContent = d.totalAmount.toFixed(2) + " €";
+      document.getElementById("stripe-refunded").textContent = d.totalRefunded.toFixed(2) + " €";
+      document.getElementById("stripe-fees").textContent = d.totalFees.toFixed(2) + " €";
+      document.getElementById("stripe-net").textContent = d.netAmount.toFixed(2) + " €";
+      document.getElementById("stripe-failed").textContent = d.failedCount;
+      statusEl.textContent = "";
+
+      if (!d.transactions.length) {
+        body.innerHTML = "<tr><td colspan='5' class='hint'>Za toto obdobie žiadne platby cez Stripe.</td></tr>";
+      } else {
+        const statusLabels = { succeeded: "Úspešná", failed: "Zlyhala", pending: "Čaká" };
+        body.innerHTML = d.transactions.map((t) => {
+          const when = new Date(t.createdAt).toLocaleString("sk-SK");
+          const card = t.cardBrand ? t.cardBrand.toUpperCase() + " •••• " + (t.last4 || "") : "—";
+          const amountLabel = t.amount.toFixed(2) + " €" + (t.refunded > 0 ? " (vrátené " + t.refunded.toFixed(2) + " €)" : "");
+          const chipTone = t.status === "succeeded" ? "good" : (t.status === "failed" ? "warn" : "info");
+          return "<tr><td>" + when + "</td><td>" + escapeHtml(t.email || "—") + "</td><td>" + amountLabel + "</td><td>" +
+            escapeHtml(card) + "</td><td><span class='chip " + chipTone + "'>" + (statusLabels[t.status] || t.status) + "</span></td></tr>";
+        }).join("");
+      }
+      if (d.hasMore) {
+        moreEl.textContent = "Zobrazených je najviac 100 najnovších platieb za toto obdobie — pre presnejší súhrn skráťte rozsah.";
+        moreEl.style.display = "block";
+      }
+    } catch (err) {
+      statusEl.textContent = "Nepodarilo sa načítať: " + err.message;
+      statusEl.style.color = "var(--warn)";
+      body.innerHTML = "<tr><td colspan='5' class='hint' style='color:var(--warn);'>" + escapeHtml(err.message) + "</td></tr>";
+    }
+  }
+
+  async function loadTransferPayments(days) {
+    const body = document.getElementById("transfer-transactions-body");
+    body.innerHTML = "<tr><td colspan='4' class='hint'>Načítavam…</td></tr>";
+    try {
+      // Filtrujeme podľa spôsobu platby až v JS (nie vo Firestore dotaze) —
+      // kombinácia "!=" s "==" filtrom by vo Firestore vyžadovala zložený
+      // index a navyše by ticho vynechala staršie záznamy, ktoré pole
+      // paymentMethod vôbec nemajú nastavené.
+      const since = new Date(Date.now() - Number(days) * 24 * 60 * 60 * 1000);
+      const snap = await db.collection("orders").where("status", "==", "code_sent").get();
+
+      const rows = snap.docs
+        .map((d) => d.data())
+        .filter((o) => o.paymentMethod !== "card" && o.paidAt && o.paidAt.toDate() >= since)
+        .sort((a, b) => b.paidAt.toDate() - a.paidAt.toDate());
+
+      const count = rows.length;
+      const total = rows.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
+      document.getElementById("transfer-count").textContent = count;
+      document.getElementById("transfer-total").textContent = total.toFixed(2) + " €";
+
+      if (!rows.length) {
+        body.innerHTML = "<tr><td colspan='4' class='hint'>Za toto obdobie žiadne platby prevodom.</td></tr>";
+        return;
+      }
+      body.innerHTML = rows.map((o) => {
+        const when = o.paidAt.toDate().toLocaleString("sk-SK");
+        return "<tr><td>" + when + "</td><td>" + escapeHtml(o.name || "—") + "</td><td>" +
+          escapeHtml(workshopTitle(o.workshopId)) + "</td><td>" + (Number(o.amount) || 0).toFixed(2) + " €" +
+          (o.paymentMethod ? " <span class='hint'>(" + (PAYMENT_METHOD_LABELS_PLATBY[o.paymentMethod] || o.paymentMethod) + ")</span>" : "") +
+          "</td></tr>";
+      }).join("");
+    } catch (err) {
+      body.innerHTML = "<tr><td colspan='4' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
+    }
+  }
+
   // ---------- Sekcia E-maily (SMTP nastavenia pre FA/POZ/poukaz) ----------
+  let platbyLoaded = false;
   let emailSettingsLoaded = false;
   const TEMPLATE_TYPES = ["invoice", "poz", "voucher", "welcome"];
   const templateDefaults = {};

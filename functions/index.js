@@ -2406,3 +2406,77 @@ function maskEmail(email) {
   const shown = name.slice(0, Math.min(2, name.length));
   return shown + "•".repeat(Math.max(name.length - shown.length, 1)) + domain;
 }
+
+/**
+ * Súhrn platieb kartou priamo zo Stripe (sekcia Platby v admin zóne) —
+ * skutočné tržby, refundácie a poplatky Stripe, nie len to, čo máme
+ * uložené vo vlastnej databáze. Číta sa vždy nanovo pri otvorení, nič
+ * sa necachuje.
+ *
+ * Obmedzené na posledných 100 platieb v danom období (jedna stránka
+ * Stripe API) — pre malý/stredný objem objednávok postačuje; ak by
+ * časom objem narástol, dá sa doplniť stránkovanie cez starting_after.
+ */
+exports.getStripePaymentsSummary = onCall({ secrets: [STRIPE_SECRET_KEY] }, async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže vidieť platby.");
+  }
+  const days = Math.min(Math.max(Number(request.data?.days) || 30, 1), 365);
+  const sinceUnix = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000);
+
+  const stripe = getStripe();
+  let charges;
+  try {
+    charges = await stripe.charges.list({
+      limit: 100,
+      created: { gte: sinceUnix },
+      expand: ["data.balance_transaction"],
+    });
+  } catch (err) {
+    console.error("Načítanie platieb zo Stripe zlyhalo:", err);
+    throw new HttpsError("internal", "Platby sa nepodarilo načítať zo Stripe: " + (err.message || err));
+  }
+
+  let totalAmount = 0, totalRefunded = 0, totalFees = 0, netAmount = 0, successCount = 0, failedCount = 0;
+  const transactions = charges.data.map((c) => {
+    const amount = c.amount / 100;
+    const refunded = c.amount_refunded / 100;
+    const bt = c.balance_transaction && typeof c.balance_transaction === "object" ? c.balance_transaction : null;
+    const fee = bt ? bt.fee / 100 : 0;
+    const net = bt ? bt.net / 100 : amount - fee;
+    if (c.status === "succeeded") {
+      totalAmount += amount;
+      totalRefunded += refunded;
+      totalFees += fee;
+      netAmount += net;
+      successCount++;
+    } else if (c.status === "failed") {
+      failedCount++;
+    }
+    const card = c.payment_method_details && c.payment_method_details.card;
+    return {
+      id: c.id,
+      amount: Math.round(amount * 100) / 100,
+      refunded: Math.round(refunded * 100) / 100,
+      status: c.status,
+      email: c.receipt_email || (c.billing_details && c.billing_details.email) || null,
+      createdAt: c.created * 1000,
+      cardBrand: card ? card.brand : null,
+      last4: card ? card.last4 : null,
+    };
+  });
+  transactions.sort((a, b) => b.createdAt - a.createdAt);
+
+  return {
+    days,
+    currency: "eur",
+    successCount,
+    failedCount,
+    totalAmount: Math.round(totalAmount * 100) / 100,
+    totalRefunded: Math.round(totalRefunded * 100) / 100,
+    totalFees: Math.round(totalFees * 100) / 100,
+    netAmount: Math.round(netAmount * 100) / 100,
+    hasMore: charges.has_more,
+    transactions,
+  };
+});
