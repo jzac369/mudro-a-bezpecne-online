@@ -24,16 +24,10 @@ function escapeHtmlServer(str) {
 initializeApp();
 const db = getFirestore();
 
-const EMAILJS_PRIVATE_KEY = defineSecret("EMAILJS_PRIVATE_KEY");
-
 // Kľúče k platobnej bráne. Do kódu ani do databázy sa nikdy neukladajú —
 // nastavujú sa príkazom `firebase functions:secrets:set`.
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
-
-const EMAILJS_SERVICE_ID = "service_qnxes8j";
-const EMAILJS_TEMPLATE_ID = "template_aspeze7";
-const EMAILJS_PUBLIC_KEY = "eOd4Q1os_TN-pSs2S";
 
 // Písmená bez I/O — vylúčené kvôli zámene s 1/0 pri prepise kódu z papiera.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -623,88 +617,12 @@ exports.createAdmin = onCall(async (request) => {
   return { uid: user.uid };
 });
 
-/**
- * Odoslanie e-mailu s prístupovým kódom (alebo viacerými kódmi pri
- * skupinovej objednávke) cez EmailJS REST API (server-side, súkromný
- * kľúč nikdy neopustí Cloud Function).
- */
-async function sendCodeEmail({ to, name, codes, workshopId, messageOverride }) {
-  let workshopTitle = workshopId || "";
-  if (workshopId) {
-    try {
-      const workshopSnap = await db.collection("workshops").doc(workshopId).get();
-      if (workshopSnap.exists) workshopTitle = workshopSnap.data().title || workshopId;
-    } catch (err) {
-      console.error("Nepodarilo sa načítať názov workshopu pre e-mail:", err);
-    }
-  }
-
-  let customMessage = messageOverride || "";
-  if (!messageOverride) {
-    try {
-      const settings = await getSettings();
-      customMessage = settings.emailCustomMessage || "";
-    } catch (err) {
-      console.error("Nepodarilo sa načítať vlastnú správu pre e-mail:", err);
-    }
-  }
-
-  const codeList = codes.join(", ");
-  const primaryCode = codes[0] || "";
-
-  let status = "sent";
-  try {
-    const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        service_id: EMAILJS_SERVICE_ID,
-        template_id: EMAILJS_TEMPLATE_ID,
-        user_id: EMAILJS_PUBLIC_KEY,
-        accessToken: EMAILJS_PRIVATE_KEY.value(),
-        template_params: {
-          to_email: to,
-          to_name: name,
-          name,
-          email: to,
-          code: codeList,
-          workshop_title: workshopTitle,
-          custom_message: customMessage,
-        },
-      }),
-    });
-    if (!res.ok) {
-      status = "failed";
-      console.error("EmailJS odoslanie zlyhalo:", res.status, await res.text());
-    }
-  } catch (err) {
-    status = "failed";
-    console.error("EmailJS odoslanie zlyhalo:", err);
-  }
-
-  try {
-    await db.collection("mail").add({
-      to,
-      code: primaryCode,
-      codes,
-      workshopId,
-      status,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-  } catch (err) {
-    // sendCodeEmail je zámerne "best-effort" a nesmie zhodiť volajúcu funkciu —
-    // aj keby zápis logu zlyhal, e-mail sa už mohol odoslať.
-    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
-  }
-}
-
-// Uvítací e-mail s prístupovým kódom hneď po zaplatení — na rozdiel od
-// sendCodeEmail (ktorá zostáva na EmailJS pre pripomienky a interné
-// upozornenia) ide priamo cez vlastný SMTP a editovateľnú šablónu z
-// admin zóny (E-maily). Zámerne NEVYHADZUJE chybu pri zlyhaní — kódy
+// Uvítací e-mail s prístupovým kódom hneď po zaplatení — ide priamo cez
+// vlastný SMTP a editovateľnú šablónu z admin zóny (E-maily). Zámerne
+// NEVYHADZUJE chybu pri zlyhaní — kódy
 // v accessCodes sú už vytvorené a nechceme kvôli výpadku e-mailu
 // vracať celú platnú objednávku medzi neuhradené (rovnaké správanie,
-// aké malo pôvodné sendCodeEmail).
+// aké mala pôvodná EmailJS verzia).
 async function sendWelcomeSmtpEmail({ to, name, codes, workshopId, messageOverride }) {
   let workshopTitle = workshopId || "";
   if (workshopId) {
@@ -760,6 +678,36 @@ async function sendWelcomeSmtpEmail({ to, name, codes, workshopId, messageOverri
   }
 }
 
+// Jednoduché upozornenia a pripomienky (nikdy sa neprihlásil, nedokončil
+// kurz, nová správa v chate, rezervácia/potvrdenie konzultácie, denný
+// súhrn neuhradených objednávok pre admina) — všetky posielané cez SMTP.
+// Zámerne NEVYHADZUJE chybu: tieto e-maily sú vedľajší efekt inej akcie
+// (napr. rezervácie termínu), tá nesmie zlyhať len kvôli výpadku SMTP.
+async function sendNotificationSmtpEmail({ to, name, subject, message }) {
+  let status = "sent";
+  let errorMessage = "";
+  try {
+    const { transporter, cfg } = await getSmtpTransporter();
+    const template = cfg.notificationEmailTemplate || DEFAULT_NOTIFICATION_EMAIL_TEMPLATE;
+    const html = renderDocumentEmailHtml(template, { to_name: name || "", message: message || "" });
+    await transporter.sendMail(buildMailOptions(cfg, { to, subject, html }));
+  } catch (err) {
+    status = "failed";
+    errorMessage = String((err && err.message) || err).slice(0, 300);
+    console.error("SMTP odoslanie upozornenia zlyhalo:", err);
+  }
+
+  try {
+    await db.collection("mail").add({
+      to, docLabel: "upozornenie", docNumber: null, status, via: "smtp",
+      error: status === "failed" ? errorMessage : null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
+}
+
 /**
  * Prejde aktívne prístupové kódy a pošle e-mailové pripomienky:
  * 1) tým, čo majú platný kód, ale nikdy sa neprihlásili,
@@ -791,12 +739,11 @@ async function runReminderSweep() {
           age >= (settings.remindNeverLoggedDays || 3) * day) {
         const email = await lookupOrderEmail(c.orderId);
         if (email) {
-          await sendCodeEmail({
+          await sendNotificationSmtpEmail({
             to: email,
             name: c.firstName || c.participantName || "",
-            codes: [c.code || doc.id],
-            workshopId: c.workshopId,
-            messageOverride: "Všimli sme si, že ste sa zatiaľ neprihlásili do svojho kurzu. Váš prístupový kód je stále platný — stačí ísť na stránku Prihlásenie a zadať meno a kód.",
+            subject: "Pripomienka — váš kurz na vás čaká",
+            message: "Všimli sme si, že ste sa zatiaľ neprihlásili do svojho kurzu. Váš prístupový kód je stále platný — stačí ísť na stránku Prihlásenie a zadať meno a kód.\n\nVáš prístupový kód: " + (c.code || doc.id),
           });
           await doc.ref.update({ neverLoggedReminderSentAt: FieldValue.serverTimestamp() });
           result.neverLoggedSent++;
@@ -812,12 +759,11 @@ async function runReminderSweep() {
         if (!passed) {
           const email = await lookupOrderEmail(c.orderId);
           if (email) {
-            await sendCodeEmail({
+            await sendNotificationSmtpEmail({
               to: email,
               name: c.firstName || c.participantName || "",
-              codes: [c.code || doc.id],
-              workshopId: c.workshopId,
-              messageOverride: "Váš kurz čaká na dokončenie — zostáva vám už len záverečný kvíz a certifikát. Prihláste sa rovnakým kódom a pokračujte presne tam, kde ste skončili.",
+              subject: "Pripomienka — dokončite svoj kurz",
+              message: "Váš kurz čaká na dokončenie — zostáva vám už len záverečný kvíz a certifikát. Prihláste sa rovnakým kódom a pokračujte presne tam, kde ste skončili.\n\nVáš prístupový kód: " + (c.code || doc.id),
             });
             await doc.ref.update({ unfinishedReminderSentAt: FieldValue.serverTimestamp() });
             result.unfinishedSent++;
@@ -838,12 +784,11 @@ async function runReminderSweep() {
       const lines = stale.map((o) =>
         "- " + (o.name || "") + " (" + o.email + "), VS " + (o.variableSymbol || "—") + ", " + (o.amount || 0) + " €"
       );
-      await sendCodeEmail({
+      await sendNotificationSmtpEmail({
         to: settings.notifyEmail,
         name: "Admin",
-        codes: [],
-        workshopId: null,
-        messageOverride: "Máte " + stale.length + " neuhradených objednávok starších ako " + staleDays + " dní:\n" + lines.join("\n"),
+        subject: "Neuhradené objednávky — denný prehľad",
+        message: "Máte " + stale.length + " neuhradených objednávok starších ako " + staleDays + " dní:\n" + lines.join("\n"),
       });
       result.staleDigestSent = true;
       result.staleCount = stale.length;
@@ -868,7 +813,7 @@ async function lookupOrderEmail(orderId) {
  * Denné automatické spustenie pripomienok (08:00 SEČ/SELČ).
  */
 exports.dailyReminders = onSchedule(
-  { schedule: "every day 08:00", timeZone: "Europe/Bratislava", secrets: [EMAILJS_PRIVATE_KEY] },
+  { schedule: "every day 08:00", timeZone: "Europe/Bratislava" },
   async () => {
     const result = await runReminderSweep();
     console.log("Denné pripomienky dokončené:", JSON.stringify(result));
@@ -879,7 +824,7 @@ exports.dailyReminders = onSchedule(
  * Ručné spustenie tej istej logiky z admin zóny (tlačidlo "Spustiť teraz") —
  * užitočné na okamžité odoslanie aj na overenie, že nastavenia fungujú.
  */
-exports.runRemindersNow = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.runRemindersNow = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže spustiť pripomienky ručne.");
   }
@@ -892,7 +837,7 @@ exports.runRemindersNow = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (requ
  * na adresu nastavenú v settings/general.notifyEmail.
  */
 exports.notifyOfflineChatMessage = onDocumentCreated(
-  { document: "chats/{chatId}", secrets: [EMAILJS_PRIVATE_KEY] },
+  { document: "chats/{chatId}" },
   async (event) => {
     const chat = event.data.data();
     if (chat.status !== "message_left") return;
@@ -908,12 +853,11 @@ exports.notifyOfflineChatMessage = onDocumentCreated(
       console.error("Nepodarilo sa načítať prvú správu chatu:", err);
     }
 
-    await sendCodeEmail({
+    await sendNotificationSmtpEmail({
       to: settings.notifyEmail,
       name: "Admin",
-      codes: [],
-      workshopId: null,
-      messageOverride:
+      subject: "Nová správa v chate",
+      message:
         "Nová správa v chate od " + chat.visitorName + (chat.visitorEmail ? " (" + chat.visitorEmail + ")" : "") +
         ", stránka: " + (chat.page || "—") + ".\n\nSpráva: " + firstMessage +
         "\n\nOdpovedať môžete priamo v admin zóne v sekcii Chat.",
@@ -947,7 +891,7 @@ exports.getConsultationAvailability = onCall(async (request) => {
  * bankovým prevodom rovnako ako pri workshopoch). Pred zápisom znova
  * overí, že si termín medzičasom neobsadil niekto iný.
  */
-exports.bookConsultation = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.bookConsultation = onCall(async (request) => {
   const { name, email, duration, mode, date, startTime } = request.data || {};
   const durationMin = Number(duration);
   if (!name || !email || !date || !startTime || ![30, 60].includes(durationMin) || !["video", "audio"].includes(mode)) {
@@ -977,12 +921,11 @@ exports.bookConsultation = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (req
     createdAt: FieldValue.serverTimestamp(),
   });
 
-  await sendCodeEmail({
+  await sendNotificationSmtpEmail({
     to: email,
     name,
-    codes: [],
-    workshopId: null,
-    messageOverride:
+    subject: "Rezervácia konzultácie prijatá",
+    message:
       "Rezervovali ste konzultáciu (" + durationMin + " min, " + (mode === "video" ? "video" : "telefonicky") + ") na " + date + " o " + startTime + ". " +
       "Prosím uhraďte " + amount + " € bankovým prevodom (variabilný symbol " + variableSymbol + "), termín potvrdíme po prijatí platby.",
   });
@@ -994,7 +937,7 @@ exports.bookConsultation = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (req
  * Potvrdí prijatie platby za konzultáciu (admin) a pošle účastníkovi
  * potvrdenie s odkazom na video/audio hovor.
  */
-exports.markConsultationPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+exports.markConsultationPaid = onCall(async (request) => {
   try {
     if (request.auth?.token?.admin !== true) {
       throw new HttpsError("permission-denied", "Len administrátor môže potvrdiť platbu.");
@@ -1015,12 +958,11 @@ exports.markConsultationPaid = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async 
 
     const settings = await getConsultationSettings();
     try {
-      await sendCodeEmail({
+      await sendNotificationSmtpEmail({
         to: b.email,
         name: b.name,
-        codes: [],
-        workshopId: null,
-        messageOverride:
+        subject: "Konzultácia potvrdená",
+        message:
           "Vaša konzultácia (" + b.duration + " min, " + (b.mode === "video" ? "video" : "telefonicky") + ") je potvrdená na " + b.date + " o " + b.startTime + "." +
           (settings.meetingLink ? " Odkaz na hovor: " + settings.meetingLink : " V dohodnutom čase vás lektor bude kontaktovať priamo."),
       });
@@ -1378,14 +1320,11 @@ async function uploadPdfAndGetUrl(buffer, path) {
 }
 
 /* ============================================================
-   Vlastné SMTP odosielanie (faktúra, potvrdenie o zaplatení)
+   Vlastné SMTP odosielanie (faktúra, potvrdenie o zaplatení, poukaz,
+   uvítací e-mail aj pripomienky/upozornenia — všetky typy e-mailov
+   portálu idú priamo z vlastného e-mailu, napr. cez Webnode, žiadny
+   z nich už nezávisí od EmailJS ani iných tretích strán)
    ============================================================
-
-   Uvítací e-mail s prístupovým kódom naďalej ide cez EmailJS (funkcia
-   sendCodeEmail vyššie) — táto časť sa týka výhradne "Poslať FA" a
-   "Poslať POZ" v admin zóne, kde sa e-mail posiela priamo z vlastného
-   e-mailu (napr. cez Webnode), aby sme neboli závislí na limitoch
-   EmailJS free plánu.
 
    Nastavenia (server, prihlásenie, heslo, šablóna) sa ukladajú do
    Firestore (emailConfig/smtp), ale k tomuto dokumentu sa NEDÁ
@@ -1586,6 +1525,17 @@ const DEFAULT_VOUCHER_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
           <tr>
             <td style="padding:18px 40px 0;">
               <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{extra_line}}</p>
+            </td>
+          </tr>`);
+
+// Jednoduchá šablóna pre pripomienky a upozornenia (nikdy sa neprihlásil,
+// nedokončil kurz, nová správa v chate, rezervácia konzultácie…) — tieto
+// mali doteraz text úplne odlišný od faktúry/POZ/poukazu, preto majú
+// vlastnú, jednoduchšiu šablónu bez tlačidla na stiahnutie dokumentu.
+const DEFAULT_NOTIFICATION_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
+            <td style="padding:36px 40px 8px;">
+              <p style="margin:0 0 16px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0;font-size:16px;line-height:1.65;color:#1f3a3d;white-space:pre-line;">{{message}}</p>
             </td>
           </tr>`);
 
@@ -2334,9 +2284,7 @@ exports.createStripeCheckout = onCall({ secrets: [STRIPE_SECRET_KEY] }, async (r
  * podpis, ktorý Stripe posiela v hlavičke.
  */
 exports.stripeWebhook = onRequest(
-  // EMAILJS_PRIVATE_KEY je potrebný, lebo táto funkcia (cez issueCodesForOrder)
-  // po potvrdení platby posiela účastníkovi e-mail s prístupovým kódom.
-  { secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, EMAILJS_PRIVATE_KEY], cors: false },
+  { secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET], cors: false },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");

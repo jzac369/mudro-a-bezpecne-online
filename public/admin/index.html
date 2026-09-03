@@ -20,18 +20,22 @@
   html { font-size: 16px; } /* admin zóna má vlastnú, kompaktnejšiu mierku nezávislú od A+/A- účastníka */
   body { min-height: 100vh; zoom: 75%; }
 
-  .dash-shell { display: flex; min-height: 100vh; align-items: stretch; }
+  /* Presná výška okna + skryté pretečenie — vďaka tomu sa neskroluje
+     celá stránka, ale len samotný obsah v .dash-main (nižšie). Bočný
+     panel tak vždy zaberá presne výšku okna cez flex, bez závislosti
+     na vh jednotke, ktorá sa nekonzistentne počíta v kombinácii so
+     zoomom na <body>. */
+  /* 133.33vh = 100vh / 0.75 — "vh" sa vždy počíta z reálnej (nezoomovanej)
+     výšky okna, aj vnútri prvku so zoomom. Bez tejto kompenzácie by po
+     zmenšení stránky na 75 % (pozri zoom na <body> nižšie) zaberal shell
+     len 75 % obrazovky a zvyšných 25 % dole by zostalo prázdnych. */
+  .dash-shell { display: flex; height: 133.3333vh; align-items: stretch; overflow: hidden; }
 
   .dash-sidebar {
     --sb-top: #1d5c8f; --sb-bottom: #081826;
     width: 232px; min-width: 232px; flex: none; background: linear-gradient(180deg, var(--sb-top) 0%, var(--sb-bottom) 100%);
     padding: 1.2rem 1rem; display: flex; flex-direction: column; gap: 1rem;
     transition: width .2s ease, min-width .2s ease;
-    /* Prilepené na obrazovku — inak sa bočný panel naťahoval na výšku
-       obsahu (ktorý je oveľa dlhší ako obrazovka) a "Objednávka" aj
-       "Odhlásiť sa" dole v paneli boli vidieť až po odscrollovaní celej
-       stránky nadol. */
-    position: sticky; top: 0; height: 100vh; overflow: hidden;
   }
   .dash-sidebar.collapsed { width: 76px; min-width: 76px; padding: 1.2rem .6rem; }
   .sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: 0 .3rem; }
@@ -72,7 +76,7 @@
   .dash-sidebar.collapsed .sidebar-footer { font-size: 0; }
   .dash-sidebar.collapsed .sidebar-footer .sidebar-version { font-size: .7rem; display: block; }
 
-  .dash-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .dash-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow-y: auto; }
   .dash-topbar {
     display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
     padding: 1rem 1.6rem; border-bottom: 1px solid var(--line); background: var(--surface);
@@ -86,11 +90,11 @@
   .dash-section h1 { font-size: 1.5rem; margin-bottom: 1.2rem; }
 
   @media (max-width: 900px) {
-    .dash-shell { flex-direction: column; }
-    .dash-sidebar, .dash-sidebar.collapsed {
-      width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: .8rem;
-      position: static; height: auto;
-    }
+    /* Na mobile sa bočný panel mení na vodorovný pruh hore, takže sa
+       vracia späť k normálnemu scrollovaniu celej stránky. */
+    .dash-shell { flex-direction: column; height: auto; overflow: visible; }
+    .dash-main { overflow-y: visible; }
+    .dash-sidebar, .dash-sidebar.collapsed { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: .8rem; }
     .sidebar-top, .sidebar-toggle-btn, .sidebar-utility, .sidebar-footer { display: none; }
     .dash-nav { flex-direction: row; flex: none; overflow: visible; }
     .dash-nav button { white-space: nowrap; }
@@ -957,9 +961,9 @@
       <section class="dash-section" data-section="emaily">
         <h1>E-maily</h1>
         <p class="hint" style="margin-bottom:1rem;">
-          Uvítací e-mail s prístupovým kódom (po objednávke) naďalej ide cez EmailJS.
-          Nastavenia nižšie sa týkajú tlačidiel <strong>Poslať FA</strong>, <strong>Poslať POZ</strong>
-          a <strong>Poslať poukaz e-mailom</strong> — tie idú priamo z vášho vlastného e-mailu cez SMTP.
+          Všetky e-maily portálu (uvítací e-mail s kódom, faktúra, potvrdenie o zaplatení, darčekový
+          poukaz aj pripomienky a upozornenia) idú priamo z vášho vlastného e-mailu cez SMTP —
+          žiadna tretia strana sa na tom nepodieľa.
         </p>
 
         <div id="email-fail-warning" class="pay-cancelled" style="display:none;margin-bottom:1.2rem;">
