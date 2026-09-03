@@ -1071,9 +1071,9 @@ async function getOrAssignInvoiceNumber(orderRef, order) {
   return invoiceNumber;
 }
 
-function pdfToBuffer(draw) {
+function pdfToBuffer(draw, docOptions) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: "A4", margin: 56 });
+    const doc = new PDFDocument(docOptions || { size: "A4", margin: 56 });
     const chunks = [];
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -1193,6 +1193,105 @@ function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
   doc.fontSize(10).fillColor("#5c5749").text(
     "Toto potvrdenie slúži ako doklad o prijatí platby za uvedenú objednávku."
   );
+}
+
+// Darčekový poukaz — na rozdiel od faktúry/POZ ide o pekný, tlačiteľný
+// dokument, nie účtovný záznam. Kreslí sa na šírku (A4 landscape) ako
+// zdobená karta s dvojitým rámom, vlastným kódom a voliteľným venovaním.
+function drawGiftVoucherPdf(doc, { s, order, code }) {
+  const W = doc.page.width, H = doc.page.height;
+  const CREAM = "#f6ecd9", INK = "#1f3a3d", GOLD = "#c17a2e", MUTED = "#6b6350", BORDER = "#ddd5c2", WHITE = "#fffdf7";
+
+  const workshop = order.workshopTitleSnapshot || order.workshopId;
+  const recipient = order.giftRecipientName || "";
+  const message = order.giftMessage || "";
+  const issuer = s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart";
+  const issueDate = new Date().toLocaleDateString("sk-SK");
+
+  doc.rect(0, 0, W, H).fill(CREAM);
+
+  // Dvojitý zdobený rám
+  const outer = 22, inner = 34;
+  doc.roundedRect(outer, outer, W - outer * 2, H - outer * 2, 10).lineWidth(2).strokeColor(GOLD).stroke();
+  doc.roundedRect(inner, inner, W - inner * 2, H - inner * 2, 6).lineWidth(0.75).strokeColor(GOLD).stroke();
+
+  // Diamantové zdobenie v rohoch vnútorného rámu
+  [[inner, inner], [W - inner, inner], [inner, H - inner], [W - inner, H - inner]].forEach(([cx, cy]) => {
+    doc.save();
+    doc.rotate(45, { origin: [cx, cy] });
+    doc.rect(cx - 4, cy - 4, 8, 8).fill(GOLD);
+    doc.restore();
+  });
+
+  const centerX = W / 2;
+  let y = 58;
+
+  // Malý odznak so stužkou hore v strede
+  doc.circle(centerX, y, 15).lineWidth(1.4).strokeColor(GOLD).stroke();
+  doc.circle(centerX, y, 8).fillColor(GOLD).fill();
+  doc.polygon([centerX - 9, y + 12], [centerX, y + 24], [centerX - 2, y + 12]).fill(GOLD);
+  doc.polygon([centerX + 9, y + 12], [centerX, y + 24], [centerX + 2, y + 12]).fill(GOLD);
+
+  y += 40;
+  doc.font(FONT_BOLD).fontSize(9).fillColor(MUTED)
+    .text("MÚDRO A BEZPEČNE ONLINE", 0, y, { width: W, align: "center", characterSpacing: 1.5 });
+
+  y += 20;
+  doc.font(FONT_BOLD).fontSize(28).fillColor(INK)
+    .text("DARČEKOVÝ POUKAZ", 0, y, { width: W, align: "center", characterSpacing: 1 });
+
+  y += 42;
+  doc.moveTo(centerX - 90, y).lineTo(centerX - 14, y).lineWidth(1).strokeColor(GOLD).stroke();
+  doc.moveTo(centerX + 14, y).lineTo(centerX + 90, y).lineWidth(1).strokeColor(GOLD).stroke();
+  doc.save();
+  doc.rotate(45, { origin: [centerX, y] });
+  doc.rect(centerX - 4, y - 4, 8, 8).fill(GOLD);
+  doc.restore();
+
+  y += 24;
+  if (recipient) {
+    doc.font(FONT_REGULAR).fontSize(13).fillColor(MUTED)
+      .text("Pre " + recipient, 0, y, { width: W, align: "center" });
+    y += 24;
+  }
+
+  doc.font(FONT_BOLD).fontSize(18).fillColor(INK)
+    .text(workshop, 70, y, { width: W - 140, align: "center" });
+  y += 32;
+
+  if (message) {
+    const boxW = W - 240, boxX = (W - boxW) / 2;
+    doc.font(FONT_REGULAR).fontSize(11);
+    const textH = doc.heightOfString("„" + message + "“", { width: boxW - 40, align: "center" });
+    doc.roundedRect(boxX, y, boxW, textH + 24, 8).lineWidth(1).fillAndStroke(WHITE, BORDER);
+    doc.fillColor(INK).text("„" + message + "“", boxX + 20, y + 12, { width: boxW - 40, align: "center" });
+    y += textH + 24 + 16;
+  } else {
+    y += 4;
+  }
+
+  // Kód
+  const codeBoxW = 300, codeBoxH = 54, codeBoxX = centerX - codeBoxW / 2;
+  doc.font(FONT_REGULAR).fontSize(9).fillColor(MUTED)
+    .text("PRIHLASOVACÍ KÓD", 0, y, { width: W, align: "center", characterSpacing: 1.5 });
+  y += 15;
+  doc.roundedRect(codeBoxX, y, codeBoxW, codeBoxH, 8).lineWidth(1.4).fillAndStroke(WHITE, GOLD);
+  doc.font(FONT_BOLD).fontSize(24).fillColor(INK)
+    .text(String(code).split("").join(" "), codeBoxX, y + 15, { width: codeBoxW, align: "center" });
+  y += codeBoxH + 16;
+
+  doc.font(FONT_REGULAR).fontSize(10).fillColor(MUTED)
+    .text("Kód zadajte na stránke mudroabezpecne.sk/prihlasenie.html", 0, y, { width: W, align: "center" });
+
+  y += 50;
+  doc.font(FONT_REGULAR).fontSize(10).fillColor(MUTED)
+    .text("Ďakujeme, že ste vybrali darček, ktorý dáva zmysel.", 0, y, { width: W, align: "center" });
+
+  // Pätička
+  doc.font(FONT_REGULAR).fontSize(9).fillColor(MUTED)
+    .text("Vydal: " + issuer, inner + 20, H - inner - 22, { width: 260 });
+  doc.font(FONT_REGULAR).fontSize(9).fillColor(MUTED)
+    .text(issueDate, W - inner - 20 - 120, H - inner - 22, { width: 120, align: "right" });
 }
 
 async function uploadPdfAndGetUrl(buffer, path) {
@@ -1319,9 +1418,12 @@ exports.previewDocumentPdf = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže zobraziť náhľad dokumentu.");
   }
-  const { orderId, docType } = request.data || {};
-  if (!orderId || (docType !== "invoice" && docType !== "poz")) {
+  const { orderId, docType, codeId } = request.data || {};
+  if (!orderId || !["invoice", "poz", "voucher"].includes(docType)) {
     throw new HttpsError("invalid-argument", "Chýba orderId alebo neplatný docType.");
+  }
+  if (docType === "voucher" && !codeId) {
+    throw new HttpsError("invalid-argument", "Chýba prístupový kód poukazu.");
   }
 
   const orderRef = db.collection("orders").doc(orderId);
@@ -1335,12 +1437,110 @@ exports.previewDocumentPdf = onCall(async (request) => {
   const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
   order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
 
+  if (docType === "voucher") {
+    const buffer = await pdfToBuffer(
+      (doc) => drawGiftVoucherPdf(doc, { s, order, code: codeId }),
+      { size: "A4", layout: "landscape", margin: 0 }
+    );
+    return { pdfBase64: buffer.toString("base64") };
+  }
+
   const invoiceNumber = await getOrAssignInvoiceNumber(orderRef, order);
   const buffer = docType === "invoice"
     ? await pdfToBuffer((doc) => drawInvoicePdf(doc, { s, order, invoiceNumber }))
     : await pdfToBuffer((doc) => drawPozPdf(doc, { s, order, pozNumber: "UH" + invoiceNumber.slice(2), invoiceNumber }));
 
   return { pdfBase64: buffer.toString("base64") };
+});
+
+// Odoslanie darčekového poukazu (PDF) e-mailom kupujúcemu — vygeneruje sa
+// rovnaký dokument ako pri náhľade, uloží sa a pošle sa naň odkaz.
+async function sendGiftVoucherLinkEmail({ to, name, workshopTitle, url, code, recipientName, giftMessage }) {
+  const lines = [
+    "Pripravili sme pre Vás darčekový poukaz na kurz „" + workshopTitle + "“ — na stiahnutie a vytlačenie (PDF):",
+    url,
+  ];
+  if (recipientName) lines.splice(1, 0, "Poukaz je pripravený pre: " + recipientName + ".");
+  lines.push("", "Prihlasovací kód pre obdarovaného: " + code);
+  if (giftMessage) lines.push("", "Váš odkaz na poukaze: „" + giftMessage + "“");
+  const message = lines.join("\n");
+
+  let status = "sent";
+  try {
+    const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        accessToken: EMAILJS_PRIVATE_KEY.value(),
+        template_params: {
+          to_email: to,
+          to_name: name,
+          name,
+          email: to,
+          code,
+          workshop_title: workshopTitle,
+          custom_message: message,
+        },
+      }),
+    });
+    if (!res.ok) {
+      status = "failed";
+      console.error("EmailJS odoslanie poukazu zlyhalo:", res.status, await res.text());
+    }
+  } catch (err) {
+    status = "failed";
+    console.error("EmailJS odoslanie poukazu zlyhalo:", err);
+  }
+
+  try {
+    await db.collection("mail").add({ to, docLabel: "darčekový poukaz", code, status, createdAt: FieldValue.serverTimestamp() });
+  } catch (err) {
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
+
+  if (status === "failed") {
+    throw new HttpsError("internal", "Odoslanie e-mailu zlyhalo. Skúste to prosím znova.");
+  }
+}
+
+exports.sendGiftVoucherEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže odosielať darčekové poukazy.");
+  }
+  const { orderId, codeId } = request.data || {};
+  if (!orderId || !codeId) throw new HttpsError("invalid-argument", "Chýba orderId alebo kód poukazu.");
+
+  const orderRef = db.collection("orders").doc(orderId);
+  const orderSnap = await orderRef.get();
+  if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
+  const order = orderSnap.data();
+
+  const settingsSnap = await db.collection("settings").doc("general").get();
+  const s = settingsSnap.exists ? settingsSnap.data() : {};
+
+  const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
+  order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
+
+  const buffer = await pdfToBuffer(
+    (doc) => drawGiftVoucherPdf(doc, { s, order, code: codeId }),
+    { size: "A4", layout: "landscape", margin: 0 }
+  );
+  const url = await uploadPdfAndGetUrl(buffer, "vouchers/" + orderId + "/" + codeId + ".pdf");
+
+  await sendGiftVoucherLinkEmail({
+    to: order.email,
+    name: order.firstName || order.name,
+    workshopTitle: order.workshopTitleSnapshot,
+    url,
+    code: codeId,
+    recipientName: order.giftRecipientName || null,
+    giftMessage: order.giftMessage || null,
+  });
+
+  return { url };
 });
 
 exports.sendInvoiceEmail = onCall({ secrets: [EMAILJS_PRIVATE_KEY] }, async (request) => {
@@ -1514,7 +1714,9 @@ exports.createStripeCheckout = onCall({ secrets: [STRIPE_SECRET_KEY] }, async (r
  * podpis, ktorý Stripe posiela v hlavičke.
  */
 exports.stripeWebhook = onRequest(
-  { secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET], cors: false },
+  // EMAILJS_PRIVATE_KEY je potrebný, lebo táto funkcia (cez issueCodesForOrder)
+  // po potvrdení platby posiela účastníkovi e-mail s prístupovým kódom.
+  { secrets: [STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, EMAILJS_PRIVATE_KEY], cors: false },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");

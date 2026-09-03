@@ -2545,58 +2545,52 @@ window.addEventListener("load", function () {
   }
 
   // ---------- Modálne okno s detailom účastníka ----------
-  function wireVoucherButton(overlay, order, codeId) {
+  // Poukaz sa kreslí server-side ako skutočné PDF (funkcia previewDocumentPdf
+  // s docType "voucher") — otvorí sa priamo v natívnom prehliadači prehliadača
+  // ako Blob URL, takže tlač aj uloženie funguje spoľahlivo a nič cudzie sa
+  // doň nemôže vkresliť (predtým sa písalo cez document.write do prázdneho
+  // okna, do ktorého vedeli zasahovať rozšírenia prehliadača).
+  function wireVoucherButton(overlay, order, orderId, codeId) {
     const voucherBtn = overlay.querySelector("#detail-voucher-btn");
     if (voucherBtn) {
       voucherBtn.addEventListener("click", async () => {
         voucherBtn.disabled = true;
         voucherBtn.textContent = "Pripravujem…";
         try {
-          await generateGiftVoucher(order, codeId);
+          const previewDocumentPdf = functions.httpsCallable("previewDocumentPdf");
+          const result = await previewDocumentPdf({ orderId, docType: "voucher", codeId });
+          const byteChars = atob(result.data.pdfBase64);
+          const bytes = new Uint8Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+          const blobUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+          const w = window.open(blobUrl, "_blank");
+          if (!w) alert("Prehliadač zablokoval otvorenie okna. Povoľte vyskakovacie okná pre túto stránku.");
         } catch (err) {
-          alert("Poukaz sa nepodarilo vygenerovať: " + err.message);
+          alert("Poukaz sa nepodarilo pripraviť: " + err.message);
         } finally {
           voucherBtn.disabled = false;
-          voucherBtn.textContent = "Vygenerovať darčekový poukaz";
+          voucherBtn.textContent = "Zobraziť / vytlačiť poukaz";
         }
       });
     }
-  }
 
-  async function generateGiftVoucher(order, codeId) {
-    const workshop = workshopTitle(order.workshopId);
-    const recipient = order.giftRecipientName ? escapeHtml(order.giftRecipientName) : "";
-    const message = order.giftMessage ? escapeHtml(order.giftMessage) : "";
-    const html =
-      "<!doctype html><html lang='sk'><head><meta charset='utf-8'><title>Darčekový poukaz</title>" +
-      "<style>" +
-      "body{font-family:Georgia,serif;color:#1f3a3d;max-width:680px;margin:2rem auto;padding:0 1rem;}" +
-      ".voucher{border:3px solid #c17a2e;border-radius:16px;padding:2.5rem;text-align:center;background:#f1ddc0;}" +
-      ".voucher h1{font-size:1.6rem;margin-bottom:.3rem;} .voucher .sub{color:#5c5749;margin-bottom:1.5rem;}" +
-      ".voucher .workshop{font-size:1.3rem;font-weight:700;margin:1.2rem 0;}" +
-      ".voucher .code{font-size:1.8rem;letter-spacing:.3em;font-weight:700;background:#fff;border-radius:10px;padding:.8rem;margin:1.5rem 0;}" +
-      ".voucher .message{font-style:italic;margin:1.5rem 0;}" +
-      ".print-btn{margin-top:2rem;padding:.7rem 1.2rem;font-size:1rem;cursor:pointer;}" +
-      "@media print{.print-btn{display:none;}}" +
-      "</style></head><body>" +
-      "<div class='voucher'>" +
-      "<h1>Darčekový poukaz</h1>" +
-      "<p class='sub'>Múdro a Bezpečne Online</p>" +
-      (recipient ? "<p>Pre: <strong>" + recipient + "</strong></p>" : "") +
-      "<p class='workshop'>" + escapeHtml(workshop) + "</p>" +
-      (message ? "<p class='message'>„" + message + "“</p>" : "") +
-      "<p>Prihlasovací kód:</p>" +
-      "<div class='code'>" + escapeHtml(codeId) + "</div>" +
-      "<p class='sub'>Kód zadajte na stránke mudroabezpecne.sk/prihlasenie.html</p>" +
-      "</div>" +
-      "<button class='print-btn' onclick='window.print()'>Tlačiť / Uložiť ako PDF</button>" +
-      "</body></html>";
-
-    const w = window.open("", "_blank");
-    if (!w) { alert("Prehliadač zablokoval otvorenie okna. Povoľte vyskakovacie okná pre túto stránku."); return; }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
+    const voucherEmailBtn = overlay.querySelector("#detail-voucher-email-btn");
+    if (voucherEmailBtn) {
+      voucherEmailBtn.addEventListener("click", () => {
+        showDocumentSendModal({
+          title: "Poslať darčekový poukaz?",
+          docType: "voucher",
+          orderId,
+          codeId,
+          message: "Na e-mail <strong>" + escapeHtml(order.email) + "</strong> sa odošle odkaz na stiahnutie darčekového poukazu (PDF).",
+          confirmLabel: "Áno, poslať poukaz",
+          sendFn: async () => {
+            const sendGiftVoucherEmail = functions.httpsCallable("sendGiftVoucherEmail");
+            await sendGiftVoucherEmail({ orderId, codeId });
+          },
+        });
+      });
+    }
   }
 
   async function openDetail(order, orderId, codeId) {
@@ -2675,7 +2669,8 @@ window.addEventListener("load", function () {
     }
     let actionButtons = "";
     if (order.isGift && codeId) {
-      actionButtons += "<button type='button' class='btn btn-secondary' id='detail-voucher-btn'>Vygenerovať darčekový poukaz</button>";
+      actionButtons += "<button type='button' class='btn btn-secondary' id='detail-voucher-btn'>Zobraziť / vytlačiť poukaz</button>";
+      actionButtons += "<button type='button' class='btn btn-secondary' id='detail-voucher-email-btn'>Poslať poukaz e-mailom</button>";
     }
     if (actionButtons) {
       regLine += "<p style='margin-top:.8rem;'>" + actionButtons + "</p>";
@@ -2684,7 +2679,7 @@ window.addEventListener("load", function () {
 
     if (!codeId) {
       detailBody.innerHTML = regLine + "<p class='hint' style='margin-top:1rem;'>Prístupový kód zatiaľ nebol vydaný.</p>";
-      wireVoucherButton(overlay, order, codeId);
+      wireVoucherButton(overlay, order, orderId, codeId);
       return;
     }
 
@@ -2757,7 +2752,7 @@ window.addEventListener("load", function () {
     }
 
     detailBody.innerHTML = html;
-    wireVoucherButton(overlay, order, codeId);
+    wireVoucherButton(overlay, order, orderId, codeId);
   }
 
   // ---------- Hlavná tabuľka registrácií ----------
@@ -3291,7 +3286,7 @@ window.addEventListener("load", function () {
     });
   }
 
-  function showDocumentSendModal({ title, message, confirmLabel, docType, orderId, sendFn }) {
+  function showDocumentSendModal({ title, message, confirmLabel, docType, orderId, codeId, sendFn }) {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
     overlay.innerHTML =
@@ -3316,7 +3311,7 @@ window.addEventListener("load", function () {
     (async () => {
       try {
         const previewDocumentPdf = functions.httpsCallable("previewDocumentPdf");
-        const result = await previewDocumentPdf({ orderId, docType });
+        const result = await previewDocumentPdf({ orderId, docType, codeId });
         if (!overlay.isConnected) return; // medzičasom zavreté
         previewWrap.innerHTML =
           "<iframe src='data:application/pdf;base64," + result.data.pdfBase64 +
