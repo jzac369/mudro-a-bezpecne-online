@@ -1803,6 +1803,7 @@ window.addEventListener("load", function () {
       document.getElementById("smtp-password").value = "";
       resultEl.textContent = "Uložené.";
       resultEl.style.color = "var(--good)";
+      logActivity("settings", "SMTP nastavenia zmenené");
       await loadEmailSettings();
     } catch (err) {
       resultEl.textContent = "Zlyhalo: " + err.message;
@@ -1915,6 +1916,7 @@ window.addEventListener("load", function () {
         templateDefaults[type] = document.getElementById("tpl-" + type + "-code").value;
         resultEl.textContent = "Šablóna uložená.";
         resultEl.style.color = "var(--good)";
+        logActivity("settings", "E-mailová šablóna (" + type + ") uložená");
       } catch (err) {
         resultEl.textContent = "Zlyhalo: " + err.message;
         resultEl.style.color = "var(--warn)";
@@ -2103,6 +2105,7 @@ window.addEventListener("load", function () {
         workshopId: document.getElementById("g-workshop").value,
       });
       resultEl.innerHTML = "Vygenerovaný kód: <span class='mono code-copy' data-copy-code='" + res.data.code + "' title='Kliknutím skopírovať'>" + res.data.code + "</span>";
+      logActivity("order", "Prístupový kód vygenerovaný ručne: " + res.data.code);
       const copyEl = resultEl.querySelector("[data-copy-code]");
       copyEl.addEventListener("click", () => {
         navigator.clipboard.writeText(copyEl.dataset.copyCode).then(() => {
@@ -2672,12 +2675,13 @@ window.addEventListener("load", function () {
       snap.docs.forEach((doc) => {
         const a = doc.data();
         const when = a.createdAt ? a.createdAt.toDate().toLocaleString("sk-SK") : "—";
-        const typeLabel = a.type === "login" ? "Prihlásenie" : "Nastavenie";
+        const typeLabel = a.type === "login" ? "Prihlásenie" : a.type === "order" ? "Registrácia" : "Nastavenie";
+        const typeChip = a.type === "login" ? "info" : a.type === "order" ? "warn" : "good";
         const tr = document.createElement("tr");
         tr.innerHTML =
           "<td>" + when + "</td>" +
           "<td>" + escapeHtml(a.adminEmail || "—") + "</td>" +
-          "<td><span class='chip " + (a.type === "login" ? "info" : "good") + "'>" + typeLabel + "</span></td>" +
+          "<td><span class='chip " + typeChip + "'>" + typeLabel + "</span></td>" +
           "<td>" + escapeHtml(a.description || "") + "</td>";
         tbody.appendChild(tr);
       });
@@ -3021,6 +3025,7 @@ window.addEventListener("load", function () {
           btn.disabled = true;
           try {
             await functions.httpsCallable("markConsultationPaid")({ bookingId: btn.dataset.consultPaid });
+            logActivity("order", "Konzultácia " + btn.dataset.consultPaid + " označená ako uhradená");
             loadConsultationBookings();
           } catch (err) {
             alert("Nepodarilo sa potvrdiť platbu: " + err.message);
@@ -3034,6 +3039,7 @@ window.addEventListener("load", function () {
           btn.disabled = true;
           try {
             await functions.httpsCallable("cancelConsultation")({ bookingId: btn.dataset.consultCancel });
+            logActivity("order", "Konzultácia " + btn.dataset.consultCancel + " zrušená");
             loadConsultationBookings();
           } catch (err) {
             alert("Nepodarilo sa zrušiť rezerváciu: " + err.message);
@@ -4268,6 +4274,7 @@ window.addEventListener("load", function () {
           const row = btn.closest("tr");
           const codeSpan = row && row.querySelector("[data-copy-code='" + codeId + "']");
           if (codeSpan) codeSpan.textContent = codeId + (willBeActive ? "" : " (deakt.)");
+          logActivity("settings", "Prístupový kód " + codeId + (willBeActive ? " aktivovaný" : " deaktivovaný"));
         } catch (err) {
           console.error(err);
         } finally {
@@ -4413,6 +4420,7 @@ window.addEventListener("load", function () {
         try {
           const markOrderPaid = functions.httpsCallable("markOrderPaid");
           await markOrderPaid({ orderId, paymentMethod: btn.dataset.method });
+          logActivity("order", "Registrácia " + orderId + " označená ako uhradená (" + btn.dataset.method + ")");
           overlay.remove();
         } catch (err) {
           errorEl.textContent = "Zlyhalo: " + err.message;
@@ -4597,6 +4605,7 @@ window.addEventListener("load", function () {
       try {
         const deleteRegistrations = functions.httpsCallable("deleteRegistrations");
         await deleteRegistrations({ orderIds });
+        logActivity("order", orderIds.length + (orderIds.length === 1 ? " registrácia vymazaná" : " registrácií vymazaných") + " (" + orderIds.join(", ") + ")");
         overlay.remove();
         document.getElementById("select-all-orders").checked = false;
         updateDeleteSelectedButton();
