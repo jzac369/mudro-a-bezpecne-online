@@ -2393,7 +2393,10 @@ window.addEventListener("load", function () {
       const m = trimmed.match(re);
       if (m) return m[1];
     }
-    return trimmed;
+    // Ak to nevyzerá ako odkaz, admin možno vložil rovno samotné 11-znakové
+    // ID videa — to prijmeme. Čokoľvek iné (aj omylom/úmyselne vložený iný
+    // text) sa už neuloží surovo, aby sa do poľa nedostal nedôveryhodný text.
+    return /^[\w-]{11}$/.test(trimmed) ? trimmed : "";
   }
 
   // Listovanie na stránke kurzu funguje z pripravených obrázkov strán.
@@ -2514,13 +2517,13 @@ window.addEventListener("load", function () {
         "</summary>" +
         "<div style='margin-top:1rem;'>" +
         '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="visible" style="width:auto;" ' + (data.hidden ? "" : "checked") + '> Viditeľný v ponuke</label><p class="hint">Ak vypnete, kurz sa dočasne skryje z úvodnej stránky.</p></div>' +
-        '<div class="field"><label>Názov</label><input type="text" data-f="title" value="' + (data.title || local.title || "") + '"></div>' +
-        '<div class="field"><label>Podnadpis</label><input type="text" data-f="subtitle" value="' + (data.subtitle || local.subtitle || "") + '"></div>' +
+        '<div class="field"><label>Názov</label><input type="text" data-f="title" value="' + escapeHtml(data.title || local.title || "") + '"></div>' +
+        '<div class="field"><label>Podnadpis</label><input type="text" data-f="subtitle" value="' + escapeHtml(data.subtitle || local.subtitle || "") + '"></div>' +
         '<div class="field"><label>Cena (€)</label><input type="number" data-f="price" value="' + (data.price ?? local.price ?? 19) + '"></div>' +
         '<div class="field"><label>Pôvodná cena (€) — zobrazí sa preškrtnutá, marketingový efekt</label><input type="number" data-f="originalPrice" value="' + (data.originalPrice ?? "") + '" placeholder="napr. 29"></div>' +
         '<div class="field"><label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" data-f-bool="showOriginalPrice" style="width:auto;" ' + (data.showOriginalPrice ? "checked" : "") + '> Zobrazovať pôvodnú cenu na webe</label></div>' +
         '<div class="field"><label>Akcia platí do (nepovinné)</label><input type="date" data-f="saleEndAt" value="' + (data.saleEndAt || "") + '"><p class="hint">Po tomto dátume sa pôvodná cena prestane zobrazovať automaticky.</p></div>' +
-        '<div class="field"><label>URL adresa videa (YouTube)</label><input type="text" data-f="videoUrl" value="' + videoUrl + '" placeholder="https://www.youtube.com/watch?v=…"></div>' +
+        '<div class="field"><label>URL adresa videa (YouTube)</label><input type="text" data-f="videoUrl" value="' + escapeHtml(videoUrl) + '" placeholder="https://www.youtube.com/watch?v=…"></div>' +
         '<button class="btn btn-primary" data-save="' + id + '" style="padding:.5rem 1rem;font-size:.9rem;">Uložiť</button>' +
         '<p class="hint" data-status style="margin-top:.5rem;"></p>' +
 
@@ -2724,7 +2727,7 @@ window.addEventListener("load", function () {
   }
 
   function escapeHtml(s) {
-    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   // ---------- Log aktivity (prihlásenia + zmeny nastavení, aj drobné) ----------
@@ -3605,7 +3608,7 @@ window.addEventListener("load", function () {
           return (
             "<div class='feedback-item'><span class='feedback-stars'>" + "★".repeat(f.rating) + "☆".repeat(5 - f.rating) + "</span> " +
             "<span class='hint'>" + workshopTitle(f.workshopId) + " · " + when + "</span>" +
-            (f.comment ? "<p style='margin-top:.3rem;'>" + f.comment + "</p>" : "") +
+            (f.comment ? "<p style='margin-top:.3rem;'>" + escapeHtml(f.comment) + "</p>" : "") +
             "</div>"
           );
         })
@@ -3885,8 +3888,8 @@ window.addEventListener("load", function () {
     overlay.className = "modal-overlay";
     overlay.innerHTML =
       '<div class="modal-box"><button class="modal-close" data-close>&times;</button>' +
-      "<h2>" + order.name + "</h2>" +
-      "<p class='hint'>" + order.email + " · " + workshopTitle(order.workshopId) + "</p>" +
+      "<h2>" + escapeHtml(order.name) + "</h2>" +
+      "<p class='hint'>" + escapeHtml(order.email) + " · " + workshopTitle(order.workshopId) + "</p>" +
       "<div id='detail-body'>Načítavam…</div></div>";
     document.body.appendChild(overlay);
     overlay.addEventListener("click", (e) => {
@@ -3926,7 +3929,7 @@ window.addEventListener("load", function () {
           : (order.status === "pending_payment" ? "zatiaľ neuhradené" : "—")) +
         "</span></div>";
     if (order.groupSize && order.groupSize > 1) {
-      const others = (order.participants || []).map((p) => p.firstName + " " + p.lastName).join(", ");
+      const others = (order.participants || []).map((p) => escapeHtml(p.firstName) + " " + escapeHtml(p.lastName)).join(", ");
       regLine += "<div class='session-row'><span>Skupinová objednávka</span><span>" + order.groupSize + " účastníci: " + others + "</span></div>";
     }
     if (order.couponApplied || order.discountNote) {
@@ -4203,8 +4206,8 @@ window.addEventListener("load", function () {
       if (codeId) {
         actionCell =
           '<div class="row-actions">' +
-          '<a class="btn btn-secondary" href="mailto:' + order.email + '">E-mail</a>' +
-          '<button class="btn btn-secondary" data-resend="' + order.email + '">Poslať znova</button>' +
+          '<a class="btn btn-secondary" href="mailto:' + encodeURIComponent(order.email) + '">E-mail</a>' +
+          '<button class="btn btn-secondary" data-resend="' + escapeHtml(order.email) + '">Poslať znova</button>' +
           '<button class="btn btn-secondary" data-toggle-code="' + codeId + '" data-active="' + codeActive + '">' + (codeActive ? "Deaktivovať" : "Aktivovať") + "</button>" +
           '<button class="btn btn-secondary" data-delete-order="' + doc.id + '">Vymazať</button>' +
           "</div>";
@@ -4212,11 +4215,11 @@ window.addEventListener("load", function () {
         actionCell =
           '<div class="row-actions">' +
           '<button class="btn btn-secondary" data-mark-paid="' + doc.id + '">Označiť ako uhradené</button>' +
-          '<a class="btn btn-secondary" href="mailto:' + order.email + '">E-mail</a>' +
+          '<a class="btn btn-secondary" href="mailto:' + encodeURIComponent(order.email) + '">E-mail</a>' +
           '<button class="btn btn-secondary" data-delete-order="' + doc.id + '">Vymazať</button>' +
           "</div>";
       } else {
-        actionCell = '<a class="btn btn-secondary" href="mailto:' + order.email + '">E-mail</a> ' +
+        actionCell = '<a class="btn btn-secondary" href="mailto:' + encodeURIComponent(order.email) + '">E-mail</a> ' +
           '<button class="btn btn-secondary" data-delete-order="' + doc.id + '">Vymazať</button>';
       }
 
@@ -4225,7 +4228,7 @@ window.addEventListener("load", function () {
       tr.innerHTML =
         "<td><input type='checkbox' class='row-select' data-order-id='" + doc.id + "' style='width:auto;'></td>" +
         "<td>" + (codeId ? "<span class='mono code-copy' data-copy-code='" + codeId + "' title='Kliknutím skopírovať'>" + codeId + (codeActive ? "" : " (deakt.)") + "</span>" : "—") + "</td>" +
-        "<td>" + order.name + "<br><span class='hint'>" + order.email + "</span></td>" +
+        "<td>" + escapeHtml(order.name) + "<br><span class='hint'>" + escapeHtml(order.email) + "</span></td>" +
         "<td>" + workshopTitle(order.workshopId) + "</td>" +
         "<td>" + statusChip + "</td>" +
         "<td>" + timeSpent + "</td>" +

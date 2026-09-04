@@ -4,7 +4,7 @@ const { getAuth } = require("firebase-admin/auth");
 const { getStorage } = require("firebase-admin/storage");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
 const PDFDocument = require("pdfkit");
@@ -128,6 +128,23 @@ async function getSettings() {
   return Object.assign({}, DEFAULT_SETTINGS, snap.exists ? snap.data() : {});
 }
 
+// settings/general obsahuje aj citlivé prevádzkové údaje (napr. hranicu
+// pre blokovanie po zlyhaných prihláseniach — jej zverejnenie by útočníkovi
+// pomohlo naladiť si útok tesne pod ňu), preto ho verejné, neprihlásené
+// stránky nesmú čítať priamo. Zopár polí z neho je ale nutne verejných
+// (režim údržby, platobné údaje na bankový prevod) — tie preto po každej
+// zmene automaticky prekopírujeme do samostatného, skutočne verejného
+// dokumentu settings/public.
+exports.syncPublicSettings = onDocumentWritten("settings/general", async (event) => {
+  const after = event.data && event.data.after && event.data.after.exists ? event.data.after.data() : {};
+  await db.collection("settings").doc("public").set({
+    maintenanceMode: !!after.maintenanceMode,
+    invoiceIban: after.invoiceIban || "",
+    invoiceEmail: after.invoiceEmail || "",
+    invoicePhone: after.invoicePhone || "",
+  });
+});
+
 function generateRandomCode() {
   let code = "";
   for (let i = 0; i < 6; i++) {
@@ -160,6 +177,10 @@ exports.createOrder = onCall(async (request) => {
   if (!firstName || !lastName || !email || !workshopId) {
     throw new HttpsError("invalid-argument", "Chýba meno, priezvisko, e-mail alebo kurz.");
   }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+    throw new HttpsError("invalid-argument", "Zadaná e-mailová adresa nie je platná.");
+  }
+  await enforceRateLimit("createOrder", getRequestIp(request), 10, 30);
 
   const workshopSnap = await db.collection("workshops").doc(workshopId).get();
   if (!workshopSnap.exists) {
@@ -463,12 +484,55 @@ exports.generateCode = onCall(async (request) => {
  * kontroluje platnosť kódu (dni od vydania) a limit počtu prihlásení,
  * ak sú tieto obmedzenia v nastaveniach zapnuté.
  */
+// Cloud Run (na ktorom bežia tieto funkcie) posúva požiadavku cez svoj
+// vlastný front-end proxy, ktorý na koniec X-Forwarded-For reťazca VŽDY
+// pripojí skutočnú IP adresu volajúceho — to je jediná hodnota v tomto
+// reťazci, ktorú si klient nemôže sfalšovať (skorší, klientom poslaný
+// obsah hlavičky ostáva pred ňou zachovaný). Preto berieme POSLEDNÚ
+// hodnotu, nie prvú — prvá by bola úplne pod kontrolou volajúceho a dala
+// by sa ňou obísť blokovanie po opakovaných zlyhaných pokusoch.
 function getRequestIp(request) {
   const req = request.rawRequest;
   if (!req) return "unknown";
   const forwarded = req.headers && req.headers["x-forwarded-for"];
-  if (forwarded) return String(forwarded).split(",")[0].trim();
+  if (forwarded) {
+    const parts = String(forwarded).split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
   return req.ip || "unknown";
+}
+
+/**
+ * Jednoduchý limit počtu volaní za časové okno, podľa ľubovoľného kľúča
+ * (typicky IP adresa) — chráni verejné, neprihlásené funkcie (objednávka,
+ * rezervácia konzultácie, opätovné poslanie kódu) pred zahltením/zneužitím
+ * na rozosielanie hromadnej pošty cez náš vlastný SMTP účet. Pri prekročení
+ * vyhodí HttpsError("resource-exhausted", ...).
+ */
+async function enforceRateLimit(bucket, key, maxPerWindow, windowMinutes) {
+  const safeKey = Buffer.from(String(key || "unknown")).toString("hex").slice(0, 150);
+  const ref = db.collection("rateLimits").doc(bucket + "_" + safeKey);
+  const windowMs = windowMinutes * 60 * 1000;
+  let limited = false;
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const now = Date.now();
+    const prev = snap.exists ? snap.data() : null;
+    const stillInWindow = prev && prev.windowStart && (now - prev.windowStart.toDate().getTime()) < windowMs;
+    const count = (stillInWindow ? prev.count : 0) + 1;
+    if (count > maxPerWindow) {
+      limited = true;
+      return;
+    }
+    tx.set(ref, {
+      count,
+      windowStart: stillInWindow ? prev.windowStart : FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+  if (limited) {
+    throw new HttpsError("resource-exhausted", "Príliš veľa požiadaviek z vášho pripojenia. Skúste to prosím znova o chvíľu.");
+  }
 }
 
 exports.verifyCode = onCall(async (request) => {
@@ -573,6 +637,7 @@ exports.verifyCode = onCall(async (request) => {
 exports.resendCode = onCall(async (request) => {
   const { email } = request.data || {};
   if (!email) throw new HttpsError("invalid-argument", "Zadaj e-mail.");
+  await enforceRateLimit("resendCode", getRequestIp(request), 5, 30);
 
   const ordersSnap = await db
     .collection("orders")
@@ -995,6 +1060,10 @@ exports.bookConsultation = onCall(async (request) => {
   if (!name || !email || !date || !startTime || ![30, 60].includes(durationMin) || !["video", "audio"].includes(mode)) {
     throw new HttpsError("invalid-argument", "Chýbajú alebo sú neplatné údaje objednávky.");
   }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+    throw new HttpsError("invalid-argument", "Zadaná e-mailová adresa nie je platná.");
+  }
+  await enforceRateLimit("bookConsultation", getRequestIp(request), 5, 60);
 
   const settings = await getConsultationSettings();
   if (!settings.enabled) throw new HttpsError("failed-precondition", "Konzultácie momentálne nie sú dostupné.");
@@ -1073,7 +1142,7 @@ exports.markConsultationPaid = onCall(async (request) => {
   } catch (err) {
     if (err instanceof HttpsError) throw err;
     console.error("markConsultationPaid zlyhalo:", err && err.stack ? err.stack : err);
-    throw new HttpsError("internal", "Nastala neočakávaná chyba: " + (err && err.message ? err.message : String(err)));
+    throw new HttpsError("internal", "Nastala neočakávaná chyba. Skúste to prosím znova.");
   }
 });
 
@@ -2101,13 +2170,25 @@ function serializeForBackup(value) {
 }
 
 async function generateBackupZip(auto) {
+  // Zip sa strieda priamo do Storage (nie do pamäte naraz) — pri väčšom
+  // objeme nahratých súborov/dát by inak hrozilo vyčerpanie pamäte alebo
+  // timeout skôr, než sa záloha stihne zapísať.
+  const bucket = getStorage().bucket();
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const storagePath = "backups/" + timestamp + ".zip";
+  const storageFile = bucket.file(storagePath);
+
   const archive = archiver("zip", { zlib: { level: 9 } });
-  const chunks = [];
-  archive.on("data", (chunk) => chunks.push(chunk));
+  let sizeBytes = 0;
+  archive.on("data", (chunk) => { sizeBytes += chunk.length; });
+
+  const writeStream = storageFile.createWriteStream({ contentType: "application/zip", resumable: false });
   const done = new Promise((resolve, reject) => {
-    archive.on("end", resolve);
+    writeStream.on("finish", resolve);
+    writeStream.on("error", reject);
     archive.on("error", reject);
   });
+  archive.pipe(writeStream);
 
   for (const name of BACKUP_COLLECTIONS) {
     const snap = await db.collection(name).get();
@@ -2116,30 +2197,23 @@ async function generateBackupZip(auto) {
     archive.append(JSON.stringify(docs, null, 2), { name: "database/" + name + ".json" });
   }
 
-  const bucket = getStorage().bucket();
   const [files] = await bucket.getFiles();
   for (const file of files) {
     if (file.name.startsWith("backups/")) continue; // predošlé zálohy do seba nezabaľujeme
-    const [buffer] = await file.download();
-    archive.append(buffer, { name: "files/" + file.name });
+    archive.append(file.createReadStream(), { name: "files/" + file.name });
   }
 
-  archive.finalize();
+  await archive.finalize();
   await done;
-  const zipBuffer = Buffer.concat(chunks);
-
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const storagePath = "backups/" + timestamp + ".zip";
-  await bucket.file(storagePath).save(zipBuffer, { contentType: "application/zip", resumable: false });
 
   const backupRef = await db.collection("backups").add({
     createdAt: FieldValue.serverTimestamp(),
-    sizeBytes: zipBuffer.length,
+    sizeBytes,
     storagePath,
     auto: !!auto,
   });
 
-  return { backupId: backupRef.id, sizeBytes: zipBuffer.length };
+  return { backupId: backupRef.id, sizeBytes };
 }
 
 exports.runBackupNow = onCall({ timeoutSeconds: 300, memory: "512MiB" }, async (request) => {
@@ -2361,10 +2435,7 @@ async function sendCertificateSmtpEmail({ to, name, workshopTitle, url }) {
   }
 
   if (status === "failed") {
-    throw new HttpsError(
-      "internal",
-      "Odoslanie e-mailu zlyhalo (" + errorMessage + "). Skúste to prosím znova."
-    );
+    throw new HttpsError("internal", "Odoslanie e-mailu zlyhalo. Skúste to prosím znova.");
   }
 }
 
@@ -2795,7 +2866,7 @@ exports.getStripePaymentsSummary = onCall({ secrets: [STRIPE_SECRET_KEY] }, asyn
     });
   } catch (err) {
     console.error("Načítanie platieb zo Stripe zlyhalo:", err);
-    throw new HttpsError("internal", "Platby sa nepodarilo načítať zo Stripe: " + (err.message || err));
+    throw new HttpsError("internal", "Platby sa nepodarilo načítať zo Stripe. Skúste to prosím znova.");
   }
 
   let totalAmount = 0, totalRefunded = 0, totalFees = 0, netAmount = 0, successCount = 0, failedCount = 0;

@@ -183,7 +183,7 @@
 
     let generalSettings = {};
     try {
-      const settingsSnap = await db.collection("settings").doc("general").get();
+      const settingsSnap = await db.collection("settings").doc("public").get();
       generalSettings = settingsSnap.exists ? settingsSnap.data() : {};
       if (generalSettings.maintenanceMode) {
         document.querySelector("main").innerHTML =

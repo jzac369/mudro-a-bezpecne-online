@@ -43,9 +43,22 @@ service cloud.firestore {
     }
 
     // Všeobecné nastavenia platformy (napr. doba neaktivity pred odhlásením).
+    // Obsahuje aj citlivé prevádzkové hodnoty (napr. hranicu pre blokovanie
+    // po zlyhaných prihláseniach) — preto NIE JE verejne čitateľné, len pre
+    // prihlásených. Verejné stránky namiesto toho čítajú settings/public
+    // (samostatný dokument nižšie), do ktorého sa pár neškodných polí
+    // (režim údržby, platobné údaje) automaticky kopíruje funkciou
+    // syncPublicSettings pri každej zmene settings/general.
     match /settings/{settingId} {
       allow read: if request.auth != null;
       allow write: if isAdmin();
+    }
+
+    // Verejná podmnožina settings/general — zapisuje výhradne Cloud Function
+    // syncPublicSettings (Admin SDK), nikdy priamo klient.
+    match /settings/public {
+      allow read: if true;
+      allow write: if false;
     }
 
     match /orders/{orderId} {
@@ -64,6 +77,13 @@ service cloud.firestore {
     // Ochrana pred zneužitím prístupového kódu (opakované nesprávne pokusy) —
     // zapisuje len verifyCode cez Admin SDK, číta administrátor.
     match /loginAttempts/{attemptId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Limit počtu volaní za časové okno (createOrder/resendCode/
+    // bookConsultation) — zapisuje výhradne Admin SDK, číta administrátor.
+    match /rateLimits/{limitId} {
       allow read: if isAdmin();
       allow write: if false;
     }
@@ -126,12 +146,21 @@ service cloud.firestore {
     match /chats/{chatId} {
       allow read: if isAdmin() || (request.auth != null && resource.data.visitorUid == request.auth.uid);
       allow create: if request.auth != null && request.resource.data.visitorUid == request.auth.uid;
-      allow update: if isAdmin() || (request.auth != null && resource.data.visitorUid == request.auth.uid);
+      // Návštevník smie meniť len stav vlastnej konverzácie (nie napr.
+      // visitorUid/codeId) — konkrétne len tieto polia posiela chat-widget.js.
+      allow update: if isAdmin() || (
+        request.auth != null && resource.data.visitorUid == request.auth.uid &&
+        request.resource.data.visitorUid == resource.data.visitorUid &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["status", "lastMessageAt", "lastMessageBy", "unreadByAdmin"])
+      );
       allow delete: if false;
 
       match /messages/{messageId} {
         allow read: if isAdmin() || isOwnChat(chatId);
-        allow create: if isAdmin() || isOwnChat(chatId);
+        // Návštevník nemôže vo vlastnom vlákne podvrhnúť správu s
+        // sender:"admin" — jeho správy musia byť vždy označené "visitor".
+        allow create: if isAdmin() || (isOwnChat(chatId) && request.resource.data.sender == "visitor");
         allow update, delete: if false;
       }
     }

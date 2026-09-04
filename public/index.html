@@ -292,7 +292,7 @@
     const db = firebase.firestore();
 
     try {
-      const settingsSnap = await db.collection("settings").doc("general").get();
+      const settingsSnap = await db.collection("settings").doc("public").get();
       if (settingsSnap.exists && settingsSnap.data().maintenanceMode) {
         document.querySelector("main").innerHTML =
           "<div class='card' style='max-width:520px;'><h1>Prebieha údržba</h1>" +
