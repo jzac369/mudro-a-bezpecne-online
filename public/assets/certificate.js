@@ -16,13 +16,25 @@
   var H = 848;       // logická výška
   var SCALE = 2;     // dvojnásobné rozlíšenie kvôli tlači
 
+  // Skúsime najprv načítať obrázok s crossOrigin="anonymous" — vďaka tomu
+  // vieme z neho neskôr čítať jednotlivé pixely (potrebné na odstránenie
+  // bieleho pozadia). Firebase Storage však CORS hlavičky pre takúto
+  // požiadavku nemusí posielať — vtedy prehliadač obrázok vôbec nenačíta
+  // (nie je to len "zafarbenie" plátna, načítanie rovno zlyhá). V takom
+  // prípade to skúsime ešte raz bez crossOrigin — obrázok sa aspoň
+  // zobrazí, len sa z neho nedá odstrániť pozadie.
   function loadImage(url) {
     return new Promise(function (resolve) {
       if (!url) { resolve(null); return; }
       var img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = function () { resolve(img); };
-      img.onerror = function () { resolve(null); };
+      img.onerror = function () {
+        var plain = new Image();
+        plain.onload = function () { resolve(plain); };
+        plain.onerror = function () { resolve(null); };
+        plain.src = url;
+      };
       img.src = url;
     });
   }
