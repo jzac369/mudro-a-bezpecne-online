@@ -2540,6 +2540,66 @@ exports.submitQuizResult = onCall(async (request) => {
   return { correct, total, passed, passThreshold };
 });
 
+/**
+ * Logo organizácie a podpis lektora sú uložené vo Firebase Storage bez
+ * CORS hlavičiek pre kurzy.digistart.sk — prehliadač by ich preto nevedel
+ * nakresliť do canvasu (certifikát je vykresľovaný ako obrázok na strane
+ * klienta). Namiesto konfigurácie CORS na buckete ich stiahneme tu, na
+ * serveri (Admin SDK obchádza CORS úplne, keďže nejde o požiadavku z
+ * prehliadača), a pošleme klientovi rovno ako data URL — tie sa dajú
+ * nakresliť do canvasu vždy, bez ohľadu na nastavenia bucketu.
+ */
+function storagePathFromDownloadUrl(url) {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const match = parsed.pathname.match(/\/o\/(.+)$/);
+    return match ? decodeURIComponent(match[1]) : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function downloadAsDataUrl(bucket, path) {
+  if (!path) return null;
+  try {
+    const file = bucket.file(path);
+    const [[buffer], [meta]] = await Promise.all([file.download(), file.getMetadata()]);
+    const contentType = (meta && meta.contentType) || "image/png";
+    return "data:" + contentType + ";base64," + buffer.toString("base64");
+  } catch (err) {
+    console.error("Nepodarilo sa stiahnuť súbor pre certifikát:", path, err);
+    return null;
+  }
+}
+
+exports.getCertificateBranding = onCall(async (request) => {
+  const isAdminUser = request.auth?.token?.admin === true;
+  const codeId = request.auth?.token?.codeId;
+  if (!isAdminUser && !codeId) {
+    throw new HttpsError("permission-denied", "Prístup len pre prihláseného účastníka alebo administrátora.");
+  }
+  const workshopId = isAdminUser ? (request.data && request.data.workshopId) : request.auth?.token?.workshopId;
+
+  const bucket = getStorage().bucket();
+  const [generalSnap, workshopSnap] = await Promise.all([
+    db.collection("settings").doc("general").get(),
+    workshopId ? db.collection("workshops").doc(workshopId).get() : Promise.resolve(null),
+  ]);
+
+  const logoPath = storagePathFromDownloadUrl(generalSnap.exists ? generalSnap.data().orgLogoUrl : null);
+  const signaturePath = storagePathFromDownloadUrl(
+    workshopSnap && workshopSnap.exists ? workshopSnap.data().lecturerSignatureUrl : null
+  );
+
+  const [logoDataUrl, signatureDataUrl] = await Promise.all([
+    downloadAsDataUrl(bucket, logoPath),
+    downloadAsDataUrl(bucket, signaturePath),
+  ]);
+
+  return { logoDataUrl, signatureDataUrl };
+});
+
 exports.sendCertificateEmail = onCall({ timeoutSeconds: 60 }, async (request) => {
   const codeId = request.auth?.token?.codeId;
   if (!codeId) {

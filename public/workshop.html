@@ -235,7 +235,7 @@
   };
   const state = {
     workshop: null, workshopId: null, codeId: null, db: null, ytPlayer: null, course: null,
-    sessionRef: null, sessionStart: null, doneSteps: new Set(), quizAnswers: [], orgLogoUrl: null,
+    sessionRef: null, sessionStart: null, doneSteps: new Set(), quizAnswers: [], orgLogoUrl: null, certBranding: null,
   };
 
   function showSavedToast() {
@@ -390,15 +390,34 @@
 
 
 
+  // Logo aj podpis sa do canvasu nedajú spoľahlivo nakresliť priamo z ich
+  // Storage URL (bucket nemá nastavené CORS hlavičky pre túto doménu) —
+  // preto ich vopred stiahneme cez getCertificateBranding (Admin SDK na
+  // serveri CORS obchádza) a dostaneme ich rovno ako data URL. Výsledok
+  // si na jedno zobrazenie certifikátu vyžiadame len raz.
+  async function loadCertBranding() {
+    if (state.certBranding) return state.certBranding;
+    try {
+      const getBranding = firebase.app().functions("europe-west1").httpsCallable("getCertificateBranding");
+      const res = await getBranding({});
+      state.certBranding = res.data || {};
+    } catch (err) {
+      console.error("Nepodarilo sa načítať logo/podpis pre certifikát:", err);
+      state.certBranding = {};
+    }
+    return state.certBranding;
+  }
+
   async function showCertificate(participantName) {
+    const branding = await loadCertBranding();
     const dataUrl = await window.drawCertificate({
       participantName: participantName,
       workshopTitle: state.workshop.title,
       workshopSubtitle: state.workshop.subtitle,
-      signatureUrl: state.workshop.lecturerSignatureUrl,
+      signatureUrl: branding.signatureDataUrl,
       codeId: state.codeId,
       workshopId: state.workshopId,
-      logoUrl: state.orgLogoUrl,
+      logoUrl: branding.logoDataUrl,
     });
     document.getElementById("cert-preview").src = dataUrl;
     document.getElementById("cert-download").href = dataUrl;
@@ -918,8 +937,10 @@
         btn.textContent = "Pripravujem PDF…";
         try {
           const src = document.getElementById("cert-preview").src;
-          // Certifikát je na šírku, preto stranu otočíme.
-          await window.savePdfFromImage(src, { filename: "certifikat.pdf", orientation: "landscape" });
+          // Certifikát je na šírku, preto stranu otočíme. Pomer strán
+          // certifikátu takmer presne zodpovedá A4 na šírku, preto ho
+          // vykreslíme bez okraja — má vyplniť celú stranu.
+          await window.savePdfFromImage(src, { filename: "certifikat.pdf", orientation: "landscape", margin: 0 });
         } catch (err) {
           console.error("PDF sa nepodarilo vytvoriť:", err);
           alert("PDF sa nepodarilo vytvoriť. Skúste to prosím znova, alebo si certifikát stiahnite ako obrázok.");
@@ -942,7 +963,7 @@
           // Pôvodný postup (prázdne okno + document.write) niekedy
           // pridával ďalšie prázdne strany navyše kvôli zásahu rozšírení
           // prehliadača do prázdneho okna.
-          const opened = await window.savePdfFromImage(src, { filename: "certifikat.pdf", orientation: "landscape", action: "open" });
+          const opened = await window.savePdfFromImage(src, { filename: "certifikat.pdf", orientation: "landscape", margin: 0, action: "open" });
           if (!opened) {
             alert("Prehliadač zablokoval otvorenie okna na tlač. Povoľte prosím vyskakovacie okná a skúste to znova, alebo si certifikát stiahnite tlačidlom vedľa.");
           }
@@ -964,7 +985,7 @@
         statusEl.textContent = "";
         try {
           const src = document.getElementById("cert-preview").src;
-          const pdfBase64 = await window.savePdfFromImage(src, { orientation: "landscape", action: "base64" });
+          const pdfBase64 = await window.savePdfFromImage(src, { orientation: "landscape", margin: 0, action: "base64" });
           const sendCertificateEmail = firebase.app().functions("europe-west1").httpsCallable("sendCertificateEmail");
           await sendCertificateEmail({ pdfBase64, workshopTitle: state.workshop.title });
           statusEl.textContent = "Certifikát bol odoslaný na váš e-mail (odkaz na stiahnutie).";
