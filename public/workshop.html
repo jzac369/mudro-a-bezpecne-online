@@ -20,7 +20,7 @@
 <script defer src="assets/worksheet.js"></script>
 <script defer src="assets/pdf-export.js"></script>
 <script defer src="assets/exercises.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script defer src="assets/vendor/qrcode-generator.js"></script>
 <script defer src="assets/certificate.js"></script>
 <script defer src="assets/flipbook.js"></script>
 <script defer src="assets/chat-widget.js"></script>
@@ -225,7 +225,7 @@
   };
   const state = {
     workshop: null, workshopId: null, codeId: null, db: null, ytPlayer: null, course: null,
-    sessionRef: null, sessionStart: null, doneSteps: new Set(), quizAnswers: [],
+    sessionRef: null, sessionStart: null, doneSteps: new Set(), quizAnswers: [], orgLogoUrl: null,
   };
 
   function showSavedToast() {
@@ -388,6 +388,7 @@
       signatureUrl: state.workshop.lecturerSignatureUrl,
       codeId: state.codeId,
       workshopId: state.workshopId,
+      logoUrl: state.orgLogoUrl,
     });
     document.getElementById("cert-preview").src = dataUrl;
     document.getElementById("cert-download").href = dataUrl;
@@ -980,6 +981,7 @@
         if (settingsSnap.exists && settingsSnap.data().inactivityMinutes) {
           inactivityMinutes = settingsSnap.data().inactivityMinutes;
         }
+        if (settingsSnap.exists) state.orgLogoUrl = settingsSnap.data().orgLogoUrl || null;
       } catch (err) {
         console.error("Nepodarilo sa načítať nastavenia neaktivity:", err);
       }

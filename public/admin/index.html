@@ -948,6 +948,17 @@
       <section class="dash-section" data-section="nastavenia">
         <h1>Nastavenia</h1>
 
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.4rem;">Logo organizácie</h2>
+          <p class="hint" style="margin-bottom:.8rem;">Zobrazuje sa napr. na certifikáte. Odporúčaný formát: PNG s priehľadným alebo bielym pozadím (biele pozadie sa automaticky odstráni).</p>
+          <div id="logo-current" style="margin-bottom:.8rem;"></div>
+          <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+            <input type="file" id="logo-file" accept=".png,.jpg,.jpeg,.svg">
+            <button class="btn btn-secondary" type="button" id="logo-upload-btn">Nahrať logo</button>
+            <span id="logo-upload-status" class="hint"></span>
+          </div>
+        </div>
+
         <form id="settings-form">
           <div class="card" style="margin-bottom:1.5rem;">
             <h2>Prístup a bezpečnosť</h2>
@@ -2156,10 +2167,57 @@ window.addEventListener("load", function () {
       document.getElementById("s-remind-unfinished-days").value = data.remindUnfinishedDays ?? 7;
       document.getElementById("s-remind-stale").checked = !!data.staleOrderEmailEnabled;
       document.getElementById("s-notify-email").value = data.notifyEmail || "";
+      renderLogoPreview(data.orgLogoUrl || null);
     } catch (err) {
       console.error("Nepodarilo sa načítať nastavenia:", err);
     }
   }
+
+  function renderLogoPreview(url) {
+    const el = document.getElementById("logo-current");
+    el.innerHTML = url
+      ? "<img src='" + url + "' alt='Logo' style='max-height:60px;max-width:220px;'> <button class='btn btn-secondary' type='button' id='logo-remove-btn' style='margin-left:.8rem;'>Odstrániť logo</button>"
+      : "<span class='hint'>Zatiaľ nenahraté — na certifikáte sa zobrazí len textová náhrada.</span>";
+    const removeBtn = document.getElementById("logo-remove-btn");
+    if (removeBtn) {
+      removeBtn.addEventListener("click", async () => {
+        if (!confirm("Naozaj odstrániť logo?")) return;
+        try {
+          await db.collection("settings").doc("general").set({ orgLogoUrl: null }, { merge: true });
+          generalSettingsCache.orgLogoUrl = null;
+          logActivity("settings", "Logo organizácie odstránené");
+          renderLogoPreview(null);
+        } catch (err) {
+          alert("Chyba: " + err.message);
+        }
+      });
+    }
+  }
+
+  document.getElementById("logo-upload-btn").addEventListener("click", async () => {
+    const fileInput = document.getElementById("logo-file");
+    const statusEl = document.getElementById("logo-upload-status");
+    const btn = document.getElementById("logo-upload-btn");
+    const file = fileInput.files[0];
+    if (!file) { statusEl.textContent = "Najprv vyberte súbor."; return; }
+    btn.disabled = true;
+    statusEl.textContent = "Nahrávam…";
+    try {
+      const storageRef = adminApp.storage().ref("branding/" + Date.now() + "_" + file.name);
+      await storageRef.put(file);
+      const url = await storageRef.getDownloadURL();
+      await db.collection("settings").doc("general").set({ orgLogoUrl: url }, { merge: true });
+      generalSettingsCache.orgLogoUrl = url;
+      logActivity("settings", "Logo organizácie nahraté");
+      statusEl.textContent = "Nahraté ✓";
+      fileInput.value = "";
+      renderLogoPreview(url);
+    } catch (err) {
+      statusEl.textContent = "Chyba: " + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   function buildSettingsPatch() {
     return {

@@ -69,6 +69,31 @@
     return String(n).padStart(10, "0");
   }
 
+  // Vykreslí QR kód priamo do canvasu (bez načítavania obrázka — knižnica
+  // window.qrcode vracia moduly synchrónne, takže farbu aj pozadie máme
+  // plne pod kontrolou a nezávisíme na externej sieťovej službe).
+  function drawQrCode(ctx, text, x, y, size, moduleColor) {
+    if (!window.qrcode) return false;
+    try {
+      var qr = window.qrcode(0, "M");
+      qr.addData(text);
+      qr.make();
+      var count = qr.getModuleCount();
+      var cell = size / count;
+      ctx.fillStyle = moduleColor;
+      for (var row = 0; row < count; row++) {
+        for (var col = 0; col < count; col++) {
+          if (qr.isDark(row, col)) {
+            ctx.fillRect(x + col * cell, y + row * cell, cell + 0.6, cell + 0.6);
+          }
+        }
+      }
+      return true;
+    } catch (err) {
+      return false; // certifikát sa vykreslí aj bez QR kódu
+    }
+  }
+
   function blob(ctx, x, y, r, color) {
     var g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, color);
@@ -136,25 +161,17 @@
       try { await document.fonts.ready; } catch (err) { /* nevadí */ }
     }
 
-    // Jedinečné číslo a QR kód — QR obsahuje overiteľné údaje priamo (bez
-    // závislosti na webovej stránke), aby fungoval, aj keby sa web zmenil.
+    // Jedinečné číslo certifikátu — QR kód (vykreslený nižšie) obsahuje
+    // overiteľné údaje priamo v sebe, bez závislosti na webovej stránke.
     var certNumber = certificateNumber(opts.codeId, opts.workshopId);
-    var qrImg = null;
-    if (window.QRCode) {
-      try {
-        var qrText =
-          "Certifikát — Vzdelávacie kurzy DigiStart\n" +
-          "Číslo certifikátu: " + certNumber + "\n" +
-          "Účastník: " + participantName + "\n" +
-          "Kurz: " + workshopTitle + "\n" +
-          "Prístupový kód: " + (opts.codeId || "—");
-        var qrDataUrl = await window.QRCode.toDataURL(qrText, {
-          margin: 1, width: 240,
-          color: { dark: "#1f3a3dff", light: "#00000000" },
-        });
-        qrImg = await loadImage(qrDataUrl);
-      } catch (err) { /* QR knižnica sa nenačítala — certifikát sa vykreslí aj bez QR kódu */ }
-    }
+    var qrText =
+      "Certifikát — Akadémia digitálneho vzdelávania DigiStart\n" +
+      "Číslo certifikátu: " + certNumber + "\n" +
+      "Účastník: " + participantName + "\n" +
+      "Kurz: " + workshopTitle + "\n" +
+      "Registračný kód: " + (opts.codeId || "—");
+
+    var logoImg = await loadImage(opts.logoUrl);
 
     var canvas = document.createElement("canvas");
     canvas.width = W * SCALE;
@@ -172,11 +189,20 @@
     blob(ctx, W - 100, H - 280, 170, "#e0a98f");
     ctx.globalAlpha = 1;
 
-    // Hlavička
+    // Hlavička — logo organizácie, ak je nahraté; inak textová náhrada.
     ctx.textAlign = "left";
-    ctx.font = "700 14px 'Atkinson Hyperlegible', sans-serif";
-    ctx.fillStyle = "#c17a2e";
-    ctx.fillText("V Z D E L Á V A C I E   K U R Z Y   D I G I S T A R T", 90, 90);
+    if (logoImg) {
+      var logoSource = removeWhiteBackground(logoImg);
+      var logoH = 46;
+      var logoNatW = logoImg.naturalWidth || logoImg.width;
+      var logoNatH = logoImg.naturalHeight || logoImg.height;
+      var logoW = (logoNatW / logoNatH) * logoH;
+      ctx.drawImage(logoSource, 90, 55, logoW, logoH);
+    } else {
+      ctx.font = "700 16px 'Atkinson Hyperlegible', sans-serif";
+      ctx.fillStyle = "#c17a2e";
+      ctx.fillText("Akadémia digitálneho vzdelávania DigiStart", 90, 90);
+    }
 
     ctx.textAlign = "center";
 
@@ -197,8 +223,12 @@
 
     ctx.font = "20px 'Atkinson Hyperlegible', sans-serif";
     ctx.fillStyle = "#332f28";
-    ctx.fillText("Tento certifikát vystavuje Vzdelávacie kurzy DigiStart za úspešné absolvovanie", W / 2, 410);
-    ctx.fillText("vzdelávacieho kurzu, ktorý absolvoval(a):", W / 2, 438);
+    var introLines = wrapLines(
+      ctx,
+      "Tento certifikát vystavuje Akadémia digitálneho vzdelávania DigiStart za úspešné absolvovanie vzdelávacieho kurzu, ktorý absolvoval(a):",
+      880
+    );
+    drawLines(ctx, introLines, W / 2, 405, 28);
 
     // Meno účastníka — pri dlhom mene zmenšíme písmo, aby sa zmestilo.
     ctx.fillStyle = "#c17a2e";
@@ -287,18 +317,19 @@
     ctx.textAlign = "left";
     ctx.fillText("www.kurzy.digistart.sk", 90, H - 50);
 
-    // QR kód a jedinečné číslo certifikátu — vpravo dole, mimo ostatného
-    // obsahu, aby nezasahovali do rámčeka s názvom kurzu ani do pätičky.
+    // QR kód, jedinečné číslo certifikátu a registračný kód — vpravo dole,
+    // mimo ostatného obsahu, aby nezasahovali do rámčeka s názvom kurzu
+    // ani do pätičky.
     var qrSize = 72;
     var qrX = W - 90 - qrSize;
-    var qrY = H - 46 - qrSize;
-    if (qrImg) {
-      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-    }
+    var qrY = H - 60 - qrSize;
+    drawQrCode(ctx, qrText, qrX, qrY, qrSize, "#1f3a3d");
+
     ctx.font = "10px 'Atkinson Hyperlegible', sans-serif";
     ctx.fillStyle = "#8a8474";
     ctx.textAlign = "right";
-    ctx.fillText("Certifikát č. " + certNumber, W - 90, H - 46 + 14);
+    ctx.fillText("Certifikát č. " + certNumber, W - 90, H - 60 + 14);
+    ctx.fillText("Registračný kód: " + (opts.codeId || "—"), W - 90, H - 60 + 28);
 
     return canvas.toDataURL("image/png");
   };
