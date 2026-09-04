@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vzdelávacie kurzy DigiStart — bezpečne v online svete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
@@ -13,136 +16,273 @@
 <script defer src="assets/app.js"></script>
 <script defer src="assets/chat-widget.js"></script>
 <style>
-  /* Táto stránka preberá presný grafický návrh z dodanej predlohy.
-     Veľkosti písma pri čitateľnom obsahu (nie ikonky v kruhových
-     odznakoch) sú zámerne cez calc(...*var(--font-scale)), aby na ňu
-     naďalej fungovali tlačidlá A-/A+ rovnako ako na zvyšku webu. */
+  /* ============================================================
+     Úvodná stránka DigiStart — vlastný dizajnový systém.
+     Triedy sú prefixované ds-* tam, kde by inak kolidovali so
+     zdieľaným assets/styles.css (topbar, brand, btn, course-card,
+     sub, num). Veľkosti čitateľného textu idú cez
+     calc(... * var(--font-scale)), aby fungovali tlačidlá A-/A+.
+     ============================================================ */
   :root {
-    --ink: #123e3d;
-    --green: #0e5a4e;
-    --green-2: #17685c;
-    --accent: #c9781d;
-    --cream: #fbf8f1;
-    --soft: #f4efe6;
-    --hline: #e6ddd0;
-    --muted: #66736f;
+    /* Farby */
+    --ink:        #10322f;   /* nadpisy, najtmavšia zelená */
+    --ink-2:      #33514c;   /* bežný text */
+    --muted:      #626d68;   /* doplnkový text (AA na všetkých podkladoch) */
+    --green:      #12554a;   /* hlavná značková zelená */
+    --green-dk:   #0c3f37;
+    --green-tint: #e7f0ea;   /* jemný zelený nádych */
+    --accent:     #c06a1f;   /* teplá oranžová — dekor, plochy */
+    --accent-tx:  #97500f;   /* tmavšia oranžová — text (kontrast AA) */
+    --paper:      #fdfaf4;   /* podklad stránky */
+    --paper-2:    #f6efe2;   /* teplý pás */
+    --card:       #ffffff;
+    --line:       #e7dcc9;   /* vlásočnicová linka */
+    --line-2:     #d5c7ae;
+
+    /* Rádiusy — pevná škála, žiadne bubliny */
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 16px;
+
+    /* Typografia */
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --sans: "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
+    --fs-micro: calc(13.5px * var(--font-scale));
+    --fs-small: calc(16px * var(--font-scale));
+    --fs-body:  calc(16.5px * var(--font-scale));
+    --fs-lead:  calc(18.5px * var(--font-scale));
+    --fs-h3:    calc(21px * var(--font-scale));
+    --fs-h2:    calc(31px * var(--font-scale));
+    --fs-h1:    calc(38px * var(--font-scale));
   }
-  body { background: #fff; color: var(--ink); font-family: Arial, Helvetica, sans-serif; }
 
-  /* Zdieľaný styles.css je stavaný na väčšie, vzdušnejšie rozloženie
-     (18px základ, riadkovanie 1.65, veľké okraje nadpisov). Tento
-     návrh má vlastnú, hustejšiu typografiu — preto ju tu pre obsah
-     úvodnej stránky nastavíme od nuly. Zvyšok webu to neovplyvní. */
-  .page { font-size: calc(16px * var(--font-scale)); line-height: 1.4; }
-  .page h1, .page h2, .page h3 { margin: 0; font-family: inherit; color: inherit; font-weight: 700; line-height: 1.25; text-wrap: initial; }
+  /* Zdieľaný styles.css je stavaný na iné rozloženie (18px základ,
+     riadkovanie 1.65, veľké okraje nadpisov). Pre obsah tejto stránky
+     ho tu prepíšeme. Zvyšok webu to neovplyvní. */
+  body { background: var(--paper); }
+  .page { font-family: var(--sans); font-size: var(--fs-body); line-height: 1.55; color: var(--ink-2); background: var(--paper); }
+  .page h1, .page h2, .page h3 { font-family: var(--serif); color: var(--ink); margin: 0; font-weight: 700; line-height: 1.2; text-wrap: initial; letter-spacing: -.01em; }
   .page p { margin: 0; font-size: inherit; }
-  .page ul { margin: 0; padding: 0; }
+  .page ul { margin: 0; padding: 0; list-style: none; }
   .page a { color: inherit; text-decoration: none; }
-  .wrap { width: min(1040px, calc(100% - 42px)); margin: 0 auto; }
+  /* Tlačidlá, ktoré sú odkazom, si musia farbu textu ustrážiť samy —
+     `.page a` má vyššiu špecificitu než samotná trieda tlačidla a inak
+     im podsunie farbu okolia (biely text na krémovom tlačidle a pod.). */
+  .page .mini-btn, .page .ds-num { color: #fff; }
+  .page .contact-cta { color: var(--green-dk); }
+  .page .ds-login { color: var(--green); }
+  .page .ds-login:hover { color: #fff; }
+  .page .mini-btn[disabled] { color: var(--muted); }
+  .page strong { color: var(--ink); }
+  .wrap { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+  @media (max-width: 620px) { .wrap { width: calc(100% - 32px); } }
 
-  .ds-topbar { height: 64px; border-bottom: 1px solid var(--hline); display: flex; align-items: center; background: #fff; }
-  .top-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-  .ds-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; }
-  .ds-brand-mark { width: 36px; height: 36px; border: 3px solid #4b8469; border-radius: 8px 8px 13px 13px; position: relative; flex: none; }
-  .ds-brand-mark::after { content: "✓"; position: absolute; inset: 0; display: grid; place-items: center; color: #4b8469; font-size: 22px; font-weight: 900; }
-  .ds-brand small { display: block; font-size: calc(11px * var(--font-scale)); color: #4b8469; font-weight: 700; margin-top: -2px; }
-  .page nav { display: flex; align-items: center; gap: 30px; font-size: calc(14px * var(--font-scale)); color: #263c3a; }
-  .access { display: flex; gap: 8px; align-items: center; }
-  .pill { border-radius: 999px; padding: 9px 16px; border: 1px solid #315c59; background: #fff; font-family: inherit; font-weight: 700; font-size: calc(14px * var(--font-scale)); line-height: 1.4; color: var(--ink); cursor: pointer; }
-  .pill.small { padding: 7px 10px; border: none; background: #f2eee6; }
-  @media (max-width: 900px) { .page nav { display: none; } }
-  @media (max-width: 620px) { .access .pill:not(.small) { display: none; } }
+  /* Spoločná hlavička sekcie: krátka oranžová linka + serifový nadpis */
+  .section-head { margin-bottom: 36px; }
+  .section-head::before { content: ""; display: block; width: 44px; height: 3px; border-radius: 2px; background: var(--accent); margin-bottom: 18px; }
+  .section-title { font-size: var(--fs-h2); max-width: 22ch; }
 
-  .hero { background: linear-gradient(90deg, #fbf8f2 0%, #fbf8f2 55%, #f7f0e7 100%); border-bottom: 1px solid var(--hline); }
-  .hero-main { display: grid; grid-template-columns: 1.16fr .84fr; min-height: 390px; align-items: center; gap: 28px; }
-  .eyebrow { color: var(--accent); font-weight: 800; font-size: calc(14px * var(--font-scale)); letter-spacing: .01em; margin-bottom: 12px; }
-  .hero h1 { font-size: calc(34px * var(--font-scale)); line-height: 1.23; margin: 0 0 16px; max-width: 600px; letter-spacing: -.5px; }
-  .hero-main > div > p { font-size: calc(16px * var(--font-scale)); max-width: 520px; color: #394f4c; margin: 0 0 24px; }
+  /* ---------- 1. HLAVIČKA ---------- */
+  .ds-topbar { background: var(--paper); border-bottom: 1px solid var(--line); }
+  .top-inner { display: flex; align-items: center; justify-content: space-between; gap: 28px; min-height: 78px; }
+  .ds-brand { display: flex; align-items: center; gap: 12px; }
+  .ds-brand-mark { width: 40px; height: 40px; flex: none; border-radius: 11px; background: var(--green); color: #fff; display: grid; place-items: center; }
+  .ds-brand-mark svg { width: 21px; height: 21px; }
+  .ds-brand-name { font-family: var(--serif); font-size: calc(20px * var(--font-scale)); font-weight: 700; color: var(--ink); line-height: 1.1; }
+  .ds-brand small { display: block; font-family: var(--sans); font-size: var(--fs-micro); font-weight: 400; color: var(--muted); letter-spacing: .04em; margin-top: 3px; }
+  .page nav { display: flex; align-items: center; gap: 26px; }
+  .page nav a { font-size: var(--fs-small); color: var(--ink-2); padding: 10px 0; position: relative; }
+  .page nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: 2px; height: 2px; background: var(--accent); opacity: 0; }
+  .page nav a:hover::after, .page nav a:focus-visible::after { opacity: 1; }
+  .access { display: flex; align-items: center; gap: 10px; }
+  /* A-/A+ zámerne tiché — pomocný nástroj, nie hlavná akcia */
+  .text-size { display: flex; gap: 4px; padding-right: 6px; }
+  .pill.small { width: 40px; height: 40px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); font-family: var(--sans); font-size: var(--fs-micro); font-weight: 700; cursor: pointer; }
+  .pill.small:hover { border-color: var(--line-2); color: var(--ink); background: #fff; }
+  .ds-login { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; border: 1.5px solid var(--green); border-radius: var(--r-md); background: transparent; color: var(--green); font-family: var(--sans); font-size: var(--fs-small); font-weight: 700; }
+  .ds-login svg { width: 17px; height: 17px; }
+  .ds-login:hover { background: var(--green); color: #fff; }
+  @media (max-width: 980px) { .page nav { display: none; } }
+  @media (max-width: 560px) { .ds-login span { display: none; } .ds-login { padding: 0 14px; } }
+
+  /* ---------- 2. HERO ---------- */
+  .hero { background: var(--paper-2); border-bottom: 1px solid var(--line); padding: 52px 0 0; }
+  .hero-main { display: grid; grid-template-columns: 1.14fr .86fr; gap: 52px; align-items: center; padding-bottom: 70px; }
+  .eyebrow { display: flex; align-items: center; gap: 12px; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--accent-tx); margin-bottom: 20px; }
+  .eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--accent); flex: none; }
+  .hero h1 { font-size: var(--fs-h1); line-height: 1.14; margin-bottom: 20px; }
+  .hero h1 em { font-style: normal; color: var(--accent-tx); }
+  .hero-lead { font-size: var(--fs-lead); color: var(--ink-2); max-width: 44ch; margin-bottom: 32px; }
   .actions { display: flex; gap: 14px; flex-wrap: wrap; }
-  .ds-btn { display: inline-flex; align-items: center; gap: 10px; padding: 13px 20px; border-radius: 10px; font-weight: 800; border: 1px solid var(--green); font-size: calc(15px * var(--font-scale)); }
-  .ds-btn.primary { background: var(--green); color: #fff; }
-  .ds-btn.secondary { background: #fff; }
-  .hero-photo { position: relative; height: 300px; overflow: hidden; border-radius: 14px; }
-  .hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
-  @media (max-width: 900px) { .hero-main { grid-template-columns: 1fr; } .hero-photo { height: 300px; } }
-  @media (max-width: 620px) { .hero h1 { font-size: calc(32px * var(--font-scale)); } }
+  .ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 0 26px; border-radius: var(--r-md); font-family: var(--sans); font-size: var(--fs-body); font-weight: 700; border: 1.5px solid transparent; }
+  .ds-btn svg { width: 18px; height: 18px; flex: none; }
+  .ds-btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
+  .ds-btn.primary:hover { background: var(--green-dk); border-color: var(--green-dk); }
+  .ds-btn.secondary { background: var(--card); color: var(--green); border-color: var(--line-2); }
+  .ds-btn.secondary:hover { border-color: var(--green); }
 
-  .feature-strip { margin-top: -1px; }
-  .feature-inner { display: grid; grid-template-columns: repeat(4, 1fr); background: #fff; border: 1px solid var(--hline); border-radius: 10px 10px 0 0; overflow: hidden; }
-  .feature { display: flex; gap: 12px; align-items: center; padding: 14px 14px; min-height: 68px; }
-  .feature-icon { width: 36px; height: 36px; border-radius: 50%; background: #f2eee5; display: grid; place-items: center; flex: 0 0 36px; color: #2f5c52; }
-  .feature-icon svg { width: 17px; height: 17px; }
-  .feature strong { font-size: calc(12px * var(--font-scale)); display: block; margin-bottom: 2px; }
-  .feature span { font-size: calc(11px * var(--font-scale)); color: #6c746f; }
-  @media (max-width: 900px) { .feature-inner { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 620px) { .feature-inner { grid-template-columns: 1fr; } }
+  /* Fotka nie je „obdĺžnik vedľa textu“: presahuje textový blok
+     nahor aj nadol a spoza pravého dolného rohu vykúka zelená plocha. */
+  .hero-visual { position: relative; }
+  .hero-visual::after { content: ""; position: absolute; right: -20px; bottom: -22px; width: 58%; height: 56%; background: var(--green-tint); border-radius: var(--r-lg); }
+  .hero-photo { position: relative; z-index: 1; height: 376px; border-radius: var(--r-lg); overflow: hidden; }
+  .hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+  @media (max-width: 900px) {
+    .hero { padding-top: 40px; }
+    .hero-main { grid-template-columns: 1fr; gap: 36px; padding-bottom: 66px; }
+    .hero-photo { height: 300px; }
+    .hero-visual::after { display: none; }
+  }
+  @media (max-width: 620px) {
+    :root { --fs-h1: calc(30px * var(--font-scale)); }
+    .ds-btn { width: 100%; }
+  }
 
-  .page section { padding: 24px 0; }
-  .section-title { text-align: center; font-size: calc(24px * var(--font-scale)); margin: 0 0 18px; letter-spacing: -.2px; }
+  /* ---------- 3. TRUST STRIP ---------- */
+  /* Prekrýva spodnú hranu hero pásu — jediné zámerné prekrytie na stránke. */
+  .trust { position: relative; z-index: 2; margin-top: -46px; }
+  .trust-inner { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+  .trust-item { display: flex; align-items: flex-start; gap: 14px; padding: 24px 22px; border-right: 1px solid var(--line); }
+  .trust-item:last-child { border-right: none; }
+  .trust-icon { width: 42px; height: 42px; flex: none; border-radius: 50%; background: var(--green-tint); color: var(--green); display: grid; place-items: center; }
+  .trust-icon svg { width: 20px; height: 20px; }
+  .trust-item strong { display: block; font-size: var(--fs-small); line-height: 1.35; margin-bottom: 3px; }
+  .trust-item span { display: block; font-size: var(--fs-micro); color: var(--muted); line-height: 1.4; }
+  @media (max-width: 900px) {
+    .trust-inner { grid-template-columns: 1fr 1fr; }
+    .trust-item:nth-child(2) { border-right: none; }
+    .trust-item:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  }
+  @media (max-width: 560px) {
+    .trust { margin-top: -36px; }
+    .trust-inner { grid-template-columns: 1fr; }
+    .trust-item { border-right: none; border-bottom: 1px solid var(--line); }
+    .trust-item:last-child { border-bottom: none; }
+  }
+
+  /* ---------- 4. KARTY KURZOV ---------- */
+  .page section { padding: 76px 0; }
   .courses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
-  .ds-course-card { border: 1px solid var(--hline); border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 1px 0 rgba(0,0,0,.02); }
-  .course-img { height: 140px; position: relative; overflow: hidden; background: var(--soft); border-radius: 8px 8px 0 0; }
-  .course-img img { width: 100%; height: 100%; object-fit: cover; }
-  .badge-circle { position: absolute; left: 18px; top: 16px; width: 48px; height: 48px; border-radius: 50%; background: rgba(35,111,77,.92); color: #fff; display: grid; place-items: center; border: 2px solid rgba(255,255,255,.55); font-weight: 800; font-size: 16px; }
-  .badge-circle svg { width: 22px; height: 22px; }
-  .badge-circle.orange { background: rgba(197,113,19,.93); }
-  .soon-ribbon { position: absolute; right: 12px; top: 12px; background: var(--ink); color: #fff; font-size: calc(11px * var(--font-scale)); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: .3rem .65rem; border-radius: 999px; }
-  .card-body { padding: 14px 16px 12px; }
-  .card-body h3 { font-size: calc(16px * var(--font-scale)); margin: 0 0 5px; }
-  .ds-sub { font-size: calc(11px * var(--font-scale)); color: #6f7773; margin-bottom: 10px; }
-  .checks { list-style: none; padding: 0; margin: 0 0 10px; font-size: calc(11px * var(--font-scale)); }
-  .checks li { margin: 7px 0; padding-left: 20px; position: relative; }
-  .checks li::before { content: "✓"; position: absolute; left: 0; color: #2c8a5f; font-weight: 900; }
-  .price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
-  .price { font-size: calc(19px * var(--font-scale)); font-weight: 900; }
-  .mini-btn { padding: 10px 14px; border-radius: 8px; background: var(--green); color: #fff; font-family: inherit; font-size: calc(12px * var(--font-scale)); font-weight: 800; line-height: 1.4; border: none; cursor: pointer; }
-  .mini-btn[disabled] { background: var(--hline); color: #8a8474; cursor: not-allowed; }
-  @media (max-width: 900px) { .courses { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 620px) { .courses { grid-template-columns: 1fr; } }
+  .ds-course-card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+  .course-img { position: relative; aspect-ratio: 16 / 9; background: var(--paper-2); overflow: hidden; }
+  .course-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Odznak drží typ kurzu a zároveň viaže fotku na obsah karty */
+  .badge-circle { position: absolute; left: 18px; bottom: -20px; width: 44px; height: 44px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; border: 3px solid var(--card); font-family: var(--sans); font-weight: 700; font-size: calc(13px * var(--font-scale)); }
+  .badge-circle svg { width: 20px; height: 20px; }
+  .badge-circle.orange { background: var(--accent); }
+  .card-body { display: flex; flex-direction: column; flex: 1; padding: 30px 22px 0; }
+  .card-body h3 { font-size: var(--fs-h3); margin-bottom: 6px; }
+  .ds-sub { font-size: var(--fs-small); color: var(--muted); margin-bottom: 14px; }
+  .checks { font-size: var(--fs-small); margin-bottom: 20px; }
+  .checks li { position: relative; padding-left: 27px; margin-bottom: 8px; line-height: 1.4; }
+  .checks li:last-child { margin-bottom: 0; }
+  .checks li::before { content: "✓"; position: absolute; left: 0; top: -1px; width: 19px; height: 19px; border-radius: 50%; background: var(--green-tint); color: var(--green); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+  /* Cena a CTA majú vlastnú zónu oddelenú linkou */
+  .price-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: auto; padding: 16px 0 20px; border-top: 1px solid var(--line); }
+  .price { font-family: var(--serif); font-size: calc(26px * var(--font-scale)); font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .mini-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 20px; border-radius: var(--r-md); background: var(--green); color: #fff; border: 1.5px solid var(--green); font-family: var(--sans); font-size: var(--fs-small); font-weight: 700; line-height: 1.2; cursor: pointer; white-space: nowrap; }
+  .mini-btn:hover { background: var(--green-dk); border-color: var(--green-dk); }
 
-  .how { background: #fdfaf5; }
-  .how-box { border-radius: 12px; background: #fbf7f1; border: 1px solid #f0e8dc; padding: 6px 22px 18px; }
-  .how-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; align-items: start; }
-  .step { text-align: center; padding: 0 14px; position: relative; }
-  .step:not(:last-child)::after { content: ""; position: absolute; top: 27px; right: -18px; width: 36px; border-top: 1px dashed #b8b7b2; }
-  .step-icon { width: 48px; height: 48px; border-radius: 50%; margin: 0 auto 10px; border: 1px solid #e8e2d7; background: #fff; display: grid; place-items: center; color: #2f5c52; position: relative; z-index: 1; }
-  .step-icon svg { width: 21px; height: 21px; }
-  .step strong { display: block; font-size: calc(12px * var(--font-scale)); margin-bottom: 3px; }
-  .step span { font-size: calc(11px * var(--font-scale)); color: #6e7672; }
-  @media (max-width: 900px) { .how-grid { grid-template-columns: 1fr 1fr; } .step:not(:last-child)::after { display: none; } }
-  @media (max-width: 620px) { .how-grid { grid-template-columns: 1fr; } }
+  /* Pripravovaný kurz — zámerne pokojný, nie „nedokončený“ */
+  .is-soon { background: #fcfaf6; }
+  .is-soon .course-img { display: grid; place-items: center; background: var(--paper-2); }
+  .is-soon .badge-circle { background: var(--line-2); color: #fff; }
+  .soon-ribbon { position: absolute; top: 16px; left: 16px; background: rgba(16,50,47,.9); color: #fff; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 7px 13px; border-radius: 999px; }
+  .soon-note { font-size: var(--fs-small); color: var(--muted); }
+  .mini-btn[disabled] { background: transparent; color: var(--muted); border: 1.5px dashed var(--line-2); cursor: not-allowed; }
+  .mini-btn[disabled]:hover { background: transparent; border-color: var(--line-2); }
+  @media (max-width: 980px) { .courses { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 680px) { .courses { grid-template-columns: 1fr; } .page section { padding: 56px 0; } }
 
-  .quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; background: #fdfaf5; border-radius: 12px; padding: 14px; }
-  .quote { display: flex; gap: 12px; background: #fff; border-radius: 9px; padding: 12px 14px; min-height: 92px; }
-  .quote .avatar { width: 52px; height: 52px; border-radius: 50%; flex: 0 0 52px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 18px; }
-  .quote p { margin: 0; font-size: calc(11px * var(--font-scale)); color: #5b6662; }
-  .quote b { display: block; margin-top: 7px; font-size: calc(11px * var(--font-scale)); }
-  @media (max-width: 900px) { .quotes { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 620px) { .quotes { grid-template-columns: 1fr; } }
+  /* ---------- 5. AKO TO FUNGUJE ---------- */
+  /* Teplý pás cez celú šírku + očíslovaná cesta zľava doprava */
+  .how { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .how-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; position: relative; }
+  /* Súvislá „chrbtica“ za číslami spája kroky do jednej cesty */
+  .how-grid::before { content: ""; position: absolute; top: 27px; left: 10%; right: 10%; height: 1px; background: var(--line-2); }
+  .step { position: relative; text-align: center; }
+  .step-num { position: relative; z-index: 1; width: 54px; height: 54px; margin: 0 auto 18px; border-radius: 50%; background: var(--card); border: 1px solid var(--line-2); color: var(--accent-tx); font-family: var(--serif); font-size: calc(19px * var(--font-scale)); font-weight: 700; display: grid; place-items: center; }
+  .step strong { display: block; font-size: var(--fs-small); line-height: 1.35; margin-bottom: 5px; }
+  .step span { display: block; font-size: var(--fs-micro); color: var(--muted); line-height: 1.45; }
+  @media (max-width: 900px) {
+    .how-grid { grid-template-columns: repeat(2, 1fr); gap: 32px 20px; }
+    .how-grid::before { display: none; }
+  }
+  @media (max-width: 560px) {
+    .how-grid { grid-template-columns: 1fr; gap: 26px; }
+    /* Číslo vľavo cez oba riadky, nadpis aj popis vpravo pod sebou —
+       inak by popis spadol do úzkeho stĺpca s číslom. */
+    .step { display: grid; grid-template-columns: 54px 1fr; column-gap: 16px; text-align: left; }
+    .step-num { grid-row: span 2; margin: 0; align-self: start; }
+    .step strong { grid-column: 2; align-self: center; margin-bottom: 2px; }
+    .step span { grid-column: 2; }
+  }
 
-  .contact { padding-top: 10px; }
-  .contact-box { display: grid; grid-template-columns: 210px 1.3fr .8fr .8fr; align-items: center; background: linear-gradient(90deg,#f7f1e8,#fbf7f2); border: 1px solid #efe4d6; border-radius: 10px; overflow: hidden; }
-  .contact-photo { height: 126px; overflow: hidden; }
-  .contact-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 28%; }
-  .ds-btn svg, .mini-btn svg { width: 16px; height: 16px; flex: none; }
-  .mini-btn { display: inline-flex; align-items: center; gap: 8px; }
-  .contact-copy { padding: 16px 20px; }
-  .contact-copy h3 { font-size: calc(21px * var(--font-scale)); margin: 0 0 8px; }
-  .contact-copy p { font-size: calc(12px * var(--font-scale)); color: #68736e; margin: 0; }
-  .phone { border-left: 1px solid #d9d0c4; padding: 0 20px; display: flex; align-items: center; gap: 12px; }
-  .phone-icon { width: 42px; height: 42px; border-radius: 50%; background: #fff; border: 1px solid #e4d9c9; display: grid; place-items: center; flex: none; color: var(--green); }
-  .phone-icon svg { width: 19px; height: 19px; }
-  .phone a { display: block; }
-  .phone .ds-num { font-size: calc(19px * var(--font-scale)); font-weight: 900; }
-  .phone .label, .phone .hours { font-size: calc(11px * var(--font-scale)); color: #6b736e; }
-  @media (max-width: 900px) { .contact-box { grid-template-columns: 150px 1fr; } .phone, .contact-box > .contact-cta { display: none; } }
-  @media (max-width: 620px) { .contact-box { grid-template-columns: 1fr; } .contact-photo { height: 180px; } }
+  /* ---------- 6. REFERENCIE ---------- */
+  .quotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; align-items: stretch; }
+  .quote { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 28px 26px 24px; position: relative; }
+  /* Jemné posunutie stredného stĺpca — mriežka nemá pôsobiť strojovo */
+  .quotes .quote:nth-child(2) { margin-top: 22px; }
+  .quote-mark { display: block; color: var(--accent); opacity: .5; margin-bottom: 14px; }
+  .quote-mark svg { width: 26px; height: 26px; display: block; }
+  .quote p { font-family: var(--serif); font-size: var(--fs-body); line-height: 1.6; color: var(--ink); margin-bottom: 22px; }
+  .quote-person { display: flex; align-items: center; gap: 14px; margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line); }
+  .avatar { width: 46px; height: 46px; flex: none; border-radius: 50%; background: var(--green-tint); color: var(--green); font-family: var(--serif); font-size: calc(19px * var(--font-scale)); font-weight: 700; display: grid; place-items: center; }
+  .quote b { font-family: var(--sans); font-size: var(--fs-small); color: var(--ink); font-weight: 700; }
+  @media (max-width: 900px) { .quotes { grid-template-columns: 1fr; } .quotes .quote:nth-child(2) { margin-top: 0; } }
 
-  .site-footer { border-top: 1px solid var(--hline); margin-top: 20px; padding: 18px 0 24px; }
-  .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; color: #6d7671; font-size: calc(11px * var(--font-scale)); flex-wrap: wrap; }
-  .footer-links { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
-  .footer-links span { max-width: 34ch; }
-  .footer-links a { font-weight: 700; color: var(--ink); }
+  /* ---------- 7. KONTAKT ---------- */
+  /* Tmavozelený pás uzatvára stránku a dáva jej záverečnú váhu */
+  .contact { background: var(--green); color: #fff; padding: 0 !important; }
+  .contact-box { display: grid; grid-template-columns: 300px 1fr; align-items: stretch; }
+  .contact-photo { position: relative; min-height: 300px; }
+  .contact-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
+  .contact-copy { padding: 56px 0 56px 56px; display: grid; grid-template-columns: 1.15fr auto; gap: 40px; align-items: center; }
+  .contact-copy h2 { color: #fff; font-size: calc(28px * var(--font-scale)); margin-bottom: 12px; }
+  .contact-copy > div > p { color: #cfe0d8; font-size: var(--fs-body); max-width: 44ch; }
+  .contact-actions { display: flex; flex-direction: column; gap: 20px; padding-right: max(56px, calc((100vw - 1120px) / 2)); }
+  .phone { display: flex; align-items: center; gap: 14px; }
+  .phone-icon { width: 48px; height: 48px; flex: none; border-radius: 50%; background: rgba(255,255,255,.12); display: grid; place-items: center; color: #fff; }
+  .phone-icon svg { width: 21px; height: 21px; }
+  .phone .label { font-size: var(--fs-micro); color: #a9c6ba; letter-spacing: .06em; text-transform: uppercase; }
+  .ds-num { display: block; font-family: var(--serif); font-size: calc(26px * var(--font-scale)); font-weight: 700; color: #fff; white-space: nowrap; line-height: 1.2; }
+  .hours { font-size: var(--fs-micro); color: #a9c6ba; }
+  .contact-cta { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 0 26px; border-radius: var(--r-md); background: var(--paper); color: var(--green-dk); font-family: var(--sans); font-size: var(--fs-body); font-weight: 700; }
+  .contact-cta svg { width: 18px; height: 18px; }
+  .contact-cta:hover { background: #fff; }
+  @media (max-width: 1040px) {
+    .contact-box { grid-template-columns: 220px 1fr; }
+    .contact-copy { grid-template-columns: 1fr; gap: 28px; padding: 44px 0 44px 40px; }
+    .contact-actions { padding-right: 40px; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  }
+  @media (max-width: 700px) {
+    .contact-box { grid-template-columns: 1fr; }
+    .contact-photo { min-height: 200px; }
+    .contact-copy { padding: 36px 24px; }
+    .contact-actions { padding: 0 24px 36px; flex-direction: column; align-items: stretch; gap: 22px; }
+    .contact-cta { width: 100%; }
+  }
+
+  /* Voliteľná sekcia konzultácií (zapína sa v nastaveniach) */
+  .consult-card { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r-md); padding: 30px 32px; max-width: 680px; }
+  .consult-card h2 { font-size: calc(24px * var(--font-scale)); margin-bottom: 10px; }
+  .consult-card p { margin-bottom: 22px; }
+
+  /* ---------- 8. PÄTIČKA ---------- */
+  .site-footer { background: var(--paper); padding: 48px 0 24px; }
+  .footer-top { display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+  .footer-about p { font-size: var(--fs-small); color: var(--muted); max-width: 40ch; margin-top: 14px; }
+  .footer-links { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: flex-start; align-content: flex-start; }
+  .footer-links a { font-size: var(--fs-small); color: var(--ink-2); padding: 4px 0; }
+  .footer-links a:hover { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+  .footer-bottom { padding-top: 18px; font-size: var(--fs-micro); color: var(--muted); }
+  /* Právny riadok doplní app.js na koniec stránky — zladíme ho s pätičkou */
+  #mbo-footer { font-family: var(--sans); font-size: var(--fs-micro) !important; color: var(--muted) !important; background: var(--paper); padding: 0 0 34px !important; }
+  @media (max-width: 700px) { .footer-top { grid-template-columns: 1fr; gap: 30px; } }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ds-btn, .mini-btn, .ds-login, .pill.small, .page nav a::after, .contact-cta { transition: background-color .18s ease, border-color .18s ease, color .18s ease, opacity .18s ease; }
+  }
 </style>
 </head>
 <body>
@@ -151,8 +291,8 @@
 <header class="ds-topbar">
   <div class="wrap top-inner">
     <a class="ds-brand" href="index.html">
-      <div class="ds-brand-mark"></div>
-      <div>DigiStart<small>Vzdelávacie kurzy</small></div>
+      <span class="ds-brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg></span>
+      <span class="ds-brand-name">DigiStart<small>Vzdelávacie kurzy</small></span>
     </a>
     <nav aria-label="Hlavná navigácia">
       <a href="#kurzy">Kurzy</a>
@@ -161,10 +301,15 @@
       <a href="#preco-digistart">O projekte</a>
       <a href="#kontakt">Kontakt</a>
     </nav>
-    <div class="access" aria-label="Veľkosť textu a prihlásenie">
-      <button type="button" class="pill small" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
-      <button type="button" class="pill small" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
-      <a class="pill" href="prihlasenie.html">Mám kód, chcem sa prihlásiť →</a>
+    <div class="access">
+      <div class="text-size" aria-label="Veľkosť textu">
+        <button type="button" class="pill small" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+        <button type="button" class="pill small" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+      </div>
+      <a class="ds-login" href="prihlasenie.html">
+        <span>Mám kód, chcem sa prihlásiť</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
     </div>
   </div>
 </header>
@@ -172,9 +317,9 @@
 <section class="hero">
   <div class="wrap hero-main">
     <div>
-      <div class="eyebrow">JEDNODUCHÉ ONLINE KURZY</div>
-      <h1>Cítite sa istejšie<br>a <span style="color:var(--accent);">bezpečnejšie</span> v digitálnom svete</h1>
-      <p>Zrozumiteľné video lekcie, praktické cvičenia a podpora krok za krokom. Bez technického žargónu. Vhodné aj pre úplných začiatočníkov.</p>
+      <div class="eyebrow">Jednoduché online kurzy</div>
+      <h1>Cítite sa istejšie<br>a <em>bezpečnejšie</em> v digitálnom svete</h1>
+      <p class="hero-lead">Zrozumiteľné video lekcie, praktické cvičenia a podpora krok za krokom. Bez technického žargónu. Vhodné aj pre úplných začiatočníkov.</p>
       <div class="actions">
         <a class="ds-btn primary" href="#kurzy">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h8"/></svg>
@@ -186,35 +331,40 @@
         </a>
       </div>
     </div>
-    <div class="hero-photo">
-      <img src="assets/hero/senior-couple-laptop.jpg" alt="Seniorský pár sa spolu s úsmevom pozerá na notebook" onerror="this.style.display='none';">
-    </div>
-  </div>
-  <div class="wrap feature-strip">
-    <div class="feature-inner">
-      <div class="feature">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg></div>
-        <div><strong>Bezpečne na internete</strong><span>každý deň</span></div>
-      </div>
-      <div class="feature">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="18" cy="9" r="2.6"/><path d="M15.5 20a5 5 0 0 1 6.8-4.7"/></svg></div>
-        <div><strong>Vhodné pre seniorov</strong><span>a začiatočníkov</span></div>
-      </div>
-      <div class="feature">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 12.8 6.5 21l5.5-3 5.5 3-1.7-8.2"/></svg></div>
-        <div><strong>Certifikát a brožúra</strong><span>na záver každého kurzu</span></div>
-      </div>
-      <div class="feature">
-        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
-        <div><strong>Bez hesla</strong><span>prihlasujete sa len kódom</span></div>
+    <div class="hero-visual">
+      <div class="hero-photo">
+        <img src="assets/hero/senior-couple-laptop.jpg" alt="Seniorský pár sa spolu s úsmevom pozerá na notebook" onerror="this.style.display='none';">
       </div>
     </div>
   </div>
 </section>
 
+<div class="wrap trust">
+  <div class="trust-inner">
+    <div class="trust-item">
+      <span class="trust-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg></span>
+      <div><strong>Bezpečne na internete</strong><span>každý deň</span></div>
+    </div>
+    <div class="trust-item">
+      <span class="trust-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="18" cy="9" r="2.6"/><path d="M15.5 20a5 5 0 0 1 6.8-4.7"/></svg></span>
+      <div><strong>Vhodné pre seniorov</strong><span>a začiatočníkov</span></div>
+    </div>
+    <div class="trust-item">
+      <span class="trust-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 12.8 6.5 21l5.5-3 5.5 3-1.7-8.2"/></svg></span>
+      <div><strong>Certifikát a brožúra</strong><span>na záver každého kurzu</span></div>
+    </div>
+    <div class="trust-item">
+      <span class="trust-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+      <div><strong>Bez hesla</strong><span>prihlasujete sa len kódom</span></div>
+    </div>
+  </div>
+</div>
+
 <section id="kurzy" aria-label="Ponuka kurzov">
   <div class="wrap">
-    <h2 class="section-title">Vyberte si kurz, ktorý vás posunie vpred</h2>
+    <div class="section-head">
+      <h2 class="section-title">Vyberte si kurz, ktorý vás posunie vpred</h2>
+    </div>
     <div class="courses">
 
       <article class="ds-course-card" id="card-bezpecne-financie">
@@ -251,11 +401,11 @@
         </div>
       </article>
 
-      <article class="ds-course-card">
-        <div class="course-img" style="display:flex;align-items:center;justify-content:center;">
+      <article class="ds-course-card is-soon">
+        <div class="course-img">
           <span class="soon-ribbon">Pripravujeme</span>
+          <svg viewBox="0 0 24 24" width="58" height="58" fill="none" stroke="#c3b69f" stroke-width="1.3"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8M12 17v3M6.5 8.5h7M6.5 12h4"/></svg>
           <div class="badge-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/></svg></div>
-          <svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="#c8bfae" stroke-width="1.4"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8M12 17v3M6.5 8.5h7M6.5 12h4"/></svg>
         </div>
         <div class="card-body">
           <h3>Digitálne zručnosti do praxe</h3>
@@ -265,7 +415,7 @@
             <li>Komunikujete s blízkymi — e-mail, správy, videohovory</li>
             <li>Ukladáte súbory a pracujete s fotkami bezpečne</li>
           </ul>
-          <div class="price-row"><span class="ds-sub" style="margin:0;">Čoskoro k dispozícii</span><button class="mini-btn" type="button" disabled>Pripravujeme</button></div>
+          <div class="price-row"><span class="soon-note">Čoskoro k dispozícii</span><button class="mini-btn" type="button" disabled>Pripravujeme</button></div>
         </div>
       </article>
 
@@ -274,27 +424,29 @@
 </section>
 
 <section class="how" id="ako-to-funguje">
-  <div class="wrap how-box">
-    <h2 class="section-title">Ako to funguje</h2>
+  <div class="wrap">
+    <div class="section-head">
+      <h2 class="section-title">Ako to funguje</h2>
+    </div>
     <div class="how-grid">
       <div class="step">
-        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+        <div class="step-num">1</div>
         <strong>Získajte prístupový kód</strong><span>od organizácie alebo partnera</span>
       </div>
       <div class="step">
-        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <div class="step-num">2</div>
         <strong>Prihláste sa jednoducho</strong><span>bez hesla, len kódom</span>
       </div>
       <div class="step">
-        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5v-7Z"/></svg></div>
+        <div class="step-num">3</div>
         <strong>Učte sa vlastným tempom</strong><span>krátke lekcie, praktické úlohy</span>
       </div>
       <div class="step">
-        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 12.8 6.5 21l5.5-3 5.5 3-1.7-8.2"/></svg></div>
+        <div class="step-num">4</div>
         <strong>Získajte certifikát</strong><span>po úspešnom dokončení kurzu</span>
       </div>
       <div class="step">
-        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1.5 5.5 4 2-2.5 3.5-4 5.5-4 3.5 0 6 3.5 4 7.5C19 16.65 12 21 12 21Z"/></svg></div>
+        <div class="step-num">5</div>
         <strong>Cíťte sa istejšie online</strong><span>využívajte technológie s radosťou</span>
       </div>
     </div>
@@ -303,29 +455,43 @@
 
 <section class="testimonials" id="preco-digistart">
   <div class="wrap">
-    <h2 class="section-title">Prečo si kurzy obľúbili seniori</h2>
+    <div class="section-head">
+      <h2 class="section-title">Prečo si kurzy obľúbili seniori</h2>
+    </div>
     <div class="quotes">
       <div class="quote">
-        <div class="avatar" style="background:#2f6b6e;">A</div>
-        <div><p>„Kurz bol veľmi zrozumiteľný a konečne viem, ako sa chrániť pred podvodníkmi. Odporúčam každému, kto chce byť v bezpečí.“</p><b>Anna, 67 rokov</b></div>
+        <span class="quote-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.6 5.2C6.5 6.6 4.6 9.3 4.6 12.6c0 3.3 1.9 5.4 4.4 5.4 2.1 0 3.6-1.5 3.6-3.5 0-1.9-1.3-3.3-3.1-3.3-.4 0-.8.1-1 .2.3-1.6 1.7-3.2 3.5-4.1l-2.4-2.1Zm9.1 0c-3.1 1.4-5 4.1-5 7.4 0 3.3 1.9 5.4 4.4 5.4 2.1 0 3.6-1.5 3.6-3.5 0-1.9-1.3-3.3-3.1-3.3-.4 0-.8.1-1 .2.3-1.6 1.7-3.2 3.5-4.1l-2.4-2.1Z"/></svg></span>
+        <p>„Kurz bol veľmi zrozumiteľný a konečne viem, ako sa chrániť pred podvodníkmi. Odporúčam každému, kto chce byť v bezpečí.“</p>
+        <div class="quote-person">
+          <span class="avatar" aria-hidden="true">A</span>
+          <b>Anna, 67 rokov</b>
+        </div>
       </div>
       <div class="quote">
-        <div class="avatar" style="background:#c17a2e;">M</div>
-        <div><p>„Spočiatku som sa bál, ale teraz už viem, ako mi vie pomôcť. Všetko bolo vysvetlené jednoducho a trpezlivo.“</p><b>Milan, 71 rokov</b></div>
+        <span class="quote-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.6 5.2C6.5 6.6 4.6 9.3 4.6 12.6c0 3.3 1.9 5.4 4.4 5.4 2.1 0 3.6-1.5 3.6-3.5 0-1.9-1.3-3.3-3.1-3.3-.4 0-.8.1-1 .2.3-1.6 1.7-3.2 3.5-4.1l-2.4-2.1Zm9.1 0c-3.1 1.4-5 4.1-5 7.4 0 3.3 1.9 5.4 4.4 5.4 2.1 0 3.6-1.5 3.6-3.5 0-1.9-1.3-3.3-3.1-3.3-.4 0-.8.1-1 .2.3-1.6 1.7-3.2 3.5-4.1l-2.4-2.1Z"/></svg></span>
+        <p>„Spočiatku som sa bál, ale teraz už viem, ako mi vie pomôcť. Všetko bolo vysvetlené jednoducho a trpezlivo.“</p>
+        <div class="quote-person">
+          <span class="avatar" aria-hidden="true">M</span>
+          <b>Milan, 71 rokov</b>
+        </div>
       </div>
       <div class="quote">
-        <div class="avatar" style="background:#2f6b49;">Z</div>
-        <div><p>„Vďaka kurzu som si začala vybavovať veci na internete a ušetrím čas aj cestu. Skvelá skúsenosť!“</p><b>Zuzana, 64 rokov</b></div>
+        <span class="quote-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.6 5.2C6.5 6.6 4.6 9.3 4.6 12.6c0 3.3 1.9 5.4 4.4 5.4 2.1 0 3.6-1.5 3.6-3.5 0-1.9-1.3-3.3-3.1-3.3-.4 0-.8.1-1 .2.3-1.6 1.7-3.2 3.5-4.1l-2.4-2.1Zm9.1 0c-3.1 1.4-5 4.1-5 7.4 0 3.3 1.9 5.4 4.4 5.4 2.1 0 3.6-1.5 3.6-3.5 0-1.9-1.3-3.3-3.1-3.3-.4 0-.8.1-1 .2.3-1.6 1.7-3.2 3.5-4.1l-2.4-2.1Z"/></svg></span>
+        <p>„Vďaka kurzu som si začala vybavovať veci na internete a ušetrím čas aj cestu. Skvelá skúsenosť!“</p>
+        <div class="quote-person">
+          <span class="avatar" aria-hidden="true">Z</span>
+          <b>Zuzana, 64 rokov</b>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
 <section id="consultation-section" style="display:none;">
-  <div class="wrap" style="max-width:640px;">
-    <div style="border:1px solid var(--hline);border-radius:10px;padding:1.4rem 1.6rem;">
-      <h2 style="margin-top:0;">Potrebujete osobnú pomoc?</h2>
-      <p style="color:#5b6662;">Dohodnite si krátku video alebo telefonickú konzultáciu priamo s lektorom — poradíme s konkrétnym
+  <div class="wrap">
+    <div class="consult-card">
+      <h2>Potrebujete osobnú pomoc?</h2>
+      <p>Dohodnite si krátku video alebo telefonickú konzultáciu priamo s lektorom — poradíme s konkrétnym
         problémom, nastavením telefónu alebo otázkou k umelej inteligencii.</p>
       <a class="mini-btn" href="konzultacia.html">Rezervovať konzultáciu</a>
     </div>
@@ -333,41 +499,50 @@
 </section>
 
 <section class="contact" id="kontakt">
-  <div class="wrap contact-box">
+  <div class="contact-box">
     <div class="contact-photo">
       <img src="assets/hero/kontakt-podpora.jpg" alt="Usmiata pracovníčka podpory DigiStart" onerror="this.style.display='none';">
     </div>
     <div class="contact-copy">
-      <h3>Potrebujete osobnú pomoc?</h3>
-      <p>Sme tu pre vás. Napíšte nám alebo zavolajte, radi poradíme s výberom kurzu, alebo s čímkoľvek, čo nie je jasné.</p>
-    </div>
-    <div class="phone">
-      <span class="phone-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.9a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.8 2Z"/></svg></span>
       <div>
-        <div class="label">Zavolajte nám</div>
-        <a class="ds-num" href="tel:+421951516615">0951 516 615</a>
-        <div class="hours">Po–Pia: 8:00–16:00</div>
+        <h2>Potrebujete osobnú pomoc?</h2>
+        <p>Sme tu pre vás. Napíšte nám alebo zavolajte, radi poradíme s výberom kurzu, alebo s čímkoľvek, čo nie je jasné.</p>
       </div>
-    </div>
-    <div class="contact-cta" style="padding:0 18px;">
-      <a class="mini-btn" href="konzultacia.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-        Dohodnúť konzultáciu
-      </a>
+      <div class="contact-actions">
+        <div class="phone">
+          <span class="phone-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.9a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.8 2Z"/></svg></span>
+          <div>
+            <div class="label">Zavolajte nám</div>
+            <a class="ds-num" href="tel:+421951516615">0951 516 615</a>
+            <div class="hours">Po–Pia: 8:00–16:00</div>
+          </div>
+        </div>
+        <a class="contact-cta" href="konzultacia.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          Dohodnúť konzultáciu
+        </a>
+      </div>
     </div>
   </div>
 </section>
 
 <footer class="site-footer">
-  <div class="wrap footer-inner">
-    <div class="ds-brand"><div class="ds-brand-mark"></div><div>DigiStart<small>Vzdelávacie kurzy</small></div></div>
-    <div class="footer-links">
-      <span>Pomáhame ľuďom cítiť sa bezpečne a isto v digitálnom svete.</span>
-      <a href="#preco-digistart">O projekte</a>
-      <a href="caste-otazky.html">Časté otázky</a>
-      <a href="ochrana-osobnych-udajov.html">Ochrana osobných údajov</a>
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-about">
+        <div class="ds-brand">
+          <span class="ds-brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span class="ds-brand-name">DigiStart<small>Vzdelávacie kurzy</small></span>
+        </div>
+        <p>Pomáhame ľuďom cítiť sa bezpečne a isto v digitálnom svete.</p>
+      </div>
+      <nav class="footer-links" aria-label="Odkazy v pätičke">
+        <a href="#preco-digistart">O projekte</a>
+        <a href="caste-otazky.html">Časté otázky</a>
+        <a href="ochrana-osobnych-udajov.html">Ochrana osobných údajov</a>
+      </nav>
     </div>
-    <div>© <span id="footer-year"></span> DigiStart</div>
+    <div class="footer-bottom">© <span id="footer-year"></span> DigiStart</div>
   </div>
 </footer>
 
@@ -472,7 +647,7 @@
         const saleActive = data.showOriginalPrice && data.originalPrice && (!data.saleEndAt || data.saleEndAt >= today);
         if (saleActive) {
           el.innerHTML =
-            "<span style='text-decoration:line-through;color:#8a8474;font-weight:400;font-size:.8em;margin-right:.4rem;'>" + data.originalPrice + " €</span>" +
+            "<span style='text-decoration:line-through;color:var(--muted);font-weight:400;font-size:.62em;margin-right:.4rem;'>" + data.originalPrice + " €</span>" +
             "<span>" + data.price + " €</span>";
         } else {
           el.textContent = data.price + " €";
