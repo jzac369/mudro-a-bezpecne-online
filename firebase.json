@@ -3,7 +3,10 @@
     {
       "source": "functions",
       "codebase": "default",
-      "ignore": ["node_modules", ".git", "firebase-debug.log", "firestore-debug.log"]
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "firestore-debug.log"],
+      "predeploy": [
+        "node functions/scripts/sync-workshops-data.js"
+      ]
     }
   ],
   "firestore": {

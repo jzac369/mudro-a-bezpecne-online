@@ -18,6 +18,14 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.codeId == codeId;
     }
 
+    // "Je prihlásený" nestačí samo o sebe — Firebase pozná aj anonymné
+    // prihlásenie (bez overeného prístupového kódu), ktoré tiež spĺňa
+    // `request.auth != null`. Skutočný účastník kurzu má vždy claim
+    // `codeId`, pridelený až po overení platného kódu.
+    function isParticipant() {
+      return request.auth != null && request.auth.token.codeId != null;
+    }
+
     function isOwnChat(chatId) {
       return request.auth != null &&
         get(/databases/$(database)/documents/chats/$(chatId)).data.visitorUid == request.auth.uid;
@@ -38,7 +46,7 @@ service cloud.firestore {
     // Textové úpravy obrazoviek interaktívneho kurzu (nastavené v admin zóne).
     // Číta ktokoľvek prihlásený (účastník workshopu), zapisuje len administrátor.
     match /courseContent/{slideId} {
-      allow read: if request.auth != null;
+      allow read: if isAdmin() || isParticipant();
       allow write: if isAdmin();
     }
 
@@ -50,7 +58,7 @@ service cloud.firestore {
     // (režim údržby, platobné údaje) automaticky kopíruje funkciou
     // syncPublicSettings pri každej zmene settings/general.
     match /settings/{settingId} {
-      allow read: if request.auth != null;
+      allow read: if isAdmin() || isParticipant();
       allow write: if isAdmin();
     }
 
@@ -121,16 +129,21 @@ service cloud.firestore {
       allow write: if isOwnCode(codeId);
     }
 
+    // Výsledky kvízu zapisuje výhradne funkcia submitQuizResult (Admin SDK),
+    // ktorá ich sama vyhodnotí zo svojej vlastnej kópie správnych odpovedí —
+    // účastník si tak nemôže priamym zápisom do databázy vymyslieť "passed".
     match /quizResults/{resultId} {
       allow read: if isAdmin() || isOwnCode(resource.data.codeId);
-      allow create: if isOwnCode(request.resource.data.codeId);
-      allow update, delete: if false; // výsledky sa neprepisujú, len pridávajú
+      allow create, update, delete: if false;
     }
 
     match /sessions/{sessionId} {
       allow read: if isAdmin() || isOwnCode(resource.data.codeId);
       allow create: if isOwnCode(request.resource.data.codeId);
-      allow update: if isOwnCode(resource.data.codeId);
+      // Vlastník relácie ju smie upravovať (napr. dĺžku trvania pri
+      // odhlásení), ale nesmie prepísať, komu relácia patrí — inak by sa
+      // dal cudzí kód "znečistiť" podvrhnutou reláciou.
+      allow update: if isOwnCode(resource.data.codeId) && request.resource.data.codeId == resource.data.codeId;
       allow delete: if false;
     }
 

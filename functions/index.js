@@ -11,6 +11,11 @@ const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const dns = require("dns").promises;
 const archiver = require("archiver");
+// Rovnaké dáta kurzov (vrátane správnych odpovedí kvízu), aké používa
+// prehliadač — kopírované sem z public/data/workshops.js pri každom
+// nasadení (pozri firebase.json "predeploy"), aby server vedel kvíz
+// vyhodnotiť nezávisle od klienta.
+const WORKSHOPS_QUIZ = require("./data/workshops.js");
 
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
@@ -680,7 +685,20 @@ exports.createAdmin = onCall(async (request) => {
   let user;
   try {
     user = await getAuth().getUserByEmail(email);
+    // Bezpečnostná poistka: ak tento e-mail už patrí inému typu účtu
+    // (napr. affiliate partnerovi), nepovýšime ho ticho na admina —
+    // taký účet by si ponechal heslo, ktoré pozná pôvodný (nižšie
+    // dôveryhodný) vlastník. Rovnaká poistka, akú má createAffiliateLogin
+    // v opačnom smere.
+    if (user.customClaims && user.customClaims.admin !== true && Object.keys(user.customClaims).length > 0) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Tento e-mail už patrí inému typu účtu (napr. partnerskému). Použite prosím iný e-mail pre nový administrátorský účet."
+      );
+    }
+    await getAuth().updateUser(user.uid, { password });
   } catch (err) {
+    if (err instanceof HttpsError) throw err;
     user = await getAuth().createUser({ email, password });
   }
   await getAuth().setCustomUserClaims(user.uid, { admin: true });
@@ -1008,6 +1026,17 @@ exports.notifyOfflineChatMessage = onDocumentCreated(
     const settings = await getSettings();
     if (!settings.notifyEmail) return;
 
+    // Tento trigger sa spúšťa automaticky pri zápise do databázy (nie cez
+    // tlačidlo), takže naň nepôsobí bežný limit podľa IP adresy — chráni
+    // ho preto aspoň spoločný, celkový strop, nech sa nedá zahltiť váš
+    // e-mailový účet ani administrátorská schránka.
+    try {
+      await enforceRateLimit("notifyOfflineChatMessage", "global", 20, 60);
+    } catch (err) {
+      console.error("notifyOfflineChatMessage: prekročený limit notifikácií, e-mail sa neposiela.");
+      return;
+    }
+
     let firstMessage = "";
     try {
       const msgsSnap = await db.collection("chats").doc(event.params.chatId).collection("messages").orderBy("createdAt", "asc").limit(1).get();
@@ -1063,6 +1092,22 @@ exports.bookConsultation = onCall(async (request) => {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
     throw new HttpsError("invalid-argument", "Zadaná e-mailová adresa nie je platná.");
   }
+  // Formát dátumu/času overíme ešte pred akýmkoľvek výpočtom — inak by sa
+  // dal poslať nezmyselný reťazec, ktorý by "znečistil" výpočet dostupnosti
+  // (napr. neplatný čas by sa uložil ako termín, ktorý sa nedá zrušiť ani
+  // s ktorým sa nedá počítať pri hľadaní kolízií pre ostatných záujemcov).
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(startTime)) {
+    throw new HttpsError("invalid-argument", "Neplatný formát dátumu alebo času.");
+  }
+  const requestedDate = new Date(date + "T00:00:00");
+  if (Number.isNaN(requestedDate.getTime())) {
+    throw new HttpsError("invalid-argument", "Neplatný dátum.");
+  }
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const maxFuture = new Date(); maxFuture.setDate(maxFuture.getDate() + 180);
+  if (requestedDate < todayStart || requestedDate > maxFuture) {
+    throw new HttpsError("invalid-argument", "Zvolený dátum je mimo rozsahu, v ktorom je možné konzultáciu rezervovať.");
+  }
   await enforceRateLimit("bookConsultation", getRequestIp(request), 5, 60);
 
   const settings = await getConsultationSettings();
@@ -1072,10 +1117,13 @@ exports.bookConsultation = onCall(async (request) => {
 
   const bookingsSnap = await db.collection("consultationBookings").where("date", "==", date).get();
   const existing = bookingsSnap.docs.map((d) => d.data()).filter((b) => b.status !== "cancelled");
-  const startMin = timeToMinutes(startTime), endMin = timeToMinutes(endTime);
-  const collision = existing.some((b) => startMin < timeToMinutes(b.endTime) && endMin > timeToMinutes(b.startTime));
-  if (collision) {
-    throw new HttpsError("already-exists", "Tento termín je už, žiaľ, obsadený. Vyberte prosím iný.");
+
+  // Termín musí byť skutočne jedným z voľných termínov vypočítaných z
+  // nakonfigurovanej týždennej dostupnosti — nielen "nekoliduje s niečím
+  // existujúcim", ale aj "je vôbec v čase, kedy niekto konzultácie ponúka".
+  const freeSlots = computeFreeSlots(date, durationMin, settings.availability, existing);
+  if (!freeSlots.some((s) => s.start === startTime && s.end === endTime)) {
+    throw new HttpsError("already-exists", "Tento termín je už, žiaľ, obsadený alebo nie je k dispozícii. Vyberte prosím iný.");
   }
 
   const amount = durationMin === 30 ? settings.price30 : settings.price60;
@@ -2439,12 +2487,66 @@ async function sendCertificateSmtpEmail({ to, name, workshopTitle, url }) {
   }
 }
 
+/**
+ * Vyhodnotenie záverečného kvízu — VÝHRADNE na serveri, z vlastnej kópie
+ * otázok/správnych odpovedí (WORKSHOPS_QUIZ), nie podľa toho, čo si klient
+ * sám vypočíta a pošle. Účastník tak nemôže zapísať vymyslený výsledok
+ * (napr. rovno "passed: true" cez konzolu prehliadača) — to isté ID kurzu
+ * sa navyše berie z prihlasovacieho tokenu, nie z parametra v URL adrese.
+ */
+exports.submitQuizResult = onCall(async (request) => {
+  const codeId = request.auth?.token?.codeId;
+  const workshopId = request.auth?.token?.workshopId;
+  if (!codeId || !workshopId) {
+    throw new HttpsError("permission-denied", "Kvíz môže odovzdať len prihlásený účastník kurzu.");
+  }
+  const { answers } = request.data || {};
+  if (!Array.isArray(answers)) {
+    throw new HttpsError("invalid-argument", "Chýbajú odpovede.");
+  }
+
+  const workshop = WORKSHOPS_QUIZ[workshopId];
+  const questions = workshop && workshop.quiz && workshop.quiz.questions;
+  if (!Array.isArray(questions) || !questions.length) {
+    throw new HttpsError("failed-precondition", "Pre tento kurz nie je kvíz k dispozícii.");
+  }
+
+  const total = questions.length;
+  const cleanAnswers = questions.map((q, i) => {
+    const a = answers[i];
+    return Number.isInteger(a) ? a : null;
+  });
+  const correct = questions.filter((q, i) => cleanAnswers[i] === q.correctIndex).length;
+  const configuredPassScore = Number(workshop.quiz.passScore);
+  const passThreshold = Number.isFinite(configuredPassScore)
+    ? Math.max(Math.ceil(total * 0.8), Math.min(configuredPassScore, total))
+    : Math.ceil(total * 0.8);
+  const passed = correct >= passThreshold;
+
+  await db.collection("quizResults").add({
+    codeId,
+    workshopId,
+    answers: cleanAnswers,
+    score: correct,
+    total,
+    passed,
+    completedAt: FieldValue.serverTimestamp(),
+  });
+  await db.collection("progress").doc(codeId).set(
+    { quizCompleted: true, quizScore: correct, quizPassed: passed },
+    { merge: true }
+  );
+
+  return { correct, total, passed, passThreshold };
+});
+
 exports.sendCertificateEmail = onCall({ timeoutSeconds: 60 }, async (request) => {
   const codeId = request.auth?.token?.codeId;
   if (!codeId) {
     throw new HttpsError("permission-denied", "Certifikát si môže poslať len prihlásený účastník kurzu.");
   }
-  const { pdfBase64, workshopTitle } = request.data || {};
+  await enforceRateLimit("sendCertificateEmail", codeId, 5, 60);
+  const { pdfBase64 } = request.data || {};
   if (!pdfBase64 || typeof pdfBase64 !== "string") {
     throw new HttpsError("invalid-argument", "Chýba súbor certifikátu.");
   }
@@ -2476,6 +2578,11 @@ exports.sendCertificateEmail = onCall({ timeoutSeconds: 60 }, async (request) =>
     );
   }
 
+  // Dĺžka base64 reťazca sa dá overiť pred dekódovaním — zbytočne
+  // nealokujeme pamäť pre niečo, čo aj tak odmietneme.
+  if (pdfBase64.length > 14 * 1024 * 1024) {
+    throw new HttpsError("invalid-argument", "Súbor certifikátu je príliš veľký.");
+  }
   let buffer;
   try {
     buffer = Buffer.from(pdfBase64, "base64");
@@ -2485,12 +2592,21 @@ exports.sendCertificateEmail = onCall({ timeoutSeconds: 60 }, async (request) =>
   if (buffer.length > 10 * 1024 * 1024) {
     throw new HttpsError("invalid-argument", "Súbor certifikátu je príliš veľký.");
   }
+  // Aspoň základná kontrola, že ide skutočne o PDF (magické číslo na
+  // začiatku súboru) — nech sa cez toto pole nedá poslať/uložiť čokoľvek iné.
+  if (buffer.length < 5 || buffer.toString("ascii", 0, 5) !== "%PDF-") {
+    throw new HttpsError("invalid-argument", "Súbor nie je platné PDF.");
+  }
+
+  // Názov kurzu berieme z vlastných (dôveryhodných) dát, nie z toho, čo
+  // pošle klient — nech sa v e-maile nedá zobraziť ľubovoľný text.
+  const workshopTitle = (WORKSHOPS_QUIZ[order.workshopId] && WORKSHOPS_QUIZ[order.workshopId].title) || "";
 
   const url = await uploadPdfAndGetUrl(buffer, "certificates/" + codeId + "/" + Date.now() + ".pdf");
   await sendCertificateSmtpEmail({
     to: order.email,
     name: order.name,
-    workshopTitle: workshopTitle || "",
+    workshopTitle,
     url,
   });
 

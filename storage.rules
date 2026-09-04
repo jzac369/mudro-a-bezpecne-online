@@ -2,30 +2,45 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // "Je prihlásený" NESTAČÍ samo o sebe — Firebase pozná aj anonymné
+    // prihlásenie (bez kódu, bez platby), ktoré tiež spĺňa
+    // `request.auth != null`. Skutočný účastník kurzu má vždy claim
+    // `codeId` z overeného prístupového kódu.
+    function isOwnWorkshop(workshopId) {
+      return request.auth != null && request.auth.token.codeId != null &&
+        firestore.get(/databases/(default)/documents/accessCodes/$(request.auth.token.codeId)).data.workshopId == workshopId;
+    }
+
     // Prezentácie, brožúrky a podpisy lektora ku kurzom — nahráva len
-    // administrátor, číta ktokoľvek prihlásený (admin aj účastník kurzu).
+    // administrátor, číta admin alebo účastník, ktorý má prístupový kód
+    // presne k TOMUTO kurzu (nie ľubovoľný platný kód k inému kurzu).
     //
     // `{allPaths=**}` zahŕňa aj podpriečinky. Potrebujeme ich preto, lebo
     // popri samotnom PDF ukladáme aj jednotlivé strany pripravené na
     // listovanie (napr. brochures/kurz/1234_strany/page-001.jpg).
     match /presentations/{workshopId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow read: if isAdmin() || isOwnWorkshop(workshopId);
+      allow write: if isAdmin();
     }
     match /brochures/{workshopId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow read: if isAdmin() || isOwnWorkshop(workshopId);
+      allow write: if isAdmin();
     }
     match /signatures/{workshopId}/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow read: if isAdmin() || isOwnWorkshop(workshopId);
+      allow write: if isAdmin();
     }
 
     // Logo organizácie (zobrazuje sa napr. na certifikáte) — jedno, spoločné
-    // pre celý web, nie viazané na konkrétny kurz.
+    // pre celý web, nie viazané na konkrétny kurz — stačí byť skutočným
+    // účastníkom (ľubovoľného kurzu) alebo adminom.
     match /branding/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+      allow read: if isAdmin() || (request.auth != null && request.auth.token.codeId != null);
+      allow write: if isAdmin();
     }
   }
 }

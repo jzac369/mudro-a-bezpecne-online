@@ -571,8 +571,12 @@
     }
 
     function submitQuiz() {
-      const total = allQuestions.length;
-      const correct = allQuestions.filter((q, i) => state.quizAnswers[i] === q.correctIndex).length;
+      // total/correct/passed sa nižšie prepočítajú znova (a záväzne) podľa
+      // odpovede servera — tieto hodnoty tu slúžia len na okamžitý náhľad
+      // správnych/nesprávnych odpovedí hneď po kliknutí, predtým, než sa
+      // vôbec niečo odošle.
+      let total = allQuestions.length;
+      let correct = allQuestions.filter((q, i) => state.quizAnswers[i] === q.correctIndex).length;
       // Ak by pri kurze chýbalo/bolo zle nastavené quiz.passScore, hranica
       // by sa počítala ako NaN a kvíz by sa nedal prejsť vôbec — preto sa tu
       // spoľahneme len na vlastné číslo, ak je to skutočne platné číslo.
@@ -580,7 +584,7 @@
       const passThreshold = Number.isFinite(configuredPassScore)
         ? Math.max(Math.ceil(total * 0.8), Math.min(configuredPassScore, total))
         : Math.ceil(total * 0.8);
-      const passed = correct >= passThreshold;
+      let passed = correct >= passThreshold;
       const wrongIndexes = allQuestions.map((q, i) => i).filter((i) => state.quizAnswers[i] !== allQuestions[i].correctIndex);
       const participantName = sessionStorage.getItem("mbo_participant_name") || "Účastník kurzu";
 
@@ -615,20 +619,20 @@
           "<p style='font-weight:700;margin:0;'>Práca úspešne odovzdaná lektorovi.<br>Kontrolujem výsledky…</p>" +
           "</div>";
 
-        await state.db.collection("quizResults").add({
-          codeId: state.codeId,
-          workshopId: state.workshopId,
-          answers: state.quizAnswers,
-          score: correct,
-          total,
-          passed,
-          completedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-        await saveProgress({ quizCompleted: true, quizScore: correct, quizPassed: passed });
+        // Kvíz vyhodnocuje server (vlastná kópia otázok a správnych
+        // odpovedí) — klient len pošle, čo si účastník vybral. Výsledok,
+        // podľa ktorého sa neskôr odomkne certifikát, teda nejde ovplyvniť
+        // priamym zápisom do databázy z prehliadača.
+        const submitQuizResult = firebase.app().functions("europe-west1").httpsCallable("submitQuizResult");
+        const [serverResult] = await Promise.all([
+          submitQuizResult({ answers: state.quizAnswers }).then((res) => res.data),
+          new Promise((resolve) => setTimeout(resolve, 10000)), // aspoň 10 s, nech je vidieť, že sa to naozaj kontroluje
+        ]);
+        correct = serverResult.correct;
+        total = serverResult.total;
+        passed = serverResult.passed;
         if (passed) markStepDone("kviz");
 
-        // Zámerne aspoň 10 sekúnd, nech je vidieť, že sa výsledky naozaj kontrolujú.
-        await new Promise((resolve) => setTimeout(resolve, 10000));
         renderEvaluationScreen();
       }
 
