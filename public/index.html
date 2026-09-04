@@ -15,27 +15,47 @@
 <script defer src="assets/chat-widget.js"></script>
 <style>
   body { zoom: 80%; }
+
+  /* ---------- Hlavička ---------- */
+  .nav-links { display: flex; align-items: center; gap: 1.6rem; margin: 0 .5rem; }
+  .nav-links a { color: var(--ink-soft); text-decoration: none; font-weight: 700; font-size: .95rem; }
+  .nav-links a:hover { color: var(--ink); }
+  @media (max-width: 980px) { .nav-links { display: none; } }
+
   .btn-outline {
     background: none; border: 2px solid var(--ink); color: var(--ink); border-radius: 999px;
-    padding: .75rem 1.4rem; font-weight: 700; text-decoration: none; display: inline-flex;
-    align-items: center; gap: .5rem;
+    padding: .7rem 1.3rem; font-weight: 700; text-decoration: none; display: inline-flex;
+    align-items: center; gap: .5rem; white-space: nowrap;
   }
   .btn-outline:hover { background: var(--surface-2); }
 
-  .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 2.5rem; align-items: center; padding: 2.5rem 0 3rem; }
-  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
-  .hero h1 { font-size: 2.3rem; line-height: 1.2; }
-  .hero h1 .accent { color: var(--accent); }
-  .hero-art { position: relative; }
-  .hero-badge {
-    position: absolute; bottom: -1rem; left: -1rem; background: var(--surface); border-radius: 999px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: .9rem 1.2rem; display: flex; align-items: center; gap: .6rem;
-    font-weight: 700; font-size: .88rem; max-width: 190px;
+  /* ---------- Hero ---------- */
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 3rem; align-items: center; padding: 3rem 0 3.5rem; }
+  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; padding-top: 2rem; } }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: .4rem; color: var(--accent); font-weight: 700;
+    font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .8rem;
   }
-  .hero-badge svg { flex: none; width: 26px; height: 26px; color: var(--good); }
+  .hero h1 { font-size: 2.5rem; line-height: 1.18; margin-bottom: 1rem; }
+  .hero h1 .accent { color: var(--accent); }
+  .hero-lead { font-size: 1.08rem; color: var(--text-mute); max-width: 46ch; }
+  .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.6rem; }
+
+  .hero-art { position: relative; }
+  .hero-photo {
+    width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 22px;
+    box-shadow: 0 20px 50px -20px rgba(31,58,61,.4);
+  }
+  .hero-badge {
+    position: absolute; bottom: -1.1rem; left: -1.1rem; background: var(--surface); border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.14); padding: .9rem 1.2rem; display: flex; align-items: center; gap: .7rem;
+    font-weight: 700; font-size: .88rem; max-width: 210px; border: 1px solid var(--line);
+  }
+  .hero-badge svg { flex: none; width: 28px; height: 28px; color: var(--good); }
   @media (max-width: 900px) { .hero-badge { position: static; margin-top: 1rem; max-width: none; } }
 
-  .feature-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; margin: 2.5rem 0; }
+  /* ---------- Vlastnosti ---------- */
+  .feature-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; margin: 1rem 0 3rem; }
   @media (max-width: 800px) { .feature-row { grid-template-columns: repeat(2, 1fr); } }
   .feature-item { text-align: center; padding: 1rem; }
   .feature-item .ic {
@@ -45,40 +65,72 @@
   .feature-item h3 { font-size: 1rem; margin-bottom: .2rem; }
   .feature-item p { font-size: .85rem; color: var(--text-mute); margin: 0; }
 
-  .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.6rem; }
-  .course-card-illust { border-radius: 14px; overflow: hidden; margin-bottom: 1rem; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+  /* ---------- Kurzy ---------- */
+  .section-head { text-align: center; max-width: 640px; margin: 0 auto 2.2rem; }
+  .section-head h2 { font-size: 1.7rem; margin-bottom: .4rem; }
+  .section-head p { color: var(--text-mute); margin: 0; }
+
+  .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1.6rem; }
+  .course-card-illust {
+    border-radius: 14px; overflow: hidden; margin-bottom: 1rem; aspect-ratio: 16/10;
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .course-card-illust img { width: 100%; height: 100%; object-fit: cover; }
   .course-list { list-style: none; padding: 0; margin: .8rem 0 1.2rem; }
   .course-list li { display: flex; gap: .5rem; align-items: flex-start; margin-bottom: .5rem; font-size: .94rem; }
   .course-list svg { flex: none; width: 18px; height: 18px; color: var(--good); margin-top: .15rem; }
 
-  .testi-section { margin: 3.5rem 0; text-align: center; }
-  .testi-section h2 { display: inline-flex; align-items: center; gap: .5rem; }
-  .testi-track { display: flex; gap: 1.2rem; overflow-x: auto; scroll-snap-type: x mandatory; padding: 1.5rem 0; }
-  .testi-card {
-    flex: 0 0 auto; width: min(300px, 85vw); scroll-snap-align: start; background: var(--surface);
-    border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; text-align: left;
+  .course-card-soon { opacity: .92; }
+  .course-card-soon .course-card-illust {
+    background: var(--surface-2); color: var(--text-mute);
   }
-  .testi-avatar {
-    width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    color: #fff; font-weight: 700; font-size: 1.1rem; margin-bottom: .8rem;
+  .soon-ribbon {
+    position: absolute; top: .8rem; right: .8rem; background: var(--ink); color: #fff;
+    font-size: .74rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    padding: .35rem .7rem; border-radius: 999px;
   }
-  .testi-quote { font-size: .92rem; margin-bottom: .9rem; }
-  .testi-name { font-weight: 700; font-size: .88rem; }
-  .testi-dots { display: flex; justify-content: center; gap: .5rem; margin-top: .5rem; }
-  .testi-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: inline-block; }
-  .testi-dots span.active { background: var(--ink); }
 
+  /* ---------- Ako to funguje ---------- */
   .steps-row { display: flex; align-items: flex-start; gap: .5rem; overflow-x: auto; padding: 1.5rem 0; }
   .step-item { flex: 1 1 0; min-width: 130px; text-align: center; padding: 0 .4rem; }
   .step-item .num {
     width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 700;
     display: flex; align-items: center; justify-content: center; margin: 0 auto .6rem;
   }
-  .step-item .ic { color: var(--accent); margin-bottom: .4rem; }
   .step-item h3 { font-size: .92rem; margin-bottom: .2rem; }
   .step-item p { font-size: .8rem; color: var(--text-mute); margin: 0; }
   .step-arrow { flex: 0 0 auto; color: var(--line); margin-top: 1rem; }
   @media (max-width: 800px) { .step-arrow { display: none; } .steps-row { flex-wrap: wrap; } }
+
+  /* ---------- Referencie ---------- */
+  .testi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.4rem; }
+  .testi-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.5rem; text-align: left;
+  }
+  .testi-stars { color: var(--accent); font-size: .95rem; margin-bottom: .7rem; letter-spacing: .1em; }
+  .testi-quote { font-size: .95rem; margin-bottom: 1rem; color: var(--text); }
+  .testi-row { display: flex; align-items: center; gap: .7rem; }
+  .testi-avatar {
+    width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 1rem; flex: none;
+  }
+  .testi-name { font-weight: 700; font-size: .9rem; }
+  .testi-age { color: var(--text-mute); font-size: .82rem; }
+
+  /* ---------- Kontaktný pás ---------- */
+  .contact-band {
+    background: var(--ink); color: #fff; border-radius: 22px; padding: 2.2rem 2.4rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1.6rem; flex-wrap: wrap;
+    margin: 3.5rem 0 1rem;
+  }
+  .contact-band h2 { color: #fff; margin-bottom: .3rem; font-size: 1.35rem; }
+  .contact-band p { color: #cdd8d6; margin: 0; }
+  .contact-band-right { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; }
+  .contact-phone { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1.05rem; }
+  .contact-phone svg { color: var(--accent-soft); width: 22px; height: 22px; }
+  .contact-phone a { color: #fff; text-decoration: none; }
+  .contact-band .btn-primary { background: var(--accent); }
+  .contact-band .btn-primary:hover { background: #a86423; }
 </style>
 </head>
 <body>
@@ -89,6 +141,12 @@
       <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
       Vzdelávacie kurzy DigiStart
     </a>
+    <nav class="nav-links" aria-label="Hlavná navigácia">
+      <a href="#kurzy">Kurzy</a>
+      <a href="#ako-to-funguje">Ako to funguje</a>
+      <a href="#preco-digistart">Prečo DigiStart</a>
+      <a href="#kontakt">Kontakt</a>
+    </nav>
     <div class="text-tools" aria-label="Veľkosť textu">
       <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
       <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
@@ -104,10 +162,13 @@
 
   <section class="hero">
     <div>
-      <h1>Jednoduché online kurzy, ktoré vám pomôžu cítiť sa <span class="accent">bezpečnejšie a istejšie</span> v digitálnom svete</h1>
-      <p style="font-size:1.05rem;color:var(--text-mute);">Zrozumiteľné videá, praktické cvičenia a podpora krok za krokom.
-        Bez technického žargónu. Vhodné aj pre úplných začiatočníkov.</p>
-      <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1.4rem;">
+      <span class="eyebrow">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+        Jednoduché online kurzy
+      </span>
+      <h1>Cítite sa istejšie a <span class="accent">bezpečnejšie</span> v digitálnom svete</h1>
+      <p class="hero-lead">Zrozumiteľné video lekcie, praktické cvičenia a podpora krok za krokom. Bez technického žargónu. Vhodné aj pre úplných začiatočníkov.</p>
+      <div class="hero-ctas">
         <a class="btn btn-primary" style="text-decoration:none;" href="#kurzy">Vybrať si kurz</a>
         <a class="btn-outline" href="prihlasenie.html">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -116,16 +177,7 @@
       </div>
     </div>
     <div class="hero-art">
-      <svg viewBox="0 0 400 300" style="width:100%;border-radius:20px;background:var(--accent-soft);">
-        <circle cx="150" cy="140" r="70" fill="var(--surface)"/>
-        <circle cx="270" cy="140" r="70" fill="var(--surface)"/>
-        <rect x="165" y="120" width="70" height="95" rx="10" fill="var(--ink)"/>
-        <rect x="172" y="130" width="56" height="65" rx="3" fill="var(--accent-soft)"/>
-        <circle cx="150" cy="95" r="32" fill="#e7c9a3"/>
-        <circle cx="270" cy="95" r="32" fill="#d9b98c"/>
-        <rect x="120" y="120" width="60" height="80" rx="24" fill="var(--good)"/>
-        <rect x="240" y="120" width="60" height="80" rx="24" fill="var(--warn)"/>
-      </svg>
+      <img class="hero-photo" src="assets/hero/senior-couple-laptop.png" alt="Seniorský pár sa spolu s úsmevom pozerá na notebook" style="background:var(--accent-soft);" onerror="this.style.display='none';">
       <div class="hero-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
         Bezpečne na internete každý deň
@@ -156,12 +208,16 @@
     </div>
   </section>
 
-  <section aria-label="Ponuka kurzov" id="kurzy">
+  <section aria-label="Ponuka kurzov" id="kurzy" style="margin-top:1rem;">
+    <div class="section-head">
+      <h2>Vyberte si kurz, ktorý vás posunie vpred</h2>
+      <p>Každý kurz obsahuje video lekcie, praktické cvičenia, tlačenú brožúrku a záverečný certifikát.</p>
+    </div>
     <div class="course-grid">
 
       <article class="card" id="card-bezpecne-financie">
         <div class="course-card-illust" style="background:var(--good-bg);">
-          <svg viewBox="0 0 100 100" width="88" height="88"><path d="M50 8 L82 20 V48 C82 70 68 84 50 92 C32 84 18 70 18 48 V20 Z" fill="var(--good)"/><path d="M50 14 L76 24 V48 C76 66 64 78 50 85 C36 78 24 66 24 48 V24 Z" fill="var(--surface)"/><path d="M38 50 L47 60 L64 40" stroke="var(--good)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <img src="assets/hero/senior-sms-podvod.png" alt="Seniorka si všíma podozrivú SMS správu na telefóne" onerror="this.style.display='none';">
         </div>
         <span class="chip good" style="margin-bottom:.6rem;">Bezpečnosť</span>
         <h2>Ako nenaletieť podvodníkom</h2>
@@ -177,7 +233,7 @@
 
       <article class="card" id="card-zaciname-s-ai">
         <div class="course-card-illust" style="background:var(--accent-soft);">
-          <svg viewBox="0 0 100 100" width="88" height="88"><path d="M50 10 C30 10 22 26 26 40 C18 44 16 56 24 64 C22 74 30 84 42 82 C46 90 58 90 62 82 C74 84 82 74 80 64 C88 56 86 44 78 40 C82 26 70 10 50 10 Z" fill="var(--accent)"/><path d="M50 16 V84" stroke="var(--surface)" stroke-width="3"/><text x="63" y="56" font-family="Arial" font-size="22" font-weight="700" fill="var(--surface)" text-anchor="middle">AI</text></svg>
+          <img src="assets/hero/senior-ai-asistent.png" alt="Seniorka pri notebooku komunikuje s AI asistentom" onerror="this.style.display='none';">
         </div>
         <span class="chip warn" style="margin-bottom:.6rem;">Umelá inteligencia</span>
         <h2>Začíname s umelou inteligenciou</h2>
@@ -191,29 +247,31 @@
         <a class="btn btn-primary btn-block" style="text-decoration:none;background:var(--accent);" href="objednavka.html?w=zaciname-s-ai">Zobraziť kurz →</a>
       </article>
 
+      <article class="card course-card-soon">
+        <div class="course-card-illust">
+          <span class="soon-ribbon">Pripravujeme</span>
+          <svg viewBox="0 0 100 100" width="72" height="72"><circle cx="50" cy="50" r="42" fill="var(--line)"/><path d="M50 30v22l16 10" stroke="var(--surface)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="chip info" style="margin-bottom:.6rem;">Pripravujeme</span>
+        <h2>Digitálne zručnosti do praxe</h2>
+        <p style="color:var(--text-mute);font-weight:700;margin-top:-.6rem;">Internet, e-služby a komunikácia bez stresu</p>
+        <ul class="course-list">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Hľadáte informácie a používate e-služby</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Komunikujete s blízkymi — e-mail, správy, videohovory</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg> Ukladáte súbory a pracujete s priečinkami bezpečne</li>
+        </ul>
+        <p style="font-size:1rem;font-weight:700;color:var(--text-mute);">Čoskoro k dispozícii</p>
+        <button class="btn btn-secondary btn-block" type="button" disabled style="cursor:not-allowed;opacity:.7;">Pripravujeme</button>
+      </article>
+
     </div>
   </section>
 
-  <section class="testi-section" id="testi-section" style="display:none;">
-    <h2>
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--warn)" stroke-width="2"><path d="M20.8 8.6c0 5-8.8 10-8.8 10s-8.8-5-8.8-10a4.6 4.6 0 0 1 8.8-2 4.6 4.6 0 0 1 8.8 2Z"/></svg>
-      Prečo si kurz obľúbili seniori
-    </h2>
-    <div class="testi-track" id="testi-track"></div>
-    <div class="testi-dots" id="testi-dots"></div>
-  </section>
-
-  <section id="consultation-section" style="display:none;margin-top:2.5rem;max-width:640px;">
-    <div class="card">
-      <h2>Potrebujete osobnú pomoc?</h2>
-      <p>Dohodnite si krátku video alebo telefonickú konzultáciu priamo s lektorom — poradíme s konkrétnym
-        problémom, nastavením telefónu alebo otázkou k umelej inteligencii.</p>
-      <a class="btn btn-secondary" style="text-decoration:none;display:inline-block;" href="konzultacia.html">Rezervovať konzultáciu</a>
+  <section id="ako-to-funguje" style="margin-top:3.5rem;">
+    <div class="section-head">
+      <h2>Ako to funguje</h2>
+      <p>Od výberu kurzu po certifikát — celé za pár jednoduchých krokov.</p>
     </div>
-  </section>
-
-  <section style="margin-top:3rem;">
-    <h2 style="text-align:center;">Ako to funguje</h2>
     <div class="steps-row">
       <div class="step-item">
         <div class="num">1</div>
@@ -246,6 +304,64 @@
       </div>
     </div>
   </section>
+
+  <section id="preco-digistart" style="margin-top:3.5rem;">
+    <div class="section-head">
+      <h2>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--warn)" stroke-width="2" style="vertical-align:-4px;margin-right:.3rem;"><path d="M20.8 8.6c0 5-8.8 10-8.8 10s-8.8-5-8.8-10a4.6 4.6 0 0 1 8.8-2 4.6 4.6 0 0 1 8.8 2Z"/></svg>
+        Prečo si kurzy obľúbili seniori
+      </h2>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-quote">„Kurz bol veľmi zrozumiteľný a konečne viem, ako sa chrániť pred podvodníkmi. Odporúčam každému, kto chce byť na internete pokojnejší.“</p>
+        <div class="testi-row">
+          <div class="testi-avatar" style="background:#2f6b6e;">A</div>
+          <div><div class="testi-name">Anna</div><div class="testi-age">67 rokov</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-quote">„Ako laik som mal spočiatku obavy, ale všetko mi lektor vysvetlil jednoducho a bez zbytočných odborných slov. Teraz sa s AI asistentom rozprávam bez strachu.“</p>
+        <div class="testi-row">
+          <div class="testi-avatar" style="background:#c17a2e;">M</div>
+          <div><div class="testi-name">Milan</div><div class="testi-age">71 rokov</div></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-quote">„Vážila som si, že sa kurz dal robiť pomaly, vo vlastnom tempe. Skvelé bolo aj to, že som sa kedykoľvek mohla vrátiť tam, kde som skončila.“</p>
+        <div class="testi-row">
+          <div class="testi-avatar" style="background:#2f6b49;">Z</div>
+          <div><div class="testi-name">Zuzana</div><div class="testi-age">64 rokov</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="consultation-section" style="display:none;margin-top:2.5rem;max-width:640px;">
+    <div class="card">
+      <h2>Potrebujete osobnú pomoc?</h2>
+      <p>Dohodnite si krátku video alebo telefonickú konzultáciu priamo s lektorom — poradíme s konkrétnym
+        problémom, nastavením telefónu alebo otázkou k umelej inteligencii.</p>
+      <a class="btn btn-secondary" style="text-decoration:none;display:inline-block;" href="konzultacia.html">Rezervovať konzultáciu</a>
+    </div>
+  </section>
+
+  <section id="kontakt" class="contact-band">
+    <div>
+      <h2>Potrebujete osobnú pomoc?</h2>
+      <p>Sme tu pre vás. Napíšte nám alebo zavolajte, radi poradíme s výberom kurzu, alebo s čímkoľvek, čo nie je jasné.</p>
+    </div>
+    <div class="contact-band-right">
+      <div class="contact-phone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.9a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.8 2Z"/></svg>
+        <a href="tel:+421951516615">0951 516 615</a>
+      </div>
+      <a class="btn btn-primary" style="text-decoration:none;" href="konzultacia.html">Dohodnúť konzultáciu</a>
+    </div>
+  </section>
 </main>
 
 <a class="help-fab" href="#" role="button">
@@ -254,39 +370,6 @@
 </a>
 
 <script>
-  const AVATAR_COLORS = ["#2f6b6e", "#c17a2e", "#2f6b49", "#9c4a1f", "#3d5457"];
-
-  function renderTestimonials(items) {
-    if (!items.length) return;
-    const section = document.getElementById("testi-section");
-    const track = document.getElementById("testi-track");
-    const dots = document.getElementById("testi-dots");
-    section.style.display = "block";
-    items.forEach((t, i) => {
-      const initial = (t.name || "?").trim().charAt(0).toUpperCase();
-      const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
-      const card = document.createElement("div");
-      card.className = "testi-card";
-      card.innerHTML =
-        "<div class='testi-avatar' style='background:" + color + ";'>" + initial + "</div>" +
-        "<p class='testi-quote'>„" + escapeHtml(t.quote || "") + "“</p>" +
-        "<p class='testi-name'>" + escapeHtml(t.name || "") + (t.age ? ", " + escapeHtml(String(t.age)) + " rokov" : "") + "</p>";
-      track.appendChild(card);
-      const dot = document.createElement("span");
-      if (i === 0) dot.className = "active";
-      dots.appendChild(dot);
-    });
-    const dotEls = dots.querySelectorAll("span");
-    track.addEventListener("scroll", () => {
-      const idx = Math.round(track.scrollLeft / track.firstChild.offsetWidth);
-      dotEls.forEach((d, i) => d.classList.toggle("active", i === idx));
-    });
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-
   window.addEventListener("load", async () => {
     if (!window.firebase || !window.FIREBASE_CONFIG) return;
     const db = firebase.firestore();
@@ -343,14 +426,6 @@
       } catch (err) {
         console.error("Nepodarilo sa načítať cenu kurzu " + id, err);
       }
-    }
-
-    try {
-      const testiSnap = await db.collection("testimonials").orderBy("order", "asc").get();
-      const items = testiSnap.docs.map((d) => d.data()).filter((t) => t.active !== false);
-      renderTestimonials(items);
-    } catch (err) {
-      console.error("Nepodarilo sa načítať referencie:", err);
     }
   });
 </script>
