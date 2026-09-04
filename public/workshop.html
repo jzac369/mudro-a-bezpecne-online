@@ -573,7 +573,13 @@
     function submitQuiz() {
       const total = allQuestions.length;
       const correct = allQuestions.filter((q, i) => state.quizAnswers[i] === q.correctIndex).length;
-      const passThreshold = Math.max(Math.ceil(total * 0.8), Math.min(state.workshop.quiz.passScore, total));
+      // Ak by pri kurze chýbalo/bolo zle nastavené quiz.passScore, hranica
+      // by sa počítala ako NaN a kvíz by sa nedal prejsť vôbec — preto sa tu
+      // spoľahneme len na vlastné číslo, ak je to skutočne platné číslo.
+      const configuredPassScore = Number(state.workshop.quiz && state.workshop.quiz.passScore);
+      const passThreshold = Number.isFinite(configuredPassScore)
+        ? Math.max(Math.ceil(total * 0.8), Math.min(configuredPassScore, total))
+        : Math.ceil(total * 0.8);
       const passed = correct >= passThreshold;
       const wrongIndexes = allQuestions.map((q, i) => i).filter((i) => state.quizAnswers[i] !== allQuestions[i].correctIndex);
       const participantName = sessionStorage.getItem("mbo_participant_name") || "Účastník kurzu";

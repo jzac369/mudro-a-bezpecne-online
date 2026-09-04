@@ -2460,6 +2460,22 @@ exports.sendCertificateEmail = onCall({ timeoutSeconds: 60 }, async (request) =>
   }
   const order = orderSnap.data();
 
+  // Certifikát potvrdzuje absolvovanie kurzu vrátane úspešného kvízu —
+  // klientský stav (odomknuté kroky) je len UI pomôcka a dá sa obísť
+  // priamym volaním tejto funkcie, preto to tu overíme aj server-side
+  // proti skutočnému, uloženému výsledku kvízu.
+  const quizSnap = await db.collection("quizResults")
+    .where("codeId", "==", codeId)
+    .orderBy("completedAt", "desc")
+    .limit(1)
+    .get();
+  if (quizSnap.empty || quizSnap.docs[0].data().passed !== true) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Certifikát je možné poslať až po úspešnom absolvovaní záverečného kvízu."
+    );
+  }
+
   let buffer;
   try {
     buffer = Buffer.from(pdfBase64, "base64");
