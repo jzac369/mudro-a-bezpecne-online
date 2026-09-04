@@ -63,6 +63,11 @@
   .star-row button { background:none; border:none; cursor:pointer; padding:0; font-size:2rem; line-height:1; color:var(--line); }
   .star-row button.filled { color:var(--accent,#c17a2e); }
   .cert-preview { border:1px solid var(--line); border-radius:10px; max-width:100%; margin:1rem 0; display:block; }
+  .name-modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center;
+    padding:1rem; z-index:400;
+  }
+  .name-modal-box { background:var(--surface,#fff); border-radius:14px; padding:1.6rem; max-width:440px; width:100%; }
   .cert-loading { display:flex; flex-direction:column; align-items:center; gap:1rem; padding:2.4rem 1rem; text-align:center; }
   .cert-spinner {
     width:44px; height:44px; border-radius:50%;
@@ -206,7 +211,7 @@
   <p style="margin-top:2rem;"><a href="caste-otazky.html">Časté otázky a pomoc</a></p>
 </main>
 
-<a class="help-fab" href="tel:+421900000000">
+<a class="help-fab" href="#" role="button">
   <svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M12 5a7 7 0 0 1 7 7c0 4-3 6-3 8H8c0-2-3-4-3-8a7 7 0 0 1 7-7Z"/><path d="M10 20h4"/></svg>
   Potrebujem pomoc
 </a>
@@ -426,6 +431,35 @@
     host.appendChild(notice);
   }
 
+  // Meno sa na certifikát preberá z registrácie, ale účastník ho niekedy
+  // zadal skrátene/s preklepom — pred vygenerovaním certifikátu si ho preto
+  // necháme potvrdiť (alebo opraviť) presne tak, ako má byť vytlačené.
+  function askCertificateName(defaultName) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.className = "name-modal-overlay";
+      overlay.innerHTML =
+        "<div class='name-modal-box'>" +
+        "<h2 style='margin-top:0;'>Meno na certifikáte</h2>" +
+        "<p class='hint'>Zadajte svoje celé meno a priezvisko presne tak, ako má byť vytlačené na certifikáte.</p>" +
+        "<form id='cert-name-form'>" +
+        "<div class='field'><label for='cert-name-input'>Meno a priezvisko</label><input type='text' id='cert-name-input' required></div>" +
+        "<button class='btn btn-primary btn-block' type='submit'>Pokračovať na certifikát</button>" +
+        "</form></div>";
+      document.body.appendChild(overlay);
+      const input = overlay.querySelector("#cert-name-input");
+      input.value = defaultName || "";
+      input.focus();
+      overlay.querySelector("#cert-name-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (!val) return;
+        overlay.remove();
+        resolve(val);
+      });
+    });
+  }
+
   async function revealCertificateWithLoading(participantName, host) {
     // Ak ešte niečo chýba, certifikát sa neotvorí — vysvetlíme prečo.
     if (!isCertUnlocked()) {
@@ -440,8 +474,8 @@
     loading.style.display = "flex";
 
     try {
-      // Krátka pauza, aby bolo vidieť, že sa certifikát pripravuje.
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // Zámerne aspoň 10 sekúnd, aby bolo vidieť, že sa certifikát pripravuje.
+      await new Promise((resolve) => setTimeout(resolve, 10000));
       await showCertificate(participantName);
       loading.style.display = "none";
       await markCourseCompleted();
@@ -584,7 +618,8 @@
         await saveProgress({ quizCompleted: true, quizScore: correct, quizPassed: passed });
         if (passed) markStepDone("kviz");
 
-        await new Promise((resolve) => setTimeout(resolve, 2500));
+        // Zámerne aspoň 10 sekúnd, nech je vidieť, že sa výsledky naozaj kontrolujú.
+        await new Promise((resolve) => setTimeout(resolve, 10000));
         renderEvaluationScreen();
       }
 
@@ -603,10 +638,12 @@
           goCertBtn.className = "btn btn-primary";
           goCertBtn.style.marginTop = "1rem";
           goCertBtn.textContent = "Prejsť na certifikát";
-          goCertBtn.addEventListener("click", () => {
+          goCertBtn.addEventListener("click", async () => {
             // Ak ešte niečo chýba, vysvetlenie sa vypíše sem, pod tlačidlo.
             body.querySelectorAll(".cert-missing").forEach((n) => n.remove());
-            revealCertificateWithLoading(participantName, body);
+            const confirmedName = await askCertificateName(participantName);
+            sessionStorage.setItem("mbo_participant_name", confirmedName);
+            revealCertificateWithLoading(confirmedName, body);
           });
           body.appendChild(goCertBtn);
         } else {

@@ -149,7 +149,7 @@
         "<div class='field'><label style='font-weight:700;display:block;margin-bottom:.3rem;font-size:.9rem;'>Správa</label><textarea id='mbo-chat-msg' rows='3'></textarea></div>" +
         "<button type='button' class='btn btn-primary btn-block' id='mbo-chat-start'>Odoslať</button>" +
         "<p class='hint' id='mbo-chat-start-error' style='display:none;color:var(--warn);margin-top:.5rem;'></p>" +
-        "<p class='hint' style='margin-top:.8rem;text-align:center;'>Radšej zavolať? <a href='" + fab.getAttribute("href") + "'>Zavolajte nám</a></p>";
+        "<p class='hint' style='margin-top:.8rem;text-align:center;'>Radšej e-mailom? <a href='mailto:info@digistart.sk'>info@digistart.sk</a></p>";
 
       panel.querySelector("#mbo-chat-start").addEventListener("click", async () => {
         const name = panel.querySelector("#mbo-chat-name").value.trim();
