@@ -30,8 +30,9 @@
   .btn-outline:hover { background: var(--surface-2); }
 
   /* ---------- Hero ---------- */
-  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 3rem; align-items: center; padding: 3rem 0 3.5rem; }
-  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; padding-top: 2rem; } }
+  .hero-wrap { background: var(--bg); border-radius: 24px; padding: 2.4rem 2.4rem 2rem; margin-top: 1.2rem; }
+  .hero { display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.8rem; align-items: center; }
+  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } .hero-wrap { padding: 1.6rem 1.4rem; } }
   .eyebrow {
     display: inline-flex; align-items: center; gap: .4rem; color: var(--accent); font-weight: 700;
     font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; margin-bottom: .8rem;
@@ -41,24 +42,16 @@
   .hero-lead { font-size: 1.08rem; color: var(--text-mute); max-width: 46ch; }
   .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.6rem; }
 
-  .hero-art { position: relative; }
   .hero-photo {
-    width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 22px;
+    width: 100%; aspect-ratio: 16/11; object-fit: cover; border-radius: 20px;
     box-shadow: 0 20px 50px -20px rgba(31,58,61,.4);
   }
-  .hero-badge {
-    position: absolute; bottom: -1.1rem; left: -1.1rem; background: var(--surface); border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.14); padding: .9rem 1.2rem; display: flex; align-items: center; gap: .7rem;
-    font-weight: 700; font-size: .88rem; max-width: 210px; border: 1px solid var(--line);
-  }
-  .hero-badge svg { flex: none; width: 28px; height: 28px; color: var(--good); }
-  @media (max-width: 900px) { .hero-badge { position: static; margin-top: 1rem; max-width: none; } }
 
-  /* ---------- Vlastnosti — kompaktný pás pod hero fotkou ---------- */
+  /* ---------- Vlastnosti — kompaktný pás, súčasť hero bloku ---------- */
   .feature-strip {
     display: flex; align-items: stretch; background: var(--surface); border: 1px solid var(--line);
-    border-radius: 18px; box-shadow: 0 1px 2px rgba(31,58,61,.04), 0 16px 40px -22px rgba(31,58,61,.25);
-    margin: -1rem 0 3.2rem; overflow: hidden;
+    border-radius: 16px; box-shadow: 0 1px 2px rgba(31,58,61,.04), 0 12px 30px -20px rgba(31,58,61,.25);
+    margin: -1.6rem 1.6rem 3rem; overflow: hidden; position: relative; z-index: 2;
   }
   .feature-item {
     flex: 1 1 0; display: flex; align-items: center; gap: .7rem; padding: 1.1rem 1.3rem;
@@ -84,7 +77,7 @@
 
   .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1.6rem; }
   .course-card-illust {
-    border-radius: 14px; overflow: hidden; margin-bottom: 1rem; aspect-ratio: 16/10;
+    border-radius: 14px; overflow: hidden; margin-bottom: 1rem; aspect-ratio: 16/7;
     display: flex; align-items: center; justify-content: center; position: relative;
   }
   .course-card-illust img { width: 100%; height: 100%; object-fit: cover; }
@@ -108,16 +101,28 @@
   }
 
   /* ---------- Ako to funguje ---------- */
-  .steps-row { display: flex; align-items: flex-start; gap: .5rem; overflow-x: auto; padding: 1.5rem 0; }
-  .step-item { flex: 1 1 0; min-width: 130px; text-align: center; padding: 0 .4rem; }
-  .step-item .num {
-    width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 700;
-    display: flex; align-items: center; justify-content: center; margin: 0 auto .6rem;
+  .steps-row {
+    display: flex; align-items: flex-start; gap: .5rem; position: relative;
+    background: var(--surface-2); border-radius: 20px; padding: 2.2rem 2rem 1.8rem;
   }
-  .step-item h3 { font-size: .92rem; margin-bottom: .2rem; }
-  .step-item p { font-size: .8rem; color: var(--text-mute); margin: 0; }
-  .step-arrow { flex: 0 0 auto; color: var(--line); margin-top: 1rem; }
-  @media (max-width: 800px) { .step-arrow { display: none; } .steps-row { flex-wrap: wrap; } }
+  .steps-row::before {
+    content: ""; position: absolute; top: 3.05rem; left: 12%; right: 12%; height: 0;
+    border-top: 2px dashed var(--line); z-index: 0;
+  }
+  .step-item { flex: 1 1 0; min-width: 110px; text-align: center; padding: 0 .4rem; position: relative; z-index: 1; }
+  .step-item .ic {
+    width: 48px; height: 48px; border-radius: 50%; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(31,58,61,.08);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto .8rem;
+  }
+  .step-item .ic svg { width: 21px; height: 21px; }
+  .step-item h3 { font-size: .9rem; margin-bottom: .15rem; }
+  .step-item p { font-size: .78rem; color: var(--text-mute); margin: 0; line-height: 1.3; }
+  @media (max-width: 800px) {
+    .steps-row { flex-wrap: wrap; }
+    .steps-row::before { display: none; }
+    .step-item { flex: 1 1 45%; margin-bottom: 1.2rem; }
+  }
 
   /* ---------- Referencie ---------- */
   .testi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.4rem; }
@@ -136,18 +141,27 @@
 
   /* ---------- Kontaktný pás ---------- */
   .contact-band {
-    background: var(--ink); color: #fff; border-radius: 22px; padding: 2.2rem 2.4rem;
-    display: flex; align-items: center; justify-content: space-between; gap: 1.6rem; flex-wrap: wrap;
-    margin: 3.5rem 0 1rem;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 22px;
+    display: flex; align-items: stretch; gap: 1.8rem; flex-wrap: wrap;
+    margin: 3.5rem 0 1rem; overflow: hidden;
   }
-  .contact-band h2 { color: #fff; margin-bottom: .3rem; font-size: 1.35rem; }
-  .contact-band p { color: #cdd8d6; margin: 0; }
+  .contact-photo { flex: 0 0 auto; width: 130px; object-fit: cover; }
+  @media (max-width: 700px) { .contact-photo { display: none; } }
+  .contact-band-body {
+    flex: 1 1 auto; display: flex; align-items: center; justify-content: space-between;
+    gap: 1.6rem; flex-wrap: wrap; padding: 1.8rem 2rem 1.8rem 0;
+  }
+  .contact-band h2 { margin-bottom: .3rem; font-size: 1.3rem; }
+  .contact-band p { color: var(--text-mute); margin: 0; max-width: 34ch; }
   .contact-band-right { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; }
-  .contact-phone { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1.05rem; }
-  .contact-phone svg { color: var(--accent-soft); width: 22px; height: 22px; }
-  .contact-phone a { color: #fff; text-decoration: none; }
-  .contact-band .btn-primary { background: var(--accent); }
-  .contact-band .btn-primary:hover { background: #a86423; }
+  .contact-phone-block { display: flex; align-items: center; gap: .7rem; }
+  .contact-phone-block .ic {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; flex: none; color: var(--good);
+  }
+  .contact-phone-block .ic svg { width: 19px; height: 19px; }
+  .contact-phone-block a { font-weight: 700; font-size: 1.05rem; color: var(--ink); text-decoration: none; display: block; }
+  .contact-phone-block .hours { font-size: .78rem; color: var(--text-mute); }
 </style>
 </head>
 <body>
@@ -177,47 +191,43 @@
 
 <main class="container" style="padding-bottom:4rem;">
 
-  <section class="hero">
-    <div>
-      <span class="eyebrow">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
-        Jednoduché online kurzy
-      </span>
-      <h1>Cítite sa istejšie a <span class="accent">bezpečnejšie</span> v digitálnom svete</h1>
-      <p class="hero-lead">Zrozumiteľné video lekcie, praktické cvičenia a podpora krok za krokom. Bez technického žargónu. Vhodné aj pre úplných začiatočníkov.</p>
-      <div class="hero-ctas">
-        <a class="btn btn-primary" style="text-decoration:none;" href="#kurzy">Vybrať si kurz</a>
-        <a class="btn-outline" href="prihlasenie.html">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          Mám kód, chcem sa prihlásiť
-        </a>
+  <div class="hero-wrap">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+          Jednoduché online kurzy
+        </span>
+        <h1>Cítite sa istejšie a <span class="accent">bezpečnejšie</span> v digitálnom svete</h1>
+        <p class="hero-lead">Zrozumiteľné video lekcie, praktické cvičenia a podpora krok za krokom. Bez technického žargónu. Vhodné aj pre úplných začiatočníkov.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" style="text-decoration:none;" href="#kurzy">Vybrať si kurz</a>
+          <a class="btn-outline" href="prihlasenie.html">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            Mám kód, chcem sa prihlásiť
+          </a>
+        </div>
       </div>
-    </div>
-    <div class="hero-art">
       <img class="hero-photo" src="assets/hero/senior-couple-laptop.jpg" alt="Seniorský pár sa spolu s úsmevom pozerá na notebook" style="background:var(--accent-soft);" onerror="this.style.display='none';">
-      <div class="hero-badge">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
-        Bezpečne na internete každý deň
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <div class="feature-strip">
-    <div class="feature-item">
-      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
-      <div><h3>Bez hesla</h3><p>Prihlasujete sa menom a kódom</p></div>
-    </div>
-    <div class="feature-item">
-      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="18" cy="9" r="2.6"/><path d="M15.5 20a5 5 0 0 1 6.8-4.7"/></svg></div>
-      <div><h3>Vhodné pre seniorov</h3><p>Pomaly, zrozumiteľne a s trpezlivosťou</p></div>
-    </div>
-    <div class="feature-item">
-      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 12.8 6.5 21l5.5-3 5.5 3-1.7-8.2"/></svg></div>
-      <div><h3>Certifikát a brožúra</h3><p>Na záver každého kurzu</p></div>
-    </div>
-    <div class="feature-item">
-      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 6"/></svg></div>
-      <div><h3>Jednoduché kroky</h3><p>Vysvetlené krok za krokom</p></div>
+    <div class="feature-strip">
+      <div class="feature-item">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <div><h3>Bez hesla</h3><p>Prihlasujete sa menom a kódom</p></div>
+      </div>
+      <div class="feature-item">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="18" cy="9" r="2.6"/><path d="M15.5 20a5 5 0 0 1 6.8-4.7"/></svg></div>
+        <div><h3>Vhodné pre seniorov</h3><p>Pomaly, zrozumiteľne a s trpezlivosťou</p></div>
+      </div>
+      <div class="feature-item">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 12.8 6.5 21l5.5-3 5.5 3-1.7-8.2"/></svg></div>
+        <div><h3>Certifikát a brožúra</h3><p>Na záver každého kurzu</p></div>
+      </div>
+      <div class="feature-item">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 6"/></svg></div>
+        <div><h3>Jednoduché kroky</h3><p>Vysvetlené krok za krokom</p></div>
+      </div>
     </div>
   </div>
 
@@ -289,33 +299,29 @@
     </div>
     <div class="steps-row">
       <div class="step-item">
-        <div class="num">1</div>
-        <h3>Vyberiete si kurz</h3>
-        <p>Zvoľte si tému, ktorá vás zaujíma.</p>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+        <h3>Získajte prístupový kód</h3>
+        <p>Zakúpením kurzu vám príde e-mailom</p>
       </div>
-      <svg class="step-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
       <div class="step-item">
-        <div class="num">2</div>
-        <h3>Uhradíte kurz</h3>
-        <p>Platba kartou alebo bankovým prevodom.</p>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <h3>Prihláste sa jednoducho</h3>
+        <p>Bez hesla, len kódom</p>
       </div>
-      <svg class="step-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
       <div class="step-item">
-        <div class="num">3</div>
-        <h3>Dostanete kód e-mailom</h3>
-        <p>Do pár hodín vám príde 6-miestny prístupový kód.</p>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5v-7Z"/></svg></div>
+        <h3>Učte sa vlastným tempom</h3>
+        <p>Krátke lekcie, praktické úlohy</p>
       </div>
-      <svg class="step-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
       <div class="step-item">
-        <div class="num">4</div>
-        <h3>Prihlásite sa menom a kódom</h3>
-        <p>Jednoducho, bez hesla a bezpečne.</p>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5.5"/><path d="M8.2 12.8 6.5 21l5.5-3 5.5 3-1.7-8.2"/></svg></div>
+        <h3>Získajte certifikát</h3>
+        <p>Po úspešnom dokončení kurzu</p>
       </div>
-      <svg class="step-arrow" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
       <div class="step-item">
-        <div class="num">5</div>
-        <h3>Pozeráte a učíte sa</h3>
-        <p>Videá, cvičenia a na záver certifikát a brožúra.</p>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.35-9.5-8.5C.5 8.5 3 5 6.5 5c2 0 3.5 1.5 5.5 4 2-2.5 3.5-4 5.5-4 3.5 0 6 3.5 4 7.5C19 16.65 12 21 12 21Z"/></svg></div>
+        <h3>Cítite sa istejšie online</h3>
+        <p>Využívajte technológie s radosťou</p>
       </div>
     </div>
   </section>
@@ -365,16 +371,22 @@
   </section>
 
   <section id="kontakt" class="contact-band">
-    <div>
-      <h2>Potrebujete osobnú pomoc?</h2>
-      <p>Sme tu pre vás. Napíšte nám alebo zavolajte, radi poradíme s výberom kurzu, alebo s čímkoľvek, čo nie je jasné.</p>
-    </div>
-    <div class="contact-band-right">
-      <div class="contact-phone">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.9a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.8 2Z"/></svg>
-        <a href="tel:+421951516615">0951 516 615</a>
+    <img class="contact-photo" src="assets/hero/kontakt-podpora.jpg" alt="Usmiata pracovníčka podpory DigiStart" onerror="this.style.display='none';">
+    <div class="contact-band-body">
+      <div>
+        <h2>Potrebujete osobnú pomoc?</h2>
+        <p>Sme tu pre vás. Napíšte nám alebo zavolajte, radi poradíme s výberom kurzu, alebo s čímkoľvek, čo nie je jasné.</p>
       </div>
-      <a class="btn btn-primary" style="text-decoration:none;" href="konzultacia.html">Dohodnúť konzultáciu</a>
+      <div class="contact-band-right">
+        <div class="contact-phone-block">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8 9.9a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.8 2Z"/></svg></span>
+          <div>
+            <a href="tel:+421951516615">0951 516 615</a>
+            <div class="hours">Po–Pia: 8:00–16:00</div>
+          </div>
+        </div>
+        <a class="btn btn-primary" style="text-decoration:none;" href="konzultacia.html">Dohodnúť konzultáciu</a>
+      </div>
     </div>
   </section>
 </main>

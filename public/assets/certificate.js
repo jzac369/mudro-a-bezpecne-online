@@ -16,25 +16,23 @@
   var H = 848;       // logická výška
   var SCALE = 2;     // dvojnásobné rozlíšenie kvôli tlači
 
-  // Skúsime najprv načítať obrázok s crossOrigin="anonymous" — vďaka tomu
-  // vieme z neho neskôr čítať jednotlivé pixely (potrebné na odstránenie
-  // bieleho pozadia). Firebase Storage však CORS hlavičky pre takúto
-  // požiadavku nemusí posielať — vtedy prehliadač obrázok vôbec nenačíta
-  // (nie je to len "zafarbenie" plátna, načítanie rovno zlyhá). V takom
-  // prípade to skúsime ešte raz bez crossOrigin — obrázok sa aspoň
-  // zobrazí, len sa z neho nedá odstrániť pozadie.
+  // Načítavame výhradne s crossOrigin="anonymous". Ak by sme pri zlyhaní
+  // skúsili obrázok znova bez crossOrigin, prehliadač by ho síce zobrazil,
+  // ale akékoľvek jeho vykreslenie do canvasu by canvas „zašpinilo“
+  // (tainted canvas) — a canvas.toDataURL() na konci by potom vždy zlyhal
+  // s SecurityError, čím by sa nevygeneroval žiadny certifikát (presne
+  // tento scenár spôsoboval "Certifikát sa nepodarilo pripraviť", keď
+  // Storage bucket nemal nastavené CORS hlavičky pre logo/podpis). Preto
+  // pri zlyhaní CORS načítania obrázok radšej úplne vynecháme (certifikát
+  // sa vykreslí bez loga/podpisu) — to je vždy lepšie ako nevygenerovať
+  // certifikát vôbec.
   function loadImage(url) {
     return new Promise(function (resolve) {
       if (!url) { resolve(null); return; }
       var img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = function () { resolve(img); };
-      img.onerror = function () {
-        var plain = new Image();
-        plain.onload = function () { resolve(plain); };
-        plain.onerror = function () { resolve(null); };
-        plain.src = url;
-      };
+      img.onerror = function () { resolve(null); };
       img.src = url;
     });
   }

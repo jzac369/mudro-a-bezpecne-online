@@ -181,19 +181,21 @@
       <p style="font-weight:700;margin:0;">Pripravujeme pre vás certifikát, prosím počkajte…</p>
     </div>
     <div id="cert-area" style="display:none;">
-      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1rem;">
-        <p style="font-weight:700;font-size:1.1rem;margin-bottom:.4rem;">🎉 Srdečne gratulujeme, kurz ste úspešne zvládli!</p>
-        <p class="hint" style="margin:0;">Ďakujeme, že ste si našli čas a prešli si celý kurz až do konca — bola to poriadna dávka nových vedomostí a vy ste to zvládli naozaj šikovne. Váš certifikát o absolvovaní je pripravený nižšie — môžete si ho stiahnuť do počítača alebo rovno vytlačiť. Nech vám nadobudnuté vedomosti dobre slúžia!</p>
+      <div id="cert-ready-block">
+        <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1rem;">
+          <p style="font-weight:700;font-size:1.1rem;margin-bottom:.4rem;">🎉 Srdečne gratulujeme, kurz ste úspešne zvládli!</p>
+          <p class="hint" style="margin:0;">Ďakujeme, že ste si našli čas a prešli si celý kurz až do konca — bola to poriadna dávka nových vedomostí a vy ste to zvládli naozaj šikovne. Váš certifikát o absolvovaní je pripravený nižšie — môžete si ho stiahnuť do počítača alebo rovno vytlačiť. Nech vám nadobudnuté vedomosti dobre slúžia!</p>
+        </div>
+        <img id="cert-preview" class="cert-preview" alt="Náhľad certifikátu o absolvovaní">
+        <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
+          <button class="btn btn-primary" type="button" id="cert-pdf-btn">Stiahnuť certifikát (PDF)</button>
+          <a class="btn btn-secondary" id="cert-download" download="certifikat.png" style="text-decoration:none;display:inline-block;">Stiahnuť ako obrázok (PNG)</a>
+          <button class="btn btn-secondary" type="button" id="cert-print-btn">Vytlačiť certifikát</button>
+          <button class="btn btn-secondary" type="button" id="cert-email-btn">Poslať certifikát na e-mail</button>
+        </div>
+        <p class="hint" id="cert-email-status" style="margin-top:.6rem;"></p>
+        <p class="hint" style="margin-top:1.2rem;">Chcete si niečo prebrať osobne? <a href="konzultacia.html">Dohodnite si konzultáciu s lektorom</a>.</p>
       </div>
-      <img id="cert-preview" class="cert-preview" alt="Náhľad certifikátu o absolvovaní">
-      <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
-        <button class="btn btn-primary" type="button" id="cert-pdf-btn">Stiahnuť certifikát (PDF)</button>
-        <a class="btn btn-secondary" id="cert-download" download="certifikat.png" style="text-decoration:none;display:inline-block;">Stiahnuť ako obrázok (PNG)</a>
-        <button class="btn btn-secondary" type="button" id="cert-print-btn">Vytlačiť certifikát</button>
-        <button class="btn btn-secondary" type="button" id="cert-email-btn">Poslať certifikát na e-mail</button>
-      </div>
-      <p class="hint" id="cert-email-status" style="margin-top:.6rem;"></p>
-      <p class="hint" style="margin-top:1.2rem;">Chcete si niečo prebrať osobne? <a href="konzultacia.html">Dohodnite si konzultáciu s lektorom</a>.</p>
     </div>
   </section>
 
@@ -476,16 +478,22 @@
     const loading = document.getElementById("cert-loading");
     loading.style.display = "flex";
 
+    const area = document.getElementById("cert-area");
+    const readyBlock = document.getElementById("cert-ready-block");
+    const existingError = area.querySelector(".cert-missing");
+    if (existingError) existingError.remove();
+
     try {
       // Zámerne aspoň 10 sekúnd, aby bolo vidieť, že sa certifikát pripravuje.
       await new Promise((resolve) => setTimeout(resolve, 10000));
       await showCertificate(participantName);
+      readyBlock.style.display = "";
       loading.style.display = "none";
       await markCourseCompleted();
     } catch (err) {
       console.error("Certifikát sa nepodarilo pripraviť:", err);
       loading.style.display = "none";
-      const area = document.getElementById("cert-area");
+      readyBlock.style.display = "none";
       area.style.display = "block";
       area.insertAdjacentHTML("afterbegin",
         "<div class='cert-missing'><p class='cert-missing-title'>Certifikát sa nepodarilo pripraviť.</p>" +
