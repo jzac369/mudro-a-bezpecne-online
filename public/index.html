@@ -381,6 +381,49 @@
 <script>
   document.getElementById("footer-year").textContent = new Date().getFullYear();
 
+  // Odkazy v hornom menu (a v pätičke) neposkočia na sekciu skokom, ale
+  // stránku k nej pokojne posunú — pre staršieho návštevníka je oveľa
+  // zrozumiteľnejšie, kam sa dostal, keď ten pohyb vidí. Nepoužívame
+  // CSS scroll-behavior: smooth, lebo jeho rýchlosť sa nedá spomaliť.
+  (function slowAnchorScroll() {
+    // Kto má v systéme zapnuté obmedzenie animácií, dostane okamžitý skok.
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function glideTo(targetY) {
+      const startY = window.scrollY;
+      const distance = targetY - startY;
+      if (!distance) return;
+      // Dlhšia vzdialenosť = dlhšie posúvanie, ale vždy v pokojnom rozsahu.
+      const duration = Math.min(1800, Math.max(900, Math.abs(distance) * 0.9));
+      const startTime = performance.now();
+      (function step(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        window.scrollTo(0, startY + distance * easeInOutCubic(progress));
+        if (progress < 1) requestAnimationFrame(step);
+      })(startTime);
+    }
+
+    document.addEventListener("click", (event) => {
+      const link = event.target.closest('a[href^="#"]');
+      if (!link) return;
+      const hash = link.getAttribute("href");
+      // href="#" má tlačidlo chatu — to si obsluhuje vlastný skript.
+      if (hash.length < 2) return;
+      const target = document.querySelector(hash);
+      if (!target) return;
+
+      event.preventDefault();
+      const y = Math.max(0, target.getBoundingClientRect().top + window.scrollY - 16);
+      if (reduceMotion) window.scrollTo(0, y);
+      else glideTo(y);
+      history.replaceState(null, "", hash);
+    });
+  })();
+
   window.addEventListener("load", async () => {
     if (!window.firebase || !window.FIREBASE_CONFIG) return;
     const db = firebase.firestore();
