@@ -1642,6 +1642,24 @@ const DEFAULT_VOUCHER_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             </td>
           </tr>`);
 
+const DEFAULT_CERTIFICATE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
+            <td style="padding:36px 40px 8px;">
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">gratulujeme k úspešnému absolvovaniu kurzu <strong>„{{workshop_title}}“</strong>! Nižšie nájdete odkaz na stiahnutie vášho certifikátu.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 40px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="background-color:#f6ecd9;border:2px solid #c17a2e;border-radius:12px;padding:24px 20px;">
+                    <a href="{{doc_url}}" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť certifikát (PDF)</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`);
+
 // Jednoduchá šablóna pre pripomienky a upozornenia (nikdy sa neprihlásil,
 // nedokončil kurz, nová správa v chate, rezervácia konzultácie…) — tieto
 // mali doteraz text úplne odlišný od faktúry/POZ/poukazu, preto majú
@@ -1769,6 +1787,7 @@ exports.getEmailSettings = onCall(async (request) => {
     pozEmailTemplate: data.pozEmailTemplate || data.documentEmailTemplate || DEFAULT_POZ_EMAIL_TEMPLATE,
     voucherEmailTemplate: data.voucherEmailTemplate || DEFAULT_VOUCHER_EMAIL_TEMPLATE,
     welcomeEmailTemplate: data.welcomeEmailTemplate || DEFAULT_WELCOME_EMAIL_TEMPLATE,
+    certificateEmailTemplate: data.certificateEmailTemplate || DEFAULT_CERTIFICATE_EMAIL_TEMPLATE,
   };
 });
 
@@ -1779,7 +1798,7 @@ exports.saveEmailSettings = onCall(async (request) => {
   const {
     host, port, secure, user, fromName, password,
     replyTo, bccEnabled, bccAddress,
-    invoiceEmailTemplate, pozEmailTemplate, voucherEmailTemplate, welcomeEmailTemplate,
+    invoiceEmailTemplate, pozEmailTemplate, voucherEmailTemplate, welcomeEmailTemplate, certificateEmailTemplate,
   } = request.data || {};
   if (!host || !String(host).trim() || !user || !String(user).trim()) {
     throw new HttpsError("invalid-argument", "Chýba SMTP server alebo prihlasovacia e-mailová adresa.");
@@ -1815,6 +1834,9 @@ exports.saveEmailSettings = onCall(async (request) => {
   if (typeof welcomeEmailTemplate === "string" && welcomeEmailTemplate.trim()) {
     update.welcomeEmailTemplate = welcomeEmailTemplate;
   }
+  if (typeof certificateEmailTemplate === "string" && certificateEmailTemplate.trim()) {
+    update.certificateEmailTemplate = certificateEmailTemplate;
+  }
 
   await db.collection("emailConfig").doc("smtp").set(update, { merge: true });
   return { ok: true };
@@ -1843,12 +1865,17 @@ const TEMPLATE_TEST_SAMPLES = {
     to_name: "Miška", code: "JBLYWM", workshop_title: "Ako nenaletieť podvodníkom",
     custom_message: "",
   },
+  certificate: {
+    to_name: "Mária Nováková", workshop_title: "Ako nenaletieť podvodníkom",
+    doc_url: "https://kurzy.digistart.sk/",
+  },
 };
 const TEMPLATE_TEST_SUBJECTS = {
   invoice: "[TEST] Faktúra",
   poz: "[TEST] Potvrdenie o zaplatení",
   voucher: "[TEST] Darčekový poukaz",
   welcome: "[TEST] Váš prístupový kód",
+  certificate: "[TEST] Váš certifikát",
 };
 
 exports.sendTestTemplateEmail = onCall(async (request) => {
@@ -2296,6 +2323,92 @@ async function sendVoucherSmtpEmail({ to, name, workshopTitle, url, code, recipi
     );
   }
 }
+
+// Odoslanie certifikátu (PDF) e-mailom účastníkovi — certifikát sa
+// generuje na strane prehliadača (canvas), takže hotový súbor príde od
+// klienta ako base64; tu sa len uloží do Storage a pošle sa naň odkaz
+// (zámerne nie ako príloha).
+async function sendCertificateSmtpEmail({ to, name, workshopTitle, url }) {
+  let status = "sent";
+  let errorMessage = "";
+  try {
+    const { transporter, cfg } = await getSmtpTransporter();
+    const template = cfg.certificateEmailTemplate || DEFAULT_CERTIFICATE_EMAIL_TEMPLATE;
+    const html = renderDocumentEmailHtml(template, {
+      to_name: name,
+      workshop_title: workshopTitle,
+      doc_url: url,
+    });
+    await transporter.sendMail(buildMailOptions(cfg, {
+      to,
+      subject: "Váš certifikát — kurz „" + workshopTitle + "“",
+      html,
+    }));
+  } catch (err) {
+    status = "failed";
+    errorMessage = String((err && err.message) || err).slice(0, 300);
+    console.error("SMTP odoslanie certifikátu zlyhalo:", err);
+  }
+
+  try {
+    await db.collection("mail").add({
+      to, docLabel: "certifikát", status, via: "smtp",
+      error: status === "failed" ? errorMessage : null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
+
+  if (status === "failed") {
+    throw new HttpsError(
+      "internal",
+      "Odoslanie e-mailu zlyhalo (" + errorMessage + "). Skúste to prosím znova."
+    );
+  }
+}
+
+exports.sendCertificateEmail = onCall({ timeoutSeconds: 60 }, async (request) => {
+  const codeId = request.auth?.token?.codeId;
+  if (!codeId) {
+    throw new HttpsError("permission-denied", "Certifikát si môže poslať len prihlásený účastník kurzu.");
+  }
+  const { pdfBase64, workshopTitle } = request.data || {};
+  if (!pdfBase64 || typeof pdfBase64 !== "string") {
+    throw new HttpsError("invalid-argument", "Chýba súbor certifikátu.");
+  }
+  // Meno a e-mail sa zámerne neberú od klienta, ale z jeho vlastnej
+  // objednávky — nech certifikát nejde na ľubovoľnú adresu zadanú v
+  // prehliadači.
+  const codeSnap = await db.collection("accessCodes").doc(codeId).get();
+  if (!codeSnap.exists) throw new HttpsError("not-found", "Prístupový kód sa nenašiel.");
+  const orderId = codeSnap.data().orderId;
+  const orderSnap = orderId ? await db.collection("orders").doc(orderId).get() : null;
+  if (!orderSnap || !orderSnap.exists || !orderSnap.data().email) {
+    throw new HttpsError("failed-precondition", "K tomuto kódu sa nenašla e-mailová adresa.");
+  }
+  const order = orderSnap.data();
+
+  let buffer;
+  try {
+    buffer = Buffer.from(pdfBase64, "base64");
+  } catch (err) {
+    throw new HttpsError("invalid-argument", "Súbor certifikátu sa nepodarilo spracovať.");
+  }
+  if (buffer.length > 10 * 1024 * 1024) {
+    throw new HttpsError("invalid-argument", "Súbor certifikátu je príliš veľký.");
+  }
+
+  const url = await uploadPdfAndGetUrl(buffer, "certificates/" + codeId + "/" + Date.now() + ".pdf");
+  await sendCertificateSmtpEmail({
+    to: order.email,
+    name: order.name,
+    workshopTitle: workshopTitle || "",
+    url,
+  });
+
+  return { ok: true };
+});
 
 exports.sendGiftVoucherEmail = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {

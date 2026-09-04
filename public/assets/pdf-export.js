@@ -74,6 +74,13 @@
       return !!w2;
     }
 
+    // Namiesto stiahnutia vráti obsah PDF ako base64 — použité napr. pri
+    // posielaní certifikátu e-mailom (súbor treba poslať na server, nie
+    // rovno uložiť do počítača).
+    if (opts.action === "base64") {
+      return doc.output("datauristring").split(",")[1];
+    }
+
     doc.save(filename);
     return true;
   };

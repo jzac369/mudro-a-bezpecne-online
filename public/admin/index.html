@@ -1243,6 +1243,7 @@
             <button type="button" class="template-tab-btn" data-template-tab="poz">Potvrdenie o zaplatení</button>
             <button type="button" class="template-tab-btn" data-template-tab="voucher">Darčekový poukaz</button>
             <button type="button" class="template-tab-btn" data-template-tab="welcome">Uvítací e-mail</button>
+            <button type="button" class="template-tab-btn" data-template-tab="certificate">Certifikát</button>
           </div>
 
           <div class="template-tab-panel" data-template-panel="invoice">
@@ -1329,6 +1330,30 @@
               <button class="btn btn-secondary" type="button" id="tpl-welcome-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-welcome-reset-btn">Obnoviť pôvodnú</button>
               <span id="tpl-welcome-result" class="hint"></span>
+            </div>
+          </div>
+
+          <div class="template-tab-panel" data-template-panel="certificate" style="display:none;">
+            <p class="hint" style="margin-bottom:.6rem;">
+              Tento e-mail dostane účastník, keď si na stránke kurzu klikne "Poslať certifikát na e-mail". Odkaz na stiahnutie (nie príloha).
+              Premenné: <code>{{to_name}}</code>, <code>{{workshop_title}}</code>, <code>{{doc_url}}</code>.
+            </p>
+            <div class="tpl-toolbar" id="tpl-certificate-toolbar">
+              <button type="button" data-tpl-cmd="bold" style="font-weight:700;">B</button>
+              <button type="button" data-tpl-cmd="italic" style="font-style:italic;">I</button>
+              <button type="button" data-tpl-cmd="createLink">Odkaz</button>
+              <button type="button" data-tpl-cmd="unlink">Zrušiť odkaz</button>
+            </div>
+            <div class="template-editor-grid">
+              <textarea id="tpl-certificate-code" rows="18" spellcheck="false" class="template-code"></textarea>
+              <iframe id="tpl-certificate-preview" class="template-preview" title="Náhľad — certifikát"></iframe>
+            </div>
+            <div style="display:flex;gap:.8rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;">
+              <button class="btn btn-primary" type="button" id="tpl-certificate-save-btn">Uložiť šablónu</button>
+              <button class="btn btn-secondary" type="button" id="tpl-certificate-mode-btn">Grafický editor</button>
+              <button class="btn btn-secondary" type="button" id="tpl-certificate-test-btn">Odoslať testovací e-mail</button>
+              <button class="btn btn-secondary" type="button" id="tpl-certificate-reset-btn">Obnoviť pôvodnú</button>
+              <span id="tpl-certificate-result" class="hint"></span>
             </div>
           </div>
         </div>
@@ -1634,7 +1659,7 @@ window.addEventListener("load", function () {
   // ---------- Sekcia E-maily (SMTP nastavenia pre FA/POZ/poukaz) ----------
   let platbyLoaded = false;
   let emailSettingsLoaded = false;
-  const TEMPLATE_TYPES = ["invoice", "poz", "voucher", "welcome"];
+  const TEMPLATE_TYPES = ["invoice", "poz", "voucher", "welcome", "certificate"];
   const templateDefaults = {};
 
   // Vzorové údaje pre živý náhľad — nič sa nimi neodosiela, slúžia len
@@ -1657,6 +1682,9 @@ window.addEventListener("load", function () {
     },
     welcome: {
       to_name: "Miška", code: "JBLYWM", workshop_title: "Ako nenaletieť podvodníkom", custom_message: "",
+    },
+    certificate: {
+      to_name: "Mária Nováková", workshop_title: "Ako nenaletieť podvodníkom", doc_url: "#",
     },
   };
 
@@ -1773,6 +1801,7 @@ window.addEventListener("load", function () {
       templateDefaults.poz = d.pozEmailTemplate || "";
       templateDefaults.voucher = d.voucherEmailTemplate || "";
       templateDefaults.welcome = d.welcomeEmailTemplate || "";
+      templateDefaults.certificate = d.certificateEmailTemplate || "";
       TEMPLATE_TYPES.forEach((type) => {
         document.getElementById("tpl-" + type + "-code").value = templateDefaults[type];
         updateTemplatePreview(type);
