@@ -1600,6 +1600,27 @@ function drawGiftVoucherPdf(doc, { s, order, code }) {
     .text(issueDate, W - inner - 20 - 120, H - inner - 22, { width: 120, align: "right" });
 }
 
+// Odkaz na dokument posielaný zákazníkovi (faktúra/POZ/poukaz/certifikát)
+// zámerne nesmeruje na storage.googleapis.com, ale na vlastnú doménu —
+// kryptografický podpis aj 30-dňová platnosť ostávajú úplne nezmenené,
+// len ich cestou späť k reálnemu súboru je Cloud Function
+// downloadDocument (naviazaná na hosting doménu nižšie), ktorá
+// požiadavku 1:1 prepošle na Google Cloud Storage. Ide čisto o vzhľad
+// odkazu v e-maile, nie o zmenu zabezpečenia — pozri downloadDocument.
+const DOCUMENT_DOWNLOAD_HOST = "https://stiahnut.kurzy.digistart.sk";
+
+function maskDocumentUrl(signedUrl) {
+  try {
+    const u = new URL(signedUrl);
+    // u.pathname je tvaru /<bucket>/<cesta...> — meno bucketu zákazník
+    // v odkaze vidieť nemusí, downloadDocument ho pozná samo.
+    const withoutBucket = u.pathname.replace(/^\/[^/]+\//, "/");
+    return DOCUMENT_DOWNLOAD_HOST + withoutBucket + u.search;
+  } catch (err) {
+    return signedUrl; // radšej pôvodný funkčný odkaz než žiadny
+  }
+}
+
 async function uploadPdfAndGetUrl(buffer, path) {
   const bucket = getStorage().bucket();
   const file = bucket.file(path);
@@ -1608,8 +1629,39 @@ async function uploadPdfAndGetUrl(buffer, path) {
     action: "read",
     expires: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 dní
   });
-  return url;
+  return maskDocumentUrl(url);
 }
+
+// Prijme presne tú istú cestu a query reťazec, aký getSignedUrl()
+// vygeneroval (len bez mena bucketu v ceste — to dopĺňa tu), a
+// prepošle ich na storage.googleapis.com. Google Cloud Storage samo
+// overí podpis aj expiráciu — táto funkcia iba schová, že súbor
+// reálne leží vo Firebase Storage.
+exports.downloadDocument = onRequest({ region: "europe-west1" }, async (req, res) => {
+  const path = req.path;
+  if (!path || path === "/") {
+    res.status(404).send("Nenájdené.");
+    return;
+  }
+  const qs = req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+  const upstreamUrl = "https://storage.googleapis.com/mudro-a-bezpecne-online.firebasestorage.app" + path + qs;
+  try {
+    const upstream = await fetch(upstreamUrl);
+    if (!upstream.ok) {
+      res.status(upstream.status === 404 ? 404 : 400)
+        .send("Odkaz už nie je platný, alebo dokument neexistuje. Napíšte nám prosím na info@digistart.sk.");
+      return;
+    }
+    res.set("Content-Type", upstream.headers.get("content-type") || "application/pdf");
+    const disposition = upstream.headers.get("content-disposition");
+    if (disposition) res.set("Content-Disposition", disposition);
+    res.set("Cache-Control", "private, max-age=3600");
+    res.status(200).send(Buffer.from(await upstream.arrayBuffer()));
+  } catch (err) {
+    console.error("Nepodarilo sa prepojiť na úložisko dokumentu:", err);
+    res.status(502).send("Dokument sa nepodarilo načítať. Skúste to prosím znova.");
+  }
+});
 
 /* ============================================================
    Vlastné SMTP odosielanie (faktúra, potvrdenie o zaplatení, poukaz,

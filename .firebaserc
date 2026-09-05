@@ -2,6 +2,14 @@
   "projects": {
     "default": "mudro-a-bezpecne-online"
   },
-  "targets": {},
+  "targets": {
+    "mudro-a-bezpecne-online": {
+      "hosting": {
+        "dokumenty": [
+          "digistart-dokumenty"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

@@ -16,5 +16,12 @@
   "storage": {
     "bucket": "mudro-a-bezpecne-online.firebasestorage.app",
     "rules": "storage.rules"
+  },
+  "hosting": {
+    "target": "dokumenty",
+    "public": "hosting-dokumenty",
+    "rewrites": [
+      { "source": "**", "function": { "functionId": "downloadDocument", "region": "europe-west1" } }
+    ]
   }
 }
