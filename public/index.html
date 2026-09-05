@@ -90,6 +90,8 @@
   .ds-brand-mark { width: 40px; height: 40px; flex: none; border-radius: 11px; background: var(--green); color: #fff; display: grid; place-items: center; }
   .ds-brand-mark svg { width: 21px; height: 21px; }
   .ds-brand-name { font-family: var(--serif); font-size: calc(20px * var(--font-scale)); font-weight: 700; color: var(--ink); line-height: 1.1; }
+  .ds-logo { height: 56px; width: auto; display: block; }
+  @media (max-width: 560px) { .ds-logo { height: 44px; } }
   .ds-brand small { display: block; font-family: var(--sans); font-size: var(--fs-micro); font-weight: 400; color: var(--muted); letter-spacing: .04em; margin-top: 3px; }
   .page nav { display: flex; align-items: center; gap: 26px; }
   .page nav a { font-size: var(--fs-small); color: var(--ink-2); padding: 10px 0; position: relative; }
@@ -311,8 +313,7 @@
 <header class="ds-topbar">
   <div class="wrap top-inner">
     <a class="ds-brand" href="index.html">
-      <span class="ds-brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg></span>
-      <span class="ds-brand-name">DigiStart<small>Vzdelávacie kurzy</small></span>
+      <img class="ds-logo" src="assets/logo-digistart.png" alt="DigiStart — Vzdelávacie kurzy">
     </a>
     <nav aria-label="Hlavná navigácia">
       <a href="#kurzy">Kurzy</a>
