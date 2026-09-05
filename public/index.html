@@ -154,8 +154,12 @@
   .trust-item:last-child { border-right: none; }
   .trust-icon { width: 42px; height: 42px; flex: none; border-radius: 50%; background: var(--green-tint); color: var(--green); display: grid; place-items: center; }
   .trust-icon svg { width: 20px; height: 20px; }
-  .trust-item strong { display: block; font-size: var(--fs-small); line-height: 1.35; margin-bottom: 3px; }
-  .trust-item span { display: block; font-size: var(--fs-micro); color: var(--muted); line-height: 1.4; }
+  /* Scopované na vnorené div > strong/span (popis), nie priamo na
+     .trust-item, aby to nezasahovalo do .trust-icon (tiež <span>,
+     priamy potomok .trust-item) — inak by mu prepísalo display:grid
+     na block a ikonka by sa v kruhu vycentrovala zle. */
+  .trust-item > div > strong { display: block; font-size: var(--fs-small); line-height: 1.35; margin-bottom: 3px; }
+  .trust-item > div > span { display: block; font-size: var(--fs-micro); color: var(--muted); line-height: 1.4; }
   @media (max-width: 900px) {
     .trust-inner { grid-template-columns: 1fr 1fr; }
     .trust-item:nth-child(2) { border-right: none; }
@@ -291,8 +295,8 @@
   .footer-links { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: flex-start; align-content: flex-start; }
   .footer-links a { font-size: var(--fs-small); color: var(--ink-2); padding: 4px 0; }
   .footer-links a:hover { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
-  .footer-bottom { padding-top: 18px; font-size: var(--fs-micro); color: var(--muted); }
-  /* Právny riadok doplní app.js na koniec stránky — zladíme ho s pätičkou */
+  /* Copyright riadok nedávame vlastný — doplní ho app.js na koniec
+     stránky (spoločný pre celý web), aby sa nezobrazoval dvakrát. */
   #mbo-footer { font-family: var(--sans); font-size: var(--fs-micro) !important; color: var(--muted) !important; background: var(--paper); padding: 0 0 34px !important; }
   @media (max-width: 700px) { .footer-top { grid-template-columns: 1fr; gap: 30px; } }
 
@@ -558,7 +562,6 @@
         <a href="ochrana-osobnych-udajov.html">Ochrana osobných údajov</a>
       </nav>
     </div>
-    <div class="footer-bottom">© <span id="footer-year"></span> DigiStart</div>
   </div>
 </footer>
 
@@ -570,8 +573,6 @@
 </a>
 
 <script>
-  document.getElementById("footer-year").textContent = new Date().getFullYear();
-
   // "Kontaktujte nás" v kontaktnom banneri otvára rovnaký chat ako
   // plávajúce tlačidlo "Potrebujem pomoc" — nededikuje sa preň žiadna
   // vlastná logika, len sa "klikne" za návštevníka na existujúci fab.
