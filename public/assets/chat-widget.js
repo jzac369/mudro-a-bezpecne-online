@@ -25,7 +25,7 @@
          krémová + biela), aby chat vyzeral rovnako na každej stránke. */
       .mbo-chat-panel {
         position: fixed; right: 1.4rem; bottom: 5.4rem; width: 300px; max-width: calc(100vw - 2rem);
-        height: auto; max-height: min(400px, calc(100vh - 7.5rem));
+        height: auto; max-height: min(500px, calc(100vh - 7.5rem));
         background: #fff; border: 1px solid #e7dcc9; border-radius: 18px;
         box-shadow: 0 16px 44px rgba(16,50,47,.18); display: none; flex-direction: column; overflow: hidden; z-index: 60;
       }
@@ -74,12 +74,12 @@
       .mbo-chat-meta .mbo-check { width: 14px; height: 14px; color: #6b9f8f; }
 
       /* "Rýchla pomoc" — vloží text do inputu, neposiela nič samo od seba. */
-      .mbo-quick-help { flex: none; padding: .6rem 1rem 0; }
-      .mbo-quick-help-label { font-size: .78rem; font-weight: 700; color: #6b7671; margin-bottom: .5rem; }
-      .mbo-quick-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+      .mbo-quick-help { flex: none; padding: .5rem 1rem 0; overflow: hidden; }
+      .mbo-quick-help-label { font-size: .72rem; font-weight: 700; color: #6b7671; margin-bottom: .35rem; }
+      .mbo-quick-row { display: flex; flex-wrap: nowrap; gap: .4rem; overflow-x: auto; padding-bottom: .5rem; margin-bottom: -.5rem; -webkit-overflow-scrolling: touch; }
       .mbo-quick-btn {
-        display: inline-flex; align-items: center; gap: .4rem; background: #f6efe2; border: 1px solid #e7dcc9;
-        color: #23342f; font: inherit; font-size: .85rem; font-weight: 700; padding: .5rem .8rem; border-radius: 999px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: .35rem; background: #f6efe2; border: 1px solid #e7dcc9; flex: none;
+        color: #23342f; font: inherit; font-size: .8rem; font-weight: 700; padding: .4rem .65rem; border-radius: 999px; cursor: pointer; white-space: nowrap;
       }
       .mbo-quick-btn:hover { background: #eee2ca; }
       .mbo-quick-btn svg { width: 15px; height: 15px; flex: none; color: #12554a; }
