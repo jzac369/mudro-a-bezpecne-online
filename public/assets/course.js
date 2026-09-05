@@ -1536,6 +1536,78 @@
     return lines;
   }
 
+  // Ako si aplikáciu bezpečne zaobstarať. Ťažisko obrazovky je zámerne na
+  // rozoznaní pravej aplikácie, nie na tlačidle — kurz inak učí na odkazy
+  // neklikať a nechceme, aby si senior odniesol opačný návyk. Odkazy sú tu
+  // len ako pohodlie a otvárajú sa v novom okne, nech o kurz nepríde.
+  RENDERERS.install = function (slide, card) {
+    header(card, slide);
+    taskBox(card, slide.task);
+
+    const app = slide.appCard || {};
+    const idCard = el("div", "course-app-card");
+    const iconWrap = el("div", "course-app-icon");
+    if (app.icon) {
+      const img = el("img");
+      img.src = app.icon;
+      img.alt = "Logo aplikácie " + (app.name || "");
+      iconWrap.appendChild(img);
+    }
+    idCard.appendChild(iconWrap);
+    idCard.appendChild(el("div", "course-app-meta",
+      "<h3>" + (app.name || "") + "</h3>" +
+      "<dl>" +
+      "<div><dt>" + (app.publisherLabel || "Vydavateľ") + "</dt><dd class='is-key'>" + (app.publisher || "") + "</dd></div>" +
+      "<div><dt>" + (app.priceLabel || "Cena") + "</dt><dd>" + (app.price || "") + "</dd></div>" +
+      "</dl>" +
+      (app.publisherNote ? "<p class='course-app-note'>" + app.publisherNote + "</p>" : "")));
+    card.appendChild(idCard);
+    if (app.caption) card.appendChild(el("p", "course-app-caption", app.caption));
+
+    if (slide.waysTitle) card.appendChild(el("h3", "course-install-h", slide.waysTitle));
+    const ways = el("div", "course-ways");
+    (slide.ways || []).forEach((w) => {
+      const item = el("div", "course-way" + (w.recommended ? " recommended" : ""));
+      if (w.recommended) item.appendChild(el("span", "course-way-flag", "Najjednoduchšie"));
+      item.appendChild(el("h4", null, w.device));
+      item.appendChild(el("p", "course-way-text", w.text));
+      const link = el("a", "course-way-link",
+        "<span>" + w.action + "</span>" +
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2'><path d='M7 17 17 7M9 7h8v8'/></svg>");
+      link.href = w.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      item.appendChild(link);
+      if (w.host) item.appendChild(el("p", "course-way-host", "Adresa: <strong>" + w.host + "</strong>"));
+      ways.appendChild(item);
+    });
+    card.appendChild(ways);
+
+    if (slide.checksTitle) card.appendChild(el("h3", "course-install-h", slide.checksTitle));
+    const checks = el("div", "course-checks");
+    (slide.checks || []).forEach((c, i) => {
+      checks.appendChild(el("div", "course-check",
+        "<span class='course-check-num'>" + (i + 1) + "</span>" +
+        "<div><h4>" + c.title + "</h4><p>" + c.text + "</p></div>"));
+    });
+    card.appendChild(checks);
+
+    if (slide.plansTitle) card.appendChild(el("h3", "course-install-h", slide.plansTitle));
+    const plans = el("div", "course-plans");
+    (slide.plans || []).forEach((p) => {
+      plans.appendChild(el("div", "course-plan tone-" + (p.tone || "free"),
+        "<h4>" + p.title + "</h4><p>" + p.text + "</p>"));
+    });
+    card.appendChild(plans);
+
+    if (slide.warning) {
+      card.appendChild(el("div", "course-install-warn",
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 9v4M12 17h.01'/><circle cx='12' cy='12' r='9'/></svg>" +
+        "<p><strong>Pozor:</strong> " + slide.warning + "</p>"));
+    }
+    note(card, slide.note);
+  };
+
   RENDERERS.diploma = function (slide, card) {
     card.appendChild(el("div", "course-diploma-badge",
       "<svg viewBox='0 0 24 24' width='56' height='56' fill='none' stroke='currentColor' stroke-width='1.6'><path d='M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z'/><path d='M9 12l2 2 4-4'/></svg>"));

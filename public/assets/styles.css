@@ -407,6 +407,88 @@ label {
 .course-sidenote-item.warn svg { color: var(--warn); }
 .course-sidenote-item.info svg { color: var(--focus); }
 
+/* ---- Ako si aplikáciu bezpečne zaobstarať ---- */
+.course-install-h { margin: 1.9rem 0 .9rem; font-size: 1.12rem; padding-bottom: .5rem; border-bottom: 2px solid var(--line); }
+
+/* Karta pravej aplikácie — zámerne pripomína výpis v obchode s aplikáciami,
+   aby senior videl presne to, čo bude hľadať na svojom zariadení. */
+.course-app-card {
+  display: flex; align-items: center; gap: 1.3rem; margin-top: 1.2rem;
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 18px; padding: 1.4rem 1.5rem;
+  box-shadow: var(--course-shadow-soft);
+}
+.course-app-icon {
+  flex: none; width: 84px; height: 84px; border-radius: 20px; background: #fff;
+  border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.course-app-icon img { width: 68px; height: 68px; display: block; }
+.course-app-meta { min-width: 0; }
+.course-app-meta h3 { margin: 0 0 .55rem; font-size: 1.45rem; }
+.course-app-meta dl { margin: 0; display: flex; flex-wrap: wrap; gap: .3rem 1.8rem; }
+.course-app-meta dl div { display: flex; flex-direction: column; }
+.course-app-meta dt { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; font-weight: 700; color: var(--text-mute); }
+.course-app-meta dd { margin: .1rem 0 0; font-size: 1.02rem; font-weight: 700; }
+.course-app-meta dd.is-key { color: var(--course-good-deep); }
+.course-app-note { margin: .7rem 0 0; font-size: .85rem; color: var(--text-mute); line-height: 1.45; }
+.course-app-caption { margin: .7rem 0 0; font-size: .88rem; color: var(--text-mute); text-align: center; }
+
+.course-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+.course-way {
+  position: relative; display: flex; flex-direction: column;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 16px; padding: 1.15rem 1.25rem;
+}
+.course-way.recommended { border: 2px solid var(--good); background: var(--good-bg); }
+.course-way-flag {
+  position: absolute; top: -.7rem; left: 1.1rem; background: var(--good); color: #fff;
+  font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: .2rem .6rem; border-radius: 999px;
+}
+.course-way h4 { margin: .15rem 0 .45rem; font-size: 1.05rem; }
+.course-way-text { margin: 0 0 1rem; font-size: .93rem; line-height: 1.55; flex: 1; }
+.course-way-link {
+  display: flex; align-items: center; justify-content: center; gap: .5rem; text-align: center;
+  background: var(--ink); color: #fff; text-decoration: none; font-weight: 700; font-size: .98rem;
+  padding: .7rem 1rem; border-radius: 10px; min-height: 50px; transition: background .15s ease;
+}
+.course-way.recommended .course-way-link { background: var(--good); }
+.course-way-link svg { width: 16px; height: 16px; flex: none; }
+.course-way-link:hover { background: var(--accent, #c17a2e); }
+.course-way-link:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.course-way-host { margin: .6rem 0 0; font-size: .8rem; color: var(--text-mute); word-break: break-word; }
+
+.course-checks { display: flex; flex-direction: column; gap: .8rem; }
+.course-check {
+  display: flex; gap: .9rem; align-items: flex-start;
+  background: var(--surface-2); border-radius: 14px; padding: 1rem 1.15rem;
+}
+.course-check-num {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; color: #fff; font-weight: 700; font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, var(--accent, #c17a2e), var(--accent-deep, #8f5a1e));
+}
+.course-check h4 { margin: .2rem 0 .3rem; font-size: 1rem; }
+.course-check p { margin: 0; font-size: .92rem; line-height: 1.55; }
+
+.course-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.course-plan { border-radius: 14px; padding: 1.1rem 1.2rem; border: 2px solid; }
+.course-plan h4 { margin: 0 0 .4rem; font-size: 1.02rem; }
+.course-plan p { margin: 0; font-size: .92rem; line-height: 1.55; }
+.course-plan.tone-free { border-color: var(--good); background: var(--good-bg); }
+.course-plan.tone-free h4 { color: var(--course-good-deep); }
+.course-plan.tone-paid { border-color: var(--line); background: var(--surface-2); }
+
+.course-install-warn {
+  display: flex; gap: .8rem; align-items: flex-start; margin-top: 1.3rem;
+  background: var(--warn-bg); border-radius: 14px; padding: 1rem 1.2rem; color: var(--course-warn-deep);
+}
+.course-install-warn svg { width: 22px; height: 22px; flex: none; margin-top: .1rem; }
+.course-install-warn p { margin: 0; font-size: .93rem; line-height: 1.6; }
+
+@media (max-width: 560px) {
+  .course-app-card { flex-direction: column; text-align: center; gap: 1rem; }
+  .course-app-meta dl { justify-content: center; }
+}
+
 /* sort / drag & drop */
 /* Kartičky v dvoch stĺpcoch — v jednom stĺpci mal zoznam desiatich položiek
    cez 650 px a políčka, do ktorých sa triedi, končili až pod zlomom. */

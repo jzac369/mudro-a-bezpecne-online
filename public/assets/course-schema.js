@@ -48,6 +48,12 @@
     guess: ["title", "lead", "task", "rounds[].prompt", "rounds[].explain",
       "checklist[].title", "checklist[].text", "note"],
     rewrite: ["title", "lead", "task", "sentence[].text", "sentence[].why", "safeVersion", "takeaway"],
+    install: ["title", "lead", "task",
+      "appCard.name", "appCard.publisherLabel", "appCard.publisher", "appCard.publisherNote",
+      "appCard.priceLabel", "appCard.price", "appCard.caption",
+      "waysTitle", "ways[].device", "ways[].text", "ways[].action",
+      "checksTitle", "checks[].title", "checks[].text",
+      "plansTitle", "plans[].title", "plans[].text", "warning", "note"],
     printcard: ["title", "lead", "task", "rules[]"],
     diploma: ["title", "lead", "task", "quote"],
     info: ["title", "lead", "body", "task"],
@@ -95,6 +101,13 @@
     explain: "Vysvetlenie", prompt: "Text",
     sentence: "Časť vety", safeVersion: "Bezpečná verzia otázky", takeaway: "Zhrnutie",
     rules: "Pravidlo", quote: "Citát", gallery: "Fotografia",
+    appCard: "Karta aplikácie", name: "Názov", publisher: "Vydavateľ",
+    publisherLabel: "Popisok „Vydavateľ“", publisherNote: "Poznámka k vydavateľovi",
+    priceLabel: "Popisok „Cena“", price: "Cena",
+    waysTitle: "Nadpis „Kde ho nájdete“", ways: "Zariadenie", device: "Názov zariadenia",
+    action: "Text tlačidla",
+    checksTitle: "Nadpis „Tri kontroly“", checks: "Kontrola",
+    plansTitle: "Nadpis „Zadarmo verzus platené“", plans: "Verzia", warning: "Varovanie",
   };
 
   // Vetvy príbehu majú vlastné názvy — kľúč "good" tu znamená niečo iné než
