@@ -16,32 +16,102 @@
 (function () {
   "use strict";
 
+  // Cieľom je, aby sa dal upraviť KAŽDÝ text, ktorý účastník na obrazovke
+  // uvidí — vrátane zadania („Vaša úloha“), vysvetlení pri jednotlivých
+  // odpovediach, popisov pod fotografiami a poznámok. Mimo ostávajú len polia,
+  // ktoré riadia správanie obrazovky (pozri poznámku vyššie).
   const TEXT_FIELDS = {
-    intro: ["title", "lead", "body"],
-    tiles: ["title", "lead", "tiles[].title", "tiles[].text"],
-    flip: ["title", "lead", "cards[].front", "cards[].back"],
-    sort: ["title", "lead", "items[].text", "baskets[].label", "note"],
-    match: ["title", "lead", "pairs[].left", "pairs[].right", "note"],
-    sequence: ["title", "lead", "steps[]", "note"],
-    hotspot: ["title", "lead", "spots[].title", "spots[].text"],
-    choice: ["title", "lead", "intro", "rounds[].weak", "rounds[].good", "rounds[].why", "rounds[].answerPreview", "note"],
-    belief: ["title", "lead", "items[].text", "note"],
-    reveal: ["title", "lead", "cells[].title", "cells[].text", "note"],
-    revealgrid: ["title", "lead", "cells[].title", "cells[].text"],
-    quickfire: ["title", "lead", "questions[].text", "questions[].why"],
-    spot: ["title", "lead", "message.from", "message.subject", "message.body", "clues[]", "footer"],
-    story: ["title", "lead", "nodes.*.speaker", "nodes.*.text", "nodes.*.choices[].text"],
-    slider: ["title", "lead", "sliderQuestion", "sliderHint", "checklist[]", "note"],
-    guess: ["title", "lead", "rounds[].prompt", "rounds[].explain", "checklist[].title", "checklist[].text", "note"],
-    rewrite: ["title", "lead", "sentence[].text", "safeVersion"],
-    printcard: ["title", "lead", "rules[]"],
-    diploma: ["title", "lead", "quote"],
-    info: ["title", "lead", "body"],
+    intro: ["title", "lead", "body", "task"],
+    tiles: ["title", "lead", "task", "tiles[].title", "tiles[].text"],
+    flip: ["title", "lead", "task", "cards[].front", "cards[].back"],
+    sort: ["title", "lead", "task", "tip", "items[].text", "items[].why",
+      "baskets[].label", "baskets[].desc", "sideNote.title", "sideNote.items[].text", "note"],
+    match: ["title", "lead", "task", "tip", "pairs[].left", "pairs[].right", "pairs[].why",
+      "note", "gallery[].caption"],
+    sequence: ["title", "lead", "task", "steps[]", "doneText", "note"],
+    hotspot: ["title", "lead", "task", "spots[].title", "spots[].text",
+      "evidenceImage.caption", "evidenceImage.appLabel"],
+    choice: ["title", "lead", "task", "intro", "rounds[].weak", "rounds[].good", "rounds[].why",
+      "rounds[].answerPreview", "note"],
+    belief: ["title", "lead", "task", "tip", "items[].text", "note"],
+    reveal: ["title", "lead", "task", "cells[].title", "cells[].text", "doneText", "note",
+      "evidenceImage.caption"],
+    revealgrid: ["title", "lead", "task", "cells[].title", "cells[].text", "note"],
+    quickfire: ["title", "lead", "task", "tips[]", "questions[].short", "questions[].text",
+      "questions[].why"],
+    spot: ["title", "lead", "task", "message.from", "message.subject", "message.body",
+      "clues[]", "footer", "evidenceImage.caption"],
+    story: ["title", "lead", "task", "flags[]", "safeTip", "nodes.*.speaker", "nodes.*.text",
+      "nodes.*.choiceHint", "nodes.*.choices[].text"],
+    slider: ["title", "lead", "task", "adText", "sliderQuestion", "riskLevels[].label",
+      "riskLevels[].why", "checklist[]", "checklistNote", "note", "evidenceImage.caption"],
+    guess: ["title", "lead", "task", "rounds[].prompt", "rounds[].explain",
+      "checklist[].title", "checklist[].text", "note"],
+    rewrite: ["title", "lead", "task", "sentence[].text", "sentence[].why", "safeVersion", "takeaway"],
+    printcard: ["title", "lead", "task", "rules[]"],
+    diploma: ["title", "lead", "task", "quote"],
+    info: ["title", "lead", "body", "task"],
   };
 
   const FIELD_HINTS = {
     "message.body": "Časti textu medzi dvojitými hranatými zátvorkami [[ako toto]] sú klikateľné varovné znaky. Zachovajte rovnaký počet dvojíc [[ ]], koľko je nižšie vysvetlení (Nájdené znaky).",
+    "task": "Text v oranžovom boxe „Vaša úloha“ nad cvičením. Môžete použiť <strong>tučné písmo</strong>.",
+    "items[].why": "Vysvetlenie, ktoré sa účastníkovi ukáže po zaradení tejto kartičky.",
+    "pairs[].why": "Vysvetlenie, ktoré sa ukáže po správnom spojení tejto dvojice.",
+    "sentence[].why": "Vysvetlenie, prečo tento údaj do otázky pre AI nepatrí.",
+    "questions[].short": "Skrátený názov otázky v zozname po ľavej strane.",
+    "rounds[].why": "Vysvetlenie, ktoré sa ukáže po odpovedi.",
+    "riskLevels[].why": "Vysvetlenie k tejto úrovni rizika. Ktorá je správna, sa tu nemení.",
+    "evidenceImage.caption": "Popis pod fotografiou skutočného príkladu.",
+    "gallery[].caption": "Popis pod fotografiou.",
+    "flags[]": "Krátke štítky „Na čo si dať pozor“ nad príbehom.",
+    "tips[]": "Body v boxe „Na čo myslieť?“.",
+    "clues[]": "Vysvetlenia varovných znakov. Musí ich byť rovnako veľa ako dvojíc [[ ]] v texte správy.",
   };
+
+  // Popisy polí vo formulári. Bez nich by administrátor videl surové názvy
+  // z kódu ("items #4 › why"), čo sa pri tridsiatich poliach na jednej
+  // obrazovke číta veľmi ťažko.
+  const LABELS = {
+    title: "Nadpis", lead: "Úvodná veta", task: "Zadanie („Vaša úloha“)",
+    body: "Text", note: "Poznámka („Zapamätajte si“)", tip: "Tip", intro: "Úvodný tip",
+    text: "Text", why: "Vysvetlenie", label: "Názov", desc: "Popis", caption: "Popis",
+    items: "Kartička", baskets: "Políčko", sideNote: "Bočný panel („Zapamätajte si“)",
+    tiles: "Dlaždica",
+    pairs: "Dvojica", left: "Vľavo", right: "Vpravo",
+    cards: "Kartička", front: "Predná strana", back: "Zadná strana",
+    steps: "Krok", doneText: "Text po dokončení",
+    spots: "Bod na obrázku", evidenceImage: "Fotografia", appLabel: "Názov aplikácie v hlavičke",
+    rounds: "Otázka", weak: "Slabšia možnosť", good: "Lepšia možnosť",
+    answerPreview: "Ukážka odpovede AI",
+    cells: "Políčko", questions: "Otázka", short: "Krátky názov v zozname",
+    tips: "Bod v „Na čo myslieť?“",
+    message: "Správa", from: "Odosielateľ", subject: "Predmet",
+    clues: "Varovný znak", footer: "Text pod cvičením",
+    nodes: "Krok príbehu", speaker: "Kto hovorí", choiceHint: "Otázka pri možnostiach",
+    choices: "Možnosť", flags: "Štítok", safeTip: "Správny postup",
+    adText: "Text reklamy", sliderQuestion: "Otázka",
+    riskLevels: "Úroveň rizika", checklist: "Bod zoznamu", checklistNote: "Poznámka pod zoznamom",
+    explain: "Vysvetlenie", prompt: "Text",
+    sentence: "Časť vety", safeVersion: "Bezpečná verzia otázky", takeaway: "Zhrnutie",
+    rules: "Pravidlo", quote: "Citát", gallery: "Fotografia",
+  };
+
+  // Vetvy príbehu majú vlastné názvy — kľúč "good" tu znamená niečo iné než
+  // "good" pri type choice, preto sa prekladajú zvlášť.
+  const NODE_LABELS = { a: "úvod", good: "správna voľba", bad: "nesprávna voľba" };
+
+  function prettyLabel(parts, path) {
+    const isNode = String(path).indexOf("nodes.") === 0;
+    const isSideNote = String(path).indexOf("sideNote.") === 0;
+    return parts.map(function (p, i) {
+      if (isNode && i === 1 && NODE_LABELS[p]) return NODE_LABELS[p];
+      const m = String(p).match(/^(.+) #(\d+)$/);
+      // v bočnom paneli nejde o kartičky, ale o odrážky
+      if (m) return (isSideNote && m[1] === "items" ? "Bod" : (LABELS[m[1]] || m[1])) + " " + m[2];
+      return LABELS[p] || p;
+    }).join(" › ");
+  }
 
   function walkPath(root, path, visit) {
     const segs = path.split(".");
@@ -87,7 +157,7 @@
     const out = [];
     paths.forEach((path) => {
       walkPath(slideObj, path, (get, set, labelParts) => {
-        out.push({ path, label: labelParts.join(" › "), hint: FIELD_HINTS[path], get, set });
+        out.push({ path, label: prettyLabel(labelParts, path), hint: FIELD_HINTS[path], get, set });
       });
     });
     return out;
