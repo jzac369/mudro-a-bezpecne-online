@@ -1271,6 +1271,7 @@
               <button class="btn btn-secondary" type="button" id="tpl-invoice-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-invoice-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-invoice-reset-btn">Obnoviť pôvodnú</button>
+              <button class="btn btn-secondary" type="button" id="tpl-invoice-default-btn" title="Vymaže vlastnú úpravu tejto šablóny — po uložení sa použije vstavaný predvolený vzhľad z kódu.">Obnoviť predvolený vzhľad</button>
               <span id="tpl-invoice-result" class="hint"></span>
             </div>
           </div>
@@ -1292,6 +1293,7 @@
               <button class="btn btn-secondary" type="button" id="tpl-poz-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-poz-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-poz-reset-btn">Obnoviť pôvodnú</button>
+              <button class="btn btn-secondary" type="button" id="tpl-poz-default-btn" title="Vymaže vlastnú úpravu tejto šablóny — po uložení sa použije vstavaný predvolený vzhľad z kódu.">Obnoviť predvolený vzhľad</button>
               <span id="tpl-poz-result" class="hint"></span>
             </div>
           </div>
@@ -1313,6 +1315,7 @@
               <button class="btn btn-secondary" type="button" id="tpl-voucher-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-voucher-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-voucher-reset-btn">Obnoviť pôvodnú</button>
+              <button class="btn btn-secondary" type="button" id="tpl-voucher-default-btn" title="Vymaže vlastnú úpravu tejto šablóny — po uložení sa použije vstavaný predvolený vzhľad z kódu.">Obnoviť predvolený vzhľad</button>
               <span id="tpl-voucher-result" class="hint"></span>
             </div>
           </div>
@@ -1337,6 +1340,7 @@
               <button class="btn btn-secondary" type="button" id="tpl-welcome-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-welcome-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-welcome-reset-btn">Obnoviť pôvodnú</button>
+              <button class="btn btn-secondary" type="button" id="tpl-welcome-default-btn" title="Vymaže vlastnú úpravu tejto šablóny — po uložení sa použije vstavaný predvolený vzhľad z kódu.">Obnoviť predvolený vzhľad</button>
               <span id="tpl-welcome-result" class="hint"></span>
             </div>
           </div>
@@ -1361,6 +1365,7 @@
               <button class="btn btn-secondary" type="button" id="tpl-certificate-mode-btn">Grafický editor</button>
               <button class="btn btn-secondary" type="button" id="tpl-certificate-test-btn">Odoslať testovací e-mail</button>
               <button class="btn btn-secondary" type="button" id="tpl-certificate-reset-btn">Obnoviť pôvodnú</button>
+              <button class="btn btn-secondary" type="button" id="tpl-certificate-default-btn" title="Vymaže vlastnú úpravu tejto šablóny — po uložení sa použije vstavaný predvolený vzhľad z kódu.">Obnoviť predvolený vzhľad</button>
               <span id="tpl-certificate-result" class="hint"></span>
             </div>
           </div>
@@ -1978,6 +1983,47 @@ window.addEventListener("load", function () {
       document.getElementById("tpl-" + type + "-code").value = templateDefaults[type];
       if (templateMode[type] === "graphic") setTemplateGraphicMode(type, true);
       else updateTemplatePreview(type);
+    });
+
+    // Na rozdiel od tlačidla vyššie (ktoré len zahodí neuložené zmeny
+    // v editore) toto vyprázdni pole a rovno ho uloží — server prázdnu
+    // šablónu vymaže z databázy, takže sa nabudúce znova použije vstavaný
+    // predvolený vzhľad z kódu (aktuálna farebná paleta webu + logo).
+    document.getElementById("tpl-" + type + "-default-btn").addEventListener("click", async () => {
+      if (!confirm("Vymazať vlastnú úpravu tejto šablóny a natrvalo obnoviť vstavaný predvolený vzhľad?")) return;
+      const resultEl = document.getElementById("tpl-" + type + "-result");
+      const btn = document.getElementById("tpl-" + type + "-default-btn");
+      btn.disabled = true;
+      resultEl.textContent = "Obnovujem…";
+      resultEl.style.color = "";
+      try {
+        const host = document.getElementById("smtp-host").value.trim();
+        const user = document.getElementById("smtp-user").value.trim();
+        if (!host || !user) throw new Error("Najprv vyplňte a uložte SMTP server a prihlasovaciu adresu vyššie.");
+        const saveEmailSettings = functions.httpsCallable("saveEmailSettings");
+        const payload = {
+          host, user,
+          port: Number(document.getElementById("smtp-port").value) || 465,
+          secure: document.getElementById("smtp-secure").value !== "starttls",
+          fromName: document.getElementById("smtp-from-name").value.trim(),
+          replyTo: document.getElementById("smtp-reply-to").value.trim(),
+          bccEnabled: document.getElementById("smtp-bcc-enabled").checked,
+          bccAddress: document.getElementById("smtp-bcc-address").value.trim(),
+          password: "",
+        };
+        payload[type + "EmailTemplate"] = "";
+        await saveEmailSettings(payload);
+        resultEl.textContent = "Obnovený predvolený vzhľad.";
+        resultEl.style.color = "var(--good)";
+        logActivity("settings", "E-mailová šablóna (" + type + ") obnovená na predvolenú");
+        await loadEmailSettings();
+        if (templateMode[type] === "graphic") setTemplateGraphicMode(type, true);
+      } catch (err) {
+        resultEl.textContent = "Zlyhalo: " + err.message;
+        resultEl.style.color = "var(--warn)";
+      } finally {
+        btn.disabled = false;
+      }
     });
 
     document.getElementById("tpl-" + type + "-mode-btn").addEventListener("click", () => {

@@ -1358,54 +1358,115 @@ function drawSupplierBuyerColumns(doc, { s, order, colY }) {
   doc.y = Math.max(ly, ry) + 14;
 }
 
+// Faktúra — rozloženie podľa schváleného vzoru: kompaktný riadok s
+// údajmi o dodávateľovi hneď pod nadpisom, vľavo orámovaná "platobná
+// karta" (splatnosť/variabilný symbol/k úhrade/IBAN — zámerne BEZ QR
+// kódu), vpravo odberateľ a dátumy, pod tým tabuľka položiek.
+// Nie sme platcami DPH, preto tabuľka nemá stĺpce DPH ani súhrn sadzieb.
 function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
+  const INK = "#1f3a3d", MUTED = "#5c5749", BORDER = "#ddd5c2";
+  const LEFT = 56, RIGHT = 539, CONTENT_W = RIGHT - LEFT;
+
   const issueDate = new Date().toLocaleDateString("sk-SK");
   const dueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("sk-SK");
-  const paidDate = order.paidAt ? order.paidAt.toDate().toLocaleDateString("sk-SK") : "—";
   const workshop = order.workshopTitleSnapshot || order.workshopId;
   const amount = order.amount != null ? order.amount : 0;
   const baseAmount = order.baseAmount != null ? order.baseAmount : amount;
+  const variabilnySymbol = invoiceNumber.slice(2);
 
-  doc.font(FONT_BOLD).fontSize(20).text("Faktúra č. " + invoiceNumber);
+  doc.font(FONT_BOLD).fontSize(20).fillColor(INK).text("Faktúra č. " + invoiceNumber, LEFT, doc.y);
   doc.moveDown(0.3);
-  doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
-    .text("Dátum vystavenia: " + issueDate + "    Dátum splatnosti: " + dueDate + "    Dátum úhrady: " + paidDate);
-  doc.fillColor("#1f3a3d");
-  doc.moveDown(1.2);
 
-  drawSupplierBuyerColumns(doc, { s, order, colY: doc.y });
+  // Kompaktný riadok s dodávateľom (namiesto samostatného stĺpca) —
+  // rovnaké údaje, len úspornejšie, nech ostane miesto na platobnú kartu.
+  doc.font(FONT_REGULAR).fontSize(9).fillColor(MUTED);
+  doc.text(
+    [s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart", s.invoiceAddress || null].filter(Boolean).join(", "),
+    LEFT, doc.y, { width: CONTENT_W }
+  );
+  doc.text(
+    [
+      s.invoiceIco ? "IČO: " + s.invoiceIco : null,
+      s.invoiceDic ? "DIČ: " + s.invoiceDic : null,
+      s.invoiceIcDph ? "IČ DPH: " + s.invoiceIcDph : "Nie sme platcami DPH.",
+    ].filter(Boolean).join("   "),
+    LEFT, doc.y, { width: CONTENT_W }
+  );
 
+  doc.moveDown(1.3);
+  const boxTop = doc.y;
+
+  // ---- Vľavo: platobná karta (bez QR kódu) ----
+  const cardW = 230, cardPad = 16;
+  const paymentRows = [["Splatnosť", dueDate], ["Variabilný symbol", variabilnySymbol], ["K úhrade", amount + " €"]];
+  if (s.invoiceIban) paymentRows.push(["IBAN", s.invoiceIban]);
+
+  let cy = boxTop + cardPad;
+  paymentRows.forEach(([label, value], i) => {
+    doc.font(FONT_REGULAR).fontSize(8).fillColor(MUTED).text(label.toUpperCase(), LEFT + cardPad, cy, { characterSpacing: 0.4 });
+    cy += 11;
+    doc.font(FONT_BOLD).fontSize(i === 2 ? 15 : 11).fillColor(INK).text(value, LEFT + cardPad, cy, { width: cardW - cardPad * 2 });
+    // IBAN je jediná hodnota, ktorá sa pri tejto šírke karty spoľahlivo
+    // zalomí na dva riadky — vyhradiť jej vždy dvojriadkový priestor.
+    cy += i === 2 ? 21 : (label === "IBAN" ? 30 : 17);
+  });
+  const cardH = cy - boxTop + (cardPad - 6);
+  doc.roundedRect(LEFT, boxTop, cardW, cardH, 8).lineWidth(1).strokeColor(BORDER).stroke();
+
+  // ---- Vpravo: odberateľ + dátumy ----
+  const rightX = LEFT + cardW + 26;
+  const rightW = RIGHT - rightX;
+  let ry = boxTop;
+  doc.font(FONT_BOLD).fontSize(8).fillColor(MUTED).text("ODBERATEĽ", rightX, ry, { characterSpacing: 0.4 });
+  ry += 13;
+  doc.font(FONT_REGULAR).fontSize(10).fillColor(INK);
+  [order.name || "—", order.email || "—"].forEach((line) => {
+    doc.text(line, rightX, ry, { width: rightW });
+    ry += 15;
+  });
+  ry += 12;
+  doc.font(FONT_REGULAR).fontSize(9).fillColor(MUTED);
+  doc.text("Dátum vystavenia: " + issueDate, rightX, ry, { width: rightW });
+  ry += 14;
+  doc.text("Dátum dodania: " + issueDate, rightX, ry, { width: rightW });
+  ry += 14;
+
+  doc.x = LEFT;
+  doc.y = Math.max(boxTop + cardH, ry) + 26;
+
+  // ---- Tabuľka položiek (bez DPH — nie sme platcami DPH) ----
   const tableTop = doc.y;
-  doc.font(FONT_BOLD).fontSize(10);
-  doc.text("Položka", 56, tableTop);
-  doc.text("Suma", 480, tableTop);
-  doc.moveTo(56, tableTop + 16).lineTo(539, tableTop + 16).strokeColor("#ddd5c2").stroke();
+  const colQty = 390, colPrice = 455, colTotal = RIGHT - 55;
+  doc.font(FONT_BOLD).fontSize(8).fillColor(MUTED);
+  doc.text("POLOŽKA", LEFT, tableTop, { characterSpacing: 0.4 });
+  doc.text("MNOŽSTVO", colQty, tableTop, { width: 70, align: "right", characterSpacing: 0.4 });
+  doc.text("SPOLU", colTotal, tableTop, { width: 55, align: "right", characterSpacing: 0.4 });
+  doc.moveTo(LEFT, tableTop + 15).lineTo(RIGHT, tableTop + 15).strokeColor(BORDER).stroke();
 
   // Riadky faktúry — základná cena a pod ňou prípadné zľavy (skupinová,
   // zľavový kód), nech je z faktúry vidno, ako sa konečná suma vypočítala,
   // nielen výsledná cena po odpočítaní.
   const rows = [];
   const itemLabel = workshop + (order.groupSize > 1 ? " (" + order.groupSize + " účastníci)" : "");
-  rows.push({ label: itemLabel, value: baseAmount + " €" });
+  rows.push({ label: itemLabel, qty: order.groupSize > 1 ? String(order.groupSize) : "1", value: baseAmount + " €" });
   if (order.groupDiscountAmount > 0) {
-    rows.push({ label: "Skupinová zľava (" + (order.groupDiscountPercent || 0) + " %)", value: "−" + order.groupDiscountAmount + " €" });
+    rows.push({ label: "Skupinová zľava (" + (order.groupDiscountPercent || 0) + " %)", qty: "", value: "−" + order.groupDiscountAmount + " €" });
   }
   if (order.couponDiscountAmount > 0) {
-    rows.push({ label: "Zľavový kód" + (order.couponApplied ? " (" + order.couponApplied + ")" : ""), value: "−" + order.couponDiscountAmount + " €" });
+    rows.push({ label: "Zľavový kód" + (order.couponApplied ? " (" + order.couponApplied + ")" : ""), qty: "", value: "−" + order.couponDiscountAmount + " €" });
   }
 
-  doc.font(FONT_REGULAR).fontSize(10);
-  let itemY = tableTop + 24;
+  doc.font(FONT_REGULAR).fontSize(10).fillColor(INK);
+  let itemY = tableTop + 22;
   rows.forEach((row) => {
-    doc.text(row.label, 56, itemY, { width: 400 });
-    doc.text(row.value, 480, itemY);
+    doc.text(row.label, LEFT, itemY, { width: colQty - LEFT - 12 });
+    if (row.qty) doc.text(row.qty, colQty, itemY, { width: 70, align: "right" });
+    doc.text(row.value, colTotal, itemY, { width: 55, align: "right" });
     itemY += 20;
   });
-  doc.moveTo(56, itemY + 4).lineTo(539, itemY + 4).strokeColor("#ddd5c2").stroke();
+  doc.moveTo(LEFT, itemY + 4).lineTo(RIGHT, itemY + 4).strokeColor(BORDER).stroke();
 
-  doc.font(FONT_BOLD).fontSize(13).text("Spolu: " + amount + " €", 56, itemY + 16);
-  doc.font(FONT_REGULAR).fontSize(10).fillColor("#5c5749")
-    .text("Variabilný symbol: " + invoiceNumber.slice(2), 56, itemY + 40);
+  doc.font(FONT_BOLD).fontSize(15).fillColor(INK).text("Spolu: " + amount + " €", colPrice - 65, itemY + 16, { width: RIGHT - (colPrice - 65), align: "right" });
 }
 
 const PAYMENT_METHOD_LABELS = { card: "Platobnou kartou", transfer: "Bankovým prevodom", cash: "V hotovosti" };
@@ -1565,30 +1626,44 @@ async function uploadPdfAndGetUrl(buffer, path) {
    nikdy neposiela späť do prehliadača.
 */
 
-function documentEmailShell(bodyHtml) {
-  return `<div style="margin:0;padding:0;background-color:#efe6d3;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efe6d3;">
+// Farebná paleta e-mailov je zámerne tá istá, čo na kurzy.digistart.sk
+// (--ink/--green/--accent/--paper z homepage), len samotný akcentový
+// pruh pod hlavičkou sa líši podľa typu e-mailu — dve rodiny farieb
+// (oranžová = platba/darček, zelená = úspech/priebeh kurzu), nikdy
+// úplne iná farba mimo túto paletu.
+const EMAIL_LOGO_URL = "https://kurzy.digistart.sk/assets/logo-digistart.png";
+const EMAIL_COLORS = {
+  ink: "#10322f", ink2: "#33514c", muted: "#626d68",
+  green: "#12554a", greenDk: "#0c3f37", greenTint: "#e7f0ea",
+  accent: "#c06a1f", accentTx: "#97500f", accentTint: "#f5e4d1",
+  paper: "#fdfaf4", paper2: "#f6efe2", line: "#e7dcc9",
+};
+
+function documentEmailShell(bodyHtml, accent) {
+  accent = accent || EMAIL_COLORS.accent;
+  return `<div style="margin:0;padding:0;background-color:${EMAIL_COLORS.paper2};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${EMAIL_COLORS.paper2};">
     <tr>
       <td align="center" style="padding:32px 16px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#fffdf7;border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:${EMAIL_COLORS.paper};border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
           <tr>
-            <td style="background-color:#1f3a3d;padding:28px 32px;text-align:center;">
-              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">Vzdelávacie kurzy DigiStart</div>
-              <div style="font-size:13px;color:#c9b98f;margin-top:4px;">Kurzy, ktoré vám dávajú istotu v online svete</div>
+            <td style="background-color:${EMAIL_COLORS.ink};padding:26px 32px;text-align:center;">
+              <img src="${EMAIL_LOGO_URL}" width="150" alt="DigiStart — Vzdelávacie kurzy" style="display:block;width:150px;max-width:150px;height:auto;margin:0 auto;border:0;">
+              <div style="font-size:13px;color:#cfe3dc;margin-top:10px;">Kurzy, ktoré vám dávajú istotu v online svete</div>
             </td>
           </tr>
-          <tr><td style="height:4px;background-color:#c17a2e;line-height:4px;font-size:0;">&nbsp;</td></tr>
+          <tr><td style="height:4px;background-color:${accent};line-height:4px;font-size:0;">&nbsp;</td></tr>
 ${bodyHtml}
           <tr>
             <td style="padding:28px 40px 36px;">
-              <p style="margin:0 0 4px;font-size:15px;line-height:1.6;color:#1f3a3d;">Ak by ste mali akúkoľvek otázku k dokumentu alebo k platbe, pokojne nám napíšte — radi pomôžeme.</p>
-              <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#1f3a3d;">S pozdravom,<br><strong>Tím DigiStart kurzy</strong></p>
+              <p style="margin:0 0 4px;font-size:15px;line-height:1.6;color:${EMAIL_COLORS.ink};">Ak by ste mali akúkoľvek otázku k dokumentu alebo k platbe, pokojne nám napíšte — radi pomôžeme.</p>
+              <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:${EMAIL_COLORS.ink};">S pozdravom,<br><strong>Tím DigiStart kurzy</strong></p>
             </td>
           </tr>
-          <tr><td style="height:1px;background-color:#ddd5c2;line-height:1px;font-size:0;">&nbsp;</td></tr>
+          <tr><td style="height:1px;background-color:${EMAIL_COLORS.line};line-height:1px;font-size:0;">&nbsp;</td></tr>
           <tr>
             <td align="center" style="padding:18px 24px;">
-              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na www.kurzy.digistart.sk.</p>
+              <p style="margin:0;font-size:12px;color:${EMAIL_COLORS.muted};">Tento e-mail súvisí s vašou objednávkou na www.kurzy.digistart.sk.</p>
             </td>
           </tr>
         </table>
@@ -1598,32 +1673,20 @@ ${bodyHtml}
 </div>`;
 }
 
-const DEFAULT_WELCOME_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;background-color:#efe6d3;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efe6d3;">
-    <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#fffdf7;border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
-          <tr>
-            <td style="background-color:#1f3a3d;padding:28px 32px;text-align:center;">
-              <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;color:#fffdf7;letter-spacing:.03em;">Vzdelávacie kurzy DigiStart</div>
-              <div style="font-size:13px;color:#c9b98f;margin-top:4px;">Kurzy, ktoré vám dávajú istotu v online svete</div>
-            </td>
-          </tr>
-          <tr><td style="height:4px;background-color:#c17a2e;line-height:4px;font-size:0;">&nbsp;</td></tr>
-          <tr>
+const DEFAULT_WELCOME_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
-              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">ďakujeme, že ste si zakúpili kurz <strong>„{{workshop_title}}“</strong>. Sme radi, že sa k nám pridávate, a veríme, že vám prinesie veľa užitočného.</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">Nižšie nájdete svoj prístupový kód — budete ho potrebovať pri prihlásení do kurzu.</p>
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#10322f;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#10322f;">ďakujeme, že ste si zakúpili kurz <strong>„{{workshop_title}}“</strong>. Sme radi, že sa k nám pridávate, a veríme, že vám prinesie veľa užitočného.</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">Nižšie nájdete svoj prístupový kód — budete ho potrebovať pri prihlásení do kurzu.</p>
             </td>
           </tr>
           <tr>
             <td style="padding:8px 40px 8px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="background-color:#f6ecd9;border:2px solid #c17a2e;border-radius:12px;padding:20px;">
-                    <div style="font-size:11px;letter-spacing:.15em;color:#6b6350;text-transform:uppercase;margin-bottom:8px;">Váš prístupový kód</div>
-                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:bold;letter-spacing:.12em;color:#1f3a3d;">{{code}}</div>
+                  <td align="center" style="background-color:#e7f0ea;border:2px solid #1e6a53;border-radius:12px;padding:20px;">
+                    <div style="font-size:11px;letter-spacing:.15em;color:#33514c;text-transform:uppercase;margin-bottom:8px;">Váš prístupový kód</div>
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:bold;letter-spacing:.12em;color:#10322f;">{{code}}</div>
                   </td>
                 </tr>
               </table>
@@ -1631,65 +1694,53 @@ const DEFAULT_WELCOME_EMAIL_TEMPLATE = `<div style="margin:0;padding:0;backgroun
           </tr>
           <tr>
             <td style="padding:28px 40px 8px;">
-              <p style="margin:0 0 12px;font-size:15px;font-weight:bold;color:#1f3a3d;">Ako začať:</p>
+              <p style="margin:0 0 12px;font-size:15px;font-weight:bold;color:#10322f;">Ako začať:</p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td width="32" valign="top" style="padding-bottom:10px;"><div style="width:22px;height:22px;border-radius:50%;background-color:#1f3a3d;color:#fffdf7;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">1</div></td>
-                  <td valign="top" style="padding-bottom:10px;font-size:15px;line-height:1.55;color:#1f3a3d;">Otvorte stránku prihlásenia (tlačidlo nižšie).</td>
+                  <td width="32" valign="top" style="padding-bottom:10px;"><div style="width:22px;height:22px;border-radius:50%;background-color:#12554a;color:#fdfaf4;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">1</div></td>
+                  <td valign="top" style="padding-bottom:10px;font-size:15px;line-height:1.55;color:#10322f;">Otvorte stránku prihlásenia (tlačidlo nižšie).</td>
                 </tr>
                 <tr>
-                  <td width="32" valign="top" style="padding-bottom:10px;"><div style="width:22px;height:22px;border-radius:50%;background-color:#1f3a3d;color:#fffdf7;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">2</div></td>
-                  <td valign="top" style="padding-bottom:10px;font-size:15px;line-height:1.55;color:#1f3a3d;">Zadajte svoje meno a kód, ktorý ste dostali vyššie.</td>
+                  <td width="32" valign="top" style="padding-bottom:10px;"><div style="width:22px;height:22px;border-radius:50%;background-color:#12554a;color:#fdfaf4;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">2</div></td>
+                  <td valign="top" style="padding-bottom:10px;font-size:15px;line-height:1.55;color:#10322f;">Zadajte svoje meno a kód, ktorý ste dostali vyššie.</td>
                 </tr>
                 <tr>
-                  <td width="32" valign="top"><div style="width:22px;height:22px;border-radius:50%;background-color:#1f3a3d;color:#fffdf7;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">3</div></td>
-                  <td valign="top" style="font-size:15px;line-height:1.55;color:#1f3a3d;">Kurzom si prejdete vlastným tempom — kedykoľvek sa môžete vrátiť presne tam, kde ste skončili.</td>
+                  <td width="32" valign="top"><div style="width:22px;height:22px;border-radius:50%;background-color:#12554a;color:#fdfaf4;font-size:13px;font-weight:bold;text-align:center;line-height:22px;">3</div></td>
+                  <td valign="top" style="font-size:15px;line-height:1.55;color:#10322f;">Kurzom si prejdete vlastným tempom — kedykoľvek sa môžete vrátiť presne tam, kde ste skončili.</td>
                 </tr>
               </table>
             </td>
           </tr>
           <tr>
             <td align="center" style="padding:28px 40px 8px;">
-              <a href="https://kurzy.digistart.sk/prihlasenie.html" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 36px;border-radius:999px;">Prihlásiť sa do kurzu</a>
+              <a href="https://kurzy.digistart.sk/prihlasenie.html" style="display:inline-block;background-color:#12554a;color:#fdfaf4;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 36px;border-radius:999px;">Prihlásiť sa do kurzu</a>
             </td>
           </tr>
           <tr>
             <td style="padding:20px 40px 0;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{custom_message}}</p>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#33514c;">{{custom_message}}</p>
             </td>
           </tr>
           <tr>
-            <td style="padding:28px 40px 36px;">
-              <p style="margin:0 0 4px;font-size:15px;line-height:1.6;color:#1f3a3d;">Ak by ste mali akúkoľvek otázku, pokojne nám napíšte — radi pomôžeme.</p>
-              <p style="margin:16px 0 0;font-size:15px;line-height:1.6;color:#1f3a3d;">Prajeme vám príjemné a bezpečné vzdelávanie.<br><strong>Tím DigiStart kurzy</strong></p>
+            <td style="padding:8px 40px 0;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#10322f;">Prajeme vám príjemné a bezpečné vzdelávanie.</p>
             </td>
-          </tr>
-          <tr><td style="height:1px;background-color:#ddd5c2;line-height:1px;font-size:0;">&nbsp;</td></tr>
-          <tr>
-            <td align="center" style="padding:18px 24px;">
-              <p style="margin:0;font-size:12px;color:#9b917a;">Tento e-mail súvisí s vašou objednávkou na www.kurzy.digistart.sk.</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</div>`;
+          </tr>`, "#1e6a53");
 
 const DEFAULT_INVOICE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
-              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">posielame Vám <strong>faktúru č. {{doc_number}}</strong> k Vašej objednávke kurzu <strong>„{{workshop_title}}“</strong>.</p>
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#10322f;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">posielame Vám <strong>faktúru č. {{doc_number}}</strong> k Vašej objednávke kurzu <strong>„{{workshop_title}}“</strong>.</p>
             </td>
           </tr>
           <tr>
             <td style="padding:8px 40px 8px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="background-color:#f6ecd9;border:2px solid #c17a2e;border-radius:12px;padding:24px 20px;">
-                    <div style="font-size:11px;letter-spacing:.15em;color:#6b6350;text-transform:uppercase;margin-bottom:6px;">{{doc_label}}</div>
-                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#1f3a3d;margin-bottom:16px;">č. {{doc_number}}</div>
-                    <a href="{{doc_url}}" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť PDF</a>
+                  <td align="center" style="background-color:#f5e4d1;border:2px solid #c06a1f;border-radius:12px;padding:24px 20px;">
+                    <div style="font-size:11px;letter-spacing:.15em;color:#97500f;text-transform:uppercase;margin-bottom:6px;">{{doc_label}}</div>
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#10322f;margin-bottom:16px;">č. {{doc_number}}</div>
+                    <a href="{{doc_url}}" style="display:inline-block;background-color:#c06a1f;color:#fdfaf4;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť PDF</a>
                   </td>
                 </tr>
               </table>
@@ -1697,32 +1748,32 @@ const DEFAULT_INVOICE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
           </tr>
           <tr>
             <td style="padding:18px 40px 0;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{extra_line}}</p>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#33514c;">{{extra_line}}</p>
             </td>
           </tr>
           <tr>
             <td style="padding:10px 40px 0;">
-              <p style="margin:0;font-size:14px;line-height:1.55;color:#8a5a1f;background-color:#fbf1de;border-radius:8px;padding:.7rem .9rem;">
+              <p style="margin:0;font-size:14px;line-height:1.55;color:#97500f;background-color:#f5e4d1;border-radius:8px;padding:.7rem .9rem;">
                 Pri úhrade bankovým prevodom prosím vždy uvádzajte správny variabilný symbol uvedený vyššie —
                 bez neho sa nám platba nemusí podariť správne priradiť k vašej objednávke.
               </p>
             </td>
-          </tr>`);
+          </tr>`, "#c06a1f");
 
 const DEFAULT_POZ_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
-              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">potvrdzujeme, že sme prijali platbu za kurz <strong>„{{workshop_title}}“</strong>. V prílohe nižšie nájdete oficiálne <strong>potvrdenie o zaplatení č. {{doc_number}}</strong> na stiahnutie.</p>
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#10322f;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">potvrdzujeme, že sme prijali platbu za kurz <strong>„{{workshop_title}}“</strong>. V prílohe nižšie nájdete oficiálne <strong>potvrdenie o zaplatení č. {{doc_number}}</strong> na stiahnutie.</p>
             </td>
           </tr>
           <tr>
             <td style="padding:8px 40px 8px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="background-color:#eef4ee;border:2px solid #5c8a5c;border-radius:12px;padding:24px 20px;">
-                    <div style="font-size:11px;letter-spacing:.15em;color:#4a6b4a;text-transform:uppercase;margin-bottom:6px;">{{doc_label}}</div>
-                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#1f3a3d;margin-bottom:16px;">č. {{doc_number}}</div>
-                    <a href="{{doc_url}}" style="display:inline-block;background-color:#5c8a5c;color:#fffdf7;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť PDF</a>
+                  <td align="center" style="background-color:#e7f0ea;border:2px solid #12554a;border-radius:12px;padding:24px 20px;">
+                    <div style="font-size:11px;letter-spacing:.15em;color:#33514c;text-transform:uppercase;margin-bottom:6px;">{{doc_label}}</div>
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#10322f;margin-bottom:16px;">č. {{doc_number}}</div>
+                    <a href="{{doc_url}}" style="display:inline-block;background-color:#12554a;color:#fdfaf4;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť PDF</a>
                   </td>
                 </tr>
               </table>
@@ -1730,24 +1781,24 @@ const DEFAULT_POZ_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
           </tr>
           <tr>
             <td style="padding:18px 40px 0;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{extra_line}}</p>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#33514c;">{{extra_line}}</p>
             </td>
-          </tr>`);
+          </tr>`, "#12554a");
 
 const DEFAULT_VOUCHER_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
-              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">pripravili sme pre Vás <strong>darčekový poukaz</strong> na kurz <strong>„{{workshop_title}}“</strong>.</p>
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#10322f;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">pripravili sme pre Vás <strong>darčekový poukaz</strong> na kurz <strong>„{{workshop_title}}“</strong>.</p>
             </td>
           </tr>
           <tr>
             <td style="padding:8px 40px 8px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="background-color:#f6ecd9;border:2px solid #c17a2e;border-radius:12px;padding:24px 20px;">
-                    <div style="font-size:11px;letter-spacing:.15em;color:#6b6350;text-transform:uppercase;margin-bottom:6px;">Prihlasovací kód</div>
-                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;letter-spacing:.12em;color:#1f3a3d;margin-bottom:16px;">{{code}}</div>
-                    <a href="{{doc_url}}" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť poukaz (PDF)</a>
+                  <td align="center" style="background-color:#f7ead2;border:2px solid #d68a3f;border-radius:12px;padding:24px 20px;">
+                    <div style="font-size:11px;letter-spacing:.15em;color:#97500f;text-transform:uppercase;margin-bottom:6px;">Prihlasovací kód</div>
+                    <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:bold;letter-spacing:.12em;color:#10322f;margin-bottom:16px;">{{code}}</div>
+                    <a href="{{doc_url}}" style="display:inline-block;background-color:#d68a3f;color:#fdfaf4;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť poukaz (PDF)</a>
                   </td>
                 </tr>
               </table>
@@ -1755,27 +1806,27 @@ const DEFAULT_VOUCHER_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
           </tr>
           <tr>
             <td style="padding:18px 40px 0;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#5c5749;">{{extra_line}}</p>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#33514c;">{{extra_line}}</p>
             </td>
-          </tr>`);
+          </tr>`, "#d68a3f");
 
 const DEFAULT_CERTIFICATE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
-              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#1f3a3d;">gratulujeme k úspešnému absolvovaniu kurzu <strong>„{{workshop_title}}“</strong>! Nižšie nájdete odkaz na stiahnutie vášho certifikátu.</p>
+              <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#10322f;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">gratulujeme k úspešnému absolvovaniu kurzu <strong>„{{workshop_title}}“</strong>! Nižšie nájdete odkaz na stiahnutie vášho certifikátu.</p>
             </td>
           </tr>
           <tr>
             <td style="padding:8px 40px 8px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="background-color:#f6ecd9;border:2px solid #c17a2e;border-radius:12px;padding:24px 20px;">
-                    <a href="{{doc_url}}" style="display:inline-block;background-color:#c17a2e;color:#fffdf7;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť certifikát (PDF)</a>
+                  <td align="center" style="background-color:#f5e4d1;border:2px solid #97500f;border-radius:12px;padding:24px 20px;">
+                    <a href="{{doc_url}}" style="display:inline-block;background-color:#97500f;color:#fdfaf4;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:999px;">Stiahnuť certifikát (PDF)</a>
                   </td>
                 </tr>
               </table>
             </td>
-          </tr>`);
+          </tr>`, "#97500f");
 
 // Jednoduchá šablóna pre pripomienky a upozornenia (nikdy sa neprihlásil,
 // nedokončil kurz, nová správa v chate, rezervácia konzultácie…) — tieto
@@ -1783,10 +1834,10 @@ const DEFAULT_CERTIFICATE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
 // vlastnú, jednoduchšiu šablónu bez tlačidla na stiahnutie dokumentu.
 const DEFAULT_NOTIFICATION_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
-              <p style="margin:0 0 16px;font-size:17px;line-height:1.6;color:#1f3a3d;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0;font-size:16px;line-height:1.65;color:#1f3a3d;white-space:pre-line;">{{message}}</p>
+              <p style="margin:0 0 16px;font-size:17px;line-height:1.6;color:#10322f;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
+              <p style="margin:0;font-size:16px;line-height:1.65;color:#10322f;white-space:pre-line;">{{message}}</p>
             </td>
-          </tr>`);
+          </tr>`, "#626d68");
 
 async function getSmtpConfig() {
   const snap = await db.collection("emailConfig").doc("smtp").get();
@@ -1939,21 +1990,20 @@ exports.saveEmailSettings = onCall(async (request) => {
   if (typeof password === "string" && password.length > 0) {
     update.password = password;
   }
-  if (typeof invoiceEmailTemplate === "string" && invoiceEmailTemplate.trim()) {
-    update.invoiceEmailTemplate = invoiceEmailTemplate;
+  // Prázdny (celý vymazaný) reťazec zámerne znamená "obnoviť predvolenú
+  // šablónu" — vymaže sa uložená vlastná verzia, nech sa nabudúce znova
+  // použije DEFAULT_*_EMAIL_TEMPLATE z kódu. Pole sa nedotkne len vtedy,
+  // keď z klienta vôbec neprišlo (typeof !== "string" — napr. hlavný
+  // formulár SMTP nastavení tieto polia neposiela).
+  function applyTemplateField(fieldName, value) {
+    if (typeof value !== "string") return;
+    update[fieldName] = value.trim() ? value : FieldValue.delete();
   }
-  if (typeof pozEmailTemplate === "string" && pozEmailTemplate.trim()) {
-    update.pozEmailTemplate = pozEmailTemplate;
-  }
-  if (typeof voucherEmailTemplate === "string" && voucherEmailTemplate.trim()) {
-    update.voucherEmailTemplate = voucherEmailTemplate;
-  }
-  if (typeof welcomeEmailTemplate === "string" && welcomeEmailTemplate.trim()) {
-    update.welcomeEmailTemplate = welcomeEmailTemplate;
-  }
-  if (typeof certificateEmailTemplate === "string" && certificateEmailTemplate.trim()) {
-    update.certificateEmailTemplate = certificateEmailTemplate;
-  }
+  applyTemplateField("invoiceEmailTemplate", invoiceEmailTemplate);
+  applyTemplateField("pozEmailTemplate", pozEmailTemplate);
+  applyTemplateField("voucherEmailTemplate", voucherEmailTemplate);
+  applyTemplateField("welcomeEmailTemplate", welcomeEmailTemplate);
+  applyTemplateField("certificateEmailTemplate", certificateEmailTemplate);
 
   await db.collection("emailConfig").doc("smtp").set(update, { merge: true });
   return { ok: true };
@@ -2127,7 +2177,7 @@ exports.sendTestSmtpEmail = onCall(async (request) => {
       to,
       subject: "Testovací e-mail — SMTP nastavenia fungujú",
       html:
-        "<p style='font-family:Arial,sans-serif;font-size:15px;color:#1f3a3d;'>" +
+        "<p style='font-family:Arial,sans-serif;font-size:15px;color:#10322f;'>" +
         "Toto je testovací e-mail z admin zóny www.kurzy.digistart.sk (sekcia E-maily).<br>" +
         "Ak ho vidíte, SMTP nastavenia sú funkčné.</p>",
     }));
