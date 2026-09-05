@@ -1480,6 +1480,12 @@ label {
 .chatsim-chips-label { flex-basis: 100%; font-size: .88rem; color: var(--text-mute); font-weight: 700; }
 .chatsim-chip { background: var(--surface); border: 2px solid var(--line); border-radius: 999px; padding: .55rem 1rem; font: inherit; font-size: .88rem; cursor: pointer; text-align: left; }
 .chatsim-chip:hover { border-color: var(--accent, #c17a2e); }
+/* Návrhy ďalších otázok — zobrazujú sa priamo v rozhovore pod odpoveďou,
+   aby bolo vidieť, že sa dá pýtať ďalej. */
+.chatsim-followups { display: flex; flex-wrap: wrap; gap: .5rem; padding: .2rem 0 .4rem 2.6rem; }
+.chatsim-followups-label { flex: 1 0 100%; font-size: .82rem; color: var(--text-mute); margin-bottom: .1rem; }
+.chatsim-followups .chatsim-chip { font-size: .85rem; padding: .5rem .9rem; background: var(--surface-2); }
+@media (max-width: 560px) { .chatsim-followups { padding-left: 0; } }
 
 @media (max-width: 720px) {
   .ex-grid { grid-template-columns: 1fr; }

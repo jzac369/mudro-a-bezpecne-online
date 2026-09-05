@@ -757,33 +757,94 @@
       input.value = "";
     });
 
-    function submit(text) {
+    // forcedId sa použije pri kliknutí na navrhnutú otázku — tá má cieľ
+    // určený v dátach, takže sa nespolieha na to, či ju párovanie trafí.
+    function submit(text, forcedId) {
       asked.push(text);
+      clearChips();
       addBubble("me", text);
       var typing = addTyping();
       setTimeout(function () {
         typing.remove();
-        addBubble("ai", pickReply(text));
+        var res = answerFor(text, forcedId);
+        addBubble("ai", res.text);
+        if (res.followUps && res.followUps.length) addFollowUps(res.followUps);
         thread.scrollTop = thread.scrollHeight;
       }, 700);
       thread.scrollTop = thread.scrollHeight;
     }
 
-    // Odpoveď vyberáme podľa toho, koľko kľúčových slov sa v otázke nájde.
-    // Počítanie zhod (namiesto prvej trafenej) zabráni tomu, aby široko
-    // formulovaná odpoveď prebrala otázku, ktorá patrí inej.
-    function pickReply(text) {
-      var lower = text.toLowerCase();
+    // Seniori píšu často bez diakritiky, preto ju pred porovnávaním odstránime
+    // a porovnávame "bez mäkčeňov" na oboch stranách.
+    function normalize(s) {
+      return String(s).toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ");
+    }
+
+    // Ak v otázke vidíme niečo, čo vyzerá ako číslo karty, PIN, rodné číslo
+    // alebo IBAN, neodpovedáme na tému — upozorníme. Je to najlepšia chvíľa
+    // pripomenúť, čo do AI nepatrí, a zároveň to pôsobí ako skutočná AI.
+    function looksSensitive(text) {
+      var t = String(text);
+      var digitsOnly = t.replace(/[\s-]/g, "");
+      if (/\b[A-Za-z]{2}\d{2}[A-Za-z0-9\s]{10,}/.test(t)) return true;        // IBAN
+      if (/\d{6}\s*\/\s*\d{3,4}/.test(t)) return true;                         // rodné číslo
+      if (/\d{13,}/.test(digitsOnly)) return true;                             // dlhý číselný reťazec
+      if (/\d{16}/.test(digitsOnly)) return true;                              // číslo karty
+      if (/\b(pin|cvv|cvc|heslo|rodne cislo|rodné číslo)\b[^.?!]{0,20}\b\d{3,}/i.test(normalize(t))) return true;
+      return false;
+    }
+
+    // Odpoveď vyberáme podľa zhody so slovami a frázami. Viacslovné frázy
+    // vážia viac — bez toho by otázka „Volala mi vnučka…“ trafila slovo
+    // „volal“ a dostala odpoveď o bankách.
+    function answerFor(text, forcedId) {
+      if (looksSensitive(text) && ex.sensitiveReply) return ex.sensitiveReply;
+
+      if (forcedId) {
+        var forced = (ex.replies || []).find(function (r) { return r.id === forcedId; });
+        if (forced) return forced;
+      }
+
+      var q = normalize(text);
       var best = null, bestScore = 0;
       (ex.replies || []).forEach(function (r) {
-        var kws = r.keywords || [];
-        if (!kws.length) return;
         var score = 0;
-        kws.forEach(function (k) { if (lower.indexOf(k) !== -1) score++; });
+        (r.phrases || []).forEach(function (p) { if (q.indexOf(normalize(p)) !== -1) score += 3; });
+        (r.keywords || []).forEach(function (k) {
+          // zhoda len na začiatku slova — "vola" tak netrafí "vyvolal"
+          if (new RegExp("(^| )" + normalize(k).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(q)) score += 1;
+        });
         if (score > bestScore) { bestScore = score; best = r; }
       });
-      var fallback = (ex.replies || []).find(function (r) { return !r.keywords || !r.keywords.length; });
-      return (best || fallback || { text: "Ďakujem za otázku." }).text;
+
+      // Pri slabej zhode radšej priznáme neistotu a spýtame sa doplňujúco,
+      // než by sme odpovedali mimo témy.
+      if (bestScore < 2 || !best) {
+        if (ex.clarify) return { text: ex.clarify.text, followUps: ex.clarify.options };
+        return { text: "Ďakujem za otázku. Opíšte mi prosím situáciu podrobnejšie." };
+      }
+      return best;
+    }
+
+    var chipsRow = null;
+    function clearChips() {
+      if (chipsRow) { chipsRow.remove(); chipsRow = null; }
+    }
+    function addFollowUps(list) {
+      chipsRow = el("div", "chatsim-followups");
+      chipsRow.appendChild(el("span", "chatsim-followups-label", "Môžete sa opýtať ďalej:"));
+      list.forEach(function (item) {
+        var text = item && item.q ? item.q : item;
+        var to = item && item.to ? item.to : null;
+        var b = el("button", "chatsim-chip", esc(text));
+        b.type = "button";
+        b.addEventListener("click", function () { submit(text, to); });
+        chipsRow.appendChild(b);
+      });
+      thread.appendChild(chipsRow);
+      thread.scrollTop = thread.scrollHeight;
     }
 
     function addBubble(who, text) {
