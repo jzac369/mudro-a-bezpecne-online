@@ -94,23 +94,20 @@
       }
       .mbo-chat-form .btn-primary:hover, #mbo-chat-start:hover { background: #0c3f37; }
 
-      .mbo-chat-send-row { display: flex; gap: .5rem; padding: .75rem .9rem; border-top: 1px solid #e7dcc9; flex: none; align-items: stretch; }
+      /* Vstup takmer na celú šírku okna, tlačidlo Odoslať pod ním —
+         nie vedľa seba. */
+      .mbo-chat-send-row { display: flex; flex-direction: column; gap: .5rem; padding: .75rem .9rem; border-top: 1px solid #e7dcc9; flex: none; }
       .mbo-chat-send-row input {
-        flex: 1; min-width: 0; min-height: 56px; font-family: inherit; font-size: 1rem; padding: 0 1rem;
+        width: 100%; min-height: 56px; font-family: inherit; font-size: 1rem; padding: 0 1rem;
         border-radius: 12px; border: 1.5px solid #ddd0b8; box-sizing: border-box;
       }
       #mbo-chat-send {
-        flex: none; min-height: 56px; min-width: 56px; padding: 0 .9rem; background: #12554a; color: #fff;
+        width: 100%; min-height: 56px; padding: 0 .9rem; background: #12554a; color: #fff;
         border: none; border-radius: 12px; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
-        display: inline-flex; align-items: center; gap: .5rem;
+        display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
       }
       #mbo-chat-send:hover { background: #0c3f37; }
       #mbo-chat-send svg { width: 18px; height: 18px; }
-      @media (max-width: 380px) {
-        .mbo-chat-send-row { flex-wrap: wrap; }
-        .mbo-chat-send-row input { flex-basis: 100%; }
-        #mbo-chat-send { flex: 1 1 auto; justify-content: center; }
-      }
 
       .mbo-chat-dot {
         position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%;
@@ -141,7 +138,7 @@
     panel.innerHTML =
       "<div class='mbo-chat-head'>" +
       "<div class='mbo-chat-head-row'>" +
-      "<div class='mbo-chat-head-titles'><h3>DigiStart podpora</h3><p>Radi vám pomôžeme</p></div>" +
+      "<div class='mbo-chat-head-titles'><h3>DigiStart podpora</h3></div>" +
       "<button type='button' class='mbo-chat-close' aria-label='Zavrieť'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg></button>" +
       "</div>" +
       "<span class='mbo-chat-pill' id='mbo-chat-pill'></span>" +
@@ -219,10 +216,10 @@
       statusEl.className = "mbo-chat-status " + (adminOnline ? "online" : "offline");
       statusEl.innerHTML = (adminOnline ? CHAT_OK_ICON : CLOCK_ICON) + "<span>" + (adminOnline
         ? "Sme online — odpovieme vám čo najskôr."
-        : "Momentálne nie sme online. Napíšte nám správu a ozveme sa čo najskôr.") + "</span>";
+        : "Pošlite nám správu, ozveme sa vám.") + "</span>";
 
       pillEl.className = "mbo-chat-pill " + (adminOnline ? "online" : "offline");
-      pillEl.innerHTML = "<span class='mbo-dot'></span>" + (adminOnline ? "Online" : "Momentálne offline");
+      pillEl.innerHTML = "<span class='mbo-dot'></span>" + (adminOnline ? "Online" : "Offline");
     }
 
     function renderStartForm() {
@@ -319,16 +316,18 @@
         if (!c) return;
         typingEl.style.display = c.adminTyping ? "block" : "none";
         if (c.status === "closed") {
-          endBtn.textContent = "Konverzácia je ukončená — napísať znova";
+          endBtn.textContent = "Chat ukončený";
+          endBtn.setAttribute("data-closed", "1");
         } else {
           endBtn.textContent = "Ukončiť konverzáciu";
+          endBtn.removeAttribute("data-closed");
         }
       });
     }
 
     endBtn.addEventListener("click", async () => {
       if (!currentChatId) return;
-      if (endBtn.textContent.indexOf("napísať znova") !== -1) {
+      if (endBtn.hasAttribute("data-closed")) {
         // Konverzácia už bola ukončená — začneme celkom novú.
         localStorage.removeItem(STORAGE_CHAT_ID);
         currentChatId = null;
