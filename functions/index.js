@@ -1608,8 +1608,17 @@ function drawGiftVoucherPdf(doc, { s, order, code }) {
 // požiadavku 1:1 prepošle na Google Cloud Storage. Ide čisto o vzhľad
 // odkazu v e-maile, nie o zmenu zabezpečenia — pozri downloadDocument.
 const DOCUMENT_DOWNLOAD_HOST = "https://stiahnut.kurzy.digistart.sk";
+// DÔLEŽITÉ: stiahnut.kurzy.digistart.sk ešte nie je pripojená ako vlastná
+// doména vo Firebase Hosting (treba to dokončiť v konzole + DNS záznamom
+// u registrátora — pozri commit message). Kým to nie je hotové, táto
+// doména nikam neukazuje a maskovaný odkaz by bol v e-maile nefunkčný.
+// Prepni na true až PO overení, že https://stiahnut.kurzy.digistart.sk/
+// naozaj odpovedá (napr. cez curl) — dovtedy zostávajú odkazy priame
+// a plne funkčné, presne ako doteraz.
+const MASK_DOCUMENT_URLS = false;
 
 function maskDocumentUrl(signedUrl) {
+  if (!MASK_DOCUMENT_URLS) return signedUrl;
   try {
     const u = new URL(signedUrl);
     // u.pathname je tvaru /<bucket>/<cesta...> — meno bucketu zákazník
