@@ -240,6 +240,56 @@
     });
   };
 
+  // Slovníček — v dvoch stĺpcoch. Sedemnásť pojmov aj s vysvetlením by sa
+  // pod sebou na stranu nezmestilo a spodok by sa orezal; dva stĺpce ich
+  // pohodlne pojmú a vytlačený list tak zostane použiteľný ako ťahák.
+  RENDERERS.glossary = function (cur, b) {
+    var ctx = cur.ctx;
+    var GAP = 18;
+    var colW = (W - M * 2 - GAP) / 2;
+
+    (b.groups || []).forEach(function (g) {
+      cur.space(10);
+      ctx.textAlign = "left";
+      ctx.font = "700 11px 'Atkinson Hyperlegible', Arial, sans-serif";
+      ctx.fillStyle = ACCENT;
+      ctx.fillText(String(g.title).toUpperCase(), M, cur.y);
+      cur.y += 6;
+      ctx.strokeStyle = LINE;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(M, cur.y);
+      ctx.lineTo(W - M, cur.y);
+      ctx.stroke();
+      cur.y += 13;
+
+      var half = Math.ceil(g.terms.length / 2);
+      var cols = [g.terms.slice(0, half), g.terms.slice(half)];
+      var startY = cur.y;
+      var maxY = startY;
+
+      cols.forEach(function (col, ci) {
+        var x = M + ci * (colW + GAP);
+        var y = startY;
+        col.forEach(function (t) {
+          ctx.font = "700 11px 'Atkinson Hyperlegible', Arial, sans-serif";
+          ctx.fillStyle = INK;
+          ctx.fillText(t.term, x, y);
+          y += 13;
+          ctx.font = "10px 'Atkinson Hyperlegible', Arial, sans-serif";
+          ctx.fillStyle = MUTE;
+          wrapLines(ctx, t.text, colW).forEach(function (l) {
+            ctx.fillText(l, x, y);
+            y += 12;
+          });
+          y += 7;
+        });
+        if (y > maxY) maxY = y;
+      });
+      cur.y = maxY + 2;
+    });
+  };
+
   RENDERERS.lines = function (cur, b) {
     if (b.label) {
       cur.space(10);

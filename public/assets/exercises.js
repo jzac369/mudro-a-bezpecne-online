@@ -31,6 +31,7 @@
     robot: "<rect x='4' y='8' width='16' height='12' rx='3'/><path d='M12 8V4M9 4h6'/><circle cx='9' cy='14' r='1.2' fill='currentColor' stroke='none'/><circle cx='15' cy='14' r='1.2' fill='currentColor' stroke='none'/>",
     shield: "<path d='M12 3l8 4v5c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V7l8-4Z'/><path d='M9.5 12l2 2 3.5-3.5'/>",
     phone: "<path d='M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.36 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z'/>",
+    book: "<path d='M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2Z'/><path d='M8 7h7M8 11h5'/>",
   };
 
   function icon(name, cls) {
@@ -78,7 +79,7 @@
     var head = el("div", "ex-overview-head");
     head.appendChild(el("h2", null, "Praktické cvičenia"));
     head.appendChild(el("p", "ex-overview-lead",
-      "Šesť cvičení, ktoré si môžete urobiť priamo tu na obrazovke — alebo si ich stiahnuť ako pracovný list vo formáte PDF a vyplniť perom."));
+      this.list.length + " cvičení, ktoré si môžete urobiť priamo tu na obrazovke — alebo si ich stiahnuť ako pracovný list vo formáte PDF a vyplniť perom."));
     this.root.appendChild(head);
 
     var progress = el("div", "ex-progress");
@@ -220,6 +221,206 @@
   // ---------- Jednotlivé typy cvičení ----------
 
   var RENDERERS = {};
+
+  // 0 · Slovníček pojmov
+  // Sedemnásť pojmov naraz je priveľa, preto ich prechádzame po častiach —
+  // vždy je na obrazovke len jedna. Kartičky sa otáčajú, nedá sa nimi nič
+  // pokaziť; overenie na konci je krátke a dá sa preskočiť.
+  RENDERERS.glossary = function (ex, host, app) {
+    var state = app.answers[ex.id] || (app.answers[ex.id] = { part: 0, seen: {} });
+    var parts = ex.parts || [];
+    var stage = el("div", "gloss-stage");
+    host.appendChild(stage);
+
+    function partNav(activeIndex) {
+      var nav = el("div", "gloss-nav");
+      parts.forEach(function (p, i) {
+        var b = el("button", "gloss-nav-item" +
+          (i === activeIndex ? " active" : "") +
+          (state.seen[i] ? " seen" : ""));
+        b.type = "button";
+        b.innerHTML = "<span class='gloss-nav-num'>" + (i + 1) + "</span><span>" + esc(p.title) + "</span>";
+        b.addEventListener("click", function () { showPart(i); });
+        nav.appendChild(b);
+      });
+      return nav;
+    }
+
+    function showPart(pi) {
+      state.part = pi;
+      app.persist();
+      var part = parts[pi];
+      stage.innerHTML = "";
+      stage.appendChild(partNav(pi));
+
+      var head = el("div", "gloss-part-head");
+      head.innerHTML =
+        "<p class='gloss-part-eyebrow'>Časť " + (pi + 1) + " z " + parts.length + " · " + part.terms.length + " pojmov</p>" +
+        "<h3>" + esc(part.title) + "</h3>" +
+        (part.intro ? "<p class='gloss-part-intro'>" + esc(part.intro) + "</p>" : "");
+      stage.appendChild(head);
+
+      var flipped = {};
+      var grid = el("div", "course-flip-grid gloss-grid");
+      part.terms.forEach(function (t) {
+        var outer = el("div", "course-flip");
+        var inner = el("div", "course-flip-inner");
+        inner.appendChild(el("div", "course-flip-face course-flip-front",
+          "<h3>" + esc(t.term) + "</h3>" +
+          (t.read ? "<span class='gloss-read'>" + esc(t.read) + "</span>" : "") +
+          "<span class='course-flip-hint'>Kliknite a otočí sa</span>"));
+        inner.appendChild(el("div", "course-flip-face course-flip-back",
+          "<p class='gloss-back-term'>" + esc(t.term) + "</p><p>" + esc(t.text) + "</p>"));
+        outer.appendChild(inner);
+        outer.addEventListener("click", function () {
+          outer.classList.toggle("flipped");
+          if (outer.classList.contains("flipped") && !flipped[t.term]) {
+            flipped[t.term] = true;
+            setCount();
+          }
+        });
+        grid.appendChild(outer);
+      });
+      stage.appendChild(grid);
+
+      var count = el("p", "gloss-count");
+      stage.appendChild(count);
+      function setCount() {
+        var n = Object.keys(flipped).length;
+        var all = part.terms.length;
+        count.innerHTML = n >= all
+          ? "Prezreli ste si všetky pojmy z tejto časti."
+          : "Otočené <strong>" + n + "</strong> z " + all;
+        count.classList.toggle("complete", n >= all);
+        if (n >= all) { state.seen[pi] = true; app.persist(); }
+      }
+      setCount();
+
+      var foot = el("div", "gloss-foot");
+      if (pi > 0) {
+        var prev = el("button", "btn btn-secondary", "← Predchádzajúca časť");
+        prev.type = "button";
+        prev.addEventListener("click", function () { showPart(pi - 1); scrollTop(); });
+        foot.appendChild(prev);
+      }
+      var next = el("button", "btn btn-primary",
+        pi + 1 < parts.length ? "Pokračovať na " + (pi + 2) + ". časť →" : "Krátke overenie na záver →");
+      next.type = "button";
+      next.addEventListener("click", function () {
+        state.seen[pi] = true;
+        app.persist();
+        if (pi + 1 < parts.length) showPart(pi + 1); else showCheck();
+        scrollTop();
+      });
+      foot.appendChild(next);
+      stage.appendChild(foot);
+    }
+
+    function scrollTop() {
+      if (stage.scrollIntoView) stage.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function showCheck() {
+      var quiz = ex.check || [];
+      stage.innerHTML = "";
+      stage.appendChild(partNav(-1));
+
+      var head = el("div", "gloss-part-head");
+      head.innerHTML =
+        "<p class='gloss-part-eyebrow'>Na záver · " + quiz.length + " otázky</p>" +
+        "<h3>Krátke overenie</h3>" +
+        "<p class='gloss-part-intro'>Nič sa nedá pokaziť — je to len na overenie, či slová sedia. Ak si nie ste istí, pokojne sa vráťte na kartičky vyššie.</p>";
+      stage.appendChild(head);
+
+      var correct = 0, answered = 0;
+      quiz.forEach(function (q, qi) {
+        var box = el("div", "gloss-q");
+        box.appendChild(el("p", "gloss-q-num", "Otázka " + (qi + 1)));
+        box.appendChild(el("p", "gloss-q-text", esc(q.question)));
+        var opts = el("div", "gloss-q-opts");
+        var buttons = [];
+        var result = el("div", "gloss-q-result");
+        q.options.forEach(function (opt, oi) {
+          var b = el("button", "gloss-q-opt", "<span class='gloss-q-opt-icon'></span><span>" + esc(opt) + "</span>");
+          b.type = "button";
+          b.addEventListener("click", function () {
+            if (b.disabled) return;
+            buttons.forEach(function (x) { x.disabled = true; });
+            var ok = oi === q.correct;
+            if (ok) correct++;
+            answered++;
+            b.classList.add(ok ? "correct" : "incorrect");
+            b.querySelector(".gloss-q-opt-icon").innerHTML = ok ? CHECK : CROSS;
+            if (!ok) {
+              var right = buttons[q.correct];
+              right.classList.add("correct", "is-answer");
+              right.querySelector(".gloss-q-opt-icon").innerHTML = CHECK;
+            }
+            result.className = "gloss-q-result show " + (ok ? "ok" : "warn");
+            result.innerHTML = "<strong>" + (ok ? "Správne." : "Správna je zvýraznená možnosť.") + "</strong> " + esc(q.why);
+            if (answered >= quiz.length) showSummary();
+          });
+          buttons.push(b);
+          opts.appendChild(b);
+        });
+        box.appendChild(opts);
+        box.appendChild(result);
+        stage.appendChild(box);
+      });
+
+      var summary = el("div", "gloss-summary");
+      stage.appendChild(summary);
+
+      function showSummary() {
+        summary.innerHTML =
+          "<p class='gloss-summary-score'>Správne <strong>" + correct + " z " + quiz.length + "</strong>.</p>" +
+          "<p>Celý slovníček máte nižšie — a nájdete ho aj v brožúrke. Nemusíte ho vedieť naspamäť, stačí vedieť, kde ho hľadať.</p>";
+        summary.classList.add("show");
+        summary.appendChild(fullList());
+      }
+
+      var back = el("button", "btn btn-secondary", "← Späť na kartičky");
+      back.type = "button";
+      back.style.marginTop = "1.4rem";
+      back.addEventListener("click", function () { showPart(parts.length - 1); scrollTop(); });
+      stage.appendChild(back);
+    }
+
+    // Celý slovníček pokope — slúži ako referencia, ku ktorej sa dá vrátiť.
+    function fullList() {
+      var wrap = el("div", "gloss-full");
+      wrap.appendChild(el("h4", "gloss-full-title", "Celý slovníček pokope"));
+      parts.forEach(function (p) {
+        wrap.appendChild(el("p", "gloss-full-group", esc(p.title)));
+        var dl = el("dl", "gloss-full-list");
+        p.terms.forEach(function (t) {
+          dl.appendChild(el("dt", null, esc(t.term) + (t.read ? " <span class='gloss-read-inline'>(" + esc(t.read) + ")</span>" : "")));
+          dl.appendChild(el("dd", null, esc(t.text)));
+        });
+        wrap.appendChild(dl);
+      });
+      return wrap;
+    }
+
+    showPart(Math.min(state.part || 0, parts.length - 1));
+
+    return {
+      worksheet: function () {
+        return {
+          title: ex.title,
+          intro: "Vytlačte si a nechajte pri počítači. Keď na niektoré slovo znova narazíte, budete ho mať poruke.",
+          blocks: [
+            { type: "glossary", groups: parts.map(function (p) {
+              return { title: p.title, terms: p.terms.map(function (t) {
+                return { term: t.term + (t.read ? " (" + t.read + ")" : ""), text: t.text };
+              }) };
+            }) },
+            { type: "note", text: ex.worksheetNote || ex.note },
+          ],
+        };
+      },
+    };
+  };
 
   // 1 · Domáci rozpočet
   RENDERERS.budget = function (ex, host, app) {

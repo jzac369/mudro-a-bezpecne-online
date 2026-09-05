@@ -11,6 +11,80 @@
 window.COURSE_EXERCISES = [
 
   {
+    id: "slovnicek",
+    type: "glossary",
+    icon: "book",
+    title: "Slovníček pojmov",
+    short: "Sedemnásť cudzích slov z brožúrky, vysvetlených po našom — v troch krátkych častiach.",
+    time: "12 minút",
+    intro: "V kurze aj v brožúrke sa objaví pár cudzích slov. Tu ich máte pokope a vysvetlené normálnou rečou. Nemusíte sa ich učiť naspamäť — úplne stačí, keď budete vedieť, kde si ich nájsť.",
+    task: "Kliknite na kartičku a otočí sa — na druhej strane je vysvetlenie. Sú tu tri krátke časti, po každej si môžete dať pauzu a pokračovať neskôr.",
+    // Zámerne rozdelené na tri kratšie časti — sedemnásť pojmov naraz je pre
+    // začiatočníka priveľa. Vishing a smishing tu nie sú, tie sa preberajú
+    // v Lekciách na obrazovke „Slovníček pojmov“.
+    parts: [
+      {
+        title: "Umelá inteligencia",
+        intro: "Slová, na ktoré narazíte hneď, ako otvoríte ChatGPT.",
+        terms: [
+          { term: "AI (umelá inteligencia)", text: "Program, ktorý rozumie ľudskej reči a vie odpovedať, radiť a písať texty. Skratka z anglického Artificial Intelligence." },
+          { term: "ChatGPT", text: "Jedna z najznámejších aplikácií na prácu s umelou inteligenciou. Funguje ako osobný asistent, s ktorým sa dá písať aj rozprávať." },
+          { term: "Prompt", text: "Otázka alebo zadanie, ktoré napíšete umelej inteligencii." },
+          { term: "Halucinácia", text: "Keď si AI odpoveď vymyslí, aj keď znie presvedčivo. Preto dôležité veci vždy overujeme." },
+          { term: "Aplikácia", text: "Program v mobile alebo na tablete. Aplikácie inštalujeme len z oficiálneho obchodu (Google Play, App Store) — nikdy z odkazu v SMS či e-maile." },
+        ],
+      },
+      {
+        title: "Podvody a nepravdivé správy",
+        intro: "Pomenovania pre to, čím sa vás niekto snaží oklamať.",
+        terms: [
+          { term: "Phishing", read: "čítaj „fišing“", text: "Podvodný e-mail alebo SMS, ktoré sa tvária ako správy od banky či úradu a chcú vylákať vaše údaje." },
+          { term: "Hoax", read: "čítaj „houks“", text: "Zámerne vytvorená nepravdivá alebo zavádzajúca správa, ktorej cieľom je oklamať ľudí a prinútiť ich, aby ju šírili ďalej." },
+          { term: "Dezinformácia", text: "Nepravdivá informácia šírená úmyselne s cieľom ovplyvniť názory či správanie ľudí, často cez strach alebo hnev. Cieľom je manipulovať verejnou mienkou." },
+          { term: "Deepfake", read: "čítaj „dípfejk“", text: "Falošné video alebo hlas vytvorený umelou inteligenciou — napríklad „známa osobnosť“ vo videu odporúča investíciu, ktorá sa nezakladá na pravde." },
+          { term: "Kryptomena", text: "Digitálne „peniaze“ (napríklad bitcoin) používané na internete. Obľúbený nástroj podvodníkov, pretože platby sa po odoslaní nedajú vrátiť." },
+        ],
+      },
+      {
+        title: "Vaše údaje a bezpečné klikanie",
+        intro: "Čo si chrániť a na čo si dať pozor, kým na niečo kliknete.",
+        terms: [
+          { term: "Odkaz (link)", text: "Modrý podčiarknutý text alebo tlačidlo, ktoré po kliknutí otvorí webovú stránku. Na odkazy v podozrivých správach nikdy neklikáme." },
+          { term: "Príloha", text: "Súbor pripojený k e-mailu (dokument, obrázok). Prílohu od neznámeho odosielateľa neotvárame." },
+          { term: "QR kód", text: "Štvorcový čiarový kód, ktorý sa odfotí mobilom a otvorí webovú stránku. Podvodníci ho vedia nalepiť napríklad na parkovací automat — naskenovaním sa dostanete na falošnú platobnú stránku." },
+          { term: "Verejná Wi-Fi sieť", text: "Bezplatné pripojenie na internet, napríklad v kaviarni alebo na letisku. Cez takúto sieť radšej nerobte internetbanking — bezpečnejšie sú mobilné dáta alebo domáca Wi-Fi." },
+          { term: "PIN", text: "Tajný číselný kód ku karte. Nikdy ho nikomu nehovoríme — ani pracovníkovi banky, ba ani rodine." },
+          { term: "CVV / CVC", text: "Trojčíslie na zadnej strane platobnej karty. Kto ho pozná spolu s číslom karty, môže s vašou kartou zaplatiť." },
+          { term: "Dvojfaktorové overenie", text: "Dvojitý zámok: okrem hesla treba zadať aj kód, napríklad z SMS. Sťažuje zlodejom prístup k vášmu účtu." },
+        ],
+      },
+    ],
+    // Krátke overenie na záver — po jednej otázke z každej časti.
+    check: [
+      {
+        question: "Čo je to „prompt“?",
+        options: ["Tajný číselný kód ku karte", "Otázka alebo zadanie, ktoré napíšete umelej inteligencii", "Názov mobilnej aplikácie"],
+        correct: 1,
+        why: "Prompt je jednoducho to, čo umelej inteligencii napíšete. Čím konkrétnejšie, tým užitočnejšia odpoveď.",
+      },
+      {
+        question: "Čo je „phishing“ (fišing)?",
+        options: ["Druh rybolovu", "Bezpečný spôsob platby cez internet", "Podvodný e-mail alebo SMS, ktoré sa tvária ako správa od banky či úradu"],
+        correct: 2,
+        why: "Slovo vzniklo z anglického „fishing“ — rybolov. Podvodníci rozpošlú tisíce správ a čakajú, kto sa chytí.",
+      },
+      {
+        question: "Čo je „dvojfaktorové overenie“?",
+        options: ["Dvojitý zámok — okrem hesla treba zadať aj kód, napríklad z SMS", "Dve rôzne heslá k tomu istému účtu", "Overenie dvomi rôznymi bankami naraz"],
+        correct: 0,
+        why: "Je to jedna z najúčinnejších ochrán účtu. Aj keby niekto zistil vaše heslo, bez kódu z SMS sa dnu nedostane.",
+      },
+    ],
+    note: "Narazíte na iné cudzie slovo? Opýtajte sa AI: „Vysvetli mi slovo … jednoducho, ako pre seniora, a uveď príklad.“",
+    worksheetNote: "Tento zoznam si môžete vytlačiť a nechať pri počítači. Keď na niektoré slovo znova narazíte, budete ho mať poruke.",
+  },
+
+  {
     id: "rozpocet",
     type: "budget",
     icon: "wallet",
