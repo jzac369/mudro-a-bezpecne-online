@@ -90,25 +90,15 @@ window.COURSE_SLIDES = [
     ],
     note: "Umelá inteligencia nie je neomylná. Pomôže vám premýšľať, no nenahrádza odborníka.",
   },
-  {
-    id: 6, part: 1, type: "sequence",
-    title: "Začíname s ChatGPT — krok za krokom",
-    lead: "ChatGPT je najznámejšia aplikácia na prácu s umelou inteligenciou. Píše sa s ňou rovnako ako SMS správa.",
-    task: "Päť krokov je zámerne pomiešaných. Klikajte na ne <strong>v poradí, v akom by ste ich naozaj robili</strong> — začnite tým, čo urobíte úplne ako prvé.",
-    steps: [
-      "Otvorte aplikáciu ChatGPT alebo v prehliadači napíšte chatgpt.com.",
-      "Dole na obrazovke nájdete okienko na písanie — rovnaké ako pri SMS.",
-      "Napíšte otázku celou vetou, ako by ste ju položili človeku.",
-      "Stlačte šípku (odoslať) a počkajte pár sekúnd na odpoveď.",
-      "Nerozumeli ste? Napíšte: „Vysvetli mi to jednoduchšie.“",
-    ],
-    doneText: "Presne takto to bude vyzerať aj u vás doma. Celé to trvá menej než minútu.",
-    note: "V ChatGPT sa nedá nič pokaziť. Žiadne tlačidlo nič nezmaže vo vašom mobile ani účte.",
-  },
+  // Poradie je zámerné: najprv ukážeme, ako ChatGPT vyzerá, a až potom, čo sa
+  // v ňom robí. Kroky nižšie spomínajú „okienko na písanie“ aj „šípku“ — bez
+  // obrázka pred sebou by senior nemal k čomu si ich priradiť.
+  // Čísla id zostávajú pôvodné: admin zóna podľa nich prepisuje texty
+  // jednotlivých obrazoviek, prečíslovanie by úpravy prilepilo na nesprávnu.
   {
     id: 7, part: 1, type: "hotspot",
     title: "Takto vyzerá ChatGPT v praxi",
-    lead: "Toto je skutočná obrazovka aplikácie na tablete. Zoznámime sa s tromi miestami, ktoré budete používať najčastejšie.",
+    lead: "ChatGPT je najznámejšia aplikácia na prácu s umelou inteligenciou. Takto vyzerá na tablete — zoznámime sa s tromi miestami, ktoré budete používať najčastejšie.",
     task: "Na obrázku sú <strong>tri očíslované body</strong>. Kliknite postupne na každý z nich — pod obrázkom sa im rozsvieti vysvetlenie.",
     spots: [
       { x: 13, y: 62, title: "Zoznam rozhovorov", text: "Vľavo — staršie otázky sa nestrácajú, kedykoľvek sa k nim vrátite." },
@@ -120,6 +110,21 @@ window.COURSE_SLIDES = [
       caption: "Skutočná obrazovka aplikácie ChatGPT na tablete — presne takto to uvidíte aj vy.",
       appLabel: "ChatGPT",
     },
+  },
+  {
+    id: 6, part: 1, type: "sequence",
+    title: "Začíname s ChatGPT — krok za krokom",
+    lead: "Obrazovku už poznáte. Teraz si prejdime, čo na nej urobíte — píše sa s ňou rovnako ako SMS správa.",
+    task: "Päť krokov je zámerne pomiešaných. Klikajte na ne <strong>v poradí, v akom by ste ich naozaj robili</strong> — začnite tým, čo urobíte úplne ako prvé.",
+    steps: [
+      "Otvorte aplikáciu ChatGPT alebo v prehliadači napíšte chatgpt.com.",
+      "Dole na obrazovke nájdete okienko na písanie — rovnaké ako pri SMS.",
+      "Napíšte otázku celou vetou, ako by ste ju položili človeku.",
+      "Stlačte šípku (odoslať) a počkajte pár sekúnd na odpoveď.",
+      "Nerozumeli ste? Napíšte: „Vysvetli mi to jednoduchšie.“",
+    ],
+    doneText: "Presne takto to bude vyzerať aj u vás doma. Celé to trvá menej než minútu.",
+    note: "V ChatGPT sa nedá nič pokaziť. Žiadne tlačidlo nič nezmaže vo vašom mobile ani účte.",
   },
   {
     id: 8, part: 1, type: "choice",
