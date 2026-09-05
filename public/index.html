@@ -68,8 +68,9 @@
   /* Tlačidlá, ktoré sú odkazom, si musia farbu textu ustrážiť samy —
      `.page a` má vyššiu špecificitu než samotná trieda tlačidla a inak
      im podsunie farbu okolia (biely text na krémovom tlačidle a pod.). */
-  .page .mini-btn, .page .ds-num { color: #fff; }
-  .page .contact-cta { color: var(--green-dk); }
+  .page .mini-btn { color: #fff; }
+  .page .ds-num { color: var(--ink); }
+  .page .contact-cta { color: #fff; }
   .page .ds-login { color: var(--green); }
   .page .ds-login:hover { color: #fff; }
   .page .mini-btn[disabled] { color: var(--muted); }
@@ -239,34 +240,42 @@
   @media (max-width: 900px) { .quotes { grid-template-columns: 1fr; } .quotes .quote:nth-child(2) { margin-top: 0; } }
 
   /* ---------- 7. KONTAKT ---------- */
-  /* Tmavozelený pás uzatvára stránku a dáva jej záverečnú váhu */
-  .contact { background: var(--green); color: #fff; padding: 0 !important; }
-  .contact-box { display: grid; grid-template-columns: 300px 1fr; align-items: stretch; }
-  .contact-photo { position: relative; min-height: 300px; }
-  .contact-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; }
-  .contact-copy { padding: 56px 0 56px 56px; display: grid; grid-template-columns: 1.15fr auto; gap: 40px; align-items: center; }
-  .contact-copy h2 { color: #fff; font-size: calc(28px * var(--font-scale)); margin-bottom: 12px; }
-  .contact-copy > div > p { color: #cfe0d8; font-size: var(--fs-body); max-width: 44ch; }
-  .contact-actions { display: flex; flex-direction: column; gap: 20px; padding-right: max(56px, calc((100vw - 1120px) / 2)); }
-  .phone { display: flex; align-items: center; gap: 14px; }
-  .phone-icon { width: 48px; height: 48px; flex: none; border-radius: 50%; background: rgba(255,255,255,.12); display: grid; place-items: center; color: #fff; }
-  .phone-icon svg { width: 21px; height: 21px; }
-  .phone .label { font-size: var(--fs-micro); color: #a9c6ba; letter-spacing: .06em; text-transform: uppercase; }
-  .ds-num { display: block; font-family: var(--serif); font-size: calc(26px * var(--font-scale)); font-weight: 700; color: #fff; white-space: nowrap; line-height: 1.2; }
-  .hours { font-size: var(--fs-micro); color: #a9c6ba; }
-  .contact-cta { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 54px; padding: 0 26px; border-radius: var(--r-md); background: var(--paper); color: var(--green-dk); font-family: var(--sans); font-size: var(--fs-body); font-weight: 700; }
-  .contact-cta svg { width: 18px; height: 18px; }
-  .contact-cta:hover { background: #fff; }
-  @media (max-width: 1040px) {
-    .contact-box { grid-template-columns: 220px 1fr; }
-    .contact-copy { grid-template-columns: 1fr; gap: 28px; padding: 44px 0 44px 40px; }
-    .contact-actions { padding-right: 40px; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  /* Banner je teraz orámovaná karta v šírke obsahu (rovnaká ako .wrap
+     všade inde), nie pás cez celú šírku obrazovky. Fotka vľavo mäkko
+     splýva s krémovým pozadím karty smerom k textu (opačný smer fáde
+     než na hero fotke, kde text je vľavo a fotka vpravo). */
+  .contact-box {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden;
   }
-  @media (max-width: 700px) {
-    .contact-box { grid-template-columns: 1fr; }
-    .contact-photo { min-height: 200px; }
-    .contact-copy { padding: 36px 24px; }
-    .contact-actions { padding: 0 24px 36px; flex-direction: column; align-items: stretch; gap: 22px; }
+  .contact-photo { position: relative; flex: 1 1 220px; max-width: 240px; align-self: stretch; min-height: 200px; }
+  .contact-photo img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 22%;
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 60%, rgba(0,0,0,.85) 68%, rgba(0,0,0,.5) 78%, rgba(0,0,0,.15) 90%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 0%, #000 60%, rgba(0,0,0,.85) 68%, rgba(0,0,0,.5) 78%, rgba(0,0,0,.15) 90%, transparent 100%);
+  }
+  .contact-copy { flex: 3 1 320px; padding: 30px 20px 30px 4px; }
+  .contact-copy h2 { color: var(--ink); font-size: calc(23px * var(--font-scale)); margin-bottom: 8px; }
+  .contact-copy p { color: var(--ink-2); font-size: var(--fs-body); max-width: 44ch; }
+  .contact-actions { flex: 2 1 320px; display: flex; align-items: center; gap: 24px; padding: 20px 32px 20px 0; flex-wrap: wrap; }
+  .phone { display: flex; align-items: center; gap: 14px; }
+  .phone-icon { width: 44px; height: 44px; flex: none; border-radius: 50%; background: var(--green-tint); display: grid; place-items: center; color: var(--green); }
+  .phone-icon svg { width: 19px; height: 19px; }
+  .phone .label { font-size: var(--fs-micro); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .ds-num { display: block; font-family: var(--serif); font-size: calc(23px * var(--font-scale)); font-weight: 700; color: var(--ink); white-space: nowrap; line-height: 1.2; }
+  .hours { font-size: var(--fs-micro); color: var(--muted); }
+  .contact-cta {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 24px;
+    border-radius: var(--r-md); background: var(--green); color: #fff; border: none; cursor: pointer;
+    font-family: var(--sans); font-size: var(--fs-body); font-weight: 700; white-space: nowrap;
+  }
+  .contact-cta svg { width: 18px; height: 18px; }
+  .contact-cta:hover { background: var(--green-dk); }
+  @media (max-width: 780px) {
+    .contact-photo { flex-basis: 100%; max-width: 100%; min-height: 180px; align-self: auto; }
+    .contact-photo img { mask-image: none; -webkit-mask-image: none; }
+    .contact-copy { flex-basis: 100%; padding: 26px 24px 6px; }
+    .contact-actions { flex-basis: 100%; flex-direction: column; align-items: stretch; padding: 10px 24px 26px; }
     .contact-cta { width: 100%; }
   }
 
@@ -324,7 +333,7 @@
 <section class="hero">
   <div class="wrap hero-main">
     <div>
-      <div class="eyebrow">Jednoduché online kurzy</div>
+      <div class="eyebrow">Online kurzy pre seniorov a začiatočníkov</div>
       <h1>Cítite sa istejšie<br>a <em>bezpečnejšie</em> v digitálnom svete</h1>
       <p class="hero-lead">Zrozumiteľné video lekcie, praktické cvičenia a podpora krok za krokom. Bez technického žargónu. Vhodné aj pre úplných začiatočníkov.</p>
       <div class="actions">
@@ -506,14 +515,14 @@
 </section>
 
 <section class="contact" id="kontakt">
-  <div class="contact-box">
-    <div class="contact-photo">
-      <img src="assets/hero/kontakt-podpora.jpg" alt="Usmiata pracovníčka podpory DigiStart" onerror="this.style.display='none';">
-    </div>
-    <div class="contact-copy">
-      <div>
-        <h2>Potrebujete osobnú pomoc?</h2>
-        <p>Sme tu pre vás. Napíšte nám alebo zavolajte, radi poradíme s výberom kurzu, alebo s čímkoľvek, čo nie je jasné.</p>
+  <div class="wrap">
+    <div class="contact-box">
+      <div class="contact-photo">
+        <img src="assets/hero/kontakt-podpora.jpg" alt="Usmiaty konzultant podpory DigiStart" onerror="this.style.display='none';">
+      </div>
+      <div class="contact-copy">
+        <h2>Potrebujete pomôcť?</h2>
+        <p>Sme tu pre Vás. Napíšte nám, alebo zavolajte. Radi Vám poradíme s výberom kurzu, alebo s čímkoľvek, čo Vám nie je jasné.</p>
       </div>
       <div class="contact-actions">
         <div class="phone">
@@ -524,10 +533,10 @@
             <div class="hours">Po–Pia: 8:00–16:00</div>
           </div>
         </div>
-        <a class="contact-cta" href="konzultacia.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-          Dohodnúť konzultáciu
-        </a>
+        <button type="button" class="contact-cta" id="contact-chat-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5a7 7 0 0 1 7 7c0 4-3 6-3 8H8c0-2-3-4-3-8a7 7 0 0 1 7-7Z"/><path d="M10 20h4"/></svg>
+          Kontaktujte nás
+        </button>
       </div>
     </div>
   </div>
@@ -562,6 +571,14 @@
 
 <script>
   document.getElementById("footer-year").textContent = new Date().getFullYear();
+
+  // "Kontaktujte nás" v kontaktnom banneri otvára rovnaký chat ako
+  // plávajúce tlačidlo "Potrebujem pomoc" — nededikuje sa preň žiadna
+  // vlastná logika, len sa "klikne" za návštevníka na existujúci fab.
+  document.getElementById("contact-chat-cta").addEventListener("click", () => {
+    const fab = document.querySelector(".help-fab");
+    if (fab) fab.click();
+  });
 
   // Odkazy v hornom menu (a v pätičke) neposkočia na sekciu skokom, ale
   // stránku k nej pokojne posunú — pre staršieho návštevníka je oveľa
