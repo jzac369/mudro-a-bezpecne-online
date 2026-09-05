@@ -77,7 +77,15 @@
   .sidebar-toggle-btn svg { width: 16px; height: 16px; transition: transform .2s ease; }
   .dash-sidebar.collapsed .sidebar-toggle-btn svg { transform: rotate(180deg); }
 
-  .dash-nav { display: flex; flex-direction: column; gap: .2rem; flex: 1; overflow-y: auto; }
+  .dash-nav { display: flex; flex-direction: column; gap: .2rem; flex: 1; overflow-y: auto; overflow-x: hidden; }
+  /* Odznak s počtom nových chatov: v rozbalenom menu má sedieť hneď
+     vedľa slova "Chat" (normálny tok flexu), nie prilepený na roh
+     celého tlačidla — to ho posúvalo ďaleko doprava a navyše 6px von
+     z tlačidla, čím sa v .dash-nav (overflow-y:auto) objavil aj
+     zbytočný vodorovný posuvník. V zbalenom menu (len ikony) ostáva
+     ako bodka v rohu ikony — to je žiaduce. */
+  .dash-nav .chat-badge { position: static; }
+  .dash-sidebar.collapsed .dash-nav .chat-badge { position: absolute; top: -6px; right: -6px; }
   .dash-nav button {
     display: flex; align-items: center; gap: .7rem; text-align: left;
     background: none; border: none; border-radius: 10px; padding: .65rem .8rem;
