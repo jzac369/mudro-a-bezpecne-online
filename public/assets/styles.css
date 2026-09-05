@@ -301,7 +301,10 @@ label {
   flex: 1 1 0; min-width: 90px; display: flex; flex-direction: column; align-items: center;
   gap: .35rem; padding: .55rem .3rem; border-radius: 12px; background: var(--surface-2);
   border: 1.5px solid transparent; opacity: .6; transition: transform .18s ease, opacity .18s ease;
+  cursor: pointer; font: inherit; color: inherit; -webkit-tap-highlight-color: transparent;
 }
+.course-map-seg:hover { opacity: .85; }
+.course-map-seg:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .course-map-seg.done { opacity: 1; border-color: var(--good); }
 .course-map-seg.active { opacity: 1; border-color: var(--ink); background: var(--surface); transform: translateY(-2px); box-shadow: var(--course-shadow-soft); }
 .course-map-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); display: block; }

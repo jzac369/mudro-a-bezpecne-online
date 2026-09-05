@@ -131,14 +131,23 @@
 
     const bar = el("div", "course-map-bar");
     this.parts.forEach((p) => {
-      const seg = el("div", "course-map-seg" + (p.id === slide.part ? " active" : (p.id < slide.part ? " done" : "")));
+      // Dlaždica časti slúži aj ako navigácia — kliknutím (alebo Enter/medzerníkom)
+      // sa dá kedykoľvek vrátiť na predchádzajúcu časť alebo preskočiť na inú,
+      // rovnako ako by ste tam prešli tlačidlami Späť/Ďalej krok za krokom.
+      const seg = el("button", "course-map-seg" + (p.id === slide.part ? " active" : (p.id < slide.part ? " done" : "")));
+      seg.type = "button";
       const stampInPart = this.stamps.some((sid) => {
         const s = this.slides.find((x) => x.id === sid);
         return s && s.part === p.id && this.earnedStamps.has(sid);
       });
       seg.title = p.label;
+      seg.setAttribute("aria-label", "Prejsť na časť: " + p.label);
       seg.appendChild(el("span", "course-map-dot" + (stampInPart ? " earned" : "")));
       seg.appendChild(el("span", "course-map-seg-label", p.label));
+      const firstSlideOfPart = this.slides.findIndex((s) => s.part === p.id);
+      seg.addEventListener("click", () => {
+        if (firstSlideOfPart !== -1) this.goTo(firstSlideOfPart);
+      });
       bar.appendChild(seg);
     });
     map.appendChild(bar);
