@@ -19,58 +19,157 @@
   function injectStyles() {
     const style = document.createElement("style");
     style.textContent = `
+      /* Centrum pomoci — vlastný dizajnový systém widgetu, nezávislý od
+         toho, ktoré CSS premenné (--ink/--surface-2/...) má práve
+         aktuálna stránka; farby sú tu zámerne pevné (tmavozelená +
+         krémová + biela), aby chat vyzeral rovnako na každej stránke. */
       .mbo-chat-panel {
-        position: fixed; right: 1.4rem; bottom: 5.4rem; width: 340px; max-width: calc(100vw - 2rem);
-        max-height: 70vh; background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
-        box-shadow: 0 10px 40px rgba(0,0,0,.25); display: none; flex-direction: column; overflow: hidden; z-index: 60;
+        position: fixed; right: 1.4rem; bottom: 5.4rem; width: 380px; max-width: calc(100vw - 2rem);
+        height: 600px; max-height: min(600px, calc(100vh - 7.5rem));
+        background: #fff; border: 1px solid #e7dcc9; border-radius: 18px;
+        box-shadow: 0 16px 44px rgba(16,50,47,.18); display: none; flex-direction: column; overflow: hidden; z-index: 60;
       }
       .mbo-chat-panel.open { display: flex; }
-      .mbo-chat-head { background: var(--ink); color: #fff; padding: 1rem 1.2rem; display: flex; justify-content: space-between; align-items: center; }
-      .mbo-chat-head h3 { color: #fff; margin: 0; font-size: 1.05rem; }
-      .mbo-chat-close { background: none; border: none; color: #fff; font-size: 1.3rem; cursor: pointer; line-height: 1; }
-      .mbo-chat-status { padding: .5rem 1.2rem; font-size: .82rem; font-weight: 700; }
-      .mbo-chat-status.online { background: var(--good-bg); color: var(--good); }
-      .mbo-chat-status.offline { background: var(--warn-bg); color: var(--warn); }
-      .mbo-chat-body { flex: 1; overflow-y: auto; padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: .6rem; }
-      .mbo-chat-form { padding: 1rem 1.2rem; border-top: 1px solid var(--line); }
-      .mbo-chat-form .field { margin-bottom: .8rem; }
+      @media (max-width: 480px) {
+        .mbo-chat-panel { right: .6rem; left: .6rem; bottom: 5.4rem; width: auto; max-width: none; height: auto; max-height: calc(100vh - 7rem); }
+      }
+
+      .mbo-chat-head { background: #12554a; color: #fff; padding: 1.1rem 1.2rem; flex: none; }
+      .mbo-chat-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem; }
+      .mbo-chat-head-titles h3 { color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800; line-height: 1.25; }
+      .mbo-chat-head-titles p { margin: .15rem 0 0; font-size: .85rem; color: #cfe3dc; }
+      .mbo-chat-close {
+        background: rgba(255,255,255,.14); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%;
+        font-size: 1.2rem; line-height: 1; cursor: pointer; flex: none; display: grid; place-items: center;
+      }
+      .mbo-chat-close:hover { background: rgba(255,255,255,.24); }
+      .mbo-chat-pill {
+        display: inline-flex; align-items: center; gap: .4rem; margin-top: .7rem; padding: .3rem .7rem;
+        border-radius: 999px; background: rgba(255,255,255,.14); color: #fff; font-size: .78rem; font-weight: 700;
+      }
+      .mbo-chat-pill .mbo-dot { width: 8px; height: 8px; border-radius: 50%; background: #9aa8a4; flex: none; }
+      .mbo-chat-pill.online .mbo-dot { background: #6fd39a; }
+
+      .mbo-chat-status {
+        flex: none; display: flex; align-items: flex-start; gap: .7rem; padding: .9rem 1.2rem;
+        font-size: 1rem; line-height: 1.4; background: #f6efe2; color: #33514c; border-bottom: 1px solid #e7dcc9;
+      }
+      .mbo-chat-status.online { background: #e7f0ea; color: #12554a; }
+      .mbo-chat-status .mbo-status-icon { flex: none; width: 22px; height: 22px; margin-top: .1rem; color: #97500f; }
+      .mbo-chat-status.online .mbo-status-icon { color: #12554a; }
+
+      .mbo-chat-body { flex: 1; overflow-y: auto; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 1.1rem; }
+
+      .mbo-chat-msg { display: flex; flex-direction: column; max-width: 88%; }
+      .mbo-chat-msg.admin { align-self: flex-start; align-items: flex-start; }
+      .mbo-chat-msg.visitor { align-self: flex-end; align-items: flex-end; }
+      .mbo-chat-msg.system { align-self: center; align-items: center; max-width: 100%; }
+      .mbo-chat-sender { font-size: .82rem; font-weight: 700; color: #12554a; margin-bottom: .3rem; padding-left: .2rem; }
+      .mbo-chat-bubble { padding: .8rem 1rem; border-radius: 14px; font-size: 1rem; line-height: 1.5; word-break: break-word; }
+      .mbo-chat-bubble.visitor { background: #12554a; color: #fff; border-bottom-right-radius: 4px; }
+      .mbo-chat-bubble.admin { background: #f6efe2; color: #23342f; border-bottom-left-radius: 4px; }
+      .mbo-chat-bubble.system { background: none; color: #6b7671; font-size: .85rem; text-align: center; }
+      .mbo-chat-meta { display: flex; align-items: center; gap: .3rem; margin-top: .35rem; font-size: .74rem; color: #8a9490; padding: 0 .2rem; }
+      .mbo-chat-meta .mbo-check { width: 14px; height: 14px; color: #6b9f8f; }
+
+      /* "Rýchla pomoc" — vloží text do inputu, neposiela nič samo od seba. */
+      .mbo-quick-help { flex: none; padding: .8rem 1.2rem 0; }
+      .mbo-quick-help-label { font-size: .78rem; font-weight: 700; color: #6b7671; margin-bottom: .5rem; }
+      .mbo-quick-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+      .mbo-quick-btn {
+        display: inline-flex; align-items: center; gap: .4rem; background: #f6efe2; border: 1px solid #e7dcc9;
+        color: #23342f; font: inherit; font-size: .85rem; font-weight: 700; padding: .5rem .8rem; border-radius: 999px; cursor: pointer;
+      }
+      .mbo-quick-btn:hover { background: #eee2ca; }
+      .mbo-quick-btn svg { width: 15px; height: 15px; flex: none; color: #12554a; }
+
+      .mbo-chat-form { padding: 1rem 1.2rem; flex: none; }
+      .mbo-chat-form .field { margin-bottom: .9rem; }
+      .mbo-chat-form label { font-weight: 700; display: block; margin-bottom: .35rem; font-size: .9rem; color: #23342f; }
       .mbo-chat-form input, .mbo-chat-form textarea {
-        font-family: inherit; font-size: .95rem; padding: .6rem .8rem; border-radius: 8px; border: 2px solid var(--line);
+        font-family: inherit; font-size: 1rem; padding: .75rem .9rem; border-radius: 10px; border: 1.5px solid #ddd0b8;
         width: 100%; box-sizing: border-box;
       }
-      .mbo-chat-bubble { max-width: 85%; padding: .6rem .9rem; border-radius: 12px; font-size: .92rem; line-height: 1.4; }
-      .mbo-chat-bubble.visitor { align-self: flex-end; background: var(--ink); color: #fff; border-bottom-right-radius: 3px; }
-      .mbo-chat-bubble.admin { align-self: flex-start; background: var(--surface-2); color: var(--text); border-bottom-left-radius: 3px; }
-      .mbo-chat-bubble.system { align-self: center; background: none; color: var(--text-mute); font-size: .82rem; text-align: center; }
-      .mbo-chat-send-row { display: flex; gap: .5rem; padding: .8rem 1.2rem; border-top: 1px solid var(--line); }
-      .mbo-chat-send-row input { flex: 1; }
+      .mbo-chat-form input:focus, .mbo-chat-form textarea:focus, #mbo-chat-input:focus { outline: 2px solid #12554a; outline-offset: 1px; }
+      .mbo-chat-form .btn-primary, #mbo-chat-start {
+        display: block; width: 100%; min-height: 52px; background: #12554a; color: #fff; border: none;
+        border-radius: 10px; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+      }
+      .mbo-chat-form .btn-primary:hover, #mbo-chat-start:hover { background: #0c3f37; }
+
+      .mbo-chat-send-row { display: flex; gap: .6rem; padding: 1rem 1.2rem; border-top: 1px solid #e7dcc9; flex: none; align-items: stretch; }
+      .mbo-chat-send-row input {
+        flex: 1; min-width: 0; min-height: 56px; font-family: inherit; font-size: 1rem; padding: 0 1rem;
+        border-radius: 12px; border: 1.5px solid #ddd0b8; box-sizing: border-box;
+      }
+      #mbo-chat-send {
+        flex: none; min-height: 56px; min-width: 56px; padding: 0 1.2rem; background: #12554a; color: #fff;
+        border: none; border-radius: 12px; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+        display: inline-flex; align-items: center; gap: .5rem;
+      }
+      #mbo-chat-send:hover { background: #0c3f37; }
+      #mbo-chat-send svg { width: 18px; height: 18px; }
+      @media (max-width: 380px) {
+        .mbo-chat-send-row { flex-wrap: wrap; }
+        .mbo-chat-send-row input { flex-basis: 100%; }
+        #mbo-chat-send { flex: 1 1 auto; justify-content: center; }
+      }
+
       .mbo-chat-dot {
         position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%;
-        background: var(--warn); border: 2px solid var(--surface); display: none;
+        background: #c06a1f; border: 2px solid #fff; display: none;
       }
       .mbo-chat-dot.show { display: block; }
       .help-fab { position: fixed; }
-      .mbo-chat-typing { padding: 0 1.2rem .6rem; font-size: .82rem; color: var(--text-mute); font-style: italic; }
+      .mbo-chat-typing { flex: none; padding: 0 1.2rem .7rem; font-size: .85rem; color: #6b7671; font-style: italic; }
+
+      /* Nenápadný textový odkaz, nie plnokrvné tlačidlo na celú šírku. */
       #mbo-chat-end {
-        display: block; width: 100%; background: none; border: none; border-top: 1px solid var(--line);
-        color: var(--text-mute); font: inherit; font-size: .82rem; padding: .6rem; cursor: pointer; text-align: center;
+        display: block; margin: 0 auto 1rem; background: none; border: none;
+        color: #8a9490; font: inherit; font-size: .82rem; padding: .3rem .6rem; cursor: pointer; text-align: center;
+        text-decoration: underline; text-underline-offset: 2px;
       }
-      #mbo-chat-end:hover { color: var(--warn); }
+      #mbo-chat-end:hover { color: #97500f; }
     `;
     document.head.appendChild(style);
   }
 
+  const QUICK_HELP_ICON =
+    "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z'/></svg>";
+  const SEND_ICON = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M22 2 11 13'/><path d='M22 2 15 22l-4-9-9-4 20-7Z'/></svg>";
+  const CHECK_ICON = "<svg class='mbo-check' viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.7'><path d='M2 8.3l3.3 3.3L14 3'/></svg>";
+  const CLOCK_ICON = "<svg class='mbo-status-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>";
+  const CHAT_OK_ICON = "<svg class='mbo-status-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M4 12l5 5L20 6'/></svg>";
+
+  // Krátke, hotové otázky — len uľahčenie, klik iba predvyplní input.
+  const QUICK_HELP = [
+    { label: "Neviem sa prihlásiť", text: "Dobrý deň, neviem sa prihlásiť." },
+    { label: "Problém s kurzom", text: "Dobrý deň, mám problém s kurzom." },
+    { label: "Iná otázka", text: "" },
+  ];
+
   function buildPanel() {
     const panel = el("div", "mbo-chat-panel");
     panel.innerHTML =
-      "<div class='mbo-chat-head'><h3>Potrebujem pomoc</h3><button type='button' class='mbo-chat-close' aria-label='Zavrieť'>&times;</button></div>" +
+      "<div class='mbo-chat-head'>" +
+      "<div class='mbo-chat-head-row'>" +
+      "<div class='mbo-chat-head-titles'><h3>DigiStart podpora</h3><p>Radi vám pomôžeme</p></div>" +
+      "<button type='button' class='mbo-chat-close' aria-label='Zavrieť'>&times;</button>" +
+      "</div>" +
+      "<span class='mbo-chat-pill' id='mbo-chat-pill'></span>" +
+      "</div>" +
       "<div class='mbo-chat-status' id='mbo-chat-status'></div>" +
       "<div class='mbo-chat-body' id='mbo-chat-body'></div>" +
       "<div class='mbo-chat-typing' id='mbo-chat-typing' style='display:none;'>Lektor píše…</div>" +
       "<div class='mbo-chat-form' id='mbo-chat-form'></div>" +
+      "<div class='mbo-quick-help' id='mbo-quick-help' style='display:none;'>" +
+      "<div class='mbo-quick-help-label'>Rýchla pomoc:</div>" +
+      "<div class='mbo-quick-row'>" +
+      QUICK_HELP.map((q, i) => "<button type='button' class='mbo-quick-btn' data-quick-index='" + i + "'>" + QUICK_HELP_ICON + q.label + "</button>").join("") +
+      "</div></div>" +
       "<div class='mbo-chat-send-row' id='mbo-chat-send-row' style='display:none;'>" +
-      "<input type='text' id='mbo-chat-input' placeholder='Napíšte správu…'>" +
-      "<button type='button' class='btn btn-primary' id='mbo-chat-send' style='padding:.6rem 1rem;'>Odoslať</button>" +
+      "<input type='text' id='mbo-chat-input' placeholder='Napíšte svoju správu...'>" +
+      "<button type='button' id='mbo-chat-send'>" + SEND_ICON + "<span>Odoslať</span></button>" +
       "</div>" +
       "<button type='button' id='mbo-chat-end' style='display:none;'>Ukončiť konverzáciu</button>";
     document.body.appendChild(panel);
@@ -98,12 +197,22 @@
     fab.appendChild(dot);
 
     const statusEl = panel.querySelector("#mbo-chat-status");
+    const pillEl = panel.querySelector("#mbo-chat-pill");
     const bodyEl = panel.querySelector("#mbo-chat-body");
     const formWrap = panel.querySelector("#mbo-chat-form");
+    const quickHelpEl = panel.querySelector("#mbo-quick-help");
     const sendRow = panel.querySelector("#mbo-chat-send-row");
     const input = panel.querySelector("#mbo-chat-input");
     const sendBtn = panel.querySelector("#mbo-chat-send");
     const closeBtn = panel.querySelector(".mbo-chat-close");
+
+    quickHelpEl.querySelectorAll("[data-quick-index]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const q = QUICK_HELP[Number(btn.getAttribute("data-quick-index"))];
+        if (q) input.value = q.text;
+        input.focus();
+      });
+    });
 
     let db = null;
     let adminOnline = false;
@@ -134,22 +243,26 @@
 
     function renderStatus() {
       statusEl.className = "mbo-chat-status " + (adminOnline ? "online" : "offline");
-      statusEl.textContent = adminOnline
+      statusEl.innerHTML = (adminOnline ? CHAT_OK_ICON : CLOCK_ICON) + "<span>" + (adminOnline
         ? "Sme online — odpovieme vám čo najskôr."
-        : "Momentálne nie sme online. Zanechajte správu, ozveme sa čo najskôr.";
+        : "Momentálne nie sme online. Napíšte nám správu a ozveme sa čo najskôr.") + "</span>";
+
+      pillEl.className = "mbo-chat-pill " + (adminOnline ? "online" : "offline");
+      pillEl.innerHTML = "<span class='mbo-dot'></span>" + (adminOnline ? "Online" : "Momentálne offline");
     }
 
     function renderStartForm() {
       sendRow.style.display = "none";
+      quickHelpEl.style.display = "none";
       bodyEl.innerHTML = "";
       formWrap.style.display = "block";
       formWrap.innerHTML =
-        "<div class='field'><label style='font-weight:700;display:block;margin-bottom:.3rem;font-size:.9rem;'>Vaše meno</label><input type='text' id='mbo-chat-name'></div>" +
-        "<div class='field'><label style='font-weight:700;display:block;margin-bottom:.3rem;font-size:.9rem;'>E-mail" + (adminOnline ? " (nepovinné)" : "") + "</label><input type='email' id='mbo-chat-email'></div>" +
-        "<div class='field'><label style='font-weight:700;display:block;margin-bottom:.3rem;font-size:.9rem;'>Správa</label><textarea id='mbo-chat-msg' rows='3'></textarea></div>" +
-        "<button type='button' class='btn btn-primary btn-block' id='mbo-chat-start'>Odoslať</button>" +
-        "<p class='hint' id='mbo-chat-start-error' style='display:none;color:var(--warn);margin-top:.5rem;'></p>" +
-        "<p class='hint' style='margin-top:.8rem;text-align:center;'>Radšej e-mailom? <a href='mailto:info@digistart.sk'>info@digistart.sk</a></p>";
+        "<div class='field'><label>Vaše meno</label><input type='text' id='mbo-chat-name'></div>" +
+        "<div class='field'><label>E-mail" + (adminOnline ? " (nepovinné)" : "") + "</label><input type='email' id='mbo-chat-email'></div>" +
+        "<div class='field'><label>Správa</label><textarea id='mbo-chat-msg' rows='3'></textarea></div>" +
+        "<button type='button' class='btn-primary' id='mbo-chat-start'>Odoslať</button>" +
+        "<p id='mbo-chat-start-error' style='display:none;color:#b3261e;font-size:.9rem;margin-top:.6rem;'></p>" +
+        "<p style='margin-top:1rem;text-align:center;font-size:.9rem;color:#6b7671;'>Radšej e-mailom? <a href='mailto:info@digistart.sk' style='color:#12554a;font-weight:700;'>info@digistart.sk</a></p>";
 
       panel.querySelector("#mbo-chat-start").addEventListener("click", async () => {
         const name = panel.querySelector("#mbo-chat-name").value.trim();
@@ -200,6 +313,7 @@
 
     function openThread() {
       sendRow.style.display = "flex";
+      quickHelpEl.style.display = "block";
       formWrap.style.display = "none";
       endBtn.style.display = "block";
       if (unsubscribeMessages) unsubscribeMessages();
@@ -210,8 +324,14 @@
           let lastAdminTs = null;
           snap.forEach((doc) => {
             const m = doc.data();
-            const b = el("div", "mbo-chat-bubble " + m.sender, escapeHtml(m.text) + "<br><span style='opacity:.6;font-size:.75rem;'>" + fmtTime(m.createdAt) + "</span>");
-            bodyEl.appendChild(b);
+            const wrap = el("div", "mbo-chat-msg " + m.sender);
+            if (m.sender === "admin") wrap.appendChild(el("div", "mbo-chat-sender", "Podpora DigiStart"));
+            wrap.appendChild(el("div", "mbo-chat-bubble " + m.sender, escapeHtml(m.text)));
+            // Fajočka je len potvrdenie, že správa bola úspešne odoslaná
+            // (t.j. zapísaná do Firestore) — nesleduje sa ňou doručenie ani
+            // prečítanie, taký stav appka nemá.
+            wrap.appendChild(el("div", "mbo-chat-meta", fmtTime(m.createdAt) + (m.sender === "visitor" ? CHECK_ICON : "")));
+            bodyEl.appendChild(wrap);
             if (m.sender === "admin" && m.createdAt) lastAdminTs = m.createdAt.toDate().getTime();
           });
           scrollToBottom(bodyEl);
