@@ -18,6 +18,7 @@
 <script defer src="assets/app.js"></script>
 <script defer src="assets/autosave.js"></script>
 <script defer src="data/exercises.js"></script>
+<script defer src="data/resources.js"></script>
 <script defer src="assets/worksheet.js"></script>
 <script defer src="assets/pdf-export.js"></script>
 <script defer src="assets/exercises.js"></script>
@@ -56,6 +57,20 @@
     .stepper button .num { width:26px; height:26px; font-size:.7rem; }
     .stepper button .label { font-size:.62rem; }
   }
+  /* Osem krokov sa na úzkom telefóne do jedného riadku s popiskami nezmestí —
+     popisky by sa navzájom prekrývali. Necháme preto len očíslované kruhy
+     a názov práve otvoreného kroku vypíšeme pod nimi celým slovom. */
+  .stepper-current { display:none; }
+  @media (max-width:560px) {
+    .stepper { gap:.15rem; }
+    .stepper button .label { display:none; }
+    .stepper button .num { width:30px; height:30px; font-size:.78rem; }
+    .stepper::before { top:15px; }
+    .stepper-current {
+      display:block; text-align:center; margin:.1rem 0 .9rem;
+      font-weight:700; color:var(--ink); font-size:.95rem;
+    }
+  }
   .progress-bar-bg { width:100%; height:10px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
   .progress-bar-fill { height:100%; background:var(--good); border-radius:999px; transition:width .3s ease; }
   .step-panel { display:none; }
@@ -93,6 +108,43 @@
     animation: cert-spin 1s linear infinite;
   }
   @keyframes cert-spin { to { transform: rotate(360deg); } }
+
+  /* ---- Zdroje: rozcestník overených stránok ---- */
+  .res-group { margin-top:2rem; }
+  .res-group:first-child { margin-top:1.4rem; }
+  .res-group-head { display:flex; align-items:flex-start; gap:.7rem; padding-bottom:.7rem; border-bottom:2px solid var(--line); margin-bottom:1rem; }
+  .res-group-num {
+    flex:none; width:30px; height:30px; border-radius:50%; background:var(--ink); color:var(--surface,#fff);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.9rem;
+  }
+  .res-group-icon { flex:none; display:flex; align-items:center; justify-content:center; width:30px; height:30px; color:var(--accent,#c17a2e); }
+  .res-group-icon svg { width:24px; height:24px; }
+  .res-group-text { min-width:0; }
+  .res-group-text h3 { margin:.15rem 0 .15rem; font-size:1.24rem; line-height:1.25; }
+  .res-group-text p { margin:0; font-size:.92rem; color:var(--text-mute); }
+  .res-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:1rem; }
+  .res-item {
+    display:flex; flex-direction:column; background:var(--surface-2); border:1px solid var(--line);
+    border-radius:14px; padding:1.1rem 1.2rem;
+  }
+  .res-item h4 { margin:0 0 .45rem; font-size:1.06rem; line-height:1.3; }
+  .res-item-text { margin:0 0 1rem; font-size:.95rem; line-height:1.6; flex:1; }
+  /* Tlačidlá naprieč kartami zámerne v rovnakej šírke aj výške — ľahšie sa
+     trafia a rad kariet nepôsobí rozstrapatene, keď je popis dlhší. */
+  .res-item-link {
+    display:flex; align-items:center; justify-content:center; gap:.5rem; text-align:center;
+    background:var(--ink); color:var(--surface,#fff); text-decoration:none; font-weight:700; font-size:1rem;
+    padding:.72rem 1.1rem; border-radius:10px; min-height:52px; transition:background .15s ease;
+  }
+  .res-item-link svg { width:17px; height:17px; flex:none; }
+  .res-item-link:hover { background:var(--accent,#c17a2e); }
+  .res-item-link:focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
+  .res-item-host { margin:.7rem 0 0; font-size:.82rem; color:var(--text-mute); word-break:break-word; }
+  .res-item.featured { background:var(--good-bg); border:2px solid var(--good); }
+  .res-item.featured .res-item-link { background:var(--good); }
+  @media (max-width:560px) {
+    .res-list { grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
@@ -136,43 +188,51 @@
       </span>
       <span class="label">Prezentácia</span>
     </button>
-    <button data-step="kurz">
+    <button data-step="brozurka">
       <span class="num">
         <span class="num-text">3</span>
+        <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
+      </span>
+      <span class="label">Brožúrka</span>
+    </button>
+    <button data-step="kurz">
+      <span class="num">
+        <span class="num-text">4</span>
         <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
       </span>
       <span class="label">Lekcie</span>
     </button>
     <button data-step="cvicenia">
       <span class="num">
-        <span class="num-text">4</span>
+        <span class="num-text">5</span>
         <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
       </span>
       <span class="label">Cvičenia</span>
     </button>
-    <button data-step="brozurka">
+    <button data-step="zdroje">
       <span class="num">
-        <span class="num-text">5</span>
+        <span class="num-text">6</span>
         <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
       </span>
-      <span class="label">Brožúrka</span>
+      <span class="label">Zdroje</span>
     </button>
     <button data-step="kviz">
       <span class="num">
-        <span class="num-text">6</span>
+        <span class="num-text">7</span>
         <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
       </span>
       <span class="label">Záverečný kvíz</span>
     </button>
     <button data-step="certifikat">
       <span class="num">
-        <span class="num-text">7</span>
+        <span class="num-text">8</span>
         <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12l5 5L20 6"/></svg>
         <svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
       </span>
       <span class="label">Certifikát</span>
     </button>
   </nav>
+  <p class="stepper-current" id="stepper-current"></p>
 
   <section class="card step-panel" data-panel="video">
     <h2>Video ku kurzu</h2>
@@ -187,23 +247,30 @@
     <button class="btn btn-primary" id="presentation-done-btn" style="margin-top:1rem;">Prezentáciu som prešiel(la), pokračovať</button>
   </section>
 
-  <section class="step-panel" data-panel="kurz">
-    <div id="course-root"></div>
-  </section>
-
-  <section class="card step-panel" data-panel="cvicenia">
-    <div id="exercise-body"></div>
-    <button class="btn btn-primary" id="exercise-done-btn" style="margin-top:1.6rem;">Pokračovať na brožúrku</button>
-  </section>
-
   <section class="card step-panel" data-panel="brozurka">
     <h2>Brožúrka</h2>
     <p>Brožúrku si môžete prelistovať priamo tu ako skutočnú knižku — alebo si ju stiahnuť do počítača či tabletu. Po prvom otvorení zostane dostupná aj bez internetu.</p>
     <div id="brochure-flipbook"></div>
     <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1.2rem;">
       <a class="btn btn-primary" id="brochure-download" style="text-decoration:none;display:inline-block;" download>Stiahnuť brožúrku (PDF)</a>
-      <button class="btn btn-secondary" type="button" id="brochure-done-btn">Pokračovať na kvíz</button>
+      <button class="btn btn-secondary" type="button" id="brochure-done-btn">Pokračovať na lekcie</button>
     </div>
+  </section>
+
+  <section class="step-panel" data-panel="kurz">
+    <div id="course-root"></div>
+  </section>
+
+  <section class="card step-panel" data-panel="cvicenia">
+    <div id="exercise-body"></div>
+    <button class="btn btn-primary" id="exercise-done-btn" style="margin-top:1.6rem;">Pokračovať na užitočné zdroje</button>
+  </section>
+
+  <section class="card step-panel" data-panel="zdroje">
+    <h2>Užitočné zdroje</h2>
+    <p>Toto je váš rozcestník na overené slovenské stránky. Nemusíte si ich pamätať ani nikam prepisovať — kedykoľvek sa sem vráťte a kliknite. Každý odkaz sa otvorí v novom okne, takže o rozrobený kurz neprídete.</p>
+    <div id="resources-body"></div>
+    <button class="btn btn-primary" id="resources-done-btn" style="margin-top:1.6rem;">Pokračovať na záverečný kvíz</button>
   </section>
 
   <section class="card step-panel" data-panel="kviz">
@@ -237,7 +304,7 @@
     </div>
   </section>
 
-  <section class="card step-panel" data-panel="brozurka" style="margin-top:1.5rem;" id="feedback-card">
+  <section class="card step-panel" data-panel="certifikat" style="margin-top:1.5rem;" id="feedback-card">
     <h2>Ako sa vám kurz páčil?</h2>
     <div class="star-row" id="star-row">
       <button type="button" data-star="1">★</button>
@@ -264,7 +331,7 @@
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
 (function () {
-  const STEPS = ["video", "prezentacia", "kurz", "cvicenia", "brozurka", "kviz", "certifikat"];
+  const STEPS = ["video", "prezentacia", "brozurka", "kurz", "cvicenia", "zdroje", "kviz", "certifikat"];
   const CERT_REQUIRED_STEPS = STEPS.filter((s) => s !== "certifikat");
   const STEP_NAMES = {
     video: "Video", prezentacia: "Prezentácia", kurz: "Lekcie",
@@ -302,6 +369,12 @@
   function setActiveStep(step) {
     if (step === "certifikat" && !isCertUnlocked()) return; // zamknuté, kým nie sú hotové ostatné kroky
     document.querySelectorAll(".stepper button").forEach((b) => b.classList.toggle("active", b.dataset.step === step));
+    const activeBtn = document.querySelector('.stepper button[data-step="' + step + '"]');
+    const currentLabel = document.getElementById("stepper-current");
+    if (activeBtn && currentLabel) {
+      currentLabel.textContent =
+        "Krok " + (STEPS.indexOf(step) + 1) + " z " + STEPS.length + " — " + activeBtn.querySelector(".label").textContent;
+    }
     document.querySelectorAll(".step-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === step));
     history.replaceState(null, "", "?w=" + state.workshopId + "&step=" + step);
     saveProgress({ currentStep: step });
@@ -419,6 +492,59 @@
       store: state.store,
       onDone: (ids) => saveProgress({ exercisesDone: ids }),
     });
+  }
+
+  // Rozcestník overených stránok (krok „Zdroje“). Odkazy sa otvárajú v novom
+  // okne, aby účastník neprišiel o rozrobený kurz. Pri každom odkaze ukazujeme
+  // aj samotnú adresu — v kurze učíme, že adresu si treba pozrieť skôr, než
+  // na odkaz kliknete, tak nech si to tu senior rovno precvičí.
+  const RESOURCE_ICONS = {
+    wallet: "<path d='M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z'/><path d='M16 12h4'/><path d='M3 9h17'/>",
+    shield: "<path d='M12 3l8 4v5c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V7l8-4Z'/><path d='M9.5 12l2 2 3.5-3.5'/>",
+    check: "<circle cx='12' cy='12' r='9'/><path d='M8 12.5l2.5 2.5L16 9.5'/>",
+    book: "<path d='M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2Z'/><path d='M8 7h7M8 11h7'/>",
+    star: "<path d='M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9Z'/>",
+  };
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function renderResources() {
+    const body = document.getElementById("resources-body");
+    const groups = window.COURSE_RESOURCES;
+    if (!body || !Array.isArray(groups) || !groups.length) {
+      if (body) body.innerHTML = "<p class='hint'>Zoznam odkazov sa nepodarilo načítať. Skúste prosím obnoviť stránku.</p>";
+      return;
+    }
+    body.innerHTML = groups.map((g, gi) =>
+      "<section class='res-group'>" +
+        "<div class='res-group-head'>" +
+          "<span class='res-group-num'>" + (gi + 1) + "</span>" +
+          "<span class='res-group-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'>" +
+            (RESOURCE_ICONS[g.icon] || RESOURCE_ICONS.shield) + "</svg></span>" +
+          "<span class='res-group-text'>" +
+            "<h3>" + escapeHtml(g.title) + "</h3>" +
+            (g.intro ? "<p>" + escapeHtml(g.intro) + "</p>" : "") +
+          "</span>" +
+        "</div>" +
+        "<div class='res-list'>" +
+          g.items.map((it) =>
+            "<article class='res-item" + (it.featured ? " featured" : "") + "'>" +
+              "<h4>" + escapeHtml(it.name) + "</h4>" +
+              "<p class='res-item-text'>" + escapeHtml(it.text) + "</p>" +
+              "<a class='res-item-link' href='" + escapeHtml(it.url) + "' target='_blank' rel='noopener noreferrer'>" +
+                "<span>" + escapeHtml(it.action) + "</span>" +
+                "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' aria-hidden='true'>" +
+                  "<path d='M7 17 17 7M9 7h8v8'/></svg>" +
+              "</a>" +
+              "<p class='res-item-host'>Adresa: <strong>" + escapeHtml(it.host) + "</strong></p>" +
+            "</article>"
+          ).join("") +
+        "</div>" +
+      "</section>"
+    ).join("");
   }
 
 
@@ -958,15 +1084,19 @@
       });
       document.getElementById("presentation-done-btn").addEventListener("click", () => {
         markStepDone("prezentacia");
-        setActiveStep("kurz");
+        setActiveStep("brozurka");
       });
       document.getElementById("exercise-done-btn").addEventListener("click", () => {
         markStepDone("cvicenia");
-        setActiveStep("brozurka");
+        setActiveStep("zdroje");
+      });
+      document.getElementById("resources-done-btn").addEventListener("click", () => {
+        markStepDone("zdroje");
+        setActiveStep("kviz");
       });
       document.getElementById("brochure-done-btn").addEventListener("click", () => {
         markStepDone("brozurka");
-        setActiveStep("kviz");
+        setActiveStep("kurz");
       });
       document.getElementById("cert-pdf-btn").addEventListener("click", async () => {
         const btn = document.getElementById("cert-pdf-btn");
@@ -1063,6 +1193,8 @@
       renderExercise(
         progressData && Array.isArray(progressData.exercisesDone) ? progressData.exercisesDone : []
       );
+
+      renderResources();
 
       // Interaktívny kurz — pokračuje presne tam, kde senior naposledy skončil.
       try {
