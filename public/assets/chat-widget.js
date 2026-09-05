@@ -80,17 +80,6 @@
       .mbo-chat-meta { display: flex; align-items: center; gap: .3rem; margin-top: .35rem; font-size: .74rem; color: #8a9490; padding: 0 .2rem; }
       .mbo-chat-meta .mbo-check { width: 14px; height: 14px; color: #6b9f8f; }
 
-      /* "Rýchla pomoc" — vloží text do inputu, neposiela nič samo od seba. */
-      .mbo-quick-help { flex: none; padding: .5rem 1rem 0; overflow: hidden; }
-      .mbo-quick-help-label { font-size: .72rem; font-weight: 700; color: #6b7671; margin-bottom: .35rem; }
-      .mbo-quick-row { display: flex; flex-wrap: nowrap; gap: .4rem; overflow-x: auto; padding-bottom: .5rem; margin-bottom: -.5rem; -webkit-overflow-scrolling: touch; }
-      .mbo-quick-btn {
-        display: inline-flex; align-items: center; gap: .35rem; background: #f6efe2; border: 1px solid #e7dcc9; flex: none;
-        color: #23342f; font: inherit; font-size: .8rem; font-weight: 700; padding: .4rem .65rem; border-radius: 999px; cursor: pointer; white-space: nowrap;
-      }
-      .mbo-quick-btn:hover { background: #eee2ca; }
-      .mbo-quick-btn svg { width: 15px; height: 15px; flex: none; color: #12554a; }
-
       .mbo-chat-form { padding: .8rem 1rem; flex: none; }
       .mbo-chat-form .field { margin-bottom: .9rem; }
       .mbo-chat-form label { font-weight: 700; display: block; margin-bottom: .35rem; font-size: .9rem; color: #23342f; }
@@ -142,19 +131,10 @@
     document.head.appendChild(style);
   }
 
-  const QUICK_HELP_ICON =
-    "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z'/></svg>";
   const SEND_ICON = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M22 2 11 13'/><path d='M22 2 15 22l-4-9-9-4 20-7Z'/></svg>";
   const CHECK_ICON = "<svg class='mbo-check' viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.7'><path d='M2 8.3l3.3 3.3L14 3'/></svg>";
   const CLOCK_ICON = "<svg class='mbo-status-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>";
   const CHAT_OK_ICON = "<svg class='mbo-status-icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M4 12l5 5L20 6'/></svg>";
-
-  // Krátke, hotové otázky — len uľahčenie, klik iba predvyplní input.
-  const QUICK_HELP = [
-    { label: "Neviem sa prihlásiť", text: "Dobrý deň, neviem sa prihlásiť." },
-    { label: "Problém s kurzom", text: "Dobrý deň, mám problém s kurzom." },
-    { label: "Iná otázka", text: "" },
-  ];
 
   function buildPanel() {
     const panel = el("div", "mbo-chat-panel");
@@ -170,11 +150,6 @@
       "<div class='mbo-chat-body' id='mbo-chat-body'></div>" +
       "<div class='mbo-chat-typing' id='mbo-chat-typing' style='display:none;'>Lektor píše…</div>" +
       "<div class='mbo-chat-form' id='mbo-chat-form'></div>" +
-      "<div class='mbo-quick-help' id='mbo-quick-help' style='display:none;'>" +
-      "<div class='mbo-quick-help-label'>Rýchla pomoc:</div>" +
-      "<div class='mbo-quick-row'>" +
-      QUICK_HELP.map((q, i) => "<button type='button' class='mbo-quick-btn' data-quick-index='" + i + "'>" + QUICK_HELP_ICON + q.label + "</button>").join("") +
-      "</div></div>" +
       "<div class='mbo-chat-send-row' id='mbo-chat-send-row' style='display:none;'>" +
       "<input type='text' id='mbo-chat-input' placeholder='Napíšte svoju správu...'>" +
       "<button type='button' id='mbo-chat-send'>" + SEND_ICON + "<span>Odoslať</span></button>" +
@@ -208,19 +183,10 @@
     const pillEl = panel.querySelector("#mbo-chat-pill");
     const bodyEl = panel.querySelector("#mbo-chat-body");
     const formWrap = panel.querySelector("#mbo-chat-form");
-    const quickHelpEl = panel.querySelector("#mbo-quick-help");
     const sendRow = panel.querySelector("#mbo-chat-send-row");
     const input = panel.querySelector("#mbo-chat-input");
     const sendBtn = panel.querySelector("#mbo-chat-send");
     const closeBtn = panel.querySelector(".mbo-chat-close");
-
-    quickHelpEl.querySelectorAll("[data-quick-index]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const q = QUICK_HELP[Number(btn.getAttribute("data-quick-index"))];
-        if (q) input.value = q.text;
-        input.focus();
-      });
-    });
 
     let db = null;
     let adminOnline = false;
@@ -261,7 +227,6 @@
 
     function renderStartForm() {
       sendRow.style.display = "none";
-      quickHelpEl.style.display = "none";
       bodyEl.innerHTML = "";
       formWrap.style.display = "block";
       formWrap.innerHTML =
@@ -321,7 +286,6 @@
 
     function openThread() {
       sendRow.style.display = "flex";
-      quickHelpEl.style.display = "block";
       formWrap.style.display = "none";
       endBtn.style.display = "block";
       if (unsubscribeMessages) unsubscribeMessages();
