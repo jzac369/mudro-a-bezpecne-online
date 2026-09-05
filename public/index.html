@@ -127,10 +127,17 @@
   .hero-visual::after { content: ""; position: absolute; right: -20px; bottom: -22px; width: 58%; height: 56%; background: var(--green-tint); border-radius: var(--r-lg); }
   .hero-photo { position: relative; z-index: 1; height: 376px; border-radius: var(--r-lg); overflow: hidden; }
   .hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+  /* Ľavá hrana fotky "zmizne" do krémového pozadia hero sekcie namiesto
+     tvrdého okraja — mask-image odkryje pozadie za fotkou, nie prázdno.
+     Fáda ide len po ~33 % šírky, tváre a notebook (vpravo) zostávajú ostré. */
+  .hero-photo {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.2) 9%, rgba(0,0,0,.55) 18%, rgba(0,0,0,.88) 27%, #000 34%, #000 100%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.2) 9%, rgba(0,0,0,.55) 18%, rgba(0,0,0,.88) 27%, #000 34%, #000 100%);
+  }
   @media (max-width: 900px) {
     .hero { padding-top: 40px; }
     .hero-main { grid-template-columns: 1fr; gap: 36px; padding-bottom: 66px; }
-    .hero-photo { height: 300px; }
+    .hero-photo { height: 300px; -webkit-mask-image: none; mask-image: none; }
     .hero-visual::after { display: none; }
   }
   @media (max-width: 620px) {
