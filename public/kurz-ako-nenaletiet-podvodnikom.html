@@ -68,8 +68,9 @@
   .wrap { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
   @media (max-width: 620px) { .wrap { width: calc(100% - 32px); } }
 
+  /* Akcentová čiarka je súčasťou .kicker (::before nižšie) — .section-head
+     si vlastnú čiarku nedáva, aby sa nezdvojila. */
   .section-head { max-width: 720px; margin-bottom: 30px; }
-  .section-head::before { content: ""; display: block; width: 44px; height: 3px; border-radius: 2px; background: var(--accent); margin-bottom: 18px; }
   .section-head p { color: var(--muted); font-size: var(--fs-body); margin-top: 10px; }
   .kicker { display: flex; align-items: center; gap: 12px; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--accent-tx); margin-bottom: 14px; }
   .kicker::before { content: ""; width: 26px; height: 2px; background: var(--accent); flex: none; }
@@ -160,18 +161,9 @@
   .scenario p { color: var(--muted); font-size: var(--fs-small); margin-top: 4px; }
   @media (max-width: 560px) { .scenario-grid { grid-template-columns: 1fr; } }
 
-  .rule-box { margin-top: 24px; background: var(--green); color: #fff; border-radius: var(--r-lg); padding: 26px 28px; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
-  .rule-box strong { font-family: var(--serif); font-size: clamp(1.3rem, 2.5vw, 1.8rem); font-weight: 700; color: #fff; display: block; }
-  .rule-box span { color: #cfe3dc; font-size: var(--fs-small); }
-  .rule-box .rule-tags { text-align: right; font-weight: 700; line-height: 1.9; font-size: var(--fs-small); color: #eaf2ee; }
-  @media (max-width: 620px) { .rule-box { grid-template-columns: 1fr; } .rule-box .rule-tags { text-align: left; } }
-
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .step { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; }
-  .step-no { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--serif); font-weight: 700; margin-bottom: 14px; }
-  .step h3 { font-size: var(--fs-h3); margin-bottom: 6px; }
-  .step p { color: var(--muted); font-size: var(--fs-small); }
-  @media (max-width: 900px) { .steps { grid-template-columns: 1fr; } }
+  .rule-box { margin-top: 24px; background: var(--green); color: #fff; border-radius: var(--r-lg); padding: 30px 28px; text-align: center; }
+  .rule-box strong { font-family: var(--serif); font-size: clamp(1.3rem, 2.5vw, 1.8rem); font-weight: 700; color: #fff; display: block; max-width: 46ch; margin: 0 auto; }
+  .rule-box span { display: block; margin: 12px auto 0; max-width: 52ch; color: #cfe3dc; font-size: var(--fs-small); }
 
   /* ---------- Priebeh kurzu (course-flex) ---------- */
   .course-flex-grid { display: grid; grid-template-columns: .78fr 1.22fr; gap: 40px; align-items: start; }
@@ -218,14 +210,7 @@
   .preview-page figcaption { padding: 12px 2px 0; }
   .preview-page figcaption strong { display: block; font-size: var(--fs-small); margin-bottom: 2px; }
   .preview-page figcaption span { color: var(--muted); font-size: var(--fs-micro); }
-  .brochure-note {
-    margin-top: 30px; padding: 18px 20px; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2);
-    display: flex; justify-content: space-between; align-items: center; gap: 24px;
-  }
-  .brochure-note strong { font-size: var(--fs-body); }
-  .brochure-note > span { color: var(--muted); font-size: var(--fs-small); flex: 0 0 auto; max-width: 32ch; }
-  .materials-line { margin-top: 8px; color: var(--muted); font-size: var(--fs-small); }
-  @media (max-width: 900px) { .preview-pages { grid-template-columns: 1fr 1fr; } .preview-page:last-child { grid-column: 1 / -1; max-width: 48%; justify-self: center; } .brochure-note { flex-direction: column; align-items: flex-start; gap: 8px; } }
+  @media (max-width: 900px) { .preview-pages { grid-template-columns: 1fr 1fr; } .preview-page:last-child { grid-column: 1 / -1; max-width: 48%; justify-self: center; } }
   @media (max-width: 620px) { .preview-pages { grid-template-columns: 1fr; } .preview-page:last-child { grid-column: auto; max-width: none; } }
 
   /* ---------- Finálne CTA ---------- */
@@ -405,22 +390,8 @@
     </div>
 
     <div class="rule-box">
-      <div><strong>„AI môže poradiť. Rozhodnutie je vždy na vás.“</strong><span>AI v kurze používame ako pomocníka pri premýšľaní a overovaní informácií, nie ako náhradu vlastného úsudku.</span></div>
-      <div class="rule-tags">jednoduché<br>praktické<br>bezpečné</div>
-    </div>
-  </div>
-</section>
-
-<section class="section">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="kicker">Jednoduché pravidlo</div>
-      <h2>Tri kroky, ktoré sa oplatí urobiť predtým, než zareagujete</h2>
-    </div>
-    <div class="steps">
-      <div class="step"><div class="step-no">1</div><h3>Spomaľte</h3><p>Ak na vás niekto tlačí, aby ste konali okamžite, doprajte si čas a nereagujte v strese.</p></div>
-      <div class="step"><div class="step-no">2</div><h3>Overte si situáciu</h3><p>Skontrolujte si informáciu na oficiálnom zdroji alebo sa poraďte s niekým, komu dôverujete. AI môže poslúžiť ako ďalší pohľad.</p></div>
-      <div class="step"><div class="step-no">3</div><h3>Až potom konajte</h3><p>Až keď si situáciu overíte, rozhodnite sa, čo urobíte ďalej.</p></div>
+      <strong>„AI môže poradiť. Rozhodnutie je vždy na vás.“</strong>
+      <span>AI v kurze používame ako pomocníka pri premýšľaní a overovaní informácií, nie ako náhradu vlastného úsudku.</span>
     </div>
   </div>
 </section>
@@ -463,14 +434,6 @@
           <span>Konkrétny príklad, varovné signály a bezpečný postup, ako si situáciu overiť.</span>
         </figcaption>
       </figure>
-    </div>
-
-    <div class="brochure-note">
-      <div>
-        <strong>Celú brožúru si môžete v kurze stiahnuť</strong>
-        <div class="materials-line">Môžete si ju uložiť do zariadenia, vytlačiť a používať aj po skončení kurzu.</div>
-      </div>
-      <span>Praktický materiál zostáva poruke, keď ho budete potrebovať.</span>
     </div>
   </div>
 </section>
