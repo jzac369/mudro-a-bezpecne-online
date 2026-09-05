@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ako nenaletieť podvodníkom — kurz DigiStart</title>
+<meta name="description" content="Praktický online kurz pre seniorov a začiatočníkov o podvodoch, bezpečnom rozhodovaní a rozumnom používaní AI.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+<script defer src="assets/chat-widget.js"></script>
+<style>
+  /* ============================================================
+     Detail kurzu "Ako nenaletieť podvodníkom".
+     Rovnaký dizajnový systém (tokeny, fonty, hlavička, pätička) ako
+     index.html — táto stránka má byť prirodzenou súčasťou webu, nie
+     vizuálne odlišný "landing page". Kompozícia/obsah/hierarchia CTA
+     vychádza zo schváleného návrhu klienta.
+     ============================================================ */
+  :root {
+    --ink:        #10322f;
+    --ink-2:      #33514c;
+    --muted:      #626d68;
+    --green:      #12554a;
+    --green-dk:   #0c3f37;
+    --green-tint: #e7f0ea;
+    --accent:     #c06a1f;
+    --accent-tx:  #97500f;
+    --accent-tint:#f5e4d1;
+    --paper:      #fdfaf4;
+    --paper-2:    #f6efe2;
+    --card:       #ffffff;
+    --line:       #e7dcc9;
+    --line-2:     #d5c7ae;
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 16px;
+
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --sans: "Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
+    --fs-micro: calc(13.5px * var(--font-scale));
+    --fs-small: calc(16px * var(--font-scale));
+    --fs-body:  calc(16.5px * var(--font-scale));
+    --fs-lead:  calc(18.5px * var(--font-scale));
+    --fs-h3:    calc(21px * var(--font-scale));
+    --fs-h2:    calc(31px * var(--font-scale));
+    --fs-h1:    calc(38px * var(--font-scale));
+  }
+
+  body { background: var(--paper); }
+  .page { font-family: var(--sans); font-size: var(--fs-body); line-height: 1.55; color: var(--ink-2); background: var(--paper); }
+  .page h1, .page h2, .page h3 { font-family: var(--serif); color: var(--ink); margin: 0; font-weight: 700; line-height: 1.2; text-wrap: initial; letter-spacing: -.01em; }
+  .page p { margin: 0; font-size: inherit; }
+  .page ul { margin: 0; padding: 0; list-style: none; }
+  .page a { color: inherit; text-decoration: none; }
+  .page .mini-btn, .page .buy-btn { color: #fff; }
+  .page .ds-login { color: var(--green); }
+  .page .ds-login:hover { color: #fff; }
+  .page strong { color: var(--ink); }
+  .wrap { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+  @media (max-width: 620px) { .wrap { width: calc(100% - 32px); } }
+
+  .section-head { max-width: 720px; margin-bottom: 30px; }
+  .section-head::before { content: ""; display: block; width: 44px; height: 3px; border-radius: 2px; background: var(--accent); margin-bottom: 18px; }
+  .section-head p { color: var(--muted); font-size: var(--fs-body); margin-top: 10px; }
+  .kicker { display: flex; align-items: center; gap: 12px; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--accent-tx); margin-bottom: 14px; }
+  .kicker::before { content: ""; width: 26px; height: 2px; background: var(--accent); flex: none; }
+  .kicker.on-dark { color: #f0c48d; }
+  .kicker.on-dark::before { background: #f0c48d; }
+
+  /* ---------- Hlavička (rovnaká ako na homepage) ---------- */
+  .ds-topbar { background: var(--paper); border-bottom: 1px solid var(--line); }
+  .top-inner { display: flex; align-items: center; justify-content: space-between; gap: 28px; min-height: 78px; }
+  .ds-brand { display: flex; align-items: center; gap: 12px; }
+  .ds-brand-mark { width: 40px; height: 40px; flex: none; border-radius: 11px; background: var(--green); color: #fff; display: grid; place-items: center; }
+  .ds-brand-mark svg { width: 21px; height: 21px; }
+  .ds-brand-name { font-family: var(--serif); font-size: calc(20px * var(--font-scale)); font-weight: 700; color: var(--ink); line-height: 1.1; }
+  .ds-brand small { display: block; font-family: var(--sans); font-size: var(--fs-micro); font-weight: 400; color: var(--muted); letter-spacing: .04em; margin-top: 3px; }
+  .page nav { display: flex; align-items: center; gap: 26px; }
+  .page nav a { font-size: var(--fs-small); color: var(--ink-2); padding: 10px 0; position: relative; }
+  .page nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: 2px; height: 2px; background: var(--accent); opacity: 0; }
+  .page nav a:hover::after, .page nav a:focus-visible::after { opacity: 1; }
+  .access { display: flex; align-items: center; gap: 10px; }
+  .text-size { display: flex; gap: 4px; padding-right: 6px; }
+  .pill.small { width: 40px; height: 40px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); font-family: var(--sans); font-size: var(--fs-micro); font-weight: 700; cursor: pointer; }
+  .pill.small:hover { border-color: var(--line-2); color: var(--ink); background: #fff; }
+  .ds-login { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; border: 1.5px solid var(--green); border-radius: var(--r-md); background: transparent; color: var(--green); font-family: var(--sans); font-size: var(--fs-small); font-weight: 700; }
+  .ds-login svg { width: 17px; height: 17px; }
+  .ds-login:hover { background: var(--green); color: #fff; }
+  @media (max-width: 980px) { .page nav { display: none; } }
+  @media (max-width: 560px) { .ds-login span { display: none; } .ds-login { padding: 0 14px; } }
+
+  /* Breadcrumb — jasná cesta "Späť na kurzy" nad detailom */
+  .breadcrumb-bar { border-bottom: 1px solid var(--line); background: var(--paper-2); }
+  .breadcrumb-bar .wrap { padding: 14px 0; }
+  .back-link { display: inline-flex; align-items: center; gap: 8px; font-size: var(--fs-small); font-weight: 700; color: var(--ink-2); min-height: 44px; }
+  .back-link svg { width: 18px; height: 18px; flex: none; }
+  .back-link:hover { color: var(--green); }
+
+  /* ---------- Hero ---------- */
+  .hero { background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%); border-bottom: 1px solid var(--line); overflow: hidden; }
+  .hero-grid { display: grid; grid-template-columns: 1.02fr .98fr; gap: 40px; align-items: center; min-height: 480px; }
+  .hero-copy { padding: 52px 0 60px; }
+  .hero h1 { font-size: var(--fs-h1); line-height: 1.08; margin-bottom: 18px; }
+  .lead { font-size: var(--fs-lead); color: var(--ink-2); max-width: 600px; margin-bottom: 24px; }
+  .hero-points { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+  .hchip { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; font-size: var(--fs-micro); font-weight: 700; display: inline-flex; align-items: center; gap: 8px; }
+  .hchip svg { width: 15px; height: 15px; color: var(--green); flex: none; }
+  .hero-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .hero-photo { position: relative; height: 100%; min-height: 480px; }
+  .hero-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--r-lg); }
+  .hero-photo::before {
+    content: ""; position: absolute; inset: 0; border-radius: var(--r-lg); z-index: 1;
+    background: linear-gradient(90deg, var(--paper-2) 0%, rgba(247,240,229,.85) 10%, rgba(247,240,229,.25) 28%, rgba(247,240,229,0) 46%);
+  }
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; min-height: 0; }
+    .hero-copy { padding: 36px 0 8px; }
+    .hero-photo { height: 300px; min-height: 300px; }
+    .hero-photo::before { background: linear-gradient(180deg, var(--paper-2) 0%, rgba(247,240,229,.3) 18%, rgba(247,240,229,0) 42%); }
+  }
+
+  /* ---------- Trust strip ---------- */
+  .trust { position: relative; z-index: 2; margin-top: -28px; }
+  .trust-inner { display: grid; grid-template-columns: repeat(4, 1fr); background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+  .trust-item { display: flex; align-items: center; gap: 12px; padding: 20px 16px; border-right: 1px solid var(--line); }
+  .trust-item:last-child { border-right: none; }
+  .trust-icon { width: 40px; height: 40px; flex: none; border-radius: 50%; background: var(--green-tint); color: var(--green); display: grid; place-items: center; }
+  .trust-icon svg { width: 19px; height: 19px; }
+  .trust-item b { display: block; font-size: var(--fs-small); font-weight: 700; color: var(--ink); }
+  .trust-item span { display: block; font-size: var(--fs-micro); color: var(--muted); margin-top: 2px; }
+  @media (max-width: 900px) { .trust-inner { grid-template-columns: 1fr 1fr; } .trust-item:nth-child(2) { border-right: none; } .trust-item:nth-child(-n+2) { border-bottom: 1px solid var(--line); } }
+  @media (max-width: 560px) { .trust-inner { grid-template-columns: 1fr; } .trust-item { border-right: none !important; border-bottom: 1px solid var(--line); } .trust-item:last-child { border-bottom: none; } }
+
+  /* ---------- Sekcie ---------- */
+  .section { padding: 72px 0; }
+  .section.soft { background: var(--paper-2); }
+  .benefits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .b-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; }
+  .b-card .icon { width: 46px; height: 46px; border-radius: 12px; background: var(--green-tint); display: grid; place-items: center; margin-bottom: 16px; color: var(--green); }
+  .b-card .icon svg { width: 21px; height: 21px; }
+  .b-card h3 { font-size: var(--fs-h3); margin-bottom: 6px; }
+  .b-card p { color: var(--muted); font-size: var(--fs-small); }
+  @media (max-width: 900px) { .benefits { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .benefits { grid-template-columns: 1fr; } }
+
+  .scenario-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .scenario { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; display: flex; gap: 16px; }
+  .scenario .icon { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-tint); display: grid; place-items: center; flex: 0 0 44px; color: var(--accent-tx); }
+  .scenario .icon svg { width: 20px; height: 20px; }
+  .scenario h3 { font-size: var(--fs-h3); margin-bottom: 4px; }
+  .scenario p { color: var(--muted); font-size: var(--fs-small); margin-top: 4px; }
+  @media (max-width: 560px) { .scenario-grid { grid-template-columns: 1fr; } }
+
+  .rule-box { margin-top: 24px; background: var(--green); color: #fff; border-radius: var(--r-lg); padding: 26px 28px; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; }
+  .rule-box strong { font-family: var(--serif); font-size: clamp(1.3rem, 2.5vw, 1.8rem); font-weight: 700; color: #fff; display: block; }
+  .rule-box span { color: #cfe3dc; font-size: var(--fs-small); }
+  .rule-box .rule-tags { text-align: right; font-weight: 700; line-height: 1.9; font-size: var(--fs-small); color: #eaf2ee; }
+  @media (max-width: 620px) { .rule-box { grid-template-columns: 1fr; } .rule-box .rule-tags { text-align: left; } }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 22px; }
+  .step-no { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--serif); font-weight: 700; margin-bottom: 14px; }
+  .step h3 { font-size: var(--fs-h3); margin-bottom: 6px; }
+  .step p { color: var(--muted); font-size: var(--fs-small); }
+  @media (max-width: 900px) { .steps { grid-template-columns: 1fr; } }
+
+  /* ---------- Priebeh kurzu (course-flex) ---------- */
+  .course-flex-grid { display: grid; grid-template-columns: .78fr 1.22fr; gap: 40px; align-items: start; }
+  .course-flex-intro p { color: var(--muted); margin-top: 12px; max-width: 440px; }
+  .course-flex-summary { margin-top: 16px; color: var(--ink-2); font-size: var(--fs-small); font-weight: 700; background: var(--paper-2); border-radius: var(--r-md); padding: 12px 16px; }
+  .course-flex-buy { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .buy-meta { font-size: var(--fs-micro); color: var(--muted); }
+  .buy-meta strong { display: block; color: var(--ink); font-size: var(--fs-body); font-family: var(--serif); }
+  .course-flex-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .cf-card { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; background: var(--card); display: grid; grid-template-columns: 42px 1fr; gap: 14px; }
+  .cf-icon { width: 42px; height: 42px; border-radius: 11px; background: var(--green-tint); color: var(--green); display: grid; place-items: center; }
+  .cf-icon svg { width: 20px; height: 20px; }
+  .cf-card h3 { font-size: var(--fs-small); font-weight: 700; margin-bottom: 4px; }
+  .cf-card p { margin: 0; color: var(--muted); font-size: var(--fs-micro); line-height: 1.5; }
+  @media (max-width: 900px) { .course-flex-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 620px) { .course-flex-cards { grid-template-columns: 1fr; } }
+
+  /* ---------- Tlačidlo Kúpiť kurz (jednotné na všetkých 4 miestach) ---------- */
+  .buy-btn {
+    min-height: 56px; padding: 0 26px; border-radius: var(--r-md); background: var(--green); color: #fff;
+    border: 1.5px solid var(--green); display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    font-family: var(--sans); font-weight: 700; font-size: var(--fs-body); box-shadow: 0 10px 24px rgba(18,85,74,.18);
+  }
+  .buy-btn:hover { background: var(--green-dk); border-color: var(--green-dk); }
+  .buy-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .buy-btn svg { width: 19px; height: 19px; flex: none; }
+  .price-tag { font-size: var(--fs-h3); font-weight: 900; color: var(--ink); font-family: var(--serif); }
+  .price-tag small { display: block; font-size: var(--fs-micro); color: var(--muted); font-weight: 600; font-family: var(--sans); }
+
+  .purchase-band {
+    margin-top: 30px; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    border-radius: var(--r-lg); padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .purchase-band strong { display: block; font-size: var(--fs-body); margin-bottom: 4px; }
+  .purchase-band .pb-copy span { display: block; color: var(--muted); font-size: var(--fs-small); }
+  .purchase-band-action { display: flex; align-items: center; gap: 16px; flex: 0 0 auto; }
+  @media (max-width: 700px) { .purchase-band { flex-direction: column; align-items: flex-start; } .purchase-band-action { width: 100%; justify-content: space-between; } .purchase-band-action .buy-btn { flex: 1; } }
+
+  /* ---------- Ukážka brožúry ---------- */
+  .brochure-preview { background: var(--paper-2); }
+  .preview-pages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: start; }
+  .preview-sheet { background: var(--card); border: 1px solid var(--line-2); border-radius: var(--r-md); overflow: hidden; box-shadow: 0 14px 32px rgba(35,48,44,.11); }
+  .preview-sheet img { width: 100%; height: auto; display: block; }
+  .preview-page figcaption { padding: 12px 2px 0; }
+  .preview-page figcaption strong { display: block; font-size: var(--fs-small); margin-bottom: 2px; }
+  .preview-page figcaption span { color: var(--muted); font-size: var(--fs-micro); }
+  .brochure-note {
+    margin-top: 30px; padding: 18px 20px; border-top: 1px solid var(--line-2); border-bottom: 1px solid var(--line-2);
+    display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  }
+  .brochure-note strong { font-size: var(--fs-body); }
+  .brochure-note > span { color: var(--muted); font-size: var(--fs-small); flex: 0 0 auto; max-width: 32ch; }
+  .materials-line { margin-top: 8px; color: var(--muted); font-size: var(--fs-small); }
+  @media (max-width: 900px) { .preview-pages { grid-template-columns: 1fr 1fr; } .preview-page:last-child { grid-column: 1 / -1; max-width: 48%; justify-self: center; } .brochure-note { flex-direction: column; align-items: flex-start; gap: 8px; } }
+  @media (max-width: 620px) { .preview-pages { grid-template-columns: 1fr; } .preview-page:last-child { grid-column: auto; max-width: none; } }
+
+  /* ---------- Finálne CTA ---------- */
+  .cta-final { background: var(--green); color: #fff; padding: 64px 0; }
+  .cta-final-grid { display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center; }
+  .cta-final h2 { color: #fff; }
+  .cta-final p { max-width: 640px; color: #d9e5e1; font-size: var(--fs-body); margin-top: 12px; }
+  .cta-final .action { text-align: center; }
+  .cta-final .price-tag { color: #fff; }
+  .cta-final .price-tag small { color: #cfe3dc; }
+  .cta-final .buy-btn { background: #fff; color: var(--green-dk); border-color: #fff; box-shadow: none; min-width: 190px; }
+  .cta-final .buy-btn:hover { background: #f2ede1; }
+  .cta-final .action .note { margin-top: 10px; font-size: var(--fs-micro); color: #d9e5e1; max-width: 220px; }
+  @media (max-width: 900px) { .cta-final-grid { grid-template-columns: 1fr; } .cta-final .action { text-align: left; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="ds-topbar">
+  <div class="wrap top-inner">
+    <a class="ds-brand" href="index.html">
+      <span class="ds-brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg></span>
+      <span class="ds-brand-name">DigiStart<small>Vzdelávacie kurzy</small></span>
+    </a>
+    <nav aria-label="Hlavná navigácia">
+      <a href="index.html#kurzy">Kurzy</a>
+      <a href="index.html#ako-to-funguje">Ako to funguje</a>
+      <a href="index.html#preco-digistart">Prečo DigiStart</a>
+      <a href="index.html#kontakt">Kontakt</a>
+    </nav>
+    <div class="access">
+      <div class="text-size" aria-label="Veľkosť textu">
+        <button type="button" class="pill small" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+        <button type="button" class="pill small" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+      </div>
+      <a class="ds-login" href="prihlasenie.html">
+        <span>Mám kód, chcem sa prihlásiť</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="breadcrumb-bar">
+  <div class="wrap">
+    <a class="back-link" href="index.html#kurzy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H6M10 7l-5 5 5 5"/></svg>
+      Späť na kurzy
+    </a>
+  </div>
+</div>
+
+<main>
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <div class="kicker">Praktický online kurz</div>
+      <h1>Ako nenaletieť podvodníkom</h1>
+      <p class="lead">Podvodné správy a telefonáty dnes pôsobia čoraz dôveryhodnejšie. V kurze sa naučíte rozpoznať varovné signály, zachovať pokoj a overiť si situáciu skôr, než kliknete na odkaz, poskytnete údaje alebo pošlete peniaze.</p>
+      <div class="hero-points">
+        <span class="hchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Pre seniorov a začiatočníkov</span>
+        <span class="hchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Bez technického žargónu</span>
+        <span class="hchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Praktické príklady zo života</span>
+        <span class="hchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Prístup na 3 mesiace</span>
+      </div>
+      <div class="hero-actions">
+        <a class="buy-btn" href="#" data-purchase-link aria-label="Kúpiť kurz Ako nenaletieť podvodníkom">Kúpiť kurz <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg></a>
+        <div class="price-tag">19 €<small>jednorazová platba</small></div>
+      </div>
+    </div>
+    <div class="hero-photo">
+      <img src="assets/hero/senior-sms-podvod.jpg" alt="Seniorka si prezerá podozrivú SMS správu na telefóne, v pozadí je vidieť ikonu overenej bezpečnosti" onerror="this.style.display='none';">
+    </div>
+  </div>
+</section>
+
+<div class="wrap trust">
+  <div class="trust-inner">
+    <div class="trust-item"><span class="trust-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 5.5L19.5 7"/></svg></span><div><b>Podvodné správy</b><span>SMS, e-maily a falošné odkazy</span></div></div>
+    <div class="trust-item"><span class="trust-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.4 3.8 6.2 4.9c-.8.4-1.2 1.3-1 2.1 1.5 6.2 5.5 10.2 11.7 11.7.9.2 1.8-.2 2.2-1l1.1-2.2-4.2-2-1.2 1.8c-2.7-1-5-3.3-6-6l1.7-1.2-2.1-4.3Z"/></svg></span><div><b>Falošné telefonáty</b><span>„Banka“, polícia aj vnuk v núdzi</span></div></div>
+    <div class="trust-item"><span class="trust-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.2 7.2A6.5 6.5 0 0 0 13.5 5C9.9 5 7 8.1 7 12s2.9 7 6.5 7a6.5 6.5 0 0 0 4.7-2.2"/><path d="M4.5 10.2h9M4.5 13.8h9"/></svg></span><div><b>Rizikové ponuky</b><span>Investície a „zaručený zisk“</span></div></div>
+    <div class="trust-item"><span class="trust-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><path d="M5.7 5.7 7.8 7.8M16.2 16.2l2.1 2.1M18.3 5.7l-2.1 2.1M7.8 16.2l-2.1 2.1"/><circle cx="12" cy="12" r="3.5"/></svg></span><div><b>AI ako pomocník</b><span>Druhý názor, nie rozhodca</span></div></div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Čo sa naučíte</div>
+      <h2>Vedieť spozornieť v správnej chvíli</h2>
+      <p>Kurz je zameraný na praktické situácie, s ktorými sa môžete stretnúť v bežnom živote.</p>
+    </div>
+    <div class="benefits">
+      <div class="b-card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 5.5L19.5 7"/></svg></div><h3>Spoznáte podozrivú správu</h3><p>Naučíte sa všímať si časový tlak, podozrivé odkazy, nečakané „výhry“ či žiadosti o osobné údaje.</p></div>
+      <div class="b-card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.4 3.8 6.2 4.9c-.8.4-1.2 1.3-1 2.1 1.5 6.2 5.5 10.2 11.7 11.7.9.2 1.8-.2 2.2-1l1.1-2.2-4.2-2-1.2 1.8c-2.7-1-5-3.3-6-6l1.7-1.2-2.1-4.3Z"/></svg></div><h3>Ustojíte telefonát „z banky“</h3><p>Zistíte, kedy je lepšie hovor ukončiť a ako si bezpečne overiť, kto vám naozaj volal.</p></div>
+      <div class="b-card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.2 7.2A6.5 6.5 0 0 0 13.5 5C9.9 5 7 8.1 7 12s2.9 7 6.5 7a6.5 6.5 0 0 0 4.7-2.2"/><path d="M4.5 10.2h9M4.5 13.8h9"/></svg></div><h3>Preveríte si ponuku</h3><p>Ukážeme si, na čo si dať pozor pri garantovaných výnosoch, časovom nátlaku a príliš dobrých sľuboch.</p></div>
+      <div class="b-card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><path d="M5.7 5.7 7.8 7.8M16.2 16.2l2.1 2.1M18.3 5.7l-2.1 2.1M7.8 16.2l-2.1 2.1"/><circle cx="12" cy="12" r="3.5"/></svg></div><h3>Zapojíte AI rozumne</h3><p>Naučíte sa použiť ChatGPT ako pomocníka pri vysvetlení rizík, zmlúv či podozrivých správ.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap" id="cta-after-benefits">
+  <div class="purchase-band" aria-label="Kúpiť kurz">
+    <div class="pb-copy">
+      <strong>Chcete sa vedieť pokojne rozhodnúť aj v podozrivej situácii?</strong>
+      <span>Kurz vás prevedie konkrétnymi príkladmi krok za krokom a ukáže vám jednoduchý postup, ktorý si viete zapamätať.</span>
+    </div>
+    <div class="purchase-band-action">
+      <div class="price-tag">19 €<small>jednorazovo</small></div>
+      <a class="buy-btn" href="#" data-purchase-link aria-label="Kúpiť kurz Ako nenaletieť podvodníkom">Kúpiť kurz <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg></a>
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="wrap course-flex-grid">
+    <div class="course-flex-intro">
+      <div class="kicker">Kurz podľa vášho tempa</div>
+      <h2>Učíte sa vtedy, keď vám to vyhovuje</h2>
+      <p>Kurz je navrhnutý tak, aby ste ho mohli absolvovať bez stresu a bez pevného rozvrhu. Môžete si ho prejsť za niekoľko hodín alebo sa k nemu vracať postupne počas viacerých týždňov.</p>
+      <div class="course-flex-summary">Približný čas na absolvovanie je 4 hodiny. Prístup ku kurzu máte 3 mesiace.</div>
+      <div class="course-flex-buy">
+        <a class="buy-btn" href="#" data-purchase-link aria-label="Kúpiť kurz Ako nenaletieť podvodníkom">Kúpiť kurz <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg></a>
+        <div class="buy-meta"><strong>19 €</strong>Prístup na 3 mesiace · vlastné tempo · mobil, tablet alebo PC</div>
+      </div>
+    </div>
+
+    <div class="course-flex-cards">
+      <div class="cf-card">
+        <div class="cf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5l3.2 1.8"/></svg></div>
+        <div><h3>Približne 4 hodiny obsahu</h3><p>Ak chcete, kurz zvládnete za jeden či dva dni. Rovnako pokojne si ho môžete rozložiť aj na celý mesiac.</p></div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M8 3.5v4M16 3.5v4M4 9.5h16"/></svg></div>
+        <div><h3>Prístup na 3 mesiace</h3><p>Počas troch mesiacov sa môžete ku kurzu vracať podľa potreby a pokračovať tam, kde ste skončili.</p></div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="12.5" height="9" rx="1.5"/><path d="M8 18.5h3.5M9.75 14v4.5"/><rect x="17.2" y="8.2" width="3.3" height="8.5" rx="1"/></svg></div>
+        <div><h3>Mobil, tablet aj počítač</h3><p>Kurz môžete absolvovať na zariadení, ktoré vám najviac vyhovuje. Stačí internetový prehliadač.</p></div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 11 8-6.5 8 6.5"/><path d="M6.5 10.5v8h11v-8M10 18.5v-5h4v5"/></svg></div>
+        <div><h3>V pohodlí domova</h3><p>Učíte sa vo svojom voľnom čase, vlastným tempom a bez potreby cestovať alebo prispôsobovať sa pevnému termínu.</p></div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h9a4 4 0 0 1 4 4"/><path d="m17 4 3 3-3 3"/><path d="M17 17H8a4 4 0 0 1-4-4"/><path d="m7 20-3-3 3-3"/></svg></div>
+        <div><h3>K obsahu sa môžete vracať</h3><p>Jednotlivé časti si môžete zopakovať viackrát. Ak si niečo chcete pripomenúť, jednoducho sa vrátite späť.</p></div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="12.5" height="13" rx="2"/><path d="m16 10 4.5-2v8L16 14"/></svg></div>
+        <div><h3>Video s lektorom</h3><p>Súčasťou kurzu je aj video, v ktorom lektor pokojne a zrozumiteľne vysvetľuje najdôležitejšie témy.</p></div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="12" rx="2"/><path d="m9 20 3-2 3 2v-4H9z"/><path d="M8.5 8h7M8.5 11h5"/></svg></div>
+        <div><h3>Certifikát na záver</h3><p>Po úspešnom dokončení získate certifikát, ktorý si môžete stiahnuť do zariadenia alebo vytlačiť.</p></div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></svg></div>
+        <div><h3>Materiály zostanú poruke</h3><p>Brožúru a ďalšie materiály si môžete stiahnuť a používať aj po skončení kurzu.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section soft">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Situácie zo života</div>
+      <h2>Situácie, ktoré poznáte z bežného života</h2>
+    </div>
+    <div class="scenario-grid">
+      <div class="scenario"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4.5 7 7.5 5.5L19.5 7"/></svg></div><div><h3>E-mail „z banky“</h3><p>Ukážeme si, ako spoznať nátlak, podozrivý odkaz alebo zvláštnu adresu odosielateľa.</p></div></div>
+      <div class="scenario"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.4 3.8 6.2 4.9c-.8.4-1.2 1.3-1 2.1 1.5 6.2 5.5 10.2 11.7 11.7.9.2 1.8-.2 2.2-1l1.1-2.2-4.2-2-1.2 1.8c-2.7-1-5-3.3-6-6l1.7-1.2-2.1-4.3Z"/></svg></div><div><h3>Telefonát o „napadnutom účte“</h3><p>Naučíte sa rozlíšiť skutočný postup banky od typických trikov podvodníkov.</p></div></div>
+      <div class="scenario"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18.2 7.2A6.5 6.5 0 0 0 13.5 5C9.9 5 7 8.1 7 12s2.9 7 6.5 7a6.5 6.5 0 0 0 4.7-2.2"/><path d="M4.5 10.2h9M4.5 13.8h9"/></svg></div><div><h3>„Výhodná“ investícia</h3><p>Zistíte, aké otázky si položiť skôr, než niekam vložíte svoje peniaze.</p></div></div>
+      <div class="scenario"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5v4h4M9.5 12h6M9.5 15.5h4.5"/></svg></div><div><h3>Zložitá zmluva</h3><p>Ukážeme si, ako si nechať zmluvu vysvetliť jednoduchými slovami a na čo sa pri nej pýtať.</p></div></div>
+    </div>
+
+    <div class="rule-box">
+      <div><strong>„AI môže poradiť. Rozhodnutie je vždy na vás.“</strong><span>AI v kurze používame ako pomocníka pri premýšľaní a overovaní informácií, nie ako náhradu vlastného úsudku.</span></div>
+      <div class="rule-tags">jednoduché<br>praktické<br>bezpečné</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Jednoduché pravidlo</div>
+      <h2>Tri kroky, ktoré sa oplatí urobiť predtým, než zareagujete</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-no">1</div><h3>Spomaľte</h3><p>Ak na vás niekto tlačí, aby ste konali okamžite, doprajte si čas a nereagujte v strese.</p></div>
+      <div class="step"><div class="step-no">2</div><h3>Overte si situáciu</h3><p>Skontrolujte si informáciu na oficiálnom zdroji alebo sa poraďte s niekým, komu dôverujete. AI môže poslúžiť ako ďalší pohľad.</p></div>
+      <div class="step"><div class="step-no">3</div><h3>Až potom konajte</h3><p>Až keď si situáciu overíte, rozhodnite sa, čo urobíte ďalej.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section brochure-preview">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Nahliadnite do brožúry</div>
+      <h2>Praktická príručka, ktorú získate spolu s kurzom</h2>
+      <p>Brožúra je súčasťou kurzu a bude dostupná na stiahnutie. Je navrhnutá tak, aby ste sa k nej mohli vrátiť aj neskôr — k pravidlám, príkladom aj poznámkam.</p>
+    </div>
+
+    <div class="preview-pages">
+      <figure class="preview-page">
+        <div class="preview-sheet">
+          <img src="assets/brozurky/bezpecne-financie-strany/page-01.jpg" alt="Titulná strana brožúry Ako sa nenechať oklamať — príručka pre seniorov" loading="lazy">
+        </div>
+        <figcaption>
+          <strong>Brožúra ku kurzu</strong>
+          <span>Prehľadná príručka pre seniorov s najdôležitejšími témami na jednom mieste.</span>
+        </figcaption>
+      </figure>
+
+      <figure class="preview-page">
+        <div class="preview-sheet">
+          <img src="assets/brozurky/bezpecne-financie-strany/page-03.jpg" alt="Strana brožúry Zoznámte sa: umelá inteligencia — čo AI vie a čo nevie" loading="lazy">
+        </div>
+        <figcaption>
+          <strong>AI zrozumiteľne a bez zbytočných cudzích slov</strong>
+          <span>Čo umelá inteligencia vie, kde môže pomôcť a kde je potrebné zachovať vlastný úsudok.</span>
+        </figcaption>
+      </figure>
+
+      <figure class="preview-page">
+        <div class="preview-sheet">
+          <img src="assets/brozurky/bezpecne-financie-strany/page-12.jpg" alt="Strana brožúry so situáciou Telefonát z banky — príklad podvodného hovoru a bezpečný postup" loading="lazy">
+        </div>
+        <figcaption>
+          <strong>Telefonát „z banky“ krok za krokom</strong>
+          <span>Konkrétny príklad, varovné signály a bezpečný postup, ako si situáciu overiť.</span>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="brochure-note">
+      <div>
+        <strong>Celú brožúru si môžete v kurze stiahnuť</strong>
+        <div class="materials-line">Môžete si ju uložiť do zariadenia, vytlačiť a používať aj po skončení kurzu.</div>
+      </div>
+      <span>Praktický materiál zostáva poruke, keď ho budete potrebovať.</span>
+    </div>
+  </div>
+</section>
+
+<section class="cta-final" id="kupit">
+  <div class="wrap cta-final-grid">
+    <div>
+      <div class="kicker on-dark">Istota prichádza s dobrým postupom</div>
+      <h2>Keď nabudúce príde podozrivá správa alebo telefonát, nebudete musieť hádať, čo robiť.</h2>
+      <p>Za 19 € získate 3-mesačný prístup ku kurzu, video s lektorom, praktické cvičenia, brožúru na stiahnutie a certifikát po dokončení.</p>
+    </div>
+    <div class="action">
+      <div class="price-tag">19 €</div>
+      <a class="buy-btn" href="#" data-purchase-link aria-label="Kúpiť kurz Ako nenaletieť podvodníkom">Kúpiť kurz <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg></a>
+      <div class="note">Kurz nemusíte dokončiť naraz. K obsahu sa môžete počas 3 mesiacov opakovane vracať.</div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-about">
+        <div class="ds-brand">
+          <span class="ds-brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span class="ds-brand-name">DigiStart<small>Vzdelávacie kurzy</small></span>
+        </div>
+        <p>Pomáhame ľuďom cítiť sa bezpečne a isto v digitálnom svete.</p>
+      </div>
+      <nav class="footer-links" aria-label="Odkazy v pätičke">
+        <a href="index.html#preco-digistart">O projekte</a>
+        <a href="caste-otazky.html">Časté otázky</a>
+        <a href="ochrana-osobnych-udajov.html">Ochrana osobných údajov</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<a class="help-fab" href="#" role="button">
+  <svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;"><path d="M12 5a7 7 0 0 1 7 7c0 4-3 6-3 8H8c0-2-3-4-3-8a7 7 0 0 1 7-7Z"/><path d="M10 20h4"/></svg>
+  Potrebujem pomoc
+</a>
+
+<script>
+  // Jedno centrálne miesto pre cieľovú URL nákupu — zmena tu prepíše
+  // href všetkých tlačidiel "Kúpiť kurz" na stránke naraz.
+  const PURCHASE_URL = "objednavka.html?w=bezpecne-financie";
+  document.querySelectorAll("[data-purchase-link]").forEach((el) => {
+    el.setAttribute("href", PURCHASE_URL);
+  });
+</script>
+
+</body>
+</html>
