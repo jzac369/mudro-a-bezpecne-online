@@ -27,7 +27,14 @@
         position: fixed; right: 1.4rem; bottom: 5.4rem; width: 300px; max-width: calc(100vw - 2rem);
         height: auto; max-height: min(500px, calc(100vh - 7.5rem));
         background: #fff; border: 1px solid #e7dcc9; border-radius: 18px;
-        box-shadow: 0 16px 44px rgba(16,50,47,.18); display: none; flex-direction: column; overflow: hidden; z-index: 60;
+        box-shadow: 0 16px 44px rgba(16,50,47,.18); display: none; flex-direction: column; z-index: 60;
+        /* Poistka pre nízke okná prehliadača: keď sa aj po zmenšení
+           #mbo-chat-body na minimum ešte stále nezmestí vstup a odkaz
+           "Ukončiť konverzáciu" do max-height, celý panel sa radšej
+           dá posúvať ako by mal odkaz/tlačidlo Odoslať zostať navždy
+           neviditeľné mimo neho. overflow-y:auto + border-radius sa
+           v prehliadačoch orezáva správne, zaoblenie sa nestratí. */
+        overflow-y: auto; overflow-x: hidden;
       }
       .mbo-chat-panel.open { display: flex; }
       @media (max-width: 480px) {
@@ -59,7 +66,7 @@
       .mbo-chat-status .mbo-status-icon { flex: none; width: 18px; height: 18px; margin-top: .1rem; color: #97500f; }
       .mbo-chat-status.online .mbo-status-icon { color: #12554a; }
 
-      .mbo-chat-body { flex: 1; overflow-y: auto; padding: .9rem 1rem; display: flex; flex-direction: column; gap: .85rem; min-height: 60px; }
+      .mbo-chat-body { flex: 1; overflow-y: auto; padding: .9rem 1rem; display: flex; flex-direction: column; gap: .85rem; min-height: 0; }
 
       .mbo-chat-msg { display: flex; flex-direction: column; max-width: 88%; }
       .mbo-chat-msg.admin { align-self: flex-start; align-items: flex-start; }
