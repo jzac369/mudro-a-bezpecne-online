@@ -312,6 +312,28 @@
   .smtp-grid .field { display: flex; flex-direction: column; }
   .smtp-grid .field label { min-height: 2.7em; display: flex; align-items: flex-end; margin-bottom: .35rem; line-height: 1.25; }
   .smtp-grid .field-actions { grid-column: 1 / -1; }
+
+  /* ---- Nenápadné „i“ s vysvetlením v rohu okna partnerského portálu ---- */
+  .aff-card { position: relative; }
+  .aff-info {
+    position: absolute; top: .8rem; right: .8rem; z-index: 5;
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid var(--line); background: var(--surface, #fff); color: var(--text-mute);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .74rem; font-weight: 700; font-family: Georgia, serif; line-height: 1;
+    cursor: help; transition: border-color .15s ease, color .15s ease;
+  }
+  .aff-info:hover, .aff-info:focus-visible { border-color: var(--ink); color: var(--ink); outline: none; }
+  .aff-tip {
+    display: none; position: absolute; top: 27px; right: 0; width: 260px;
+    background: var(--ink); color: #fff; padding: .7rem .9rem; border-radius: 10px;
+    font-family: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: .82rem; font-weight: 400; line-height: 1.5;
+    text-align: left; box-shadow: 0 12px 26px -14px rgba(0,0,0,.55); cursor: default;
+  }
+  .aff-info:hover .aff-tip, .aff-info:focus .aff-tip, .aff-info:focus-within .aff-tip { display: block; }
+  .summary-card .aff-info { top: .5rem; right: .5rem; width: 18px; height: 18px; font-size: .68rem; }
+  @media (max-width: 560px) { .aff-tip { width: 200px; } }
 </style>
 </head>
 <body>
@@ -362,14 +384,14 @@
     <div id="aff-announcements"></div>
 
     <div class="summary-grid" style="margin-bottom:1.2rem;">
-      <div class="card summary-card"><div class="num" id="aff-total-orders">—</div><div class="label">Objednávky spolu</div></div>
-      <div class="card summary-card"><div class="num" id="aff-clicks">—</div><div class="label">Kliknutia · konverzia</div></div>
-      <div class="card summary-card"><div class="num" id="aff-total-commission">—</div><div class="label">Provízia spolu</div></div>
-      <div class="card summary-card"><div class="num" id="aff-available">—</div><div class="label">Na vyplatenie</div></div>
+      <div class="card summary-card aff-card"><span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Koľko objednávok prišlo cez váš odkaz alebo kód a bolo zaplatených.</span></span><div class="num" id="aff-total-orders">—</div><div class="label">Objednávky spolu</div></div>
+      <div class="card summary-card aff-card"><span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Koľkokrát niekto otvoril váš odkaz a aká časť z toho skončila objednávkou. Kliknutie sa počíta raz za návštevu, nie pri každom obnovení stránky.</span></span><div class="num" id="aff-clicks">—</div><div class="label">Kliknutia · konverzia</div></div>
+      <div class="card summary-card aff-card"><span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Celková provízia zo všetkých zaplatených objednávok — vrátane tej, ktorá ešte čaká v ochrannej lehote.</span></span><div class="num" id="aff-total-commission">—</div><div class="label">Provízia spolu</div></div>
+      <div class="card summary-card aff-card"><span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Provízia, ktorej už uplynula ochranná lehota a ešte vám nebola vyplatená.</span></span><div class="num" id="aff-available">—</div><div class="label">Na vyplatenie</div></div>
     </div>
 
-    <div class="card">
-      <h2 style="margin-bottom:.8rem;">Vaše objednávky</h2>
+    <div class="card aff-card">
+      <span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Objednávky, ktoré prišli cez váš kód. Zo zákazníka vidíte len krstné meno, prvé písmeno priezviska a posledné tri znaky jeho prístupového kódu — slúži to na identifikáciu pri prípadnej reklamácii.</span></span><h2 style="margin-bottom:.8rem;">Vaše objednávky</h2>
       <div style="overflow-x:auto;">
         <table class="dash">
           <thead><tr><th>Dátum</th><th>Zákazník</th><th>Kód</th><th>Kurz</th><th>Suma</th><th>Provízia</th><th>Stav</th></tr></thead>
@@ -379,13 +401,13 @@
       <p class="hint" id="aff-orders-legend" style="margin-top:.8rem;"></p>
     </div>
 
-    <div class="card" id="aff-milestones-card" style="margin-bottom:1.2rem;display:none;">
-      <h2 style="margin-bottom:.8rem;">Vaše míľniky</h2>
+    <div class="card aff-card" id="aff-milestones-card" style="margin-bottom:1.2rem;display:none;">
+      <span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Čo ste už dosiahli a aký je ďalší míľnik. Na výšku provízie to nemá vplyv.</span></span><h2 style="margin-bottom:.8rem;">Vaše míľniky</h2>
       <div id="aff-milestones" style="display:flex;gap:.7rem;flex-wrap:wrap;"></div>
     </div>
 
-    <div class="card" style="margin-bottom:1.2rem;">
-      <h2 style="margin-bottom:.4rem;">Váš odkaz</h2>
+    <div class="card aff-card" style="margin-bottom:1.2rem;">
+      <span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Odkaz a kód, cez ktoré sa vám objednávky započítajú. Odkaz pre kampaň vám ukáže, ktorý spôsob propagácie naozaj funguje.</span></span><h2 style="margin-bottom:.4rem;">Váš odkaz</h2>
       <p class="hint" style="margin-bottom:.6rem;">Zdieľajte tento odkaz — objednávky cez neho (aj pri ručnom zadaní vášho kódu) sa vám automaticky započítajú.</p>
       <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
         <span class="mono code-copy" id="aff-link" style="background:var(--surface-2);padding:.5rem .8rem;border-radius:8px;word-break:break-all;" title="Kliknutím skopírovať"></span>
@@ -412,8 +434,8 @@
       </div>
     </div>
 
-    <div class="card" id="aff-campaigns-card" style="margin-bottom:1.2rem;display:none;">
-      <h2 style="margin-bottom:.8rem;">Podľa kampane</h2>
+    <div class="card aff-card" id="aff-campaigns-card" style="margin-bottom:1.2rem;display:none;">
+      <span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Porovnanie vašich kampaňových odkazov — kde sa najviac kliká a kde to naozaj vedie k objednávke.</span></span><h2 style="margin-bottom:.8rem;">Podľa kampane</h2>
       <div style="overflow-x:auto;">
         <table class="dash">
           <thead><tr><th>Kampaň</th><th>Kliknutia</th><th>Objednávky</th><th>Konverzia</th><th>Provízia</th></tr></thead>
@@ -422,14 +444,14 @@
       </div>
     </div>
 
-    <div class="card" id="aff-materials-card" style="margin-bottom:1.2rem;display:none;">
-      <h2 style="margin-bottom:.4rem;">Materiály na stiahnutie</h2>
+    <div class="card aff-card" id="aff-materials-card" style="margin-bottom:1.2rem;display:none;">
+      <span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Hotové podklady na propagáciu, ktoré pre vás pripravujeme — bannery, plagáty a vzorové texty.</span></span><h2 style="margin-bottom:.4rem;">Materiály na stiahnutie</h2>
       <p class="hint" style="margin-bottom:.8rem;">Hotové podklady na propagáciu — stačí stiahnuť a použiť.</p>
       <div id="aff-materials" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem;"></div>
     </div>
 
-    <div class="card" style="margin-bottom:1.2rem;">
-      <h2 style="margin-bottom:.4rem;">Vyúčtovanie</h2>
+    <div class="card aff-card" style="margin-bottom:1.2rem;">
+      <span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Koľko z provízie je pripravené na vyplatenie, koľko ešte čaká v ochrannej lehote a čo už bolo vyplatené.</span></span><h2 style="margin-bottom:.4rem;">Vyúčtovanie</h2>
       <div id="aff-payout-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.9rem;margin-bottom:1rem;"></div>
       <p id="aff-payout-hint" class="hint" style="margin-bottom:1rem;"></p>
       <button class="btn btn-secondary" id="aff-payout-pdf" type="button">Stiahnuť podklad k vyplateniu (PDF)</button>
@@ -437,8 +459,8 @@
       <div id="aff-payout-history" style="margin-top:1.2rem;"></div>
     </div>
 
-    <div class="card" style="margin-bottom:1.2rem;">
-      <h2 style="margin-bottom:.4rem;">Fakturačné údaje na vyplatenie</h2>
+    <div class="card aff-card" style="margin-bottom:1.2rem;">
+      <span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Údaje, ktoré potrebujeme na vyplatenie provízie. Vidí ich len prevádzkovateľ, partnerom ani zákazníkom sa nezobrazujú.</span></span><h2 style="margin-bottom:.4rem;">Fakturačné údaje na vyplatenie</h2>
       <p class="hint" style="margin-bottom:.8rem;">Bez nich vám províziu nevieme vyplatiť. Údaje vidí len prevádzkovateľ.</p>
       <div class="workshop-settings-grid">
         <div class="field"><label for="aff-pd-name">Meno alebo názov firmy</label><input type="text" id="aff-pd-name"></div>
