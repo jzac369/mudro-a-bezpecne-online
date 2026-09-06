@@ -16,6 +16,7 @@
 <script defer src="../data/course.js"></script>
 <script defer src="../assets/course-schema.js"></script>
 <script defer src="../assets/pdf-pages.js"></script>
+<script defer src="../assets/vendor/qrcode-generator.js"></script>
 <style>
   /* Farebný variant "Bridlica a smaragd" — len pre admin zónu (verejná
      stránka má vlastnú, teplú paletu v assets/styles.css, tú nemeníme).
@@ -340,29 +341,111 @@
     <button class="btn btn-secondary" id="aff-logout-btn" type="button">Odhlásiť sa</button>
   </div>
 
-  <div class="card" style="margin-bottom:1.2rem;">
-    <h2 style="margin-bottom:.4rem;">Váš odkaz</h2>
-    <p class="hint" style="margin-bottom:.6rem;">Zdieľajte tento odkaz — objednávky cez neho (aj pri ručnom zadaní vášho kódu) sa vám automaticky započítajú.</p>
-    <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
-      <span class="mono code-copy" id="aff-link" style="background:var(--surface-2);padding:.5rem .8rem;border-radius:8px;word-break:break-all;" title="Kliknutím skopírovať"></span>
+  <!-- Podmienky sa musia odsúhlasiť skôr, než partner uvidí zvyšok portálu. -->
+  <div class="card" id="aff-terms-gate" style="display:none;margin-bottom:1.2rem;border:2px solid var(--accent,#c17a2e);">
+    <h2 style="margin-bottom:.4rem;">Podmienky partnerského programu</h2>
+    <p id="aff-terms-intro" class="hint" style="margin-bottom:.8rem;"></p>
+    <p style="margin-bottom:1rem;"><a href="../partnerske-podmienky.html" target="_blank" rel="noopener noreferrer"><strong>Otvoriť podmienky partnerského programu →</strong></a></p>
+    <label style="display:flex;gap:.6rem;align-items:flex-start;margin-bottom:1rem;">
+      <input type="checkbox" id="aff-terms-check" style="width:auto;margin-top:.25rem;">
+      <span>Prečítal(a) som si podmienky partnerského programu a súhlasím s nimi. Beriem na vedomie najmä zákaz nevyžiadaných správ a klamlivých sľubov.</span>
+    </label>
+    <button class="btn btn-primary" id="aff-terms-accept" type="button" disabled>Súhlasím a pokračovať</button>
+    <p id="aff-terms-result" class="hint" style="margin-top:.6rem;"></p>
+  </div>
+
+  <div id="aff-main" style="display:none;">
+
+    <div id="aff-announcements"></div>
+
+    <div class="card" style="margin-bottom:1.2rem;">
+      <h2 style="margin-bottom:.4rem;">Váš odkaz</h2>
+      <p class="hint" style="margin-bottom:.6rem;">Zdieľajte tento odkaz — objednávky cez neho (aj pri ručnom zadaní vášho kódu) sa vám automaticky započítajú.</p>
+      <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+        <span class="mono code-copy" id="aff-link" style="background:var(--surface-2);padding:.5rem .8rem;border-radius:8px;word-break:break-all;" title="Kliknutím skopírovať"></span>
+      </div>
+      <p class="hint" style="margin-top:.6rem;">Váš kód: <span class="mono" id="aff-code"></span> · provízia: <span id="aff-commission"></span><span id="aff-customer-discount"></span></p>
+
+      <div style="display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:1.2rem;align-items:flex-start;">
+        <div style="flex:1 1 300px;min-width:260px;">
+          <h3 style="font-size:1rem;margin-bottom:.4rem;">Odkaz pre konkrétnu kampaň</h3>
+          <p class="hint" style="margin-bottom:.6rem;">Doplňte si názov (napr. <span class="mono">facebook</span>, <span class="mono">letak</span>) a uvidíte v štatistikách, ktorý odkaz vám funguje najlepšie.</p>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+            <input type="text" id="aff-campaign-input" placeholder="facebook" style="flex:1;min-width:130px;">
+            <button class="btn btn-secondary" id="aff-campaign-btn" type="button">Vytvoriť</button>
+          </div>
+          <p class="mono code-copy" id="aff-campaign-link" style="display:none;background:var(--surface-2);padding:.5rem .8rem;border-radius:8px;word-break:break-all;margin-top:.6rem;font-size:.85rem;" title="Kliknutím skopírovať"></p>
+        </div>
+        <div style="flex:0 0 auto;text-align:center;">
+          <h3 style="font-size:1rem;margin-bottom:.4rem;">QR kód</h3>
+          <div id="aff-qr" style="background:#fff;padding:.6rem;border-radius:10px;display:inline-block;"></div>
+          <p style="margin:.5rem 0 0;"><button class="btn btn-secondary" id="aff-qr-download" type="button">Stiahnuť QR kód</button></p>
+          <p class="hint" style="margin-top:.35rem;max-width:200px;">Na leták alebo plagát do klubu dôchodcov.</p>
+        </div>
+      </div>
     </div>
-    <p class="hint" style="margin-top:.6rem;">Váš kód: <span class="mono" id="aff-code"></span> · provízia: <span id="aff-commission"></span></p>
-  </div>
 
-  <div class="summary-grid" style="margin-bottom:1.2rem;">
-    <div class="card summary-card"><div class="num" id="aff-total-orders">—</div><div class="label">Objednávky spolu</div></div>
-    <div class="card summary-card"><div class="num" id="aff-total-revenue">—</div><div class="label">Tržby spolu</div></div>
-    <div class="card summary-card"><div class="num" id="aff-total-commission">—</div><div class="label">Provízia spolu</div></div>
-    <div class="card summary-card"><div class="num" id="aff-commission-30">—</div><div class="label">Provízia (30 dní)</div></div>
-  </div>
+    <div class="summary-grid" style="margin-bottom:1.2rem;">
+      <div class="card summary-card"><div class="num" id="aff-total-orders">—</div><div class="label">Objednávky spolu</div></div>
+      <div class="card summary-card"><div class="num" id="aff-clicks">—</div><div class="label">Kliknutia · konverzia</div></div>
+      <div class="card summary-card"><div class="num" id="aff-total-commission">—</div><div class="label">Provízia spolu</div></div>
+      <div class="card summary-card"><div class="num" id="aff-available">—</div><div class="label">Na vyplatenie</div></div>
+    </div>
 
-  <div class="card">
-    <h2 style="margin-bottom:.8rem;">Vaše objednávky</h2>
-    <div style="overflow-x:auto;">
-      <table class="dash">
-        <thead><tr><th>Dátum</th><th>Kurz</th><th>Suma</th><th>Provízia</th></tr></thead>
-        <tbody id="aff-orders-body"><tr><td colspan="4" class="hint">Načítavam…</td></tr></tbody>
-      </table>
+    <div class="card" style="margin-bottom:1.2rem;">
+      <h2 style="margin-bottom:.4rem;">Vyúčtovanie</h2>
+      <div id="aff-payout-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.9rem;margin-bottom:1rem;"></div>
+      <p id="aff-payout-hint" class="hint" style="margin-bottom:1rem;"></p>
+      <button class="btn btn-secondary" id="aff-payout-pdf" type="button">Stiahnuť podklad k vyplateniu (PDF)</button>
+      <p id="aff-payout-pdf-result" class="hint" style="margin-top:.6rem;"></p>
+      <div id="aff-payout-history" style="margin-top:1.2rem;"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.2rem;">
+      <h2 style="margin-bottom:.4rem;">Fakturačné údaje na vyplatenie</h2>
+      <p class="hint" style="margin-bottom:.8rem;">Bez nich vám províziu nevieme vyplatiť. Údaje vidí len prevádzkovateľ.</p>
+      <div class="workshop-settings-grid">
+        <div class="field"><label for="aff-pd-name">Meno alebo názov firmy</label><input type="text" id="aff-pd-name"></div>
+        <div class="field"><label for="aff-pd-address">Adresa</label><input type="text" id="aff-pd-address"></div>
+        <div class="field"><label for="aff-pd-ico">IČO (ak máte)</label><input type="text" id="aff-pd-ico"></div>
+        <div class="field"><label for="aff-pd-dic">DIČ (ak máte)</label><input type="text" id="aff-pd-dic"></div>
+        <div class="field"><label for="aff-pd-iban">IBAN</label><input type="text" id="aff-pd-iban" placeholder="SK.. .. ..">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;margin-bottom:1rem;"><input type="checkbox" id="aff-pd-vat" style="width:auto;"> Som platca DPH</label>
+      <button class="btn btn-primary" id="aff-pd-save" type="button">Uložiť údaje</button>
+      <p id="aff-pd-result" class="hint" style="margin-top:.6rem;"></p>
+    </div>
+
+    <div class="card" id="aff-milestones-card" style="margin-bottom:1.2rem;display:none;">
+      <h2 style="margin-bottom:.8rem;">Vaše míľniky</h2>
+      <div id="aff-milestones" style="display:flex;gap:.7rem;flex-wrap:wrap;"></div>
+    </div>
+
+    <div class="card" id="aff-campaigns-card" style="margin-bottom:1.2rem;display:none;">
+      <h2 style="margin-bottom:.8rem;">Podľa kampane</h2>
+      <div style="overflow-x:auto;">
+        <table class="dash">
+          <thead><tr><th>Kampaň</th><th>Kliknutia</th><th>Objednávky</th><th>Konverzia</th><th>Provízia</th></tr></thead>
+          <tbody id="aff-campaigns-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="aff-materials-card" style="margin-bottom:1.2rem;display:none;">
+      <h2 style="margin-bottom:.4rem;">Materiály na stiahnutie</h2>
+      <p class="hint" style="margin-bottom:.8rem;">Hotové podklady na propagáciu — stačí stiahnuť a použiť.</p>
+      <div id="aff-materials" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem;"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:.8rem;">Vaše objednávky</h2>
+      <div style="overflow-x:auto;">
+        <table class="dash">
+          <thead><tr><th>Dátum</th><th>Zákazník</th><th>Kód</th><th>Kurz</th><th>Suma</th><th>Provízia</th><th>Stav</th></tr></thead>
+          <tbody id="aff-orders-body"><tr><td colspan="7" class="hint">Načítavam…</td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -398,6 +481,10 @@
       <button data-section="zlavovekody" type="button" title="Zľavové kódy">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.6 12.3 12.3 20.6a2 2 0 0 1-2.8 0l-6.1-6.1a2 2 0 0 1 0-2.8L11.7 3.4A2 2 0 0 1 13 3h6a2 2 0 0 1 2 2v6a2 2 0 0 1-.4 1.3Z"/><circle cx="16.5" cy="7.5" r="1.5"/></svg>
         <span class="nav-label">Zľavové kódy</span>
+      </button>
+      <button data-section="affiliate" type="button" title="Affiliate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+        <span class="nav-label">Affiliate</span>
       </button>
       <button data-section="konzultacie" type="button" title="Konzultácie">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
@@ -903,16 +990,7 @@
           </div>
         </div>
 
-        <div class="card" style="margin-bottom:1.5rem;">
-          <h2 style="margin-bottom:.4rem;">Affiliate program</h2>
-          <p class="hint" style="margin-bottom:.8rem;">Partnerský kód označíte vyššie vo formulári zaškrtnutím „Toto je partnerský (affiliate) kód“. Partnerovi pošlite jeho odkaz — pri objednávke cez odkaz (aj pri ručnom zadaní kódu) sa mu provízia automaticky započíta. Prihlasovacie údaje mu umožnia sledovať vlastné štatistiky na <span class="mono">kurzy.digistart.sk/admin/</span>.</p>
-          <div style="overflow-x:auto;">
-            <table class="dash">
-              <thead><tr><th>Kód</th><th>Partner</th><th>Odkaz</th><th>Provízia</th><th>Objednávky</th><th>Tržby</th><th>Provízia spolu</th><th>Prihlásenie partnera</th></tr></thead>
-              <tbody id="dc-affiliate-body"><tr><td colspan="8" class="hint">Načítavam…</td></tr></tbody>
-            </table>
-          </div>
-        </div>
+        <p class="hint" style="margin-bottom:1.5rem;">Partnerské (affiliate) kódy a ich prehľad nájdete v samostatnej sekcii <strong>Affiliate</strong> v ľavom menu.</p>
 
         <div class="card">
           <h2>Skupinová zľava</h2>
@@ -932,6 +1010,84 @@
             <button class="btn btn-primary" type="submit">Uložiť skupinovú zľavu</button>
             <p id="group-discount-result" class="hint" style="margin-top:.6rem;"></p>
           </form>
+        </div>
+      </section>
+
+      <section class="dash-section" data-section="affiliate">
+        <h1>Affiliate</h1>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.4rem;">Partneri</h2>
+          <p class="hint" style="margin-bottom:.8rem;">Nový partnerský kód vytvoríte v sekcii <strong>Zľavové kódy</strong> zaškrtnutím „Toto je partnerský (affiliate) kód“. Kód môže zároveň dávať zákazníkovi zľavu — stačí mu nastaviť hodnotu. Prihlasovacie údaje partnerovi umožnia sledovať vlastné štatistiky na <span class="mono">kurzy.digistart.sk/admin/</span>.</p>
+          <div style="overflow-x:auto;">
+            <table class="dash">
+              <thead><tr><th>Kód</th><th>Partner</th><th>Odkaz</th><th>Provízia</th><th>Objednávky</th><th>Tržby</th><th>Provízia spolu</th><th>Prihlásenie partnera</th></tr></thead>
+              <tbody id="dc-affiliate-body"><tr><td colspan="8" class="hint">Načítavam…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.4rem;">Vyplácanie provízií</h2>
+          <p class="hint" style="margin-bottom:.8rem;">Zaznamenajte, čo ste partnerovi reálne vyplatili. Portál mu potom ukáže, koľko mu ešte zostáva.</p>
+          <div class="workshop-settings-grid">
+            <div class="field"><label for="ap-code">Partnerský kód</label><select id="ap-code"><option value="">—</option></select></div>
+            <div class="field"><label for="ap-amount">Vyplatená suma (€)</label><input type="number" id="ap-amount" min="0" step="0.01"></div>
+            <div class="field"><label for="ap-period">Za obdobie do</label><input type="date" id="ap-period"></div>
+            <div class="field"><label for="ap-note">Poznámka</label><input type="text" id="ap-note" placeholder="napr. prevod 6. 9. 2026"></div>
+          </div>
+          <button class="btn btn-primary" id="ap-save" type="button">Zaznamenať vyplatenie</button>
+          <button class="btn btn-secondary" id="ap-pdf" type="button">Stiahnuť podklad (PDF)</button>
+          <p id="ap-result" class="hint" style="margin-top:.6rem;"></p>
+          <div id="ap-list" style="margin-top:1.2rem;"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.4rem;">Nastavenia programu</h2>
+          <div class="workshop-settings-grid">
+            <div class="field">
+              <label for="s-aff-hold">Ochranná lehota (dni)</label>
+              <input type="number" id="s-aff-hold" min="0" max="180">
+              <p class="hint">Provízia sa považuje za schválenú až po tomto počte dní od zaplatenia — kvôli možným vráteniam.</p>
+            </div>
+            <div class="field">
+              <label for="s-aff-min">Minimálna suma na vyplatenie (€)</label>
+              <input type="number" id="s-aff-min" min="0" step="0.01">
+              <p class="hint">Pod túto sumu sa provízia prenáša do ďalšieho obdobia.</p>
+            </div>
+            <div class="field">
+              <label for="s-aff-terms">Verzia podmienok</label>
+              <input type="number" id="s-aff-terms" min="1">
+              <p class="hint">Po zvýšení čísla si partneri musia podmienky odsúhlasiť znova.</p>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="aff-settings-save" type="button">Uložiť nastavenia</button>
+          <p id="aff-settings-result" class="hint" style="margin-top:.6rem;"></p>
+          <p class="hint" style="margin-top:.8rem;">Znenie podmienok upravíte v súbore <span class="mono">partnerske-podmienky.html</span> — <a href="../partnerske-podmienky.html" target="_blank" rel="noopener noreferrer">otvoriť</a>.</p>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.4rem;">Oznamy pre partnerov</h2>
+          <p class="hint" style="margin-bottom:.8rem;">Zobrazia sa všetkým partnerom na začiatku ich portálu.</p>
+          <div class="field"><label for="an-title">Nadpis</label><input type="text" id="an-title"></div>
+          <div class="field"><label for="an-body">Text</label><textarea id="an-body" rows="3" style="width:100%;font:inherit;padding:.7rem;border-radius:10px;border:2px solid var(--line);"></textarea></div>
+          <button class="btn btn-primary" id="an-save" type="button">Pridať oznam</button>
+          <p id="an-result" class="hint" style="margin-top:.6rem;"></p>
+          <div id="an-list" style="margin-top:1.2rem;"></div>
+        </div>
+
+        <div class="card">
+          <h2 style="margin-bottom:.4rem;">Materiály na stiahnutie</h2>
+          <p class="hint" style="margin-bottom:.8rem;">Bannery, plagáty, vzorové texty. Nahrajte súbor alebo vložte odkaz — partneri ich uvidia vo svojom portáli.</p>
+          <div class="workshop-settings-grid">
+            <div class="field"><label for="am-title">Názov</label><input type="text" id="am-title" placeholder="Plagát A4 do klubu dôchodcov"></div>
+            <div class="field"><label for="am-desc">Popis</label><input type="text" id="am-desc" placeholder="Na vytlačenie, s miestom na váš QR kód"></div>
+            <div class="field"><label for="am-file">Súbor</label><input type="file" id="am-file"></div>
+            <div class="field"><label for="am-url">alebo odkaz</label><input type="text" id="am-url" placeholder="https://…"></div>
+          </div>
+          <button class="btn btn-primary" id="am-save" type="button">Pridať materiál</button>
+          <p id="am-result" class="hint" style="margin-top:.6rem;"></p>
+          <div id="am-list" style="margin-top:1.2rem;"></div>
         </div>
       </section>
 
@@ -1461,6 +1617,7 @@ window.addEventListener("load", function () {
         activityLogLoaded = true;
         loadActivityLog(false);
       }
+      if (btn.dataset.section === "affiliate") loadAffiliateAdmin();
       if (btn.dataset.section === "emaily" && !emailSettingsLoaded) {
         emailSettingsLoaded = true;
         loadEmailSettings();
@@ -4765,43 +4922,511 @@ window.addEventListener("load", function () {
     });
   }
 
+  // Míľniky sa počítajú z počtu objednávok — malé ocenenie za prvý predaj
+  // funguje pri partneroch lepšie než akékoľvek číslo v tabuľke.
+  const AFF_MILESTONES = [
+    { n: 1, label: "Prvá objednávka" },
+    { n: 5, label: "5 objednávok" },
+    { n: 10, label: "10 objednávok" },
+    { n: 25, label: "25 objednávok" },
+    { n: 50, label: "50 objednávok" },
+    { n: 100, label: "100 objednávok" },
+  ];
+
+  function affQrCanvas(text, size) {
+    if (!window.qrcode) return null;
+    const qr = window.qrcode(0, "M");
+    qr.addData(text);
+    qr.make();
+    const count = qr.getModuleCount();
+    const quiet = 4;
+    const cell = Math.max(2, Math.floor(size / (count + quiet * 2)));
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = (count + quiet * 2) * cell;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#10322f";
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
+      }
+    }
+    return canvas;
+  }
+
+  function affCopyOnClick(el, text) {
+    el.addEventListener("click", () => {
+      navigator.clipboard.writeText(text).then(() => {
+        const original = el.textContent;
+        el.textContent = "Skopírované ✓";
+        setTimeout(() => { el.textContent = original; }, 1200);
+      }).catch(() => {});
+    });
+  }
+
+  // ---------- Admin: sekcia Affiliate ----------
+  let affiliateAdminLoaded = false;
+
+  async function loadAffiliateAdmin() {
+    if (!affiliateAdminLoaded) {
+      affiliateAdminLoaded = true;
+      wireAffiliateAdmin();
+    }
+    try {
+      const snap = await db.collection("settings").doc("general").get();
+      const s = snap.exists ? snap.data() : {};
+      document.getElementById("s-aff-hold").value = s.affiliateHoldDays != null ? s.affiliateHoldDays : 14;
+      document.getElementById("s-aff-min").value = s.affiliateMinPayout != null ? s.affiliateMinPayout : 20;
+      document.getElementById("s-aff-terms").value = s.affiliateTermsVersion != null ? s.affiliateTermsVersion : 1;
+    } catch (err) { /* nastavenia sa načítajú aj inde */ }
+    await Promise.all([loadAffiliatePayouts(), loadAffiliateAnnouncements(), loadAffiliateMaterials(), fillAffiliateCodeSelect()]);
+  }
+
+  async function fillAffiliateCodeSelect() {
+    const sel = document.getElementById("ap-code");
+    try {
+      const snap = await db.collection("discountCodes").where("isAffiliate", "==", true).get();
+      sel.innerHTML = "<option value=''>—</option>" + snap.docs.map((d) =>
+        "<option value='" + escapeHtml(d.id) + "'>" + escapeHtml(d.id) + " · " + escapeHtml(d.data().affiliateName || "") + "</option>").join("");
+    } catch (err) { /* prázdny zoznam nie je kritický */ }
+  }
+
+  async function loadAffiliatePayouts() {
+    const wrap = document.getElementById("ap-list");
+    try {
+      const snap = await db.collection("affiliatePayouts").get();
+      const rows = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()))
+        .sort((a, b) => (b.paidAt ? b.paidAt.toMillis() : 0) - (a.paidAt ? a.paidAt.toMillis() : 0));
+      wrap.innerHTML = rows.length
+        ? "<div style='overflow-x:auto;'><table class='dash'><thead><tr><th>Dátum</th><th>Kód</th><th>Suma</th><th>Poznámka</th><th></th></tr></thead><tbody>" +
+          rows.map((p) => "<tr><td>" + (p.paidAt ? new Date(p.paidAt.toMillis()).toLocaleDateString("sk-SK") : "—") +
+            "</td><td class='mono'>" + escapeHtml(p.code) + "</td><td>" + (Number(p.amount) || 0).toFixed(2) +
+            " €</td><td>" + escapeHtml(p.note || "—") + "</td><td><button class='btn btn-secondary' data-del-payout='" +
+            escapeHtml(p.id) + "' type='button' style='padding:.3rem .7rem;font-size:.85rem;'>Zmazať</button></td></tr>").join("") +
+          "</tbody></table></div>"
+        : "<p class='hint'>Zatiaľ žiadne vyplatenie.</p>";
+      wrap.querySelectorAll("[data-del-payout]").forEach((b) => {
+        b.onclick = async () => {
+          if (!confirm("Naozaj zmazať tento záznam o vyplatení?")) return;
+          await functions.httpsCallable("deleteAffiliatePayout")({ id: b.dataset.delPayout });
+          loadAffiliatePayouts();
+        };
+      });
+    } catch (err) {
+      wrap.innerHTML = "<p class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</p>";
+    }
+  }
+
+  async function loadAffiliateAnnouncements() {
+    const wrap = document.getElementById("an-list");
+    try {
+      const snap = await db.collection("affiliateAnnouncements").get();
+      const rows = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()))
+        .sort((a, b) => (b.publishedAt ? b.publishedAt.toMillis() : 0) - (a.publishedAt ? a.publishedAt.toMillis() : 0));
+      wrap.innerHTML = rows.length ? rows.map((a) =>
+        "<div style='background:var(--surface-2);border-radius:10px;padding:.8rem 1rem;margin-bottom:.6rem;'>" +
+        "<div style='display:flex;justify-content:space-between;gap:.6rem;align-items:flex-start;'>" +
+        "<div><strong>" + escapeHtml(a.title || "") + "</strong>" + (a.active ? "" : " <span class='chip'>skryté</span>") +
+        "<p class='hint' style='margin:.3rem 0 0;white-space:pre-line;'>" + escapeHtml(a.body || "") + "</p></div>" +
+        "<div style='display:flex;gap:.4rem;flex-wrap:wrap;'>" +
+        "<button class='btn btn-secondary' data-an-toggle='" + escapeHtml(a.id) + "' type='button' style='padding:.3rem .7rem;font-size:.85rem;'>" +
+        (a.active ? "Skryť" : "Zobraziť") + "</button>" +
+        "<button class='btn btn-secondary' data-an-del='" + escapeHtml(a.id) + "' type='button' style='padding:.3rem .7rem;font-size:.85rem;'>Zmazať</button>" +
+        "</div></div></div>").join("") : "<p class='hint'>Zatiaľ žiadne oznamy.</p>";
+      wrap.querySelectorAll("[data-an-toggle]").forEach((b) => {
+        b.onclick = async () => {
+          const row = rows.find((r) => r.id === b.dataset.anToggle);
+          await db.collection("affiliateAnnouncements").doc(b.dataset.anToggle).set({ active: !row.active }, { merge: true });
+          loadAffiliateAnnouncements();
+        };
+      });
+      wrap.querySelectorAll("[data-an-del]").forEach((b) => {
+        b.onclick = async () => {
+          if (!confirm("Naozaj zmazať tento oznam?")) return;
+          await db.collection("affiliateAnnouncements").doc(b.dataset.anDel).delete();
+          loadAffiliateAnnouncements();
+        };
+      });
+    } catch (err) {
+      wrap.innerHTML = "<p class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</p>";
+    }
+  }
+
+  async function loadAffiliateMaterials() {
+    const wrap = document.getElementById("am-list");
+    try {
+      const snap = await db.collection("affiliateMaterials").get();
+      const rows = snap.docs.map((d) => Object.assign({ id: d.id }, d.data()));
+      wrap.innerHTML = rows.length ? rows.map((m) =>
+        "<div style='background:var(--surface-2);border-radius:10px;padding:.8rem 1rem;margin-bottom:.6rem;display:flex;justify-content:space-between;gap:.6rem;align-items:center;flex-wrap:wrap;'>" +
+        "<div><strong>" + escapeHtml(m.title || "") + "</strong>" + (m.active ? "" : " <span class='chip'>skryté</span>") +
+        "<p class='hint' style='margin:.2rem 0 0;'>" + escapeHtml(m.description || "") + "</p></div>" +
+        "<div style='display:flex;gap:.4rem;flex-wrap:wrap;'>" +
+        "<a class='btn btn-secondary' href='" + escapeHtml(m.url || "#") + "' target='_blank' rel='noopener noreferrer' style='padding:.3rem .7rem;font-size:.85rem;text-decoration:none;'>Otvoriť</a>" +
+        "<button class='btn btn-secondary' data-am-toggle='" + escapeHtml(m.id) + "' type='button' style='padding:.3rem .7rem;font-size:.85rem;'>" +
+        (m.active ? "Skryť" : "Zobraziť") + "</button>" +
+        "<button class='btn btn-secondary' data-am-del='" + escapeHtml(m.id) + "' type='button' style='padding:.3rem .7rem;font-size:.85rem;'>Zmazať</button>" +
+        "</div></div>").join("") : "<p class='hint'>Zatiaľ žiadne materiály.</p>";
+      wrap.querySelectorAll("[data-am-toggle]").forEach((b) => {
+        b.onclick = async () => {
+          const row = rows.find((r) => r.id === b.dataset.amToggle);
+          await db.collection("affiliateMaterials").doc(b.dataset.amToggle).set({ active: !row.active }, { merge: true });
+          loadAffiliateMaterials();
+        };
+      });
+      wrap.querySelectorAll("[data-am-del]").forEach((b) => {
+        b.onclick = async () => {
+          if (!confirm("Naozaj zmazať tento materiál?")) return;
+          await db.collection("affiliateMaterials").doc(b.dataset.amDel).delete();
+          loadAffiliateMaterials();
+        };
+      });
+    } catch (err) {
+      wrap.innerHTML = "<p class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</p>";
+    }
+  }
+
+  function wireAffiliateAdmin() {
+    document.getElementById("aff-settings-save").addEventListener("click", async () => {
+      const out = document.getElementById("aff-settings-result");
+      out.textContent = "Ukladám…";
+      out.style.color = "";
+      try {
+        await db.collection("settings").doc("general").set({
+          affiliateHoldDays: Number(document.getElementById("s-aff-hold").value) || 0,
+          affiliateMinPayout: Number(document.getElementById("s-aff-min").value) || 0,
+          affiliateTermsVersion: Number(document.getElementById("s-aff-terms").value) || 1,
+        }, { merge: true });
+        out.textContent = "Uložené ✓";
+        out.style.color = "var(--good)";
+        logActivity("settings", "Nastavenia affiliate programu zmenené");
+      } catch (err) {
+        out.textContent = "Nepodarilo sa uložiť: " + err.message;
+        out.style.color = "var(--warn)";
+      }
+    });
+
+    document.getElementById("ap-save").addEventListener("click", async () => {
+      const out = document.getElementById("ap-result");
+      out.style.color = "";
+      const code = document.getElementById("ap-code").value;
+      const amount = Number(document.getElementById("ap-amount").value);
+      if (!code || !(amount > 0)) { out.textContent = "Vyberte partnera a zadajte sumu väčšiu než nula."; out.style.color = "var(--warn)"; return; }
+      out.textContent = "Ukladám…";
+      try {
+        await functions.httpsCallable("recordAffiliatePayout")({
+          code, amount,
+          periodTo: document.getElementById("ap-period").value,
+          note: document.getElementById("ap-note").value,
+        });
+        out.textContent = "Vyplatenie zaznamenané ✓";
+        out.style.color = "var(--good)";
+        document.getElementById("ap-amount").value = "";
+        document.getElementById("ap-note").value = "";
+        logActivity("settings", "Vyplatenie provízie zaznamenané: " + code + " · " + amount.toFixed(2) + " €");
+        loadAffiliatePayouts();
+      } catch (err) {
+        out.textContent = "Nepodarilo sa uložiť: " + err.message;
+        out.style.color = "var(--warn)";
+      }
+    });
+
+    document.getElementById("ap-pdf").addEventListener("click", async () => {
+      const out = document.getElementById("ap-result");
+      const code = document.getElementById("ap-code").value;
+      out.style.color = "";
+      if (!code) { out.textContent = "Najprv vyberte partnera."; out.style.color = "var(--warn)"; return; }
+      out.textContent = "Pripravujem PDF…";
+      try {
+        const res = await functions.httpsCallable("getAffiliatePayoutPdf")({ code, to: document.getElementById("ap-period").value || "" });
+        const bin = atob(res.data.base64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        const a = document.createElement("a");
+        a.href = url; a.download = res.data.filename; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        out.textContent = "Podklad stiahnutý — " + res.data.orderCount + " objednávok, " + res.data.total.toFixed(2) + " €.";
+        document.getElementById("ap-amount").value = res.data.total.toFixed(2);
+      } catch (err) {
+        out.textContent = "Nepodarilo sa vytvoriť: " + err.message;
+        out.style.color = "var(--warn)";
+      }
+    });
+
+    document.getElementById("an-save").addEventListener("click", async () => {
+      const out = document.getElementById("an-result");
+      const title = document.getElementById("an-title").value.trim();
+      const body = document.getElementById("an-body").value.trim();
+      out.style.color = "";
+      if (!title && !body) { out.textContent = "Vyplňte nadpis alebo text."; out.style.color = "var(--warn)"; return; }
+      out.textContent = "Ukladám…";
+      try {
+        await db.collection("affiliateAnnouncements").add({
+          title, body, active: true,
+          publishedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        document.getElementById("an-title").value = "";
+        document.getElementById("an-body").value = "";
+        out.textContent = "Oznam pridaný ✓";
+        out.style.color = "var(--good)";
+        loadAffiliateAnnouncements();
+      } catch (err) {
+        out.textContent = "Nepodarilo sa uložiť: " + err.message;
+        out.style.color = "var(--warn)";
+      }
+    });
+
+    document.getElementById("am-save").addEventListener("click", async () => {
+      const out = document.getElementById("am-result");
+      const title = document.getElementById("am-title").value.trim();
+      const file = document.getElementById("am-file").files[0];
+      let url = document.getElementById("am-url").value.trim();
+      out.style.color = "";
+      if (!title) { out.textContent = "Zadajte názov materiálu."; out.style.color = "var(--warn)"; return; }
+      if (!file && !url) { out.textContent = "Nahrajte súbor alebo vložte odkaz."; out.style.color = "var(--warn)"; return; }
+      out.textContent = "Ukladám…";
+      try {
+        if (file) {
+          const ref = adminApp.storage().ref("affiliate-materials/" + Date.now() + "_" + file.name);
+          await ref.put(file);
+          url = await ref.getDownloadURL();
+        }
+        await db.collection("affiliateMaterials").add({
+          title,
+          description: document.getElementById("am-desc").value.trim(),
+          url, active: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        document.getElementById("am-title").value = "";
+        document.getElementById("am-desc").value = "";
+        document.getElementById("am-url").value = "";
+        document.getElementById("am-file").value = "";
+        out.textContent = "Materiál pridaný ✓";
+        out.style.color = "var(--good)";
+        loadAffiliateMaterials();
+      } catch (err) {
+        out.textContent = "Nepodarilo sa uložiť: " + err.message;
+        out.style.color = "var(--warn)";
+      }
+    });
+  }
+
   async function loadAffiliatePortal() {
     const body = document.getElementById("aff-orders-body");
+    let d;
     try {
-      const getAffiliatePortalStats = functions.httpsCallable("getAffiliatePortalStats");
-      const res = await getAffiliatePortalStats();
-      const d = res.data;
-      document.getElementById("aff-welcome").textContent = d.name ? "Vitajte, " + d.name + "." : "";
-      document.getElementById("aff-link").textContent = affiliateLink(d.code);
-      document.getElementById("aff-link").dataset.copyCode = affiliateLink(d.code);
-      document.getElementById("aff-code").textContent = d.code;
-      document.getElementById("aff-commission").textContent = d.commissionPercent + " %";
-      document.getElementById("aff-total-orders").textContent = d.totalOrders;
-      document.getElementById("aff-total-revenue").textContent = d.totalRevenue.toFixed(2) + " €";
-      document.getElementById("aff-total-commission").textContent = d.totalCommission.toFixed(2) + " €";
-      document.getElementById("aff-commission-30").textContent = d.commission30.toFixed(2) + " €";
-
-      document.getElementById("aff-link").addEventListener("click", () => {
-        navigator.clipboard.writeText(affiliateLink(d.code)).then(() => {
-          const el = document.getElementById("aff-link");
-          const original = el.textContent;
-          el.textContent = "Skopírované ✓";
-          setTimeout(() => { el.textContent = original; }, 1200);
-        }).catch(() => {});
-      });
-
-      if (!d.orders.length) {
-        body.innerHTML = "<tr><td colspan='4' class='hint'>Zatiaľ žiadne objednávky cez váš kód.</td></tr>";
-        return;
-      }
-      body.innerHTML = d.orders.map((o) => {
-        const when = o.paidAt ? new Date(o.paidAt).toLocaleDateString("sk-SK") : "—";
-        return "<tr><td>" + when + "</td><td>" + escapeHtml(workshopTitle(o.workshopId)) + "</td><td>" +
-          o.amount.toFixed(2) + " €</td><td>" + o.commission.toFixed(2) + " €</td></tr>";
-      }).join("");
+      const res = await functions.httpsCallable("getAffiliatePortalStats")();
+      d = res.data;
     } catch (err) {
-      body.innerHTML = "<tr><td colspan='4' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
+      body.innerHTML = "<tr><td colspan='7' class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</td></tr>";
+      return;
     }
+
+    document.getElementById("aff-welcome").textContent = d.name ? "Vitajte, " + d.name + "." : "";
+
+    // --- Podmienky: kým nie sú odsúhlasené v aktuálnej verzii, portál je zamknutý
+    const gate = document.getElementById("aff-terms-gate");
+    const main = document.getElementById("aff-main");
+    if ((d.termsAcceptedVersion || 0) < (d.termsVersion || 1)) {
+      gate.style.display = "block";
+      main.style.display = "none";
+      document.getElementById("aff-terms-intro").textContent = d.termsAcceptedVersion
+        ? "Podmienky partnerského programu sa zmenili. Než budete pokračovať, prečítajte si ich prosím a potvrďte novú verziu."
+        : "Než začnete, prečítajte si prosím podmienky partnerského programu a potvrďte ich.";
+      const chk = document.getElementById("aff-terms-check");
+      const btn = document.getElementById("aff-terms-accept");
+      chk.onchange = () => { btn.disabled = !chk.checked; };
+      btn.onclick = async () => {
+        btn.disabled = true;
+        const out = document.getElementById("aff-terms-result");
+        out.textContent = "Ukladám…";
+        try {
+          await functions.httpsCallable("acceptAffiliateTerms")();
+          loadAffiliatePortal();
+        } catch (err) {
+          out.textContent = "Nepodarilo sa uložiť: " + err.message;
+          out.style.color = "var(--warn)";
+          btn.disabled = false;
+        }
+      };
+      return;
+    }
+    gate.style.display = "none";
+    main.style.display = "block";
+
+    // --- Odkaz, kód, provízia, zľava pre zákazníka
+    const link = affiliateLink(d.code);
+    const linkEl = document.getElementById("aff-link");
+    linkEl.textContent = link;
+    affCopyOnClick(linkEl, link);
+    document.getElementById("aff-code").textContent = d.code;
+    document.getElementById("aff-commission").textContent = d.commissionPercent + " %";
+    document.getElementById("aff-customer-discount").innerHTML = d.customerDiscount
+      ? " · <strong>zákazník dostane zľavu " + (d.customerDiscount.type === "fixed"
+          ? d.customerDiscount.value.toFixed(2) + " €" : d.customerDiscount.value + " %") + "</strong>"
+      : "";
+
+    // --- Kampaňový odkaz + QR
+    document.getElementById("aff-campaign-btn").onclick = () => {
+      const raw = document.getElementById("aff-campaign-input").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+      const out = document.getElementById("aff-campaign-link");
+      if (!raw) { out.style.display = "none"; return; }
+      const url = link + "&kampan=" + raw;
+      out.textContent = url;
+      out.style.display = "block";
+      out.onclick = null;
+      affCopyOnClick(out, url);
+    };
+    const qrWrap = document.getElementById("aff-qr");
+    const canvas = affQrCanvas(link, 180);
+    qrWrap.innerHTML = "";
+    if (canvas) {
+      canvas.style.width = "150px";
+      canvas.style.height = "150px";
+      qrWrap.appendChild(canvas);
+      document.getElementById("aff-qr-download").onclick = () => {
+        const a = document.createElement("a");
+        a.download = "qr-" + d.code + ".png";
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+      };
+    } else {
+      qrWrap.innerHTML = "<p class='hint'>QR kód sa nepodarilo vytvoriť.</p>";
+    }
+
+    // --- Súhrnné čísla
+    document.getElementById("aff-total-orders").textContent = d.totalOrders;
+    document.getElementById("aff-clicks").textContent =
+      d.clicksTotal + (d.conversion != null ? " · " + d.conversion + " %" : "");
+    document.getElementById("aff-total-commission").textContent = d.totalCommission.toFixed(2) + " €";
+    document.getElementById("aff-available").textContent = d.availableToPay.toFixed(2) + " €";
+
+    // --- Vyúčtovanie
+    const tile = (label, value, color) =>
+      "<div style='background:var(--surface-2);border-radius:12px;padding:.8rem 1rem;'>" +
+      "<div style='font-size:1.25rem;font-weight:700;" + (color ? "color:" + color + ";" : "") + "'>" + value + "</div>" +
+      "<div class='hint' style='margin:0;'>" + label + "</div></div>";
+    document.getElementById("aff-payout-summary").innerHTML =
+      tile("Schválená provízia", d.approvedCommission.toFixed(2) + " €", "var(--good)") +
+      tile("V ochrannej lehote", d.pendingCommission.toFixed(2) + " €") +
+      tile("Už vyplatené", d.totalPaidOut.toFixed(2) + " €") +
+      tile("Na vyplatenie", d.availableToPay.toFixed(2) + " €", "var(--good)");
+    const missing = Math.max(d.minPayout - d.availableToPay, 0);
+    document.getElementById("aff-payout-hint").innerHTML =
+      "Provízia je schválená až po <strong>" + d.holdDays + " dňoch</strong> od zaplatenia objednávky — do vtedy sa objednávka ešte môže vrátiť. " +
+      (d.availableToPay >= d.minPayout
+        ? "<strong style='color:var(--good);'>Máte nárok na vyplatenie.</strong> Ozvite sa nám a províziu vyplatíme."
+        : "Vyplácame od <strong>" + d.minPayout.toFixed(2) + " €</strong> — do vyplatenia vám chýba <strong>" + missing.toFixed(2) + " €</strong>.");
+
+    document.getElementById("aff-payout-pdf").onclick = async () => {
+      const out = document.getElementById("aff-payout-pdf-result");
+      out.textContent = "Pripravujem…";
+      out.style.color = "";
+      try {
+        const res = await functions.httpsCallable("getAffiliatePayoutPdf")({});
+        const bin = atob(res.data.base64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+        const a = document.createElement("a");
+        a.href = url; a.download = res.data.filename; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        out.textContent = "Stiahnuté — " + res.data.orderCount + " objednávok, " + res.data.total.toFixed(2) + " €.";
+      } catch (err) {
+        out.textContent = "Nepodarilo sa vytvoriť: " + err.message;
+        out.style.color = "var(--warn)";
+      }
+    };
+
+    document.getElementById("aff-payout-history").innerHTML = d.payouts.length
+      ? "<h3 style='font-size:1rem;margin-bottom:.5rem;'>História vyplatení</h3><div style='overflow-x:auto;'><table class='dash'>" +
+        "<thead><tr><th>Dátum</th><th>Suma</th><th>Poznámka</th></tr></thead><tbody>" +
+        d.payouts.map((p) => "<tr><td>" + (p.paidAt ? new Date(p.paidAt).toLocaleDateString("sk-SK") : "—") +
+          "</td><td>" + p.amount.toFixed(2) + " €</td><td>" + escapeHtml(p.note || "—") + "</td></tr>").join("") +
+        "</tbody></table></div>"
+      : "<p class='hint'>Zatiaľ žiadne vyplatenie.</p>";
+
+    // --- Fakturačné údaje
+    const pd = d.payoutDetails || {};
+    document.getElementById("aff-pd-name").value = pd.fullName || d.name || "";
+    document.getElementById("aff-pd-address").value = pd.address || "";
+    document.getElementById("aff-pd-ico").value = pd.ico || "";
+    document.getElementById("aff-pd-dic").value = pd.dic || "";
+    document.getElementById("aff-pd-iban").value = pd.iban || "";
+    document.getElementById("aff-pd-vat").checked = !!pd.isVatPayer;
+    document.getElementById("aff-pd-save").onclick = async () => {
+      const out = document.getElementById("aff-pd-result");
+      out.textContent = "Ukladám…";
+      out.style.color = "";
+      try {
+        await functions.httpsCallable("saveAffiliatePayoutDetails")({
+          fullName: document.getElementById("aff-pd-name").value,
+          address: document.getElementById("aff-pd-address").value,
+          ico: document.getElementById("aff-pd-ico").value,
+          dic: document.getElementById("aff-pd-dic").value,
+          iban: document.getElementById("aff-pd-iban").value,
+          isVatPayer: document.getElementById("aff-pd-vat").checked,
+        });
+        out.textContent = "Uložené ✓";
+        out.style.color = "var(--good)";
+      } catch (err) {
+        out.textContent = "Nepodarilo sa uložiť: " + err.message;
+        out.style.color = "var(--warn)";
+      }
+    };
+
+    // --- Oznamy
+    document.getElementById("aff-announcements").innerHTML = (d.announcements || []).map((a) =>
+      "<div class='card' style='margin-bottom:.8rem;border-left:4px solid var(--accent,#c17a2e);'>" +
+      "<h3 style='margin:0 0 .3rem;font-size:1.05rem;'>" + escapeHtml(a.title) + "</h3>" +
+      "<p style='margin:0;white-space:pre-line;'>" + escapeHtml(a.body) + "</p>" +
+      (a.publishedAt ? "<p class='hint' style='margin:.5rem 0 0;'>" + new Date(a.publishedAt).toLocaleDateString("sk-SK") + "</p>" : "") +
+      "</div>").join("");
+
+    // --- Míľniky
+    const reached = AFF_MILESTONES.filter((m) => d.totalOrders >= m.n);
+    const next = AFF_MILESTONES.find((m) => d.totalOrders < m.n);
+    if (reached.length || next) {
+      document.getElementById("aff-milestones-card").style.display = "block";
+      document.getElementById("aff-milestones").innerHTML =
+        reached.map((m) => "<span class='chip good' style='padding:.5rem .9rem;'>✓ " + m.label + "</span>").join("") +
+        (next ? "<span class='chip' style='padding:.5rem .9rem;'>Ďalší míľnik: " + next.label +
+          " — chýba " + (next.n - d.totalOrders) + "</span>" : "");
+    }
+
+    // --- Kampane
+    const camps = (d.campaigns || []).filter((c) => c.name);
+    if (camps.length) {
+      document.getElementById("aff-campaigns-card").style.display = "block";
+      document.getElementById("aff-campaigns-body").innerHTML = camps.map((c) =>
+        "<tr><td class='mono'>" + escapeHtml(c.name) + "</td><td>" + c.clicks + "</td><td>" + c.orders +
+        "</td><td>" + (c.conversion != null ? c.conversion + " %" : "—") + "</td><td>" + c.commission.toFixed(2) + " €</td></tr>").join("");
+    }
+
+    // --- Materiály
+    if ((d.materials || []).length) {
+      document.getElementById("aff-materials-card").style.display = "block";
+      document.getElementById("aff-materials").innerHTML = d.materials.map((m) =>
+        "<div style='background:var(--surface-2);border-radius:12px;padding:1rem;'>" +
+        "<h3 style='margin:0 0 .3rem;font-size:1rem;'>" + escapeHtml(m.title) + "</h3>" +
+        (m.description ? "<p class='hint' style='margin:0 0 .7rem;'>" + escapeHtml(m.description) + "</p>" : "") +
+        "<a class='btn btn-secondary' href='" + escapeHtml(m.url) + "' target='_blank' rel='noopener noreferrer' style='text-decoration:none;display:inline-block;'>Stiahnuť</a></div>").join("");
+    }
+
+    // --- Objednávky
+    body.innerHTML = d.orders.length
+      ? d.orders.map((o) => {
+          const when = o.paidAt ? new Date(o.paidAt).toLocaleDateString("sk-SK") : "—";
+          const stav = o.approved
+            ? "<span class='chip good'>schválená</span>"
+            : "<span class='chip'>do " + (o.approvedAt ? new Date(o.approvedAt).toLocaleDateString("sk-SK") : "—") + "</span>";
+          return "<tr><td>" + when + "</td><td>" + escapeHtml(o.customer || "—") + "</td><td class='mono'>" +
+            (o.codeTail ? "…" + escapeHtml(o.codeTail) : "—") + "</td><td>" + escapeHtml(workshopTitle(o.workshopId)) +
+            "</td><td>" + o.amount.toFixed(2) + " €</td><td>" + o.commission.toFixed(2) + " €</td><td>" + stav + "</td></tr>";
+        }).join("")
+      : "<tr><td colspan='7' class='hint'>Zatiaľ žiadne objednávky cez váš kód.</td></tr>";
   }
 
   document.getElementById("aff-logout-btn").addEventListener("click", () => auth.signOut());

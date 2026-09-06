@@ -267,10 +267,14 @@
     participantsWrap.addEventListener("input", updatePriceSummary);
 
     // ---------- UTM parametre (sledovanie zdroja registrácie) ----------
+    // Kampaň z partnerského odkazu (?ref=KOD&kampan=facebook) sa uloží do
+    // utm.campaign, aby partner v portáli videl, ktorý jeho odkaz predáva.
+    let refCampaign = null;
+    try { refCampaign = localStorage.getItem("mbo_ref_campaign"); } catch (err) { /* nevadí */ }
     const utm = {
       source: params.get("utm_source") || null,
       medium: params.get("utm_medium") || null,
-      campaign: params.get("utm_campaign") || null,
+      campaign: params.get("utm_campaign") || params.get("kampan") || refCampaign || null,
     };
 
     function renderPriceBreakdown(b, workshopTitle, buyerName, participantList) {

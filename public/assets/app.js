@@ -10,10 +10,30 @@
 // zľavový kód automaticky predvyplniť pri neskoršej objednávke ---
 (function affiliateRef() {
   try {
-    const ref = new URLSearchParams(location.search).get("ref");
+    const params = new URLSearchParams(location.search);
+    const ref = params.get("ref");
     if (ref) {
-      localStorage.setItem("mbo_ref_code", ref.trim().toUpperCase());
+      const code = ref.trim().toUpperCase();
+      const campaign = (params.get("kampan") || params.get("campaign") || "").trim().toLowerCase();
+      localStorage.setItem("mbo_ref_code", code);
       localStorage.setItem("mbo_ref_code_at", String(Date.now()));
+      if (campaign) localStorage.setItem("mbo_ref_campaign", campaign);
+
+      // Kliknutie započítame raz za návštevu (nie pri každom obnovení
+      // stránky), aby konverzný pomer v partnerskom portáli nebol skreslený.
+      const seenKey = "mbo_ref_counted_" + code + (campaign ? "_" + campaign : "");
+      if (!sessionStorage.getItem(seenKey)) {
+        sessionStorage.setItem(seenKey, "1");
+        const fire = function () {
+          try {
+            firebase.app().functions("europe-west1")
+              .httpsCallable("recordAffiliateClick")({ code: code, campaign: campaign })
+              .catch(function () { /* meranie nesmie zdržať ani rozbiť stránku */ });
+          } catch (err) { /* Firebase ešte nemusí byť načítaný */ }
+        };
+        if (window.firebase && firebase.apps && firebase.apps.length) fire();
+        else window.addEventListener("load", function () { setTimeout(fire, 400); });
+      }
     }
   } catch (err) { /* localStorage nemusí byť dostupný, nevadí */ }
 })();

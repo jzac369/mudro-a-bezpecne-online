@@ -200,6 +200,27 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Affiliate program. Partner sa k svojim údajom dostáva výhradne cez
+    // getAffiliatePortalStats (Admin SDK), ktorý mu vracia len jeho vlastný
+    // kód a zákazníkov v skrátenej podobe. Priamy klientský prístup by mu
+    // sprístupnil aj cudzie kódy a celé objednávky, preto je zakázaný.
+    match /affiliatePayouts/{payoutId} {
+      allow read: if isAdmin();
+      allow write: if false; // zapisuje len recordAffiliatePayout / deleteAffiliatePayout
+    }
+    match /affiliateClicks/{clickId} {
+      allow read: if isAdmin();
+      allow write: if false; // počítadlo zvyšuje výhradne recordAffiliateClick
+    }
+    match /affiliateAnnouncements/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    match /affiliateMaterials/{id} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     // SMTP prihlasovacie údaje (vrátane hesla) na odosielanie faktúr a
     // potvrdení o zaplatení. Zámerne READ AJ WRITE VŽDY false — číta a
     // zapisuje výhradne Admin SDK cez getEmailSettings/saveEmailSettings,

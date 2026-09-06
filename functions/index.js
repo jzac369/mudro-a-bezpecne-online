@@ -54,6 +54,13 @@ const DEFAULT_SETTINGS = {
   staleOrderEmailEnabled: false,
   cardPaymentEnabled: false, // platba kartou cez Stripe
   notifyEmail: "",
+  // --- Affiliate program ---
+  // Ochranná lehota: provízia sa považuje za schválenú až po tomto počte dní
+  // od zaplatenia, aby sa nevyplácala z objednávky, ktorá sa ešte môže vrátiť.
+  affiliateHoldDays: 14,
+  affiliateMinPayout: 20, // € — pod túto sumu sa provízia nevypláca
+  affiliateTermsVersion: 1,
+  affiliateTermsUrl: "partnerske-podmienky.html",
 };
 
 const MAX_REMINDERS_PER_RUN = 50; // bezpečnostný strop na jedno spustenie
@@ -765,37 +772,350 @@ exports.getAffiliatePortalStats = onCall(async (request) => {
   }
   const c = codeSnap.data();
   const commissionPercent = Number(c.commissionPercent) || 0;
+  const settings = await getSettings();
+  const holdDays = Number(settings.affiliateHoldDays) || 0;
+  const minPayout = Number(settings.affiliateMinPayout) || 0;
 
   const ordersSnap = await db.collection("orders").where("couponApplied", "==", code).where("status", "==", "code_sent").get();
-  const orders = ordersSnap.docs
-    .map((d) => d.data())
-    .sort((a, b) => (b.paidAt ? b.paidAt.toMillis() : 0) - (a.paidAt ? a.paidAt.toMillis() : 0));
+  const orderDocs = ordersSnap.docs
+    .map((d) => ({ id: d.id, data: d.data() }))
+    .sort((a, b) => (b.data.paidAt ? b.data.paidAt.toMillis() : 0) - (a.data.paidAt ? a.data.paidAt.toMillis() : 0));
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
-  const totalCommission = Math.round(totalRevenue * (commissionPercent / 100) * 100) / 100;
+  // Prístupové kódy k objednávkam — do portálu ide len posledná trojica znakov,
+  // aby partner vedel objednávku identifikovať pri reklamácii, ale nedostal
+  // použiteľný kód. Meno zákazníka sa skracuje na krstné meno + iniciálu.
+  const orderIds = orderDocs.map((o) => o.id);
+  const codeByOrder = {};
+  for (let i = 0; i < orderIds.length; i += 10) {
+    const chunk = orderIds.slice(i, i + 10);
+    const snap = await db.collection("accessCodes").where("orderId", "in", chunk).get();
+    snap.forEach((d) => {
+      const a = d.data();
+      if (!codeByOrder[a.orderId]) codeByOrder[a.orderId] = String(a.code || d.id).slice(-3);
+    });
+  }
 
-  const since30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const orders30 = orders.filter((o) => o.paidAt && o.paidAt.toMillis() >= since30);
-  const revenue30 = orders30.reduce((sum, o) => sum + (Number(o.amount) || 0), 0);
-  const commission30 = Math.round(revenue30 * (commissionPercent / 100) * 100) / 100;
+  const commissionOf = (amount) => Math.round((Number(amount) || 0) * (commissionPercent / 100) * 100) / 100;
+  const holdMs = holdDays * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  // Už vyplatené provízie
+  const payoutsSnap = await db.collection("affiliatePayouts").where("code", "==", code).get();
+  const payouts = payoutsSnap.docs.map((d) => {
+    const p = d.data();
+    return {
+      id: d.id,
+      amount: Number(p.amount) || 0,
+      paidAt: p.paidAt ? p.paidAt.toMillis() : null,
+      periodTo: p.periodTo || null,
+      note: p.note || "",
+      orderCount: Number(p.orderCount) || 0,
+    };
+  }).sort((a, b) => (b.paidAt || 0) - (a.paidAt || 0));
+  const totalPaidOut = Math.round(payouts.reduce((s, p) => s + p.amount, 0) * 100) / 100;
+
+  let totalRevenue = 0, approvedCommission = 0, pendingCommission = 0;
+  const orders = orderDocs.map((o) => {
+    const d = o.data;
+    const amount = Number(d.amount) || 0;
+    const commission = commissionOf(amount);
+    const paidMs = d.paidAt ? d.paidAt.toMillis() : null;
+    const approved = paidMs != null && (now - paidMs) >= holdMs;
+    totalRevenue += amount;
+    if (approved) approvedCommission += commission; else pendingCommission += commission;
+    const first = (d.firstName || "").trim();
+    const lastInitial = (d.lastName || "").trim().slice(0, 1);
+    return {
+      paidAt: paidMs,
+      workshopId: d.workshopId,
+      amount,
+      commission,
+      approved,
+      approvedAt: paidMs != null ? paidMs + holdMs : null,
+      customer: first ? first + (lastInitial ? " " + lastInitial.toUpperCase() + "." : "") : "—",
+      codeTail: codeByOrder[o.id] || null,
+      campaign: (d.utm && d.utm.campaign) || null,
+    };
+  });
+  totalRevenue = Math.round(totalRevenue * 100) / 100;
+  approvedCommission = Math.round(approvedCommission * 100) / 100;
+  pendingCommission = Math.round(pendingCommission * 100) / 100;
+  const totalCommission = Math.round((approvedCommission + pendingCommission) * 100) / 100;
+  const availableToPay = Math.round(Math.max(approvedCommission - totalPaidOut, 0) * 100) / 100;
+
+  const since30 = now - 30 * 24 * 60 * 60 * 1000;
+  const orders30 = orders.filter((o) => o.paidAt && o.paidAt >= since30);
+  const revenue30 = Math.round(orders30.reduce((s, o) => s + o.amount, 0) * 100) / 100;
+  const commission30 = Math.round(orders30.reduce((s, o) => s + o.commission, 0) * 100) / 100;
+
+  // Kliknutia na odkaz — počítadlá po dňoch a kampaniach
+  const clicksSnap = await db.collection("affiliateClicks").where("code", "==", code).get();
+  let clicksTotal = 0, clicks30 = 0;
+  const clicksByCampaign = {};
+  clicksSnap.forEach((d) => {
+    const x = d.data();
+    const n = Number(x.count) || 0;
+    clicksTotal += n;
+    if (x.day && new Date(x.day + "T00:00:00Z").getTime() >= since30) clicks30 += n;
+    const camp = x.campaign || "";
+    clicksByCampaign[camp] = (clicksByCampaign[camp] || 0) + n;
+  });
+
+  const ordersByCampaign = {};
+  orders.forEach((o) => {
+    const camp = o.campaign || "";
+    if (!ordersByCampaign[camp]) ordersByCampaign[camp] = { orders: 0, revenue: 0, commission: 0 };
+    ordersByCampaign[camp].orders++;
+    ordersByCampaign[camp].revenue = Math.round((ordersByCampaign[camp].revenue + o.amount) * 100) / 100;
+    ordersByCampaign[camp].commission = Math.round((ordersByCampaign[camp].commission + o.commission) * 100) / 100;
+  });
+  const campaigns = Object.keys(Object.assign({}, clicksByCampaign, ordersByCampaign)).map((name) => {
+    const clicks = clicksByCampaign[name] || 0;
+    const o = ordersByCampaign[name] || { orders: 0, revenue: 0, commission: 0 };
+    return {
+      name,
+      clicks,
+      orders: o.orders,
+      revenue: o.revenue,
+      commission: o.commission,
+      conversion: clicks > 0 ? Math.round((o.orders / clicks) * 1000) / 10 : null,
+    };
+  }).sort((a, b) => b.orders - a.orders || b.clicks - a.clicks);
+
+  const announcementsSnap = await db.collection("affiliateAnnouncements").where("active", "==", true).get();
+  const announcements = announcementsSnap.docs.map((d) => {
+    const a = d.data();
+    return { id: d.id, title: a.title || "", body: a.body || "", publishedAt: a.publishedAt ? a.publishedAt.toMillis() : null };
+  }).sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0)).slice(0, 5);
+
+  const materialsSnap = await db.collection("affiliateMaterials").where("active", "==", true).get();
+  const materials = materialsSnap.docs.map((d) => {
+    const m = d.data();
+    return { id: d.id, title: m.title || "", description: m.description || "", url: m.url || "", kind: m.kind || "file" };
+  });
 
   return {
     code,
     name: c.affiliateName || "",
     commissionPercent,
+    // Zľava, ktorú kód dáva zákazníkovi (partnerský kód môže dávať aj oboje).
+    customerDiscount: Number(c.value) > 0 ? { type: c.type === "fixed" ? "fixed" : "percent", value: Number(c.value) } : null,
+    holdDays,
+    minPayout,
     totalOrders: orders.length,
     totalRevenue,
     totalCommission,
+    approvedCommission,
+    pendingCommission,
+    totalPaidOut,
+    availableToPay,
+    payouts,
     orders30Count: orders30.length,
     revenue30,
     commission30,
-    orders: orders.map((o) => ({
-      paidAt: o.paidAt ? o.paidAt.toMillis() : null,
-      workshopId: o.workshopId,
-      amount: Number(o.amount) || 0,
-      commission: Math.round((Number(o.amount) || 0) * (commissionPercent / 100) * 100) / 100,
-    })),
+    clicksTotal,
+    clicks30,
+    conversion: clicksTotal > 0 ? Math.round((orders.length / clicksTotal) * 1000) / 10 : null,
+    campaigns,
+    announcements,
+    materials,
+    payoutDetails: c.payoutDetails || null,
+    termsVersion: Number(settings.affiliateTermsVersion) || 1,
+    termsAcceptedVersion: Number(c.termsAcceptedVersion) || 0,
+    termsAcceptedAt: c.termsAcceptedAt ? c.termsAcceptedAt.toMillis() : null,
+    orders,
   };
+});
+
+/**
+ * Partner potvrdí partnerské podmienky. Verzia sa ukladá, takže po ich zmene
+ * si ich portál vyžiada znova.
+ */
+exports.acceptAffiliateTerms = onCall(async (request) => {
+  const code = request.auth?.token?.affiliateCode;
+  if (!code) throw new HttpsError("permission-denied", "Toto je dostupné len prihláseným partnerom.");
+  const settings = await getSettings();
+  await db.collection("discountCodes").doc(code).set({
+    termsAcceptedVersion: Number(settings.affiliateTermsVersion) || 1,
+    termsAcceptedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  return { ok: true };
+});
+
+/**
+ * Partner si sám vyplní fakturačné údaje pre vyplatenie provízie.
+ */
+exports.saveAffiliatePayoutDetails = onCall(async (request) => {
+  const code = request.auth?.token?.affiliateCode;
+  if (!code) throw new HttpsError("permission-denied", "Toto je dostupné len prihláseným partnerom.");
+  const d = request.data || {};
+  const clean = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
+  await db.collection("discountCodes").doc(code).set({
+    payoutDetails: {
+      fullName: clean(d.fullName, 120),
+      address: clean(d.address, 200),
+      ico: clean(d.ico, 30),
+      dic: clean(d.dic, 30),
+      iban: clean(d.iban, 40).toUpperCase(),
+      isVatPayer: !!d.isVatPayer,
+      updatedAt: Date.now(),
+    },
+  }, { merge: true });
+  return { ok: true };
+});
+
+/**
+ * Zaznamená vyplatenie provízie partnerovi. Sumu zadáva administrátor —
+ * zámerne sa neodpisuje automaticky z konkrétnych objednávok, aby sa dala
+ * vyplatiť aj čiastka alebo oprava.
+ */
+exports.recordAffiliatePayout = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže zaznamenať vyplatenie provízie.");
+  }
+  const d = request.data || {};
+  const code = String(d.code || "").trim().toUpperCase();
+  const amount = Math.round(Number(d.amount) * 100) / 100;
+  if (!code) throw new HttpsError("invalid-argument", "Chýba partnerský kód.");
+  if (!(amount > 0)) throw new HttpsError("invalid-argument", "Suma musí byť väčšia než nula.");
+
+  const ref = await db.collection("affiliatePayouts").add({
+    code,
+    amount,
+    note: String(d.note || "").trim().slice(0, 300),
+    periodTo: String(d.periodTo || "").slice(0, 10) || null,
+    orderCount: Number(d.orderCount) || 0,
+    paidAt: FieldValue.serverTimestamp(),
+    createdBy: request.auth.token.email || "admin",
+  });
+  return { id: ref.id };
+});
+
+exports.deleteAffiliatePayout = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže mazať záznam o vyplatení.");
+  }
+  const id = String((request.data && request.data.id) || "").trim();
+  if (!id) throw new HttpsError("invalid-argument", "Chýba identifikátor záznamu.");
+  await db.collection("affiliatePayouts").doc(id).delete();
+  return { ok: true };
+});
+
+/**
+ * Podklad k vyplateniu provízie ako PDF. Dostupný administrátorovi aj
+ * samotnému partnerovi (ten len k svojmu vlastnému kódu).
+ */
+exports.getAffiliatePayoutPdf = onCall(async (request) => {
+  const isAdmin = request.auth?.token?.admin === true;
+  const ownCode = request.auth?.token?.affiliateCode;
+  const code = String((request.data && request.data.code) || ownCode || "").trim().toUpperCase();
+  if (!code) throw new HttpsError("invalid-argument", "Chýba partnerský kód.");
+  if (!isAdmin && code !== ownCode) {
+    throw new HttpsError("permission-denied", "Podklad si môžete stiahnuť len k vlastnému kódu.");
+  }
+
+  const codeSnap = await db.collection("discountCodes").doc(code).get();
+  if (!codeSnap.exists) throw new HttpsError("not-found", "Partnerský kód sa nenašiel.");
+  const c = codeSnap.data();
+  const s = await getSettings();
+  const commissionPercent = Number(c.commissionPercent) || 0;
+  const holdMs = (Number(s.affiliateHoldDays) || 0) * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  const from = String((request.data && request.data.from) || "").slice(0, 10);
+  const to = String((request.data && request.data.to) || "").slice(0, 10);
+  const fromMs = from ? new Date(from + "T00:00:00").getTime() : 0;
+  const toMs = to ? new Date(to + "T23:59:59").getTime() : now;
+
+  const ordersSnap = await db.collection("orders")
+    .where("couponApplied", "==", code).where("status", "==", "code_sent").get();
+  const rows = ordersSnap.docs.map((doc) => doc.data())
+    .filter((o) => o.paidAt && o.paidAt.toMillis() >= fromMs && o.paidAt.toMillis() <= toMs)
+    .filter((o) => (now - o.paidAt.toMillis()) >= holdMs) // len schválené
+    .sort((a, b) => a.paidAt.toMillis() - b.paidAt.toMillis());
+
+  const total = Math.round(rows.reduce((sum, o) => sum + (Number(o.amount) || 0) * (commissionPercent / 100), 0) * 100) / 100;
+  const pd = c.payoutDetails || {};
+
+  const buffer = await pdfToBuffer((doc) => {
+    const INK = "#1f3a3d", MUTED = "#5c5749", BORDER = "#ddd5c2";
+    const LEFT = 56, RIGHT = 539;
+    doc.font(FONT_BOLD).fontSize(19).fillColor(INK).text("Podklad k vyplateniu provízie", LEFT, doc.y);
+    doc.moveDown(0.3);
+    doc.font(FONT_REGULAR).fontSize(9).fillColor(MUTED)
+      .text((s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart") + " · www.kurzy.digistart.sk", LEFT, doc.y);
+
+    doc.moveDown(1.2);
+    let y = doc.y;
+    doc.font(FONT_BOLD).fontSize(8).fillColor(MUTED).text("PARTNER", LEFT, y, { characterSpacing: 0.4 });
+    doc.font(FONT_REGULAR).fontSize(10).fillColor(INK)
+      .text(pd.fullName || c.affiliateName || "—", LEFT, y + 13, { width: 240 });
+    let py = y + 28;
+    [pd.address, pd.ico ? "IČO: " + pd.ico : null, pd.dic ? "DIČ: " + pd.dic : null, pd.iban ? "IBAN: " + pd.iban : null]
+      .filter(Boolean).forEach((line) => { doc.fontSize(9).fillColor(MUTED).text(line, LEFT, py, { width: 240 }); py += 13; });
+
+    doc.font(FONT_BOLD).fontSize(8).fillColor(MUTED).text("OBDOBIE", 320, y, { characterSpacing: 0.4 });
+    doc.font(FONT_REGULAR).fontSize(10).fillColor(INK)
+      .text((from || "od začiatku") + " – " + (to || new Date().toISOString().slice(0, 10)), 320, y + 13);
+    doc.font(FONT_BOLD).fontSize(8).fillColor(MUTED).text("KÓD · PROVÍZIA", 320, y + 34, { characterSpacing: 0.4 });
+    doc.font(FONT_REGULAR).fontSize(10).fillColor(INK).text(code + " · " + commissionPercent + " %", 320, y + 47);
+
+    doc.y = Math.max(py, y + 70) + 18;
+    const tTop = doc.y;
+    doc.font(FONT_BOLD).fontSize(8).fillColor(MUTED);
+    doc.text("DÁTUM", LEFT, tTop, { characterSpacing: 0.4 });
+    doc.text("KURZ", LEFT + 80, tTop, { characterSpacing: 0.4 });
+    doc.text("SUMA", 390, tTop, { width: 70, align: "right", characterSpacing: 0.4 });
+    doc.text("PROVÍZIA", RIGHT - 70, tTop, { width: 70, align: "right", characterSpacing: 0.4 });
+    doc.moveTo(LEFT, tTop + 15).lineTo(RIGHT, tTop + 15).strokeColor(BORDER).stroke();
+
+    let ry = tTop + 22;
+    doc.font(FONT_REGULAR).fontSize(9).fillColor(INK);
+    rows.forEach((o) => {
+      if (ry > 720) return;
+      const amount = Number(o.amount) || 0;
+      doc.text(new Date(o.paidAt.toMillis()).toLocaleDateString("sk-SK"), LEFT, ry);
+      doc.text(String(o.workshopTitleSnapshot || o.workshopId || ""), LEFT + 80, ry, { width: 300 });
+      doc.text(amount.toFixed(2) + " €", 390, ry, { width: 70, align: "right" });
+      doc.text((amount * (commissionPercent / 100)).toFixed(2) + " €", RIGHT - 70, ry, { width: 70, align: "right" });
+      ry += 16;
+    });
+    doc.moveTo(LEFT, ry + 4).lineTo(RIGHT, ry + 4).strokeColor(BORDER).stroke();
+    doc.font(FONT_BOLD).fontSize(14).fillColor(INK)
+      .text("Na vyplatenie: " + total.toFixed(2) + " €", LEFT, ry + 16, { width: RIGHT - LEFT, align: "right" });
+    doc.font(FONT_REGULAR).fontSize(8).fillColor(MUTED)
+      .text("Zahrnuté sú len objednávky po uplynutí ochrannej lehoty " + (Number(s.affiliateHoldDays) || 0) + " dní od zaplatenia.",
+        LEFT, ry + 40, { width: RIGHT - LEFT });
+  });
+
+  return {
+    filename: "provizia-" + code + "-" + (to || new Date().toISOString().slice(0, 10)) + ".pdf",
+    total,
+    orderCount: rows.length,
+    base64: buffer.toString("base64"),
+  };
+});
+
+/**
+ * Zaznamená kliknutie na partnerský odkaz. Volá sa z verejnej stránky, preto
+ * je bez prihlásenia — ukladá len počítadlo na deň a kampaň, žiadne osobné
+ * údaje ani IP adresu.
+ */
+exports.recordAffiliateClick = onCall(async (request) => {
+  const raw = String((request.data && request.data.code) || "").trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{3,24}$/.test(raw)) return { ok: false };
+  const campaign = String((request.data && request.data.campaign) || "").trim().slice(0, 40).toLowerCase();
+  const codeSnap = await db.collection("discountCodes").doc(raw).get();
+  if (!codeSnap.exists || !codeSnap.data().isAffiliate) return { ok: false };
+  const day = new Date().toISOString().slice(0, 10);
+  const docId = raw + "_" + day + (campaign ? "_" + campaign.replace(/[^a-z0-9-]/g, "") : "");
+  await db.collection("affiliateClicks").doc(docId).set({
+    code: raw,
+    day,
+    campaign: campaign || null,
+    count: FieldValue.increment(1),
+  }, { merge: true });
+  return { ok: true };
 });
 
 // Uvítací e-mail s prístupovým kódom hneď po zaplatení — ide priamo cez

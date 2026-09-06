@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Podmienky partnerského programu — Vzdelávacie kurzy DigiStart</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+<style>
+  .terms h2 { margin-top: 2rem; font-size: 1.25rem; }
+  .terms h3 { margin-top: 1.2rem; font-size: 1.02rem; }
+  .terms ul, .terms ol { padding-left: 1.3rem; }
+  .terms li { margin-bottom: .45rem; }
+  .terms table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  .terms th, .terms td { text-align: left; padding: .6rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; font-size: .95rem; }
+  .terms th { color: var(--text-mute); font-weight: 700; }
+  .terms .box { background: var(--surface-2); border-radius: 12px; padding: 1rem 1.2rem; margin: 1.2rem 0; }
+  .terms .box.warn { background: var(--warn-bg); color: var(--course-warn-deep); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
+      Vzdelávacie kurzy DigiStart
+    </a>
+    <div class="text-tools">
+      <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+      <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+    </div>
+  </div>
+</header>
+
+<main class="container terms" style="max-width:760px;padding-top:2.5rem;padding-bottom:4rem;">
+  <h1>Podmienky partnerského programu</h1>
+  <p class="lead">Pravidlá spolupráce pri odporúčaní kurzov DigiStart.</p>
+  <p class="hint">Verzia 1 · platné od 6. 9. 2026</p>
+
+  <div class="card" style="margin-top:1.5rem;">
+
+    <h2>1. Kto sme a čoho sa podmienky týkajú</h2>
+    <p>Prevádzkovateľom portálu <strong>kurzy.digistart.sk</strong> (ďalej „prevádzkovateľ“) je Akadémia digitálneho vzdelávania DigiStart. Tieto podmienky upravujú spoluprácu s partnerom, ktorý odporúča naše kurzy ďalším ľuďom a za sprostredkovaný predaj dostáva províziu.</p>
+    <p>Partnerom sa stávate až po tom, čo vám prevádzkovateľ vytvorí partnerský kód a prístup do partnerského portálu, a po odsúhlasení týchto podmienok.</p>
+
+    <h2>2. Partnerský kód a odkaz</h2>
+    <ul>
+      <li>Dostanete vlastný <strong>partnerský kód</strong> a odkaz v tvare <span class="mono">kurzy.digistart.sk/index.html?ref=VÁŠKÓD</span>.</li>
+      <li>Objednávka sa vám započíta, ak zákazník príde cez váš odkaz alebo zadá váš kód pri objednávke.</li>
+      <li>Kód je osobný a neprenosný. Nesmiete ho ďalej predávať ani prenechať inej osobe.</li>
+      <li>Ak váš kód poskytuje zákazníkovi zľavu, je uvedená v partnerskom portáli. Zľavu nesmiete prezentovať inak, než je skutočná.</li>
+    </ul>
+
+    <h2>3. Provízia</h2>
+    <ul>
+      <li>Výška provízie je uvedená vo vašom partnerskom portáli a počíta sa zo <strong>sumy, ktorú zákazník skutočne zaplatil</strong> (teda po zľavách).</li>
+      <li>Nárok na províziu vzniká iba pri objednávke, ktorá bola <strong>riadne uhradená</strong>.</li>
+      <li>Provízia sa považuje za schválenú až po uplynutí <strong>ochrannej lehoty</strong> uvedenej v portáli. Táto lehota slúži na to, aby sa nevyplatila provízia z objednávky, ktorá je ešte stornovaná alebo vrátená.</li>
+      <li>Ak je objednávka stornovaná, vrátená alebo sa ukáže ako podvodná, nárok na províziu zaniká.</li>
+    </ul>
+
+    <h2>4. Vyplácanie</h2>
+    <ul>
+      <li>Provízia sa vypláca <strong>na požiadanie</strong> po dosiahnutí minimálnej sumy uvedenej v portáli. Do jej dosiahnutia sa nevyplatená provízia prenáša do ďalšieho obdobia.</li>
+      <li>Podkladom je prehľad, ktorý si stiahnete z partnerského portálu.</li>
+      <li>Na vyplatenie je potrebné mať v portáli vyplnené fakturačné údaje vrátane čísla účtu.</li>
+      <li>Provízia je vaším <strong>zdaniteľným príjmom</strong>. Za jeho priznanie a zdanenie zodpovedáte vy. Prevádzkovateľ neposkytuje daňové poradenstvo.</li>
+    </ul>
+
+    <h2>5. Čo pri propagácii nesmiete</h2>
+    <p>Naše kurzy sú určené najmä seniorom a začiatočníkom a učia, ako nenaletieť podvodníkom. O to viac záleží na tom, akým spôsobom sa propagujú. Preto <strong>nie je dovolené</strong>:</p>
+    <div class="box warn">
+      <ul style="margin:0;">
+        <li>rozposielať nevyžiadané e-maily, SMS ani správy (spam) v akejkoľvek podobe;</li>
+        <li>telefonovať neznámym ľuďom s ponukou kurzu;</li>
+        <li>sľubovať výsledky, ktoré kurz nesľubuje — napríklad že „ochráni pred všetkými podvodmi“ alebo že „zaručí vrátenie peňazí“;</li>
+        <li>vytvárať tlak na rýchle rozhodnutie, strašiť alebo zneužívať obavy adresáta;</li>
+        <li>vydávať sa za prevádzkovateľa, banku, políciu, úrad či ich zamestnanca;</li>
+        <li>propagovať kurz na stránkach s nezákonným, nenávistným alebo klamlivým obsahom;</li>
+        <li>používať platenú reklamu na značku „DigiStart“ ani na náš názov vo vyhľadávačoch bez písomného súhlasu;</li>
+        <li>vytvárať stránky, e-maily alebo profily, ktoré by mohli pôsobiť ako oficiálne stránky prevádzkovateľa;</li>
+        <li>objednávať kurz cez vlastný kód sám sebe s cieľom získať províziu.</li>
+      </ul>
+    </div>
+    <p>Pri porušení týchto pravidiel môže prevádzkovateľ partnerský účet okamžite zrušiť a nevyplatené provízie zadržať.</p>
+
+    <h2>6. Čo je naopak vítané</h2>
+    <ul>
+      <li>osobné odporúčanie ľuďom, o ktorých si myslíte, že im kurz naozaj pomôže;</li>
+      <li>zdieľanie odkazu na vlastnom webe, blogu, v newsletteri vlastných odberateľov alebo na sociálnych sieťach;</li>
+      <li>letáky a plagáty v kluboch dôchodcov, knižniciach či na obecných úradoch — po dohode s daným miestom;</li>
+      <li>použitie propagačných materiálov, ktoré nájdete v partnerskom portáli.</li>
+    </ul>
+
+    <h2>7. Ochrana osobných údajov</h2>
+    <p>V partnerskom portáli vidíte iba <strong>súhrnné údaje o objednávkach</strong> — dátum, kurz, sumu, províziu, krstné meno a prvé písmeno priezviska zákazníka a posledné tri znaky prístupového kódu. Tieto údaje slúžia výhradne na to, aby ste vedeli objednávku identifikovať pri prípadnej reklamácii.</p>
+    <ul>
+      <li>Nedostávate e-mailové adresy, telefónne čísla ani celé mená zákazníkov.</li>
+      <li>Údaje z portálu nesmiete kopírovať, ďalej poskytovať ani používať na vlastné oslovovanie zákazníkov.</li>
+      <li>Ako partner nesmiete zbierať osobné údaje záujemcov v mene prevádzkovateľa.</li>
+    </ul>
+    <p>Podrobnosti o spracúvaní osobných údajov nájdete v <a href="ochrana-osobnych-udajov.html">Ochrane osobných údajov</a>.</p>
+
+    <h2>8. Trvanie a ukončenie spolupráce</h2>
+    <ul>
+      <li>Spolupráca sa uzatvára na neurčito a <strong>ktorákoľvek strana ju môže kedykoľvek ukončiť</strong>, aj bez udania dôvodu.</li>
+      <li>Pri ukončení bez porušenia podmienok sa už schválená provízia vyplatí obvyklým spôsobom.</li>
+      <li>Pri ukončení z dôvodu porušenia bodu 5 nárok na nevyplatenú províziu zaniká.</li>
+      <li>Prevádzkovateľ môže partnerský kód kedykoľvek deaktivovať, napríklad pri podozrení na zneužitie.</li>
+    </ul>
+
+    <h2>9. Zmeny podmienok</h2>
+    <p>Podmienky môžeme aktualizovať. Pri zmene sa v partnerskom portáli zobrazí nová verzia na odsúhlasenie a do jej potvrdenia je portál obmedzený. Zmena sa nedotýka provízií, na ktoré už vznikol nárok.</p>
+
+    <div class="box">
+      <p style="margin:0;"><strong>Máte otázku k partnerskému programu?</strong> Napíšte nám na <a href="mailto:info@digistart.sk">info@digistart.sk</a>.</p>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

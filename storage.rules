@@ -42,5 +42,12 @@ service firebase.storage {
       allow read: if isAdmin() || (request.auth != null && request.auth.token.codeId != null);
       allow write: if isAdmin();
     }
+
+    // Propagačné materiály pre partnerov (bannery, plagáty, vzorové texty).
+    // Číta ich prihlásený partner vo svojom portáli, nahráva ich admin.
+    match /affiliate-materials/{allPaths=**} {
+      allow read: if isAdmin() || (request.auth != null && request.auth.token.affiliateCode != null);
+      allow write: if isAdmin();
+    }
   }
 }
