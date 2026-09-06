@@ -361,6 +361,29 @@
 
     <div id="aff-announcements"></div>
 
+    <div class="summary-grid" style="margin-bottom:1.2rem;">
+      <div class="card summary-card"><div class="num" id="aff-total-orders">—</div><div class="label">Objednávky spolu</div></div>
+      <div class="card summary-card"><div class="num" id="aff-clicks">—</div><div class="label">Kliknutia · konverzia</div></div>
+      <div class="card summary-card"><div class="num" id="aff-total-commission">—</div><div class="label">Provízia spolu</div></div>
+      <div class="card summary-card"><div class="num" id="aff-available">—</div><div class="label">Na vyplatenie</div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:.8rem;">Vaše objednávky</h2>
+      <div style="overflow-x:auto;">
+        <table class="dash">
+          <thead><tr><th>Dátum</th><th>Zákazník</th><th>Kód</th><th>Kurz</th><th>Suma</th><th>Provízia</th><th>Stav</th></tr></thead>
+          <tbody id="aff-orders-body"><tr><td colspan="7" class="hint">Načítavam…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="hint" id="aff-orders-legend" style="margin-top:.8rem;"></p>
+    </div>
+
+    <div class="card" id="aff-milestones-card" style="margin-bottom:1.2rem;display:none;">
+      <h2 style="margin-bottom:.8rem;">Vaše míľniky</h2>
+      <div id="aff-milestones" style="display:flex;gap:.7rem;flex-wrap:wrap;"></div>
+    </div>
+
     <div class="card" style="margin-bottom:1.2rem;">
       <h2 style="margin-bottom:.4rem;">Váš odkaz</h2>
       <p class="hint" style="margin-bottom:.6rem;">Zdieľajte tento odkaz — objednávky cez neho (aj pri ručnom zadaní vášho kódu) sa vám automaticky započítajú.</p>
@@ -383,16 +406,26 @@
           <h3 style="font-size:1rem;margin-bottom:.4rem;">QR kód</h3>
           <div id="aff-qr" style="background:#fff;padding:.6rem;border-radius:10px;display:inline-block;"></div>
           <p style="margin:.5rem 0 0;"><button class="btn btn-secondary" id="aff-qr-download" type="button">Stiahnuť QR kód</button></p>
-          <p class="hint" style="margin-top:.35rem;max-width:200px;">Na leták alebo plagát do klubu dôchodcov.</p>
+          <p class="hint" id="aff-qr-note" style="margin-top:.35rem;max-width:200px;"></p>
+          <p class="hint" style="margin-top:.2rem;max-width:200px;">Na leták alebo plagát. Kód je vypísaný pod QR, aby sa dal aj prepísať ručne.</p>
         </div>
       </div>
     </div>
 
-    <div class="summary-grid" style="margin-bottom:1.2rem;">
-      <div class="card summary-card"><div class="num" id="aff-total-orders">—</div><div class="label">Objednávky spolu</div></div>
-      <div class="card summary-card"><div class="num" id="aff-clicks">—</div><div class="label">Kliknutia · konverzia</div></div>
-      <div class="card summary-card"><div class="num" id="aff-total-commission">—</div><div class="label">Provízia spolu</div></div>
-      <div class="card summary-card"><div class="num" id="aff-available">—</div><div class="label">Na vyplatenie</div></div>
+    <div class="card" id="aff-campaigns-card" style="margin-bottom:1.2rem;display:none;">
+      <h2 style="margin-bottom:.8rem;">Podľa kampane</h2>
+      <div style="overflow-x:auto;">
+        <table class="dash">
+          <thead><tr><th>Kampaň</th><th>Kliknutia</th><th>Objednávky</th><th>Konverzia</th><th>Provízia</th></tr></thead>
+          <tbody id="aff-campaigns-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="aff-materials-card" style="margin-bottom:1.2rem;display:none;">
+      <h2 style="margin-bottom:.4rem;">Materiály na stiahnutie</h2>
+      <p class="hint" style="margin-bottom:.8rem;">Hotové podklady na propagáciu — stačí stiahnuť a použiť.</p>
+      <div id="aff-materials" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem;"></div>
     </div>
 
     <div class="card" style="margin-bottom:1.2rem;">
@@ -418,37 +451,6 @@
       <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;margin-bottom:1rem;"><input type="checkbox" id="aff-pd-vat" style="width:auto;"> Som platca DPH</label>
       <button class="btn btn-primary" id="aff-pd-save" type="button">Uložiť údaje</button>
       <p id="aff-pd-result" class="hint" style="margin-top:.6rem;"></p>
-    </div>
-
-    <div class="card" id="aff-milestones-card" style="margin-bottom:1.2rem;display:none;">
-      <h2 style="margin-bottom:.8rem;">Vaše míľniky</h2>
-      <div id="aff-milestones" style="display:flex;gap:.7rem;flex-wrap:wrap;"></div>
-    </div>
-
-    <div class="card" id="aff-campaigns-card" style="margin-bottom:1.2rem;display:none;">
-      <h2 style="margin-bottom:.8rem;">Podľa kampane</h2>
-      <div style="overflow-x:auto;">
-        <table class="dash">
-          <thead><tr><th>Kampaň</th><th>Kliknutia</th><th>Objednávky</th><th>Konverzia</th><th>Provízia</th></tr></thead>
-          <tbody id="aff-campaigns-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card" id="aff-materials-card" style="margin-bottom:1.2rem;display:none;">
-      <h2 style="margin-bottom:.4rem;">Materiály na stiahnutie</h2>
-      <p class="hint" style="margin-bottom:.8rem;">Hotové podklady na propagáciu — stačí stiahnuť a použiť.</p>
-      <div id="aff-materials" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:.9rem;"></div>
-    </div>
-
-    <div class="card">
-      <h2 style="margin-bottom:.8rem;">Vaše objednávky</h2>
-      <div style="overflow-x:auto;">
-        <table class="dash">
-          <thead><tr><th>Dátum</th><th>Zákazník</th><th>Kód</th><th>Kurz</th><th>Suma</th><th>Provízia</th><th>Stav</th></tr></thead>
-          <tbody id="aff-orders-body"><tr><td colspan="7" class="hint">Načítavam…</td></tr></tbody>
-        </table>
-      </div>
     </div>
   </div>
 </div>
@@ -1035,7 +1037,10 @@
 
         <div class="card" style="margin-bottom:1.5rem;">
           <h2 style="margin-bottom:.4rem;">Vyplácanie provízií</h2>
-          <p class="hint" style="margin-bottom:.8rem;">Zaznamenajte, čo ste partnerovi reálne vyplatili. Portál mu potom ukáže, koľko mu ešte zostáva.</p>
+          <p class="hint" style="margin-bottom:.8rem;" id="aff-overview-intro">Provízia dozrieva po uplynutí ochrannej lehoty. Nižšie vidíte, kto je zrelý na vyplatenie — prevody urobte v banke a potom ich tu zaznamenajte.</p>
+          <div id="aff-overview" style="margin-bottom:1.4rem;"><p class="hint">Načítavam…</p></div>
+
+          <h3 style="font-size:1rem;margin-bottom:.6rem;">Zaznamenať vyplatenie</h3>
           <div class="workshop-settings-grid">
             <div class="field"><label for="ap-code">Partnerský kód</label><select id="ap-code"><option value="">—</option></select></div>
             <div class="field"><label for="ap-amount">Vyplatená suma (€)</label><input type="number" id="ap-amount" min="0" step="0.01"></div>
@@ -5030,16 +5035,22 @@ window.addEventListener("load", function () {
     { n: 100, label: "100 objednávok" },
   ];
 
-  function affQrCanvas(text, size) {
+  // QR kód aj s kódom vypísaným pod ním. Kto ho nevie naskenovať (a pri
+  // seniorovi to je bežné), prepíše si kód ručne — inak by mu vytlačený
+  // leták nebol na nič.
+  function affQrCanvas(text, size, label, subLabel) {
     if (!window.qrcode) return null;
     const qr = window.qrcode(0, "M");
     qr.addData(text);
     qr.make();
     const count = qr.getModuleCount();
     const quiet = 4;
-    const cell = Math.max(2, Math.floor(size / (count + quiet * 2)));
+    const cell = Math.max(3, Math.floor(size / (count + quiet * 2)));
+    const side = (count + quiet * 2) * cell;
+    const footer = label ? Math.round(cell * 10) : 0;
     const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = (count + quiet * 2) * cell;
+    canvas.width = side;
+    canvas.height = side + footer;
     const ctx = canvas.getContext("2d");
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -5047,6 +5058,17 @@ window.addEventListener("load", function () {
     for (let r = 0; r < count; r++) {
       for (let c = 0; c < count; c++) {
         if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
+      }
+    }
+    if (label) {
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#10322f";
+      ctx.font = "700 " + Math.round(cell * 4.2) + "px Arial, sans-serif";
+      ctx.fillText(label, side / 2, side + cell * 4.2);
+      if (subLabel) {
+        ctx.fillStyle = "#626d68";
+        ctx.font = Math.round(cell * 2.6) + "px Arial, sans-serif";
+        ctx.fillText(subLabel, side / 2, side + cell * 8);
       }
     }
     return canvas;
@@ -5077,7 +5099,76 @@ window.addEventListener("load", function () {
       document.getElementById("s-aff-min").value = s.affiliateMinPayout != null ? s.affiliateMinPayout : 20;
       document.getElementById("s-aff-terms").value = s.affiliateTermsVersion != null ? s.affiliateTermsVersion : 1;
     } catch (err) { /* nastavenia sa načítajú aj inde */ }
-    await Promise.all([loadAffiliatePayouts(), loadAffiliateAnnouncements(), loadAffiliateMaterials(), fillAffiliateCodeSelect()]);
+    await Promise.all([loadAffiliateOverview(), loadAffiliatePayouts(), loadAffiliateAnnouncements(), loadAffiliateMaterials(), fillAffiliateCodeSelect()]);
+  }
+
+  // Kto je zrelý na vyplatenie — bez tohto by admin musel vyberať partnera
+  // po jednom a generovať podklad, aby vôbec zistil, či niečo má.
+  async function loadAffiliateOverview() {
+    const wrap = document.getElementById("aff-overview");
+    try {
+      const res = await functions.httpsCallable("getAffiliatePayoutOverview")();
+      const d = res.data;
+      document.getElementById("aff-overview-intro").innerHTML =
+        "Provízia dozrieva <strong>" + d.holdDays + " dní</strong> po zaplatení objednávky. Vyplácame od <strong>" +
+        d.minPayout.toFixed(2) + " €</strong>. Prevody urobte v banke a potom ich tu zaznamenajte.";
+
+      if (!d.partners.length) {
+        wrap.innerHTML = "<p class='hint'>Zatiaľ žiadni partneri.</p>";
+        return;
+      }
+      const eligible = d.partners.filter((p) => p.eligible);
+      const waiting = d.partners.filter((p) => !p.eligible && (p.available > 0 || p.pending > 0));
+
+      const row = (p, isEligible) => {
+        const problems = [];
+        if (!p.hasPayoutDetails) problems.push("<span class='chip warn'>chýba IBAN</span>");
+        if (!p.hasLogin) problems.push("<span class='chip'>bez prihlásenia</span>");
+        return "<tr><td><strong>" + escapeHtml(p.name || p.code) + "</strong><br>" +
+          "<span class='mono hint'>" + escapeHtml(p.code) + "</span> " + problems.join(" ") + "</td>" +
+          "<td>" + p.available.toFixed(2) + " €<br><span class='hint'>" + p.approvedOrders + " objedn.</span></td>" +
+          "<td class='hint'>" + (p.pending > 0 ? p.pending.toFixed(2) + " €" : "—") + "</td>" +
+          "<td class='hint'>" + (p.paidOut > 0 ? p.paidOut.toFixed(2) + " €" : "—") + "</td>" +
+          "<td class='mono hint' style='word-break:break-all;'>" + escapeHtml(p.iban || "—") + "</td>" +
+          "<td><div style='display:flex;gap:.35rem;flex-wrap:wrap;'>" +
+          "<button class='btn btn-secondary' data-aff-pdf='" + escapeHtml(p.code) + "' type='button' style='padding:.3rem .6rem;font-size:.8rem;'>Podklad</button>" +
+          (isEligible ? "<button class='btn btn-primary' data-aff-pay='" + escapeHtml(p.code) + "' data-aff-amount='" +
+            p.available + "' type='button' style='padding:.3rem .6rem;font-size:.8rem;'>Vyplatiť</button>" : "") +
+          "</div></td></tr>";
+      };
+
+      const table = (rows) => "<div style='overflow-x:auto;'><table class='dash'>" +
+        "<thead><tr><th>Partner</th><th>Na vyplatenie</th><th>V lehote</th><th>Už vyplatené</th><th>IBAN</th><th></th></tr></thead>" +
+        "<tbody>" + rows + "</tbody></table></div>";
+
+      wrap.innerHTML =
+        (eligible.length
+          ? "<div style='background:var(--good-bg);border-radius:12px;padding:.9rem 1.1rem;margin-bottom:.9rem;'>" +
+            "<strong style='color:var(--course-good-deep,#1e6a53);font-size:1.05rem;'>Na vyplatenie: " +
+            d.eligibleCount + " " + (d.eligibleCount === 1 ? "partner" : d.eligibleCount < 5 ? "partneri" : "partnerov") +
+            " · spolu " + d.totalEligible.toFixed(2) + " €</strong></div>" + table(eligible.map((p) => row(p, true)).join(""))
+          : "<p class='hint'>Momentálne nikto nedosiahol minimálnu sumu na vyplatenie.</p>") +
+        (waiting.length
+          ? "<h4 style='font-size:.95rem;margin:1.2rem 0 .5rem;color:var(--text-mute);'>Ešte nedosiahli minimum</h4>" +
+            table(waiting.map((p) => row(p, false)).join(""))
+          : "");
+
+      wrap.querySelectorAll("[data-aff-pdf]").forEach((b) => {
+        b.onclick = () => { document.getElementById("ap-code").value = b.dataset.affPdf; document.getElementById("ap-pdf").click(); };
+      });
+      wrap.querySelectorAll("[data-aff-pay]").forEach((b) => {
+        b.onclick = () => {
+          document.getElementById("ap-code").value = b.dataset.affPay;
+          document.getElementById("ap-amount").value = Number(b.dataset.affAmount).toFixed(2);
+          document.getElementById("ap-period").value = new Date().toISOString().slice(0, 10);
+          document.getElementById("ap-code").scrollIntoView({ behavior: "smooth", block: "center" });
+          document.getElementById("ap-result").textContent = "Suma predvyplnená — po prevode v banke potvrďte tlačidlom „Zaznamenať vyplatenie“.";
+          document.getElementById("ap-result").style.color = "";
+        };
+      });
+    } catch (err) {
+      wrap.innerHTML = "<p class='hint' style='color:var(--warn);'>Nepodarilo sa načítať: " + escapeHtml(err.message) + "</p>";
+    }
   }
 
   async function fillAffiliateCodeSelect() {
@@ -5225,6 +5316,7 @@ window.addEventListener("load", function () {
         document.getElementById("ap-note").value = "";
         logActivity("settings", "Vyplatenie provízie zaznamenané: " + code + " · " + amount.toFixed(2) + " €");
         loadAffiliatePayouts();
+        loadAffiliateOverview();
       } catch (err) {
         out.textContent = "Nepodarilo sa uložiť: " + err.message;
         out.style.color = "var(--warn)";
@@ -5367,33 +5459,40 @@ window.addEventListener("load", function () {
           ? d.customerDiscount.value.toFixed(2) + " €" : d.customerDiscount.value + " %") + "</strong>"
       : "";
 
-    // --- Kampaňový odkaz + QR
+    // --- Kampaňový odkaz + QR (QR sa prekreslí podľa aktuálneho odkazu)
+    const qrWrap = document.getElementById("aff-qr");
+    const qrNote = document.getElementById("aff-qr-note");
+    let qrCanvas = null;
+    function renderQr(url, campaign) {
+      qrCanvas = affQrCanvas(url, 200, d.code, campaign ? "kampaň: " + campaign : "kurzy.digistart.sk");
+      qrWrap.innerHTML = "";
+      if (!qrCanvas) { qrWrap.innerHTML = "<p class='hint'>QR kód sa nepodarilo vytvoriť.</p>"; return; }
+      qrCanvas.style.width = "160px";
+      qrCanvas.style.height = "auto";
+      qrWrap.appendChild(qrCanvas);
+      qrNote.textContent = campaign
+        ? "QR pre kampaň „" + campaign + "“."
+        : "QR pre váš hlavný odkaz.";
+      document.getElementById("aff-qr-download").onclick = () => {
+        const a = document.createElement("a");
+        a.download = "qr-" + d.code + (campaign ? "-" + campaign : "") + ".png";
+        a.href = qrCanvas.toDataURL("image/png");
+        a.click();
+      };
+    }
+    renderQr(link, null);
+
     document.getElementById("aff-campaign-btn").onclick = () => {
       const raw = document.getElementById("aff-campaign-input").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
       const out = document.getElementById("aff-campaign-link");
-      if (!raw) { out.style.display = "none"; return; }
+      if (!raw) { out.style.display = "none"; renderQr(link, null); return; }
       const url = link + "&kampan=" + raw;
       out.textContent = url;
       out.style.display = "block";
       out.onclick = null;
       affCopyOnClick(out, url);
+      renderQr(url, raw);
     };
-    const qrWrap = document.getElementById("aff-qr");
-    const canvas = affQrCanvas(link, 180);
-    qrWrap.innerHTML = "";
-    if (canvas) {
-      canvas.style.width = "150px";
-      canvas.style.height = "150px";
-      qrWrap.appendChild(canvas);
-      document.getElementById("aff-qr-download").onclick = () => {
-        const a = document.createElement("a");
-        a.download = "qr-" + d.code + ".png";
-        a.href = canvas.toDataURL("image/png");
-        a.click();
-      };
-    } else {
-      qrWrap.innerHTML = "<p class='hint'>QR kód sa nepodarilo vytvoriť.</p>";
-    }
 
     // --- Súhrnné čísla
     document.getElementById("aff-total-orders").textContent = d.totalOrders;
@@ -5408,10 +5507,10 @@ window.addEventListener("load", function () {
       "<div style='font-size:1.25rem;font-weight:700;" + (color ? "color:" + color + ";" : "") + "'>" + value + "</div>" +
       "<div class='hint' style='margin:0;'>" + label + "</div></div>";
     document.getElementById("aff-payout-summary").innerHTML =
-      tile("Schválená provízia", d.approvedCommission.toFixed(2) + " €", "var(--good)") +
-      tile("V ochrannej lehote", d.pendingCommission.toFixed(2) + " €") +
+      tile("Pripravená na vyplatenie", d.approvedCommission.toFixed(2) + " €", "var(--good)") +
+      tile("Čaká v ochrannej lehote", d.pendingCommission.toFixed(2) + " €") +
       tile("Už vyplatené", d.totalPaidOut.toFixed(2) + " €") +
-      tile("Na vyplatenie", d.availableToPay.toFixed(2) + " €", "var(--good)");
+      tile("Zostáva vyplatiť", d.availableToPay.toFixed(2) + " €", "var(--good)");
     const missing = Math.max(d.minPayout - d.availableToPay, 0);
     document.getElementById("aff-payout-hint").innerHTML =
       "Provízia je schválená až po <strong>" + d.holdDays + " dňoch</strong> od zaplatenia objednávky — do vtedy sa objednávka ešte môže vrátiť. " +
@@ -5519,13 +5618,19 @@ window.addEventListener("load", function () {
       ? d.orders.map((o) => {
           const when = o.paidAt ? new Date(o.paidAt).toLocaleDateString("sk-SK") : "—";
           const stav = o.approved
-            ? "<span class='chip good'>schválená</span>"
-            : "<span class='chip'>do " + (o.approvedAt ? new Date(o.approvedAt).toLocaleDateString("sk-SK") : "—") + "</span>";
+            ? "<span class='chip good'>Pripravená na vyplatenie</span>"
+            : "<span class='chip'>Čaká do " + (o.approvedAt ? new Date(o.approvedAt).toLocaleDateString("sk-SK") : "—") + "</span>" +
+              "<br><span class='hint' style='font-size:.78rem;'>v ochrannej lehote</span>";
           return "<tr><td>" + when + "</td><td>" + escapeHtml(o.customer || "—") + "</td><td class='mono'>" +
             (o.codeTail ? "…" + escapeHtml(o.codeTail) : "—") + "</td><td>" + escapeHtml(workshopTitle(o.workshopId)) +
             "</td><td>" + o.amount.toFixed(2) + " €</td><td>" + o.commission.toFixed(2) + " €</td><td>" + stav + "</td></tr>";
         }).join("")
       : "<tr><td colspan='7' class='hint'>Zatiaľ žiadne objednávky cez váš kód.</td></tr>";
+
+    document.getElementById("aff-orders-legend").innerHTML = d.orders.length
+      ? "Provízia sa uvoľní <strong>" + d.holdDays + " dní</strong> po zaplatení objednávky — dovtedy sa objednávka ešte môže vrátiť. " +
+        "Potom je pripravená na vyplatenie."
+      : "";
   }
 
   document.getElementById("aff-logout-btn").addEventListener("click", () => auth.signOut());

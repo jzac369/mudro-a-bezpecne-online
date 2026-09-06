@@ -991,6 +991,75 @@ exports.recordAffiliatePayout = onCall(async (request) => {
   return { id: ref.id };
 });
 
+/**
+ * Prehľad „kto je zrelý na vyplatenie“ naprieč všetkými partnermi naraz.
+ * Bez neho by admin musel vyberať partnera po jednom a generovať podklad,
+ * aby vôbec zistil, či niečo má.
+ */
+exports.getAffiliatePayoutOverview = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Toto je dostupné len administrátorovi.");
+  }
+  const settings = await getSettings();
+  const holdMs = (Number(settings.affiliateHoldDays) || 0) * 24 * 60 * 60 * 1000;
+  const minPayout = Number(settings.affiliateMinPayout) || 0;
+  const now = Date.now();
+
+  const codesSnap = await db.collection("discountCodes").where("isAffiliate", "==", true).get();
+  const partners = {};
+  codesSnap.forEach((d) => {
+    const c = d.data();
+    partners[d.id] = {
+      code: d.id,
+      name: c.affiliateName || "",
+      email: c.affiliateEmail || "",
+      commissionPercent: Number(c.commissionPercent) || 0,
+      hasLogin: !!c.affiliateUid,
+      hasPayoutDetails: !!(c.payoutDetails && c.payoutDetails.iban),
+      iban: (c.payoutDetails && c.payoutDetails.iban) || "",
+      approved: 0, pending: 0, paidOut: 0, approvedOrders: 0, oldestApprovedAt: null,
+    };
+  });
+  if (!Object.keys(partners).length) return { partners: [], minPayout, holdDays: Number(settings.affiliateHoldDays) || 0 };
+
+  // Jeden dotaz na všetky uhradené objednávky — kódov býva málo, ale
+  // Firestore "in" zvláda najviac desať hodnôt, takže filtrujeme v pamäti.
+  const ordersSnap = await db.collection("orders").where("status", "==", "code_sent").get();
+  ordersSnap.forEach((d) => {
+    const o = d.data();
+    const p = partners[o.couponApplied];
+    if (!p || !o.paidAt) return;
+    const commission = Math.round((Number(o.amount) || 0) * (p.commissionPercent / 100) * 100) / 100;
+    const paidMs = o.paidAt.toMillis();
+    if ((now - paidMs) >= holdMs) {
+      p.approved = Math.round((p.approved + commission) * 100) / 100;
+      p.approvedOrders++;
+      if (p.oldestApprovedAt == null || paidMs < p.oldestApprovedAt) p.oldestApprovedAt = paidMs;
+    } else {
+      p.pending = Math.round((p.pending + commission) * 100) / 100;
+    }
+  });
+
+  const payoutsSnap = await db.collection("affiliatePayouts").get();
+  payoutsSnap.forEach((d) => {
+    const x = d.data();
+    if (partners[x.code]) partners[x.code].paidOut = Math.round((partners[x.code].paidOut + (Number(x.amount) || 0)) * 100) / 100;
+  });
+
+  const list = Object.values(partners).map((p) => {
+    const available = Math.round(Math.max(p.approved - p.paidOut, 0) * 100) / 100;
+    return Object.assign({}, p, { available, eligible: available >= minPayout && available > 0 });
+  }).sort((a, b) => b.available - a.available);
+
+  return {
+    partners: list,
+    minPayout,
+    holdDays: Number(settings.affiliateHoldDays) || 0,
+    totalEligible: Math.round(list.filter((p) => p.eligible).reduce((s, p) => s + p.available, 0) * 100) / 100,
+    eligibleCount: list.filter((p) => p.eligible).length,
+  };
+});
+
 exports.deleteAffiliatePayout = onCall(async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže mazať záznam o vyplatení.");
