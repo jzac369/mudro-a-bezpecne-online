@@ -338,7 +338,10 @@
       <h1 style="margin-bottom:.2rem;">Partnerský portál</h1>
       <p class="hint" id="aff-welcome"></p>
     </div>
-    <button class="btn btn-secondary" id="aff-logout-btn" type="button">Odhlásiť sa</button>
+    <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+      <a class="btn btn-secondary" href="../partnerske-podmienky.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">Partnerské podmienky</a>
+      <button class="btn btn-secondary" id="aff-logout-btn" type="button">Odhlásiť sa</button>
+    </div>
   </div>
 
   <!-- Podmienky sa musia odsúhlasiť skôr, než partner uvidí zvyšok portálu. -->
@@ -1017,8 +1020,11 @@
         <h1>Affiliate</h1>
 
         <div class="card" style="margin-bottom:1.5rem;">
-          <h2 style="margin-bottom:.4rem;">Partneri</h2>
-          <p class="hint" style="margin-bottom:.8rem;">Nový partnerský kód vytvoríte v sekcii <strong>Zľavové kódy</strong> zaškrtnutím „Toto je partnerský (affiliate) kód“. Kód môže zároveň dávať zákazníkovi zľavu — stačí mu nastaviť hodnotu. Prihlasovacie údaje partnerovi umožnia sledovať vlastné štatistiky na <span class="mono">kurzy.digistart.sk/admin/</span>.</p>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap;margin-bottom:.4rem;">
+            <h2 style="margin:0;">Partneri</h2>
+            <button class="btn btn-primary" id="aff-new-btn" type="button">+ Zaregistrovať nového partnera</button>
+          </div>
+          <p class="hint" style="margin-bottom:.8rem;">Registrácia vytvorí partnerský kód aj prihlásenie naraz. Kód môže zároveň dávať zákazníkovi zľavu. Partner sa potom prihlási na <span class="mono">kurzy.digistart.sk/admin/</span> a uvidí len svoj portál.</p>
           <div style="overflow-x:auto;">
             <table class="dash">
               <thead><tr><th>Kód</th><th>Partner</th><th>Odkaz</th><th>Provízia</th><th>Objednávky</th><th>Tržby</th><th>Provízia spolu</th><th>Prihlásenie partnera</th></tr></thead>
@@ -3496,6 +3502,97 @@ window.addEventListener("load", function () {
     return pass;
   }
 
+  // Registrácia partnera na jedno miesto — kód aj prihlásenie za sebou.
+  // Formulár na zľavové kódy zostáva samostatný, lebo slúži aj bežným
+  // (nepartnerským) kódom a jeho rozdelenie by znamenalo duplicitu.
+  function showAffiliateRegisterModal() {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.innerHTML =
+      "<div class='modal-box' style='max-width:520px;'><button class='modal-close' data-close>&times;</button>" +
+      "<h2>Zaregistrovať nového partnera</h2>" +
+      "<p class='hint'>Vytvorí sa partnerský kód a hneď potom prihlásenie do portálu.</p>" +
+      "<div class='field'><label for='anp-name'>Meno partnera</label><input type='text' id='anp-name' placeholder='napr. Jana Nováková'></div>" +
+      "<div class='field'><label for='anp-email'>E-mail partnera</label><input type='email' id='anp-email' placeholder='partner@example.com'></div>" +
+      "<div class='field'><label for='anp-code'>Partnerský kód</label>" +
+      "<div style='display:flex;gap:.5rem;'><input type='text' id='anp-code' placeholder='napr. JANA25' style='flex:1;text-transform:uppercase;'>" +
+      "<button class='btn btn-secondary' type='button' id='anp-gen' style='white-space:nowrap;'>Navrhnúť</button></div>" +
+      "<p class='hint'>Bude v jeho odkaze. Písmená, číslice, bez medzier.</p></div>" +
+      "<div class='field'><label for='anp-commission'>Provízia (%)</label><input type='number' id='anp-commission' min='0' max='100' step='0.5' placeholder='napr. 30'></div>" +
+      "<div class='field'><label for='anp-disc-type'>Zľava pre zákazníka (nepovinné)</label>" +
+      "<div style='display:flex;gap:.5rem;'>" +
+      "<select id='anp-disc-type' style='flex:1;'><option value='percent'>percentá (%)</option><option value='fixed'>pevná suma (€)</option></select>" +
+      "<input type='number' id='anp-disc-value' min='0' step='0.5' value='0' style='flex:1;'></div>" +
+      "<p class='hint'>Nechajte 0, ak má kód slúžiť len na províziu.</p></div>" +
+      "<button class='btn btn-primary btn-block' type='button' id='anp-submit'>Vytvoriť partnera</button>" +
+      "<p id='anp-error' class='hint' style='color:var(--warn);display:none;margin-top:.6rem;'></p>" +
+      "</div>";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay || e.target.hasAttribute("data-close")) overlay.remove();
+    });
+
+    const nameEl = overlay.querySelector("#anp-name");
+    const codeEl = overlay.querySelector("#anp-code");
+    overlay.querySelector("#anp-gen").addEventListener("click", () => {
+      const base = nameEl.value.trim().toUpperCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z]/g, "").slice(0, 5) || "PARTNER";
+      codeEl.value = base + Math.floor(100 + Math.random() * 900);
+    });
+
+    overlay.querySelector("#anp-submit").addEventListener("click", async (e) => {
+      const btn = e.target;
+      const errEl = overlay.querySelector("#anp-error");
+      errEl.style.display = "none";
+      const code = codeEl.value.trim().toUpperCase().replace(/\s+/g, "");
+      const email = overlay.querySelector("#anp-email").value.trim();
+      const commission = Number(overlay.querySelector("#anp-commission").value) || 0;
+      if (!code || !/^[A-Z0-9_-]{3,24}$/.test(code)) {
+        errEl.textContent = "Zadajte kód — 3 až 24 znakov, len písmená a číslice.";
+        errEl.style.display = "block"; return;
+      }
+      if (!email) { errEl.textContent = "Zadajte e-mail partnera."; errEl.style.display = "block"; return; }
+      if (!(commission > 0)) { errEl.textContent = "Zadajte províziu väčšiu než nula."; errEl.style.display = "block"; return; }
+
+      btn.disabled = true;
+      btn.textContent = "Vytváram…";
+      try {
+        const existing = await db.collection("discountCodes").doc(code).get();
+        if (existing.exists) {
+          errEl.textContent = "Kód " + code + " už existuje — zvoľte iný.";
+          errEl.style.display = "block";
+          btn.disabled = false; btn.textContent = "Vytvoriť partnera";
+          return;
+        }
+        await db.collection("discountCodes").doc(code).set({
+          type: overlay.querySelector("#anp-disc-type").value,
+          value: Number(overlay.querySelector("#anp-disc-value").value) || 0,
+          appliesTo: "all",
+          maxUses: 0,
+          active: true,
+          validFrom: null,
+          validUntil: null,
+          note: "",
+          isAffiliate: true,
+          affiliateName: nameEl.value.trim(),
+          affiliateEmail: email,
+          commissionPercent: commission,
+          usedCount: 0,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        logActivity("settings", "Partner zaregistrovaný: " + code + " · " + commission + " %");
+        overlay.remove();
+        loadDiscountCodes();
+        // druhý krok hneď nadväzuje, aby partner neostal bez prihlásenia
+        showAffiliateLoginModal(code, email, false);
+      } catch (err) {
+        errEl.textContent = "Nepodarilo sa vytvoriť: " + err.message;
+        errEl.style.display = "block";
+        btn.disabled = false; btn.textContent = "Vytvoriť partnera";
+      }
+    });
+  }
+
   function showAffiliateLoginModal(codeId, defaultEmail, hasLogin) {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
@@ -5088,6 +5185,8 @@ window.addEventListener("load", function () {
   }
 
   function wireAffiliateAdmin() {
+    document.getElementById("aff-new-btn").addEventListener("click", showAffiliateRegisterModal);
+
     document.getElementById("aff-settings-save").addEventListener("click", async () => {
       const out = document.getElementById("aff-settings-result");
       out.textContent = "Ukladám…";
