@@ -638,6 +638,15 @@ label {
 .course-hotspot-legend-item.found .course-hotspot-legend-num { background: var(--good); }
 .course-hotspot-legend-text h4 { margin: 0 0 .25rem; font-size: .96rem; }
 .course-hotspot-legend-text p { margin: 0; font-size: .88rem; color: var(--text-mute); }
+/* Vysvetlenie sa odkryje až po kliknutí na príslušný bod v obrázku — presne
+   to sľubuje zadanie. Názov miesta necháme viditeľný, aby senior vedel, čo
+   na obrázku hľadá. */
+.course-hotspot-legend-item:not(.found) .course-hotspot-legend-text p { display: none; }
+.course-hotspot-legend-item:not(.found) .course-hotspot-legend-text::after {
+  content: "Kliknite na toto číslo v obrázku vyššie.";
+  display: block; font-size: .84rem; color: var(--text-mute); font-style: italic; opacity: .75;
+}
+.course-hotspot-legend-item.found .course-hotspot-legend-text p { animation: course-rise .3s ease; }
 
 /* choice / belief / quickfire */
 .course-choice-round, .course-belief-item {
