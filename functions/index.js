@@ -283,10 +283,8 @@ exports.createOrder = onCall(async (request) => {
   // vystavení faktúry), aby variabilný symbol na platobných pokynoch bol
   // od začiatku ten istý, aký bude neskôr aj na faktúre/POZ dokumente.
   const invoiceNumber = await nextDocNumber("KU", "invoiceCounters");
-  // Variabilny symbol znesie v bankovom styku najviac 10 cislic, preto z
-  // cisla faktury (KU + RRRRMMDD + poradie) vynechavame aj storocie:
-  // KU20260908001 -> 260908001. Zostava jednoznacny (poradie je denne).
-  const variableSymbol = invoiceNumber.slice(4);
+  // Variabilný symbol je číslo faktúry bez predpony: KU260908001 -> 260908001.
+  const variableSymbol = invoiceNumber.slice(2);
 
   await orderRef.set({
     name: fullName(firstName, lastName),
@@ -1811,7 +1809,9 @@ async function nextDocNumber(prefix, counterCollection) {
     tx.set(counterRef, { count: next, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     return next;
   });
-  return prefix + dayKey + String(seq).padStart(3, "0");
+  // Storočie v čísle dokladu nič nehovorí a variabilný symbol z neho
+  // odvodený má v bankovom styku strop 10 číslic — preto RRMMDD.
+  return prefix + dayKey.slice(2) + String(seq).padStart(3, "0");
 }
 
 // Číslo faktúry sa pridelí len raz za objednávku a odvtedy sa vždy znova
@@ -1896,7 +1896,9 @@ function drawInvoicePdf(doc, { s, order, invoiceNumber }) {
   const workshop = order.workshopTitleSnapshot || order.workshopId;
   const amount = order.amount != null ? order.amount : 0;
   const baseAmount = order.baseAmount != null ? order.baseAmount : amount;
-  const variabilnySymbol = invoiceNumber.slice(2);
+  // Prednosť má symbol uložený pri objednávke — staršie objednávky majú
+  // ešte dlhší tvar a na faktúre musí byť presne ten, ktorý dostal zákazník.
+  const variabilnySymbol = order.variableSymbol || invoiceNumber.slice(2);
 
   doc.font(FONT_BOLD).fontSize(20).fillColor(INK).text("Faktúra č. " + invoiceNumber, LEFT, doc.y);
   doc.moveDown(0.3);
@@ -2017,7 +2019,7 @@ function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
   doc.font(FONT_REGULAR);
   doc.text("Suma: " + amount + " €");
   doc.text("Spôsob úhrady: " + paymentMethodLabel);
-  doc.text("Variabilný symbol: " + invoiceNumber.slice(2));
+  doc.text("Variabilný symbol: " + (order.variableSymbol || invoiceNumber.slice(2)));
 
   doc.moveDown(1.2);
   doc.fontSize(10).fillColor("#5c5749").text(
@@ -3381,7 +3383,7 @@ exports.sendInvoiceEmail = onCall(async (request) => {
     docNumber: invoiceNumber,
     workshopTitle: order.workshopTitleSnapshot,
     url,
-    extraLine: "Suma: " + (order.amount != null ? order.amount : "—") + " € · VS: " + invoiceNumber.slice(2),
+    extraLine: "Suma: " + (order.amount != null ? order.amount : "—") + " € · VS: " + (order.variableSymbol || invoiceNumber.slice(2)),
     docType: "invoice",
   });
 
