@@ -70,6 +70,13 @@
   .dash-sidebar .brand { color: #fff; display: flex; align-items: center; gap: .6rem; font-weight: 700; }
   .dash-sidebar .brand svg { color: #fff; }
   .dash-sidebar.collapsed .brand span { display: none; }
+  .sidebar-logo {
+    display: block; width: 100%; max-width: 150px; height: auto;
+    background: #fff; border-radius: 9px; padding: 7px 10px; box-sizing: border-box;
+  }
+  .sidebar-mark { display: none; }
+  .dash-sidebar.collapsed .sidebar-logo { display: none; }
+  .dash-sidebar.collapsed .sidebar-mark { display: block; color: #fff; }
   .sidebar-toggle-btn {
     background: rgba(255,255,255,.1); border: none; border-radius: 8px; width: 28px; height: 28px; flex: none;
     display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;
@@ -590,8 +597,11 @@
   <aside class="dash-sidebar" id="dash-sidebar">
     <div class="sidebar-top">
       <span class="brand">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
-        <span>DigiStart</span>
+        <!-- Logo je tmavomodré s priehľadným pozadím, na tmavom bočnom paneli
+             by zaniklo — preto sedí na svetlej podložke. V zbalenom menu
+             zostáva len štítok. -->
+        <img class="sidebar-logo" src="../assets/logo-digistart.png" alt="DigiStart">
+        <svg class="icon sidebar-mark" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
       </span>
       <button type="button" id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Zbaliť/rozbaliť menu" title="Zbaliť/rozbaliť menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>

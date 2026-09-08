@@ -2233,10 +2233,16 @@ function documentEmailShell(bodyHtml, accent) {
     <tr>
       <td align="center" style="padding:32px 16px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:${EMAIL_COLORS.paper};border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+          <!-- Hlavička je zámerne svetlá: logo je tmavomodré s priehľadným
+               pozadím a na tmavozelenom páse takmer zaniklo. -->
           <tr>
-            <td style="background-color:${EMAIL_COLORS.ink};padding:26px 32px;text-align:center;">
-              <img src="${EMAIL_LOGO_URL}" width="150" alt="DigiStart — Vzdelávacie kurzy" style="display:block;width:150px;max-width:150px;height:auto;margin:0 auto;border:0;">
-              <div style="font-size:13px;color:#cfe3dc;margin-top:10px;">Kurzy, ktoré vám dávajú istotu v online svete</div>
+            <td style="background-color:#ffffff;padding:28px 32px 22px;text-align:center;">
+              <img src="${EMAIL_LOGO_URL}" width="190" alt="DigiStart — Vzdelávacie kurzy" style="display:block;width:190px;max-width:190px;height:auto;margin:0 auto;border:0;">
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:${EMAIL_COLORS.ink};padding:11px 24px;text-align:center;">
+              <div style="font-size:13px;color:#cfe3dc;letter-spacing:.02em;">Kurzy, ktoré vám dávajú istotu v online svete</div>
             </td>
           </tr>
           <tr><td style="height:4px;background-color:${accent};line-height:4px;font-size:0;">&nbsp;</td></tr>
