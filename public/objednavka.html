@@ -33,6 +33,19 @@
     <h1 id="workshop-title">Objednávka kurzu</h1>
     <p id="workshop-price" class="lead"></p>
 
+    <div class="card" id="whats-included" style="margin-bottom:1.4rem;">
+      <h2 style="margin-bottom:.6rem;font-size:1.15rem;">Čo dostanete</h2>
+      <ul class="incl-list">
+        <li>Video s lektorom — pokojne a zrozumiteľne, bez odborných výrazov</li>
+        <li>Lekcie krok za krokom, ktorými prejdete vlastným tempom</li>
+        <li>Praktické cvičenia, na ktorých si všetko vyskúšate</li>
+        <li>Brožúrku a prezentáciu na stiahnutie aj vytlačenie</li>
+        <li>Chat so skutočným lektorom, keď si nebudete vedieť rady</li>
+        <li>Certifikát po dokončení</li>
+      </ul>
+      <p class="hint" style="margin:.8rem 0 0;">Kurz absolvujete online, kedykoľvek vám to vyhovuje. Nič sa neinštaluje — stačí prehliadač.</p>
+    </div>
+
     <form class="card" id="order-form">
       <div class="field" style="display:flex;gap:1rem;">
         <div style="flex:1;">
@@ -294,6 +307,12 @@
       if (b.couponDiscountAmount > 0) {
         rows.push(["Zľavový kód " + b.couponCode, "−" + b.couponDiscountAmount + " €"]);
       }
+      if (b.couponRejected) {
+        rows.push([
+          "<span style='color:var(--warn);'>Zľavový kód " + b.couponRejected + " neplatí</span>",
+          "<span style='color:var(--warn);'>bez zľavy</span>",
+        ]);
+      }
       const rowsHtml = rows.map(([label, value]) =>
         "<tr><td style='padding:.3rem 0;color:var(--text-mute);'>" + label + "</td><td style='padding:.3rem 0;text-align:right;'>" + value + "</td></tr>"
       ).join("");
@@ -331,6 +350,14 @@
 
     document.getElementById("order-form").addEventListener("submit", async (e) => {
       e.preventDefault();
+      // Zisťovanie polohy má limit 2,5 s a potom sa ešte vytvára objednávka —
+      // bez zablokovania tlačidla stihne netrpezlivý človek kliknúť druhý raz
+      // a vznikne mu druhá objednávka s ďalším variabilným symbolom.
+      const submitBtn = e.target.querySelector("button[type='submit']");
+      if (submitBtn.disabled) return;
+      const submitLabel = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Pripravujem objednávku…";
       const firstName = document.getElementById("firstName").value.trim();
       const lastName = document.getElementById("lastName").value.trim();
       const email = document.getElementById("email").value.trim();
@@ -368,6 +395,8 @@
       } catch (err) {
         errorEl.textContent = "Objednávku sa nepodarilo vytvoriť. Skúste to prosím znova, alebo nám napíšte cez tlačidlo „Napíšte lektorovi“ či na info@digistart.sk.";
         errorEl.style.display = "block";
+        submitBtn.disabled = false;
+        submitBtn.textContent = submitLabel;
       }
     });
   });

@@ -235,6 +235,9 @@ exports.createOrder = onCall(async (request) => {
   // chráni pred súbežným prekročením limitu maxUses pri viacerých objednávkach naraz).
   let couponApplied = null;
   let couponDiscountAmount = 0;
+  // Neplatný kód sa doteraz ticho ignoroval — zákazník bol presvedčený,
+  // že zľavu dostal, a zaplatil plnú sumu. Preto ho musíme vrátiť späť.
+  let couponRejected = null;
   if (couponCode) {
     const codeId = String(couponCode).trim().toUpperCase();
     if (codeId) {
@@ -263,6 +266,8 @@ exports.createOrder = onCall(async (request) => {
           amount = Math.round((amount - result.discount) * 100) / 100;
           couponApplied = codeId;
           couponDiscountAmount = result.discount;
+        } else {
+          couponRejected = codeId;
         }
       } catch (err) {
         console.error("Overenie zľavového kódu zlyhalo:", err);
@@ -295,6 +300,7 @@ exports.createOrder = onCall(async (request) => {
     discountNote,
     couponApplied,
     couponDiscountAmount,
+    couponRejected,
     variableSymbol,
     invoiceNumber,
     status: "pending_payment",
@@ -338,6 +344,7 @@ exports.createOrder = onCall(async (request) => {
       groupDiscountAmount,
       couponCode: couponApplied,
       couponDiscountAmount,
+      couponRejected,
       finalAmount: amount,
     },
   };

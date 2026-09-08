@@ -142,6 +142,16 @@ label {
 .brand svg { width: 28px; height: 28px; color: var(--accent); flex: none; }
 /* V hlavičke je logo, nie text — značku má človek spoznať na prvý pohľad. */
 .brand-logo { height: 44px; width: auto; display: block; }
+/* Zoznam "Čo dostanete" na objednávke — odrážky ako zelené fajky. */
+.incl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.incl-list li { position: relative; padding-left: 1.8rem; line-height: 1.5; }
+.incl-list li::before {
+  content: ""; position: absolute; left: 0; top: .35em; width: 1.05rem; height: 1.05rem;
+  background: var(--good, #2f6b49);
+  -webkit-mask: no-repeat center/0.7rem url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M2 8.3l3.3 3.3L14 3'/%3E%3C/svg%3E");
+  mask: no-repeat center/0.7rem url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M2 8.3l3.3 3.3L14 3'/%3E%3C/svg%3E");
+  border-radius: 50%;
+}
 @media (max-width: 560px) { .brand-logo { height: 34px; } }
 
 .text-tools {
