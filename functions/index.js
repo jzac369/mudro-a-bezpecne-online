@@ -3680,7 +3680,7 @@ function normalizeFioTransaction(tx) {
   };
 }
 
-async function fetchFioPeriod(token, fromDate, toDate) {
+async function fetchFioPeriod(token, fromDate, toDate, isRetry) {
   const url = FIO_API_BASE + "/periods/" + encodeURIComponent(token) + "/" +
     fromDate + "/" + toDate + "/transactions.json";
   let res;
@@ -3690,8 +3690,14 @@ async function fetchFioPeriod(token, fromDate, toDate) {
     throw new Error("Fio API je nedostupné: " + (err && err.message ? err.message : err));
   }
   if (res.status === 409) {
-    // Fio pustí na jeden token jeden dotaz za 30 sekúnd.
-    throw new Error("Fio API: dotazy idú príliš rýchlo za sebou (limit je jeden za 30 sekúnd). Skúste o pol minúty.");
+    // Fio pustí na jeden token jeden dotaz za 30 sekúnd. Naplánovaný beh a
+    // ručné tlačidlo si tak vedia ľahko prekážať — radšej raz počkáme a
+    // skúsime znova, než aby sme obsluhu posielali klikať druhýkrát.
+    if (isRetry) {
+      throw new Error("Fio API: dotazy idú príliš rýchlo za sebou (limit je jeden za 30 sekúnd). Skúste o pol minúty.");
+    }
+    await new Promise((resolve) => setTimeout(resolve, 33000));
+    return await fetchFioPeriod(token, fromDate, toDate, true);
   }
   if (res.status === 401 || res.status === 403 || res.status === 404) {
     throw new Error("Fio API odmietlo token (HTTP " + res.status + "). Overte, či je token platný a nevypršal.");
@@ -3900,7 +3906,7 @@ async function runFioSyncGuarded(token, options) {
 }
 
 exports.fioSync = onSchedule(
-  { schedule: "every 5 minutes", timeZone: "Europe/Bratislava", secrets: [FIO_API_TOKEN] },
+  { schedule: "every 5 minutes", timeZone: "Europe/Bratislava", secrets: [FIO_API_TOKEN], timeoutSeconds: 120 },
   async () => {
     const token = (FIO_API_TOKEN.value() || "").trim();
     if (!token) {
@@ -3920,7 +3926,7 @@ exports.fioSync = onSchedule(
 );
 
 /** Tlačidlo "Načítať pohyby teraz" v admin zóne. */
-exports.runFioSyncNow = onCall({ secrets: [FIO_API_TOKEN] }, async (request) => {
+exports.runFioSyncNow = onCall({ secrets: [FIO_API_TOKEN], timeoutSeconds: 120 }, async (request) => {
   if (request.auth?.token?.admin !== true) {
     throw new HttpsError("permission-denied", "Len administrátor môže načítať bankový výpis.");
   }
@@ -3930,7 +3936,13 @@ exports.runFioSyncNow = onCall({ secrets: [FIO_API_TOKEN] }, async (request) => 
       "Token pre Fio API nie je nastavený. Nastavte ho príkazom: firebase functions:secrets:set FIO_API_TOKEN");
   }
   const days = Number(request.data && request.data.days) || undefined;
-  return await runFioSyncGuarded(token, { days });
+  try {
+    return await runFioSyncGuarded(token, { days });
+  } catch (err) {
+    // Bez tohto by sa v admin zóne zobrazilo len "INTERNAL" — skutočný
+    // dôvod (limit dotazov, odmietnutý token, výpadok) by zostal v logu.
+    throw new HttpsError("unavailable", String(err && err.message ? err.message : err).slice(0, 400));
+  }
 });
 
 /**
