@@ -111,7 +111,7 @@
           <input type="radio" name="pay-method" value="transfer" id="pay-method-transfer" checked>
           <span class="pay-method-body">
             <span class="pay-method-title">Bankovým prevodom</span>
-            <span class="pay-method-desc">Zaplatíte z internetbankingu podľa údajov nižšie. Kód vám pošleme po prijatí platby, zvyčajne do 1 pracovného dňa.</span>
+            <span class="pay-method-desc">Zaplatíte z internetbankingu podľa údajov nižšie. Kód vám systém pošle automaticky hneď po pripísaní platby na účet — prevod medzi bankami trvá zvyčajne do jedného pracovného dňa.</span>
           </span>
         </label>
       </div>
@@ -140,7 +140,7 @@
       <h2 style="margin-bottom:.8rem;">Čo bude nasledovať</h2>
       <ol style="margin:0;padding-left:1.2rem;" id="pay-next-transfer">
         <li style="margin-bottom:.5rem;">Odošlete platbu podľa údajov vyššie.</li>
-        <li style="margin-bottom:.5rem;">Po prijatí platby (zvyčajne do 1 pracovného dňa) vám na e-mail pošleme 6-miestny prístupový kód.</li>
+        <li style="margin-bottom:.5rem;">Hneď po pripísaní platby na náš účet vám automaticky príde na e-mail 6-miestny prístupový kód. Prevod medzi bankami trvá zvyčajne do jedného pracovného dňa.</li>
         <li>Prihlásite sa menom a kódom a môžete začať.</li>
       </ol>
       <ol style="margin:0;padding-left:1.2rem;display:none;" id="pay-next-card">
@@ -388,6 +388,7 @@
     // Kartu ponúkneme len vtedy, keď je platobná brána naozaj nastavená.
     if (!cardAvailable) return;
     cardLabel.style.display = "";
+    cardRadio.checked = true;
 
     function refresh() {
       const card = cardRadio.checked;

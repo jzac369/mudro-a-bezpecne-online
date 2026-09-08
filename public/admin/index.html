@@ -256,6 +256,16 @@
   .set-switch:last-child { border-bottom:0; }
   .set-switch label { display:flex; align-items:flex-start; gap:.6rem; font-weight:400; }
   .set-switch .hint { display:block; margin-top:.15rem; }
+  /* Polia, ktoré platia len pri zapnutom prepínači nad nimi — odsadenie
+     a zvislá linka hovoria o tej závislosti bez toho, aby ju bolo treba
+     vysvetľovať slovami. */
+  .set-nested { margin:.8rem 0 0 2.2rem; padding-left:.9rem; border-left:2px solid var(--line);
+    display:grid; grid-template-columns:repeat(2,minmax(0,240px)); gap:1rem; }
+  @media (max-width: 640px) { .set-nested { grid-template-columns:1fr; margin-left:.8rem; } }
+  /* Zablokované polia sa dnes od aktívnych takmer nelíšia — pri vypnutom
+     prepínači tak vyzerali ako platné nastavenie. */
+  .set-nested.is-off { opacity:.5; }
+  .dash-main .set-nested input:disabled { background:var(--surface-2); cursor:not-allowed; }
   .new-reg-toast {
     position:fixed; top:1.2rem; right:1.2rem; background:var(--ink); color:#fff; padding:.8rem 1.2rem;
     border-radius:10px; font-size:.9rem; z-index:300; box-shadow:0 6px 20px rgba(0,0,0,.25);
@@ -1191,7 +1201,9 @@
         <form id="settings-form">
           <div class="card" style="margin-bottom:1.5rem;">
             <h2>Prístup a bezpečnosť</h2>
-            <div class="workshop-settings-grid" style="margin-top:1rem;">
+
+            <p class="set-sub first">Prihlásenie a platnosť kódu</p>
+            <div class="set-grid-3">
               <div class="field">
                 <label for="s-inactivity">Automatické odhlásenie po neaktivite (minúty)</label>
                 <input type="number" id="s-inactivity" min="1" max="60" value="5">
@@ -1207,9 +1219,17 @@
                 <input type="number" id="s-maxlogins" min="0" value="0">
                 <p class="hint">0 = neobmedzené. Zabráni zdieľaniu jedného kódu medzi viacerými ľuďmi.</p>
               </div>
-              <div class="field">
-                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-suspicious-enabled" style="width:auto;" checked> Ochrana pred zneužitím kódu (blokovanie po opakovaných zlých pokusoch)</label>
-              </div>
+            </div>
+
+            <p class="set-sub">Ochrana pred zneužitím kódu</p>
+            <div class="field set-switch" style="border-bottom:0;">
+              <label>
+                <input type="checkbox" id="s-suspicious-enabled" style="width:auto;margin-top:.25rem;" checked>
+                <span><strong>Blokovať po opakovaných nesprávnych pokusoch</strong>
+                <span class="hint">Po prekročení limitu sa daná IP adresa na chvíľu odstaví. Zablokované adresy nájdete nižšie v karte Podozrivá aktivita.</span></span>
+              </label>
+            </div>
+            <div class="set-nested" id="s-suspicious-fields">
               <div class="field">
                 <label for="s-max-failed-attempts">Max. počet nesprávnych pokusov o kód (z jednej IP)</label>
                 <input type="number" id="s-max-failed-attempts" min="1" value="5">
@@ -1234,17 +1254,28 @@
 
           <div class="card" style="margin-bottom:1.5rem;">
             <h2>Upozornenia a prevádzka</h2>
-            <div class="workshop-settings-grid" style="margin-top:1rem;">
-              <div class="field">
-                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-sound" style="width:auto;" checked> Zvukové upozornenie pri novej registrácii</label>
-              </div>
+
+            <p class="set-sub first">Prepínače</p>
+            <div class="field set-switch">
+              <label>
+                <input type="checkbox" id="s-sound" style="width:auto;margin-top:.25rem;" checked>
+                <span><strong>Zvukové upozornenie pri novej registrácii</strong>
+                <span class="hint">Krátky tón zaznie, kým máte admin zónu otvorenú.</span></span>
+              </label>
+            </div>
+            <div class="field set-switch">
+              <label>
+                <input type="checkbox" id="s-maintenance" style="width:auto;margin-top:.25rem;">
+                <span><strong>Režim údržby (verejný web nedostupný)</strong>
+                <span class="hint">Účastníci s existujúcim kódom sa naďalej vedia prihlásiť do kurzu — zablokuje sa len úvodná stránka, objednávka a prihlásenie.</span></span>
+              </label>
+            </div>
+
+            <p class="set-sub">Hodnoty</p>
+            <div class="set-grid-3">
               <div class="field">
                 <label for="s-stale-days">Objednávku bez úhrady označiť ako „staré“ po (dni)</label>
                 <input type="number" id="s-stale-days" min="1" value="3">
-              </div>
-              <div class="field">
-                <label style="display:flex;align-items:center;gap:.5rem;font-weight:400;"><input type="checkbox" id="s-maintenance" style="width:auto;"> Režim údržby (verejný web nedostupný)</label>
-                <p class="hint">Účastníci s existujúcim kódom sa naďalej vedia prihlásiť do kurzu — zablokuje sa len úvodná stránka, objednávka a prihlásenie.</p>
               </div>
               <div class="field">
                 <label for="s-backup-frequency">Automatická záloha databázy a súborov</label>
@@ -2632,9 +2663,8 @@ window.addEventListener("load", function () {
       const suspiciousEnabled = (data.maxFailedAttempts ?? 5) > 0;
       document.getElementById("s-suspicious-enabled").checked = suspiciousEnabled;
       document.getElementById("s-max-failed-attempts").value = suspiciousEnabled ? data.maxFailedAttempts : 5;
-      document.getElementById("s-max-failed-attempts").disabled = !suspiciousEnabled;
       document.getElementById("s-lockout-minutes").value = data.lockoutMinutes ?? 15;
-      document.getElementById("s-lockout-minutes").disabled = !suspiciousEnabled;
+      setSuspiciousFieldsState(suspiciousEnabled);
       document.getElementById("s-inv-company").value = data.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart";
       document.getElementById("s-inv-address").value = data.invoiceAddress || "";
       document.getElementById("s-inv-ico").value = data.invoiceIco || "";
@@ -2784,9 +2814,16 @@ window.addEventListener("load", function () {
     (patch) => { generalSettingsCache = Object.assign({}, generalSettingsCache, patch); }, "Všeobecné nastavenia");
 
   document.getElementById("s-suspicious-enabled").addEventListener("change", (e) => {
-    document.getElementById("s-max-failed-attempts").disabled = !e.target.checked;
-    document.getElementById("s-lockout-minutes").disabled = !e.target.checked;
+    setSuspiciousFieldsState(e.target.checked);
   });
+
+  // Zablokované polia sa od aktívnych takmer nelíšia, preto sa celý zapustený
+  // blok aj vizuálne stlmí — inak pôsobí ako platné nastavenie aj po vypnutí.
+  function setSuspiciousFieldsState(enabled) {
+    document.getElementById("s-max-failed-attempts").disabled = !enabled;
+    document.getElementById("s-lockout-minutes").disabled = !enabled;
+    document.getElementById("s-suspicious-fields").classList.toggle("is-off", !enabled);
+  }
 
   document.getElementById("load-suspicious-activity").addEventListener("click", async () => {
     const body = document.getElementById("suspicious-activity-body");
