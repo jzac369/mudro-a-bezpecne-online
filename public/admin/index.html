@@ -208,6 +208,14 @@
   .act-primary { border-color:#1f8a4c; background:#1f8a4c; color:#fff; }
   .act-primary:hover { background:#19713e; border-color:#19713e; }
   .act-icon { padding:.32rem .45rem; }
+  .act-good { border-color:#bcd9c6; color:#1f6b41; }
+  .act-good:hover { border-color:#1f6b41; background:#eef6f1; }
+  /* Akcie pod sebou — v jednom rade sa štyri tlačidlá rozbiehali do šírky
+     a oko muselo pri každom riadku hľadať znova. */
+  .row-actions.stack { flex-direction:column; align-items:stretch; gap:.25rem; }
+  .row-actions.stack .act { justify-content:flex-start; }
+  .cell-sub { display:block; font-size:.72rem; color:var(--text-mute); line-height:1.35; margin-top:.15rem; }
+  .cell-vs { font-family:"IBM Plex Mono","Courier New",monospace; font-size:.78rem; }
   .act-sep { width:1px; height:16px; background:var(--line); margin:0 .15rem; flex:none; }
 
   /* Bublina s popisom sa pripája k <body>, nie do bunky tabuľky — tá má
@@ -810,13 +818,14 @@
                 <tr>
                   <th style="width:2rem;"><input type="checkbox" id="select-all-orders" style="width:auto;"></th>
                   <th style="width:5.5rem;">Kód</th>
-                  <th data-sort="name" style="min-width:11rem;">Účastník <span class="arrow"></span></th>
-                  <th data-sort="workshopId" style="width:11rem;">Kurz <span class="arrow"></span></th>
-                  <th data-sort="status" style="min-width:12rem;">Stav <span class="arrow"></span></th>
-                  <th data-sort="timeSpentSec" style="width:6rem;">Čas <span class="arrow"></span></th>
-                  <th style="width:8.5rem;">Postup kurzu</th>
-                  <th style="width:7rem;">Kvíz</th>
+                  <th data-sort="name" style="min-width:10rem;">Účastník <span class="arrow"></span></th>
+                  <th data-sort="workshopId" style="width:9rem;">Kurz <span class="arrow"></span></th>
+                  <th style="width:8rem;">Objednávka</th>
+                  <th data-sort="status" style="width:9.5rem;">Stav <span class="arrow"></span></th>
+                  <th style="width:7rem;">Platnosť kódu</th>
+                  <th data-sort="timeSpentSec" style="width:10rem;">Priebeh <span class="arrow"></span></th>
                   <th style="width:3.2rem;">Pozn.</th>
+                  <th style="width:7.5rem;">Doklady</th>
                   <th>Akcia</th>
                 </tr>
               </thead>
@@ -2749,8 +2758,24 @@ window.addEventListener("load", function () {
       document.getElementById("s-remind-stale").checked = !!data.staleOrderEmailEnabled;
       document.getElementById("s-notify-email").value = data.notifyEmail || "";
       renderLogoPreview(data.orgLogoUrl || null);
+      publishLogo(data.orgLogoUrl || "");
     } catch (err) {
       console.error("Nepodarilo sa načítať nastavenia:", err);
+    }
+  }
+
+  // Verejné stránky čítajú logo zo settings/public — do settings/general
+  // sa doň nevidia. Kopírovanie robí aj serverová funkcia syncPublicSettings
+  // pri každej zmene nastavení; toto je poistka, aby sa už nahraté logo
+  // prejavilo hneď a nečakalo na najbližšiu zmenu.
+  async function publishLogo(url) {
+    try {
+      const snap = await db.collection("settings").doc("public").get();
+      const current = snap.exists ? (snap.data().orgLogoUrl || "") : "";
+      if (current === (url || "")) return;
+      await db.collection("settings").doc("public").set({ orgLogoUrl: url || "" }, { merge: true });
+    } catch (err) {
+      console.error("Logo sa nepodarilo sprístupniť verejným stránkam:", err);
     }
   }
 
@@ -2765,6 +2790,7 @@ window.addEventListener("load", function () {
         if (!confirm("Naozaj odstrániť logo?")) return;
         try {
           await db.collection("settings").doc("general").set({ orgLogoUrl: null }, { merge: true });
+          await publishLogo("");
           generalSettingsCache.orgLogoUrl = null;
           logActivity("settings", "Logo organizácie odstránené");
           renderLogoPreview(null);
@@ -2788,6 +2814,7 @@ window.addEventListener("load", function () {
       await storageRef.put(file);
       const url = await storageRef.getDownloadURL();
       await db.collection("settings").doc("general").set({ orgLogoUrl: url }, { merge: true });
+      await publishLogo(url);
       generalSettingsCache.orgLogoUrl = url;
       logActivity("settings", "Logo organizácie nahraté");
       statusEl.textContent = "Nahraté ✓";
@@ -4750,6 +4777,23 @@ window.addEventListener("load", function () {
     };
   })();
 
+  // "Čaká na úhradu od 5. 9. · 3 dni" povie viac než holý dátum — pri
+  // nezaplatenej objednávke je totiž podstatné práve to, ako dlho už čaká.
+  function fmtAgo(ts) {
+    if (!ts || !ts.toDate) return "";
+    const min = Math.max(Math.round((Date.now() - ts.toDate().getTime()) / 60000), 0);
+    if (min < 60) return min <= 1 ? "pred chvíľou" : min + " min";
+    const hod = Math.round(min / 60);
+    if (hod < 24) return hod + " h";
+    const dni = Math.round(hod / 24);
+    if (dni < 31) return dni === 1 ? "1 deň" : (dni < 5 ? dni + " dni" : dni + " dní");
+    const mes = Math.round(dni / 30);
+    return mes === 1 ? "1 mesiac" : (mes < 5 ? mes + " mesiace" : mes + " mesiacov");
+  }
+  function fmtDay(ts) {
+    return ts && ts.toDate ? ts.toDate().toLocaleDateString("sk-SK") : "—";
+  }
+
   // Sekundy v tabuľke nikomu nič nehovoria a predlžujú riadok.
   function fmtWhen(ts) {
     if (!ts || !ts.toDate) return "—";
@@ -4799,7 +4843,7 @@ window.addEventListener("load", function () {
     // Načítanie detailov ku každej registrácii (kód, čas strávený, postup...)
     // beží sekvenčne a pri väčšom počte registrácií chvíľu trvá — bez tohto
     // riadku by tabuľka počas toho vyzerala prázdna/nefunkčná.
-    tbody.innerHTML = "<tr><td colspan='10' class='hint'>Načítavam registrácie…</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='11' class='hint'>Načítavam registrácie…</td></tr>";
 
     let paid = 0, revenue = 0, completed = 0, todayCount = 0;
     let cntPending = 0, cntSent = 0;
@@ -4823,7 +4867,7 @@ window.addEventListener("load", function () {
       const haystack = (order.name + " " + order.email + " " + (order.adminNote || "")).toLowerCase();
       if (searchQuery && !haystack.includes(searchQuery)) continue;
 
-      let codeId = null, codeActive = true, timeSpentSec = 0, timeSpent = "—", progressPct = "—", quizCell = "—", quizPassed = null, expiryBadge = "";
+      let codeId = null, codeActive = true, timeSpentSec = 0, timeSpent = "—", progressPct = "—", quizCell = "—", quizPassed = null, expiryBadge = "", lastActivity = null;
 
       try {
         const codeSnap = await db.collection("accessCodes").where("orderId", "==", doc.id).limit(1).get();
@@ -4839,12 +4883,18 @@ window.addEventListener("load", function () {
             } else if (daysLeft <= 7) {
               expiryBadge = '<span class="chip warn" title="Platný do ' + expiresAt.toLocaleDateString("sk-SK") + '">Vyprší o ' + daysLeft + ' dní</span>';
             } else {
-              expiryBadge = '<span class="hint">platný do ' + expiresAt.toLocaleDateString("sk-SK") + '</span>';
+              expiryBadge = '<span class="hint">do ' + expiresAt.toLocaleDateString("sk-SK") + '</span>';
             }
           }
           const sessionsSnap = await db.collection("sessions").where("codeId", "==", codeId).get();
           timeSpentSec = sessionsSnap.docs.reduce((sum, s) => sum + (s.data().durationSec || 0), 0);
           timeSpent = timeSpentSec > 0 ? Math.round(timeSpentSec / 60) + " min" : "0 min";
+          // Posledná aktivita = najnovšie odhlásenie, inak najnovšie prihlásenie.
+          sessionsSnap.docs.forEach((sd) => {
+            const sdata = sd.data();
+            const t = sdata.logoutAt || sdata.loginAt;
+            if (t && t.toDate && (!lastActivity || t.toDate() > lastActivity.toDate())) lastActivity = t;
+          });
 
           const progressSnap = await db.collection("progress").doc(codeId).get();
           if (progressSnap.exists) {
@@ -4878,7 +4928,7 @@ window.addEventListener("load", function () {
       const staleDays = generalSettingsCache.staleOrderDays || 3;
       const isStale = order.status === "pending_payment" && order.createdAt && (now - order.createdAt.toDate().getTime()) > staleDays * 24 * 3600 * 1000;
 
-      rows.push({ doc, order, codeId, codeActive, timeSpentSec, timeSpent, progressPct, quizCell, quizPassed, isStale, expiryBadge });
+      rows.push({ doc, order, codeId, codeActive, timeSpentSec, timeSpent, progressPct, quizCell, quizPassed, isStale, expiryBadge, lastActivity });
     }
 
     if (sortKey) {
@@ -4900,53 +4950,72 @@ window.addEventListener("load", function () {
     // Kým sú všetky registrácie z jedného kurzu, stĺpec s kurzom len zaberá miesto.
     document.getElementById("orders-table").classList.toggle("hide-workshop", workshopIdsSeen.size <= 1);
 
-    tbody.innerHTML = rows.length ? "" : "<tr><td colspan='10' class='hint'>Žiadne registrácie nezodpovedajú filtru.</td></tr>";
+    tbody.innerHTML = rows.length ? "" : "<tr><td colspan='11' class='hint'>Žiadne registrácie nezodpovedajú filtru.</td></tr>";
 
-    rows.forEach(({ doc, order, codeId, codeActive, timeSpent, progressPct, quizCell, isStale, expiryBadge }) => {
+    rows.forEach(({ doc, order, codeId, codeActive, timeSpent, progressPct, quizCell, isStale, expiryBadge, lastActivity }) => {
       const paymentMethodLabels = { card: "Karta", transfer: "Prevod", cash: "Hotovosť" };
       const sentHint = (label, at) => at
         ? "<span class='hint' style='display:block;'>" + label + " odoslané ✓ " + fmtWhen(at) + "</span>"
         : "";
-      const statusChip =
-        (order.status === "pending_payment"
-          ? '<span class="chip warn">Čaká na úhradu' + (isStale ? " · staré" : "") + "</span>"
-          : '<span class="chip good">Uhradené</span>' + (paymentMethodLabels[order.paymentMethod] ? " <span class='chip info'>" + paymentMethodLabels[order.paymentMethod] + "</span>" : "")) +
-        (expiryBadge ? "<br>" + expiryBadge : "") +
-        sentHint("FA", order.lastInvoiceSentAt) +
-        sentHint("POZ", order.lastPozSentAt) +
-        "<div class='row-actions' style='margin-top:.4rem;'>" +
+      // --- Stav: chip a odkedy sa čaká ---
+      const statusChip = order.status === "pending_payment"
+        ? '<span class="chip warn">Čaká na úhradu' + (isStale ? " · staré" : "") + "</span>" +
+          "<span class='cell-sub'>od " + fmtDay(order.createdAt) + (fmtAgo(order.createdAt) ? " · " + fmtAgo(order.createdAt) : "") + "</span>"
+        : '<span class="chip good">Uhradené</span>' +
+          (paymentMethodLabels[order.paymentMethod] ? " <span class='chip info'>" + paymentMethodLabels[order.paymentMethod] + "</span>" : "") +
+          "<span class='cell-sub'>" + fmtDay(order.paidAt || order.createdAt) + "</span>";
+
+      // --- Objednávka: variabilný symbol, zľavový kód, suma ---
+      const orderCell =
+        "<span class='cell-vs'>" + escapeHtml(order.variableSymbol || "—") + "</span>" +
+        "<span class='cell-sub'>" + (Number(order.amount) || 0).toFixed(2) + " €</span>" +
+        (order.couponApplied
+          ? "<span class='chip info' style='margin-top:.25rem;font-size:.68rem;'>" + escapeHtml(order.couponApplied) + "</span>"
+          : "");
+
+      // --- Priebeh: postup, strávený čas, kvíz a posledná aktivita ---
+      const progressCell =
+        progressPct +
+        (quizCell && quizCell !== "—" ? " " + quizCell : "") +
+        "<span class='cell-sub'>" + (timeSpent === "—" ? "zatiaľ neprihlásený" : timeSpent + " v kurze") +
+        (lastActivity ? " · naposledy pred " + fmtAgo(lastActivity) : "") + "</span>";
+
+      // --- Doklady a úprava údajov (vlastný stĺpec, nech nerozťahujú Stav) ---
+      const docsCell =
+        "<div class='row-actions stack'>" +
         (order.status !== "pending_payment" ?
           "<button type='button' class='act act-doc' data-send-invoice='" + doc.id + "' data-tip='" +
             (order.lastInvoiceSentAt ? "Poslať faktúru znova" : "Poslať faktúru na e-mail účastníka") + "'>" + RICO.invoice + "FA</button>" +
           "<button type='button' class='act act-doc' data-send-poz='" + doc.id + "' data-tip='" +
             (order.lastPozSentAt ? "Poslať potvrdenie o zaplatení znova" : "Poslať potvrdenie o zaplatení") + "'>" + RICO.receipt + "POZ</button>" : "") +
         "<button type='button' class='act act-neutral' data-edit-contact='" + doc.id + "' data-tip='Upraviť meno, priezvisko alebo e-mail'>" + RICO.edit + "Upraviť</button>" +
-        "</div>";
+        "</div>" +
+        sentHint("FA", order.lastInvoiceSentAt) +
+        sentHint("POZ", order.lastPozSentAt);
 
       let actionCell = "";
       if (codeId) {
         actionCell =
-          '<div class="row-actions">' +
+          '<div class="row-actions stack">' +
           '<a class="act act-neutral" href="mailto:' + encodeURIComponent(order.email) + '" data-tip="Napísať účastníkovi e-mail">' + RICO.mail + "E-mail</a>" +
           '<button type="button" class="act act-neutral" data-resend="' + escapeHtml(order.email) + '" data-tip="Poslať prístupový kód znova na e-mail">' + RICO.refresh + "Kód</button>" +
-          '<span class="act-sep"></span>' +
-          '<button type="button" class="act act-danger act-icon" data-toggle-code="' + codeId + '" data-active="' + codeActive + '" data-tip="' +
-            (codeActive ? "Deaktivovať kód — účastník sa ním už neprihlási" : "Znova aktivovať kód") + '">' + (codeActive ? RICO.lock : RICO.unlock) + "</button>" +
-          '<button type="button" class="act act-danger act-icon" data-delete-order="' + doc.id + '" data-tip="Vymazať registráciu — nedá sa vrátiť">' + RICO.trash + "</button>" +
+          // Zapnutie a vypnutie kódu sú opačné úkony — nesmú vyzerať rovnako.
+          '<button type="button" class="act ' + (codeActive ? "act-danger" : "act-good") + '" data-toggle-code="' + codeId + '" data-active="' + codeActive + '" data-tip="' +
+            (codeActive ? "Deaktivovať kód — účastník sa ním už neprihlási" : "Znova aktivovať kód") + '">' +
+            (codeActive ? RICO.lock + "Deaktivovať" : RICO.unlock + "Aktivovať") + "</button>" +
+          '<button type="button" class="act act-danger" data-delete-order="' + doc.id + '" data-tip="Vymazať registráciu — nedá sa vrátiť">' + RICO.trash + "Vymazať</button>" +
           "</div>";
       } else if (order.status === "pending_payment") {
         actionCell =
-          '<div class="row-actions">' +
-          '<button type="button" class="act act-primary" data-mark-paid="' + doc.id + '" data-tip="Potvrdiť platbu a odoslať prístupový kód">' + RICO.check + "Označiť ako uhradené</button>" +
+          '<div class="row-actions stack">' +
+          '<button type="button" class="act act-primary" data-mark-paid="' + doc.id + '" data-tip="Potvrdiť platbu a odoslať prístupový kód">' + RICO.check + "Uhradené</button>" +
           '<a class="act act-neutral" href="mailto:' + encodeURIComponent(order.email) + '" data-tip="Napísať zákazníkovi e-mail">' + RICO.mail + "E-mail</a>" +
-          '<span class="act-sep"></span>' +
-          '<button type="button" class="act act-danger act-icon" data-delete-order="' + doc.id + '" data-tip="Vymazať objednávku — nedá sa vrátiť">' + RICO.trash + "</button>" +
+          '<button type="button" class="act act-danger" data-delete-order="' + doc.id + '" data-tip="Vymazať objednávku — nedá sa vrátiť">' + RICO.trash + "Vymazať</button>" +
           "</div>";
       } else {
-        actionCell = '<div class="row-actions">' +
+        actionCell = '<div class="row-actions stack">' +
           '<a class="act act-neutral" href="mailto:' + encodeURIComponent(order.email) + '" data-tip="Napísať zákazníkovi e-mail">' + RICO.mail + "E-mail</a>" +
-          '<span class="act-sep"></span>' +
-          '<button type="button" class="act act-danger act-icon" data-delete-order="' + doc.id + '" data-tip="Vymazať registráciu — nedá sa vrátiť">' + RICO.trash + "</button>" +
+          '<button type="button" class="act act-danger" data-delete-order="' + doc.id + '" data-tip="Vymazať registráciu — nedá sa vrátiť">' + RICO.trash + "Vymazať</button>" +
           "</div>";
       }
 
@@ -4959,14 +5028,15 @@ window.addEventListener("load", function () {
         "<td>" + (codeId ? "<span class='mono code-copy' data-copy-code='" + codeId + "' title='Kliknutím skopírovať'>" + codeId + (codeActive ? "" : " (deakt.)") + "</span>" : "—") + "</td>" +
         "<td>" + escapeHtml(order.name) + "<br><span class='hint'>" + escapeHtml(order.email) + "</span></td>" +
         "<td>" + workshopTitle(order.workshopId) + "</td>" +
+        "<td>" + orderCell + "</td>" +
         "<td>" + statusChip + "</td>" +
-        "<td>" + timeSpent + "</td>" +
-        "<td>" + progressPct + "</td>" +
-        "<td>" + quizCell + "</td>" +
+        "<td>" + (expiryBadge || "<span class='hint'>—</span>") + "</td>" +
+        "<td>" + progressCell + "</td>" +
         "<td><button type='button' class='note-btn" + (noteText ? " has-note" : "") + "' data-note-btn data-tip='" +
           (noteText ? escapeHtml(noteText).replace(/'/g, "&#39;") : "Pridať poznámku") + "'>" + RICO.note + "</button>" +
           "<input type='text' class='note-input' data-note-order='" + doc.id + "' value='" + noteText.replace(/'/g, "&#39;") +
           "' placeholder='Poznámka…' style='display:none;'></td>" +
+        "<td>" + docsCell + "</td>" +
         "<td>" + actionCell + "</td>";
       tr.addEventListener("click", (e) => {
         if (e.target.closest("button, a, input")) return;
@@ -5107,7 +5177,9 @@ window.addEventListener("load", function () {
         try {
           await db.collection("accessCodes").doc(codeId).update({ active: willBeActive });
           btn.dataset.active = String(willBeActive);
-          btn.innerHTML = willBeActive ? RICO.lock : RICO.unlock;
+          btn.innerHTML = willBeActive ? RICO.lock + "Deaktivovať" : RICO.unlock + "Aktivovať";
+          btn.classList.toggle("act-danger", willBeActive);
+          btn.classList.toggle("act-good", !willBeActive);
           btn.dataset.tip = willBeActive
             ? "Deaktivovať kód — účastník sa ním už neprihlási"
             : "Znova aktivovať kód";

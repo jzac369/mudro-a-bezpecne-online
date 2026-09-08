@@ -318,25 +318,25 @@
     <p id="feedback-thanks" class="hint" style="display:none;">Ďakujeme za spätnú väzbu!</p>
   </section>
 
-  <!-- Karta lektora stojí za panelmi krokov, takže sa zobrazí na konci
+  <!-- Karta pomoci stojí za panelmi krokov, takže sa zobrazí na konci
        ktoréhokoľvek práve otvoreného kroku — teda presne tam, kde človek
        buď pokračuje, alebo sa zasekol. -->
   <section class="lektor-card" id="lektor-card">
-    <span class="lektor-ava"><span class="lektor-ini">J</span><img src="assets/lektor.jpg" alt="" onerror="this.remove()"><i class="lektor-dot"></i></span>
+    <span class="lektor-ava"><span class="lektor-ini">D</span><img src="assets/podpora.jpg" alt="" onerror="this.remove()"><i class="lektor-dot"></i></span>
     <div class="lektor-text">
-      <span class="lektor-stav" id="lektor-stav"><i></i>Lektor je teraz online</span>
+      <span class="lektor-stav" id="lektor-stav"><i></i>Sme teraz online</span>
       <h3>Neviete si s niečím rady?</h3>
-      <p>Napíšte mi priamo tu v kurze — som skutočný lektor, nie automat. Nemusíte sa báť opýtať na čokoľvek, aj viackrát.</p>
+      <p>Napíšte nám priamo tu v kurze — odpovedá skutočný človek, nie automat. Nemusíte sa báť opýtať na čokoľvek, aj viackrát.</p>
     </div>
-    <button class="btn btn-primary" type="button" data-open-chat>Napísať lektorovi</button>
+    <button class="btn btn-primary" type="button" data-open-chat>Napísať správu</button>
   </section>
 
   <p style="margin-top:2rem;"><a href="caste-otazky.html">Časté otázky a pomoc</a></p>
 </main>
 
-<a class="help-fab" href="#" role="button" aria-label="Napísať lektorovi">
-  <span class="help-fab-ava"><span class="help-fab-ini">J</span><img src="assets/lektor.jpg" alt="" onerror="this.remove()"><i class="help-fab-dot"></i></span>
-  <span class="help-fab-text"><b>Napíšte lektorovi</b><small>Jaroslav vám odpovie</small></span>
+<a class="help-fab" href="#" role="button" aria-label="Napísať nám správu">
+  <span class="help-fab-ava"><span class="help-fab-ini">D</span><img src="assets/podpora.jpg" alt="" onerror="this.remove()"><i class="help-fab-dot"></i></span>
+  <span class="help-fab-text"><b>Napíšte nám</b><small>Odpovie vám skutočný človek</small></span>
 </a>
 
 <div class="save-toast" id="save-toast">Uložené ✓</div>
@@ -810,7 +810,7 @@
       function renderReviewScreen() {
         body.innerHTML =
           "<h2 style='margin-top:0;'>Skontrolujte si svoje odpovede</h2>" +
-          "<p class='hint'>Pred odovzdaním práce lektorovi si prejdite všetky otázky — pri každej je vyznačená správna odpoveď.</p>" +
+          "<p class='hint'>Pred odovzdaním práce si prejdite všetky otázky — pri každej je vyznačená správna odpoveď.</p>" +
           breakdownHtml +
           '<button class="btn btn-primary" id="submit-work-btn" type="button" style="margin-top:1.2rem;">Odovzdať prácu</button>';
         document.getElementById("submit-work-btn").addEventListener("click", handleSubmitWork);
@@ -820,7 +820,7 @@
         body.innerHTML =
           "<div class='cert-loading'>" +
           "<div class='cert-spinner' aria-hidden='true'></div>" +
-          "<p style='font-weight:700;margin:0;'>Práca úspešne odovzdaná lektorovi.<br>Kontrolujem výsledky…</p>" +
+          "<p style='font-weight:700;margin:0;'>Práca úspešne odovzdaná.<br>Kontrolujeme výsledky…</p>" +
           "</div>";
 
         // Kvíz vyhodnocuje server (vlastná kópia otázok a správnych

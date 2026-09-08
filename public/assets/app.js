@@ -258,4 +258,45 @@ MBO.getClientInfo = function () {
   }
 })();
 
+// --- Logo z admin zóny ---
+// Hlavičky stránok majú zabudované logo zo súboru; keď si ho administrátor
+// nahradí vlastným v Nastaveniach, musí sa prejaviť aj tu. Adresa sa
+// odkladá do localStorage, aby sa logo nemenilo až po načítaní zo siete.
+(function brandLogo() {
+  const KEY = "mbo_logo_url";
+  const cfg = window.FIREBASE_CONFIG || {};
+
+  function apply(url) {
+    if (!url) return;
+    document.querySelectorAll(".brand-logo, .ds-logo").forEach((img) => {
+      if (img.getAttribute("src") === url) return;
+      const fallback = img.getAttribute("src");
+      img.addEventListener("error", function onErr() {
+        // Keď nahraté logo z akéhokoľvek dôvodu nenačíta, vrátime pôvodné —
+        // hlavička nesmie zostať prázdna.
+        img.removeEventListener("error", onErr);
+        img.src = fallback;
+        try { localStorage.removeItem(KEY); } catch (e) { /* nevadí */ }
+      });
+      img.src = url;
+    });
+  }
+
+  try { apply(localStorage.getItem(KEY)); } catch (e) { /* nevadí */ }
+
+  if (!cfg.projectId || !cfg.apiKey) return;
+  const url = "https://firestore.googleapis.com/v1/projects/" + cfg.projectId +
+    "/databases/(default)/documents/settings/public?key=" + cfg.apiKey;
+  fetch(url)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      const value = data && data.fields && data.fields.orgLogoUrl && data.fields.orgLogoUrl.stringValue;
+      try {
+        if (value) { localStorage.setItem(KEY, value); } else { localStorage.removeItem(KEY); }
+      } catch (e) { /* nevadí */ }
+      if (value) apply(value);
+    })
+    .catch(() => { /* bez siete zostane logo zo súboru */ });
+})();
+
 window.MBO = MBO;

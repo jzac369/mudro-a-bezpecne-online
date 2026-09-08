@@ -1,5 +1,5 @@
-// Widget "Napíšte lektorovi" — živý chat s lektorom (alebo zanechanie správy,
-// keď lektor nie je online). Samostatný skript, zapája sa na stránky, ktoré
+// Widget "Napíšte nám" — živý chat so skutočným človekom (alebo zanechanie
+// správy, keď nikto nie je online). Samostatný skript, zapája sa na stránky, ktoré
 // majú <a class="help-fab"> a majú načítané firebase-app/auth/firestore
 // (compat) + assets/firebase-config.js pred týmto súborom.
 (function () {
@@ -8,7 +8,7 @@
   // Za chatom je skutočný lektor, nie anonymná podpora — meno a tvár sú to,
   // čo z tlačidla robí človeka. Fotka sa doplní neskôr; kým súbor neexistuje,
   // sa obrázok ticho odstráni a zostanú iniciálky.
-  const LECTURER = { name: "Jaroslav", initials: "J", photo: "assets/lektor.jpg" };
+  const SUPPORT = { name: "Podpora DigiStart", initials: "D", photo: "assets/podpora.jpg" };
 
   const PRESENCE_STALE_MS = 90 * 1000;
   const STORAGE_CHAT_ID = "mbo_chat_id";
@@ -23,8 +23,8 @@
 
   function avatarHtml(cls) {
     return "<span class='mbo-ava " + (cls || "") + "'>" +
-      "<span class='mbo-ava-ini'>" + LECTURER.initials + "</span>" +
-      "<img src='" + LECTURER.photo + "' alt='' onerror='this.remove()'>" +
+      "<span class='mbo-ava-ini'>" + SUPPORT.initials + "</span>" +
+      "<img src='" + SUPPORT.photo + "' alt='' onerror='this.remove()'>" +
       "<i class='mbo-ava-dot'></i></span>";
   }
 
@@ -57,7 +57,7 @@
       .mbo-chat-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem; }
       .mbo-chat-head-titles { display: flex; align-items: center; gap: .65rem; }
       .mbo-chat-head-titles h3 { color: #fff; margin: 0; font-size: .92rem; font-weight: 800; line-height: 1.25; }
-      /* Avatar lektora — kým fotka nie je nahraná, zostanú iniciálky. */
+      /* Avatar — kým fotka nie je nahraná, zostanú iniciálky. */
       .mbo-ava {
         position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%;
         background: linear-gradient(160deg, #12554a, #0c3f37); color: #fff;
@@ -168,13 +168,13 @@
     panel.innerHTML =
       "<div class='mbo-chat-head'>" +
       "<div class='mbo-chat-head-row'>" +
-      "<div class='mbo-chat-head-titles'>" + avatarHtml("") + "<div><h3>" + LECTURER.name + "</h3><span class='mbo-chat-pill' id='mbo-chat-pill'></span></div></div>" +
+      "<div class='mbo-chat-head-titles'>" + avatarHtml("") + "<div><h3>" + SUPPORT.name + "</h3><span class='mbo-chat-pill' id='mbo-chat-pill'></span></div></div>" +
       "<button type='button' class='mbo-chat-close' aria-label='Zavrieť'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg></button>" +
       "</div>" +
       "</div>" +
       "<div class='mbo-chat-status' id='mbo-chat-status'></div>" +
       "<div class='mbo-chat-body' id='mbo-chat-body'></div>" +
-      "<div class='mbo-chat-typing' id='mbo-chat-typing' style='display:none;'>Lektor píše…</div>" +
+      "<div class='mbo-chat-typing' id='mbo-chat-typing' style='display:none;'>Píšeme…</div>" +
       "<div class='mbo-chat-form' id='mbo-chat-form'></div>" +
       "<div class='mbo-chat-send-row' id='mbo-chat-send-row' style='display:none;'>" +
       "<input type='text' id='mbo-chat-input' placeholder='Napíšte svoju správu...'>" +
@@ -245,22 +245,22 @@
       statusEl.className = "mbo-chat-status " + (adminOnline ? "online" : "offline");
       statusEl.innerHTML = (adminOnline ? CHAT_OK_ICON : CLOCK_ICON) + "<span>" + (adminOnline
         ? "Píšete skutočnému človeku, nie automatu."
-        : "Napíšte pokojne teraz — odpoviem hneď, ako budem späť.") + "</span>";
+        : "Napíšte pokojne teraz — ozveme sa hneď, ako budeme späť.") + "</span>";
 
       pillEl.className = "mbo-chat-pill " + (adminOnline ? "online" : "offline");
       pillEl.innerHTML = "<span class='mbo-dot'></span>" +
-        (adminOnline ? "Online — odpoviem hneď" : "Teraz nie som pri počítači");
+        (adminOnline ? "Online — odpovieme hneď" : "Teraz nie sme pri počítači");
       panel.classList.toggle("lektor-offline", !adminOnline);
 
-      // Karta lektora v kurze ukazuje ten istý stav ako panel — inak by
-      // sľubovala "som online", aj keď lektor pri počítači nie je.
+      // Karta v kurze ukazuje ten istý stav ako panel — inak by sľubovala
+      // "sme online", aj keď pri počítači nikto nie je.
       const card = document.getElementById("lektor-card");
       if (card) {
         card.classList.toggle("offline", !adminOnline);
         const stav = document.getElementById("lektor-stav");
         if (stav) {
           stav.innerHTML = "<i></i>" + (adminOnline
-            ? "Lektor je teraz online"
+            ? "Sme teraz online"
             : "Lektor teraz nie je pri počítači");
         }
       }

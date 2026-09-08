@@ -385,7 +385,8 @@
         document.getElementById("pay-amount").textContent = result.data.amount + " €";
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;
         document.getElementById("pay-iban").innerHTML =
-          (generalSettings.invoiceIban || "SK50 8330 0000 0025 0342 5536") + " <span class='hint' style='font-weight:400;'>(Fio banka)</span>";
+          (generalSettings.invoiceIban || "SK50 8330 0000 0025 0342 5536") +
+          "<span class='hint' style='font-weight:400;display:block;'>Fio banka</span>";
         const contactParts = [
           generalSettings.invoiceEmail ? "e-mail: " + generalSettings.invoiceEmail : null,
           generalSettings.invoicePhone ? "tel.: " + generalSettings.invoicePhone : null,
@@ -397,7 +398,7 @@
         document.getElementById("step-payment").style.display = "block";
         setupPayment(result.data.orderId, result.data.cardPaymentAvailable);
       } catch (err) {
-        errorEl.textContent = "Objednávku sa nepodarilo vytvoriť. Skúste to prosím znova, alebo nám napíšte cez tlačidlo „Napíšte lektorovi“ či na info@digistart.sk.";
+        errorEl.textContent = "Objednávku sa nepodarilo vytvoriť. Skúste to prosím znova, alebo nám napíšte cez tlačidlo „Napíšte nám“ či na info@digistart.sk.";
         errorEl.style.display = "block";
         submitBtn.disabled = false;
         submitBtn.textContent = submitLabel;

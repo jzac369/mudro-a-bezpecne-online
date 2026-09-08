@@ -160,6 +160,9 @@ exports.syncPublicSettings = onDocumentWritten("settings/general", async (event)
     invoiceIban: after.invoiceIban || "",
     invoiceEmail: after.invoiceEmail || "",
     invoicePhone: after.invoicePhone || "",
+    // Logo potrebujú aj neprihlásené stránky (hlavička webu), preto patrí
+    // medzi verejné údaje — inak by sa nahraté logo prejavilo len na certifikáte.
+    orgLogoUrl: after.orgLogoUrl || "",
   });
 });
 
