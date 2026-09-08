@@ -225,6 +225,8 @@
   .act-hard { border-radius:7px; min-width:7.1rem; justify-content:center; }
   .act-line { display:flex; gap:.35rem; flex-wrap:wrap; align-items:center; }
   .act-line + .act-line { margin-top:.35rem; }
+  /* Nezvratné úkony držia pravý okraj, oddelené od bežných akcií. */
+  .act-hard-group { display:flex; gap:.35rem; margin-left:auto; padding-left:1.2rem; }
   /* Akcie pod sebou — v jednom rade sa štyri tlačidlá rozbiehali do šírky
      a oko muselo pri každom riadku hľadať znova. */
   .row-actions.stack { flex-direction:column; align-items:stretch; gap:.25rem; }
@@ -268,6 +270,11 @@
   /* Stĺpec s kurzom nemá čo ukazovať, kým sú všetky registrácie z jedného kurzu. */
   #orders-table.hide-workshop th:nth-child(4), #orders-table.hide-workshop td:nth-child(4) { display:none; }
   #orders-table td { vertical-align:top; }
+  /* Šesť tlačidiel v jednom rade potrebuje svoju šírku; tabuľka sa preto
+     radšej posúva vodorovne, než by sa riadky lámali do niekoľkých pásov. */
+  #orders-table { min-width:2060px; }
+  /* Názov kurzu sa nemá zalamovať doprostred slova. */
+  #orders-table td:nth-child(4) { white-space:nowrap; }
 
   .charts-grid { display:grid; grid-template-columns:1.6fr 1fr; gap:1.2rem; margin-bottom:1.5rem; }
   @media (max-width:1000px) { .charts-grid { grid-template-columns:1fr; } }
@@ -780,14 +787,17 @@
             <div class="field" style="flex:1 1 auto;min-width:260px;">
               <label>Stav</label>
               <div class="fchips" id="status-chips">
-                <button type="button" class="fchip on" data-status="">Všetky <b id="cnt-all">0</b></button>
-                <button type="button" class="fchip" data-status="pending_payment">Čaká na úhradu <b id="cnt-pending">0</b></button>
-                <button type="button" class="fchip" data-status="code_sent">Kód odoslaný <b id="cnt-sent">0</b></button>
+                <button type="button" class="fchip on" data-status="" title="Všetky registrácie">Všetky <b data-cnt="">0</b></button>
+                <button type="button" class="fchip" data-status="pending_payment" title="Objednávky, ktoré ešte neboli uhradené">Čaká na úhradu <b data-cnt="pending_payment">0</b></button>
+                <button type="button" class="fchip" data-status="code_sent" title="Uhradené objednávky s vydaným prístupovým kódom">Kód odoslaný <b data-cnt="code_sent">0</b></button>
+                <button type="button" class="fchip" data-status="stale" title="Neuhradené dlhšie, než je hranica v Nastaveniach">Dlho nezaplatené <b data-cnt="stale">0</b></button>
+                <button type="button" class="fchip" data-status="never" title="Majú kód, ale do kurzu sa ešte ani raz neprihlásili">Neprihlásení <b data-cnt="never">0</b></button>
+                <button type="button" class="fchip" data-status="done" title="Prešli kvízom alebo dokončili celý kurz">Dokončili kurz <b data-cnt="done">0</b></button>
+                <button type="button" class="fchip" data-status="expiring" title="Kódu vyprší platnosť do 30 dní — vhodné na ponuku predĺženia">Vyprší do 30 dní <b data-cnt="expiring">0</b></button>
+                <button type="button" class="fchip" data-status="inactive" title="Deaktivované prístupové kódy">Deaktivované <b data-cnt="inactive">0</b></button>
               </div>
               <select id="filter-status" style="display:none;">
                 <option value="">Všetky</option>
-                <option value="pending_payment">Čaká na úhradu</option>
-                <option value="code_sent">Kód odoslaný</option>
               </select>
             </div>
             <div class="field">
@@ -834,19 +844,19 @@
                 <tr>
                   <th style="width:2rem;"><input type="checkbox" id="select-all-orders" style="width:auto;"></th>
                   <th style="width:5.5rem;">Kód</th>
-                  <th data-sort="name" style="min-width:10rem;">Účastník <span class="arrow"></span></th>
-                  <th data-sort="workshopId" style="width:9rem;">Kurz <span class="arrow"></span></th>
+                  <th data-sort="name" style="width:9rem;">Účastník <span class="arrow"></span></th>
+                  <th data-sort="workshopId" style="width:13rem;">Kurz <span class="arrow"></span></th>
                   <th style="width:7rem;">Objednávka</th>
                   <th style="width:6.5rem;">Zľavový kód</th>
                   <th data-sort="status" style="width:9rem;">Stav <span class="arrow"></span></th>
                   <th style="width:6.5rem;">Platnosť kódu</th>
                   <th data-sort="timeSpentSec" style="width:9.5rem;">Priebeh <span class="arrow"></span></th>
                   <th style="width:3.2rem;">Pozn.</th>
-                  <th style="width:6.5rem;">Doklady</th>
-                  <th>Akcia</th>
+                  <th style="width:9rem;">Doklady</th>
+                  <th style="width:36rem;">Akcia</th>
                 </tr>
               </thead>
-              <tbody id="orders-body"><tr><td colspan="10" class="hint">Načítavam registrácie…</td></tr></tbody>
+              <tbody id="orders-body"><tr><td colspan="12" class="hint">Načítavam registrácie…</td></tr></tbody>
             </table>
           </div>
           <button class="btn btn-secondary" id="load-more" style="margin-top:1rem;">Načítať ďalšie</button>
@@ -1852,7 +1862,7 @@ window.addEventListener("load", function () {
   });
 
   // ---------- Sekcia Platby (Stripe + bankový prevod, oddelene) ----------
-  const PAYMENT_METHOD_LABELS_PLATBY = { card: "Karta", transfer: "Bankový prevod", cash: "Hotovosť" };
+  const PAYMENT_METHOD_LABELS_PLATBY = { card: "Karta", transfer: "Bankový prevod", cash: "Hotovosť", free: "Zadarmo" };
 
   function loadPlatby() {
     const range = document.getElementById("platby-range");
@@ -4863,7 +4873,10 @@ window.addEventListener("load", function () {
     tbody.innerHTML = "<tr><td colspan='12' class='hint'>Načítavam registrácie…</td></tr>";
 
     let paid = 0, revenue = 0, completed = 0, todayCount = 0;
-    let cntPending = 0, cntSent = 0;
+    // Počty pri čipoch sa rátajú vždy zo všetkých registrácií, nie len z
+    // práve zobrazených — inak by čip ukazoval nulu presne vtedy, keď je
+    // odfiltrovaný.
+    const counts = { "": 0, pending_payment: 0, code_sent: 0, stale: 0, never: 0, done: 0, expiring: 0, inactive: 0 };
     const workshopIdsSeen = new Set();
     const now = Date.now();
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
@@ -4875,16 +4888,15 @@ window.addEventListener("load", function () {
       const order = doc.data();
       allOrders.push(order);
       if (order.status !== "pending_payment") { paid++; revenue += order.amount || 0; }
-      if (order.status === "pending_payment") cntPending++; else cntSent++;
       if (order.workshopId) workshopIdsSeen.add(order.workshopId);
       if (order.createdAt && order.createdAt.toDate() >= todayStart) todayCount++;
 
-      if (statusFilter && order.status !== statusFilter) continue;
       if (workshopFilter && order.workshopId !== workshopFilter) continue;
       const haystack = (order.name + " " + order.email + " " + (order.adminNote || "")).toLowerCase();
       if (searchQuery && !haystack.includes(searchQuery)) continue;
 
       let codeId = null, codeActive = true, timeSpentSec = 0, timeSpent = "—", progressPct = "—", quizCell = "—", quizPassed = null, expiryBadge = "", lastActivity = null;
+      let daysToExpiry = null, courseDone = false;
 
       try {
         const codeSnap = await db.collection("accessCodes").where("orderId", "==", doc.id).limit(1).get();
@@ -4896,6 +4908,7 @@ window.addEventListener("load", function () {
             const expiresAt = new Date(codeDataRow.createdAt.toDate().getTime() + generalSettingsCache.codeValidityDays * 24 * 3600 * 1000);
             const daysLeft = Math.ceil((expiresAt.getTime() - now) / (24 * 3600 * 1000));
             const dateStr = expiresAt.toLocaleDateString("sk-SK");
+            daysToExpiry = daysLeft;
             // Vždy je vidieť konkrétny dátum; upozornenie sa pridáva len vtedy,
             // keď je platnosť na spadnutie alebo už uplynula.
             if (daysLeft < 0) {
@@ -4923,6 +4936,7 @@ window.addEventListener("load", function () {
             if (Number.isInteger(pdata.courseIndex)) {
               const reached = pdata.courseIndex + 1;
               const coursePct = Math.round((reached / COURSE_TOTAL) * 100);
+              courseDone = !!pdata.courseDone;
               progressPct = pdata.courseDone
                 ? '<span class="chip good">Kurz dokončený</span>'
                 : '<span class="chip warn">Kurz ' + reached + '/' + COURSE_TOTAL + ' (' + coursePct + ' %)</span>';
@@ -4948,6 +4962,20 @@ window.addEventListener("load", function () {
       const staleDays = generalSettingsCache.staleOrderDays || 3;
       const isStale = order.status === "pending_payment" && order.createdAt && (now - order.createdAt.toDate().getTime()) > staleDays * 24 * 3600 * 1000;
 
+      // Do ktorých rýchlych filtrov registrácia patrí.
+      const inChip = {
+        "": true,
+        pending_payment: order.status === "pending_payment",
+        code_sent: order.status !== "pending_payment",
+        stale: !!isStale,
+        never: !!codeId && timeSpentSec === 0,
+        done: courseDone || quizPassed === true,
+        expiring: daysToExpiry !== null && daysToExpiry >= 0 && daysToExpiry <= 30,
+        inactive: !!codeId && !codeActive,
+      };
+      Object.keys(counts).forEach((k) => { if (inChip[k]) counts[k]++; });
+      if (statusFilter && !inChip[statusFilter]) continue;
+
       rows.push({ doc, order, codeId, codeActive, timeSpentSec, timeSpent, progressPct, quizCell, quizPassed, isStale, expiryBadge, lastActivity });
     }
 
@@ -4964,16 +4992,16 @@ window.addEventListener("load", function () {
       });
     }
 
-    document.getElementById("cnt-all").textContent = snap.docs.length;
-    document.getElementById("cnt-pending").textContent = cntPending;
-    document.getElementById("cnt-sent").textContent = cntSent;
+    document.querySelectorAll("#status-chips [data-cnt]").forEach((el) => {
+      el.textContent = counts[el.dataset.cnt] || 0;
+    });
     // Kým sú všetky registrácie z jedného kurzu, stĺpec s kurzom len zaberá miesto.
     document.getElementById("orders-table").classList.toggle("hide-workshop", workshopIdsSeen.size <= 1);
 
     tbody.innerHTML = rows.length ? "" : "<tr><td colspan='12' class='hint'>Žiadne registrácie nezodpovedajú filtru.</td></tr>";
 
     rows.forEach(({ doc, order, codeId, codeActive, timeSpent, progressPct, quizCell, isStale, expiryBadge, lastActivity }) => {
-      const paymentMethodLabels = { card: "Karta", transfer: "Prevod", cash: "Hotovosť" };
+      const paymentMethodLabels = { card: "Karta", transfer: "Prevod", cash: "Hotovosť", free: "Zadarmo" };
       const sentHint = (label, at) => at
         ? "<span class='hint' style='display:block;'>" + label + " odoslané ✓ " + fmtWhen(at) + "</span>"
         : "";
@@ -5025,32 +5053,29 @@ window.addEventListener("load", function () {
           '<a class="act act-info act-eq" href="mailto:' + encodeURIComponent(order.email) + '" data-tip="Napísať účastníkovi e-mail">' + RICO.mail + "E-mail</a>" +
           '<button type="button" class="act act-warn act-eq" data-resend="' + escapeHtml(order.email) + '" data-tip="Poslať prístupový kód znova na e-mail">' + RICO.refresh + "Kód</button>" +
           '<button type="button" class="act act-neutral act-eq" data-edit-contact="' + doc.id + '" data-tip="Upraviť meno, priezvisko alebo e-mail">' + RICO.edit + "Upraviť</button>" +
-          "</div>" +
           // Zapnutie a vypnutie kódu sú opačné úkony — nesmú vyzerať rovnako.
-          '<div class="act-line">' +
+          '<span class="act-hard-group">' +
           '<button type="button" class="act act-hard ' + (codeActive ? "act-danger" : "act-good") + '" data-toggle-code="' + codeId + '" data-active="' + codeActive + '" data-tip="' +
             (codeActive ? "Deaktivovať kód — účastník sa ním už neprihlási (potvrdzuje sa heslom)" : "Znova aktivovať kód (potvrdzuje sa heslom)") + '">' +
             (codeActive ? RICO.lock + "Deaktivovať" : RICO.unlock + "Aktivovať") + "</button>" +
           '<button type="button" class="act act-hard act-danger" data-delete-order="' + doc.id + '" data-tip="Vymazať registráciu — nedá sa vrátiť (potvrdzuje sa heslom)">' + RICO.trash + "Vymazať</button>" +
-          "</div>";
+          "</span></div>";
       } else if (order.status === "pending_payment") {
         actionCell =
           '<div class="act-line">' +
           '<button type="button" class="act act-primary act-eq" data-mark-paid="' + doc.id + '" data-tip="Potvrdiť platbu a odoslať prístupový kód">' + RICO.check + "Uhradené</button>" +
           '<a class="act act-info act-eq" href="mailto:' + encodeURIComponent(order.email) + '" data-tip="Napísať zákazníkovi e-mail">' + RICO.mail + "E-mail</a>" +
           '<button type="button" class="act act-neutral act-eq" data-edit-contact="' + doc.id + '" data-tip="Upraviť meno, priezvisko alebo e-mail">' + RICO.edit + "Upraviť</button>" +
-          "</div>" +
-          '<div class="act-line">' +
+          '<span class="act-hard-group">' +
           '<button type="button" class="act act-hard act-danger" data-delete-order="' + doc.id + '" data-tip="Vymazať objednávku — nedá sa vrátiť (potvrdzuje sa heslom)">' + RICO.trash + "Vymazať</button>" +
-          "</div>";
+          "</span></div>";
       } else {
         actionCell = '<div class="act-line">' +
           '<a class="act act-info act-eq" href="mailto:' + encodeURIComponent(order.email) + '" data-tip="Napísať zákazníkovi e-mail">' + RICO.mail + "E-mail</a>" +
           '<button type="button" class="act act-neutral act-eq" data-edit-contact="' + doc.id + '" data-tip="Upraviť meno, priezvisko alebo e-mail">' + RICO.edit + "Upraviť</button>" +
-          "</div>" +
-          '<div class="act-line">' +
+          '<span class="act-hard-group">' +
           '<button type="button" class="act act-hard act-danger" data-delete-order="' + doc.id + '" data-tip="Vymazať registráciu — nedá sa vrátiť (potvrdzuje sa heslom)">' + RICO.trash + "Vymazať</button>" +
-          "</div>";
+          "</span></div>";
       }
 
       const tr = document.createElement("tr");

@@ -381,6 +381,12 @@
         const createOrder = firebase.app().functions("europe-west1").httpsCallable("createOrder");
         const result = await createOrder({ firstName, lastName, email, workshopId, participants, couponCode: coupon || null, utm, geo, client, gift });
 
+        // Pri nulovej sume už kód odišiel — druhý krok by len mätúco pýtal platbu.
+        if (result.data.free) {
+          window.location.href = "platba-uspesna.html?objednavka=" + encodeURIComponent(result.data.orderId) + "&zadarmo=1";
+          return;
+        }
+
         renderPriceBreakdown(result.data.breakdown, workshop.title, firstName + " " + lastName, participants);
         document.getElementById("pay-amount").textContent = result.data.amount + " €";
         document.getElementById("pay-vs").textContent = result.data.variableSymbol;

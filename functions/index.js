@@ -333,8 +333,22 @@ exports.createOrder = onCall(async (request) => {
     giftMessage: gift && typeof gift.message === "string" ? gift.message.slice(0, 1000) : null,
   });
 
+  // Zľava na 100 % — pýtať za takú objednávku platbu nedáva zmysel a
+  // platobná brána sumu 0 € ani neprijme. Kódy vydáme rovno.
+  let freeOrder = false;
+  if (amount <= 0) {
+    try {
+      await issueCodesForOrder(orderRef.id, "free", { freeOrder: true });
+      freeOrder = true;
+    } catch (err) {
+      // Keď vydanie zlyhá, objednávka zostane čakať a vybaví sa z admin zóny.
+      console.error("Vydanie kódov pre objednávku zadarmo zlyhalo:", err);
+    }
+  }
+
   return {
     orderId: orderRef.id,
+    free: freeOrder,
     variableSymbol,
     amount,
     // Kartu ponúkneme len vtedy, keď je platba kartou zapnutá v nastaveniach.

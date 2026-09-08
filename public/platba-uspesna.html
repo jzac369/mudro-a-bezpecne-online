@@ -106,6 +106,7 @@
   // sa len pýta, či už dorazilo — samotný návrat sem nie je dôkazom
   // zaplatenia, preto sa podľa neho nič neodomyká.
   const orderId = new URLSearchParams(location.search).get("objednavka");
+  const isFree = new URLSearchParams(location.search).get("zadarmo") === "1";
 
   function show(id) {
     ["state-waiting", "state-done", "state-slow", "state-error"].forEach((s) => {
@@ -115,6 +116,15 @@
 
   window.addEventListener("load", async () => {
     if (!orderId) { show("state-error"); return; }
+
+    // Objednávka so 100 % zľavou — nič sa neplatilo, texty o platbe by boli nezmysel.
+    if (isFree) {
+      document.querySelector("#state-done .chip").textContent = "Kurz sprístupnený";
+      document.querySelector("#state-done h1").textContent = "Hotovo! Kurz máte sprístupnený";
+      document.getElementById("waiting-note").textContent = "Pripravujem prístupový kód…";
+      document.querySelector("#state-waiting h1").textContent = "Ďakujeme, pripravujeme váš prístup";
+      document.querySelector("#state-waiting .lead").textContent = "Bude to len chvíľka.";
+    }
 
     const contactText = "Napíšte nám cez tlačidlo „Napíšte nám“ alebo na info@digistart.sk — radi pomôžeme.";
     ["done-contact", "slow-contact", "error-contact"].forEach((id) => {
