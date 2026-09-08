@@ -236,6 +236,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Pohyby stiahnuté z bankového výpisu (Fio). Zapisuje výhradne
+    // fioSync/matchBankTransactionToOrder cez Admin SDK — ID dokumentu je
+    // "ID pohybu" z banky, čo bráni dvojitému spracovaniu tej istej platby.
+    match /bankTransactions/{moveId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Metadáta záloh databázy/súborov (runBackupNow/scheduledBackup) —
     // samotný súbor zálohy je v Storage, sem sa zapisuje len záznam o ňom.
     match /backups/{backupId} {

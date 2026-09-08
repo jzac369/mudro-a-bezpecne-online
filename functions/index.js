@@ -34,6 +34,8 @@ const db = getFirestore();
 // nastavujú sa príkazom `firebase functions:secrets:set`.
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
+// Token na CITANIE bankoveho vypisu z Fio banky (internetbanking -> Nastavenia -> API).
+const FIO_API_TOKEN = defineSecret("FIO_API_TOKEN");
 
 // Písmená bez I/O — vylúčené kvôli zámene s 1/0 pri prepise kódu z papiera.
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -61,6 +63,10 @@ const DEFAULT_SETTINGS = {
   affiliateMinPayout: 20, // € — pod túto sumu sa provízia nevypláca
   affiliateTermsVersion: 1,
   affiliateTermsUrl: "partnerske-podmienky.html",
+  // --- Bankovy vypis z Fio banky ---
+  fioSyncEnabled: true,      // stahovanie vypisu kazdych 5 minut
+  fioAutoIssueEnabled: true, // vydat kody sam, ked sedi VS aj suma
+  fioLookbackDays: 14,       // ako daleko dozadu sa pytat na pohyby
 };
 
 const MAX_REMINDERS_PER_RUN = 50; // bezpečnostný strop na jedno spustenie
@@ -269,7 +275,10 @@ exports.createOrder = onCall(async (request) => {
   // vystavení faktúry), aby variabilný symbol na platobných pokynoch bol
   // od začiatku ten istý, aký bude neskôr aj na faktúre/POZ dokumente.
   const invoiceNumber = await nextDocNumber("KU", "invoiceCounters");
-  const variableSymbol = invoiceNumber.slice(2);
+  // Variabilny symbol znesie v bankovom styku najviac 10 cislic, preto z
+  // cisla faktury (KU + RRRRMMDD + poradie) vynechavame aj storocie:
+  // KU20260908001 -> 260908001. Zostava jednoznacny (poradie je denne).
+  const variableSymbol = invoiceNumber.slice(4);
 
   await orderRef.set({
     name: fullName(firstName, lastName),
@@ -3603,4 +3612,388 @@ exports.getStripePaymentsSummary = onCall({ secrets: [STRIPE_SECRET_KEY] }, asyn
     hasMore: charges.has_more,
     transactions,
   };
+});
+
+/* ==========================================================================
+   Bankový výpis z Fio banky
+   --------------------------------------------------------------------------
+   Fio neposiela webhooky — o prijatej platbe sa musíme spýtať sami. Naplánovaná
+   funkcia sa každých pár minút opýta na pohyby za posledné dni, nájde prevod,
+   ktorého variabilný symbol sedí s čakajúcou objednávkou, a vydá kódy tou istou
+   funkciou, akú volá tlačidlo "Označiť ako uhradené" v admin zóne.
+
+   Zámerne NEPOUŽÍVAME endpoint /last/ ("od poslednej zarážky"), hoci je
+   pohodlnejší: je to jednorazové čítanie a keby spracovanie po stiahnutí
+   zlyhalo, Fio už tie pohyby považuje za prevzaté a druhýkrát ich nepošle.
+   Namiesto toho sa vždy pýtame na celé posledné obdobie a duplicitám bránime
+   u seba — ID pohybu z Fia je zároveň ID dokumentu v `bankTransactions`,
+   takže ten istý prevod nemôže vydať kódy dvakrát ani pri opakovanom behu.
+
+   Token si administrátor vygeneruje v internetbankingu Fio
+   (Nastavenia -> API) a uloží príkazom:
+     firebase functions:secrets:set FIO_API_TOKEN
+   Tokenu stačí oprávnenie NA ČÍTANIE — token, ktorý vie zadávať platby,
+   nemá na serveri čo hľadať.
+   ========================================================================== */
+
+const FIO_API_BASE = "https://fioapi.fio.cz/v1/rest";
+
+function fioDateString(date) {
+  return date.getFullYear() + "-" +
+    String(date.getMonth() + 1).padStart(2, "0") + "-" +
+    String(date.getDate()).padStart(2, "0");
+}
+
+/**
+ * Vytiahne hodnotu stĺpca podľa jeho NÁZVU, nie podľa poradia.
+ *
+ * Fio vracia polia ako column0..column27 a poradie si treba pamätať z
+ * dokumentácie. Každý stĺpec však nesie aj vlastný názov ("VS", "Objem",
+ * "ID pohybu"), takže hľadanie podľa mena je odolnejšie voči omylu aj voči
+ * prípadnej zmene poradia. Názvy sú v odpovedi po česky.
+ */
+function fioColumn(tx, names) {
+  const wanted = names.map((n) => n.toLowerCase());
+  for (const key of Object.keys(tx || {})) {
+    const col = tx[key];
+    if (!col || typeof col !== "object") continue;
+    const name = String(col.name || "").trim().toLowerCase();
+    if (wanted.includes(name)) return col.value;
+  }
+  return null;
+}
+
+function normalizeFioTransaction(tx) {
+  const amount = Number(fioColumn(tx, ["objem", "částka", "ciastka"]));
+  const vsRaw = fioColumn(tx, ["vs", "variabilní symbol", "variabilný symbol"]);
+  return {
+    moveId: String(fioColumn(tx, ["id pohybu", "id operace"]) || "").trim(),
+    date: String(fioColumn(tx, ["datum", "dátum"]) || "").slice(0, 10),
+    amount: Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0,
+    currency: String(fioColumn(tx, ["měna", "mena", "currency"]) || "").toUpperCase(),
+    variableSymbol: String(vsRaw == null ? "" : vsRaw).replace(/\D/g, ""),
+    counterparty: String(fioColumn(tx, ["název protiúčtu", "nazev protiuctu"]) || "").trim(),
+    counterAccount: String(fioColumn(tx, ["protiúčet", "protiucet"]) || "").trim(),
+    message: String(fioColumn(tx, ["zpráva pro příjemce", "zprava pro prijemce"]) || "").trim(),
+    note: String(fioColumn(tx, ["komentář", "komentar", "poznámka"]) || "").trim(),
+    userIdentification: String(fioColumn(tx, ["uživatelská identifikace"]) || "").trim(),
+  };
+}
+
+async function fetchFioPeriod(token, fromDate, toDate) {
+  const url = FIO_API_BASE + "/periods/" + encodeURIComponent(token) + "/" +
+    fromDate + "/" + toDate + "/transactions.json";
+  let res;
+  try {
+    res = await fetch(url, { headers: { "accept": "application/json" } });
+  } catch (err) {
+    throw new Error("Fio API je nedostupné: " + (err && err.message ? err.message : err));
+  }
+  if (res.status === 409) {
+    // Fio pustí na jeden token jeden dotaz za 30 sekúnd.
+    throw new Error("Fio API: dotazy idú príliš rýchlo za sebou (limit je jeden za 30 sekúnd). Skúste o pol minúty.");
+  }
+  if (res.status === 401 || res.status === 403 || res.status === 404) {
+    throw new Error("Fio API odmietlo token (HTTP " + res.status + "). Overte, či je token platný a nevypršal.");
+  }
+  if (!res.ok) {
+    throw new Error("Fio API vrátilo chybu HTTP " + res.status + ".");
+  }
+  const text = await res.text();
+  if (!text.trim()) return { accountStatement: { transactionList: { transaction: [] } } };
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    throw new Error("Odpoveď Fio API sa nedá prečítať ako JSON.");
+  }
+}
+
+/**
+ * Nájde objednávku podľa variabilného symbolu.
+ *
+ * Okrem presnej zhody skúša aj skrátený symbol: variabilný symbol má v
+ * bankovom styku najviac 10 číslic a niektoré banky dlhší symbol ticho
+ * orežú. Taká zhoda sa ale NIKDY nevydá automaticky — označí sa na ručnú
+ * kontrolu, lebo skrátený symbol už nie je jednoznačný.
+ */
+async function findOrderByVariableSymbol(vs) {
+  if (!vs) return null;
+  const exact = await db.collection("orders").where("variableSymbol", "==", vs).limit(2).get();
+  if (exact.size === 1) {
+    return { id: exact.docs[0].id, order: exact.docs[0].data(), exact: true };
+  }
+  if (exact.size > 1) return { ambiguous: true };
+
+  if (vs.length >= 8) {
+    const prefixSnap = await db.collection("orders")
+      .where("variableSymbol", ">=", vs)
+      .where("variableSymbol", "<=", vs + "\uf8ff")
+      .limit(2)
+      .get();
+    if (prefixSnap.size === 1) {
+      return { id: prefixSnap.docs[0].id, order: prefixSnap.docs[0].data(), exact: false };
+    }
+    if (prefixSnap.size > 1) return { ambiguous: true };
+  }
+  return null;
+}
+
+/**
+ * Stiahne pohyby a spáruje ich s objednávkami.
+ * Vracia počty pre výpis v admin zóne aj do logu.
+ */
+async function runFioSync(token, options) {
+  const opts = options || {};
+  const settings = await getSettings();
+  const lookbackDays = Math.min(Math.max(Number(opts.days || settings.fioLookbackDays) || 14, 1), 90);
+  const to = new Date();
+  const from = new Date(to.getTime() - lookbackDays * 24 * 60 * 60 * 1000);
+
+  const data = await fetchFioPeriod(token, fioDateString(from), fioDateString(to));
+  const statement = (data && data.accountStatement) || {};
+  const list = (statement.transactionList && statement.transactionList.transaction) || [];
+
+  const result = { fetched: list.length, credits: 0, newRecords: 0, paidAutomatically: 0, forReview: 0, unmatched: 0, errors: 0 };
+
+  for (const raw of list) {
+    const tx = normalizeFioTransaction(raw);
+    if (!tx.moveId) continue;
+    if (tx.amount <= 0) continue;              // odchádzajúce platby nás nezaujímajú
+    result.credits++;
+
+    const ref = db.collection("bankTransactions").doc(tx.moveId);
+    const snap = await ref.get();
+    const existing = snap.exists ? snap.data() : null;
+    // Hotové veci sa už nikdy nespracúvajú znova; nespárované skúšame opäť,
+    // lebo objednávka mohla medzitým pribudnúť alebo sa opraviť.
+    if (existing && ["paid", "already_paid", "matched_manually", "ignored"].includes(existing.status)) continue;
+
+    const base = {
+      moveId: tx.moveId,
+      date: tx.date,
+      amount: tx.amount,
+      currency: tx.currency || "EUR",
+      variableSymbol: tx.variableSymbol || null,
+      counterparty: tx.counterparty || null,
+      counterAccount: tx.counterAccount || null,
+      message: tx.message || null,
+      note: tx.note || null,
+      userIdentification: tx.userIdentification || null,
+      seenAt: existing ? existing.seenAt : FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    if (!existing) result.newRecords++;
+
+    if (tx.currency && tx.currency !== "EUR") {
+      await ref.set(Object.assign({}, base, {
+        status: "review", reason: "Platba v inej mene než EUR.", orderId: null,
+      }), { merge: true });
+      result.forReview++;
+      continue;
+    }
+
+    const found = await findOrderByVariableSymbol(tx.variableSymbol);
+
+    if (!found) {
+      await ref.set(Object.assign({}, base, {
+        status: "unmatched",
+        reason: tx.variableSymbol ? "K variabilnému symbolu nesedí žiadna objednávka." : "Platba bez variabilného symbolu.",
+        orderId: null,
+      }), { merge: true });
+      result.unmatched++;
+      continue;
+    }
+    if (found.ambiguous) {
+      await ref.set(Object.assign({}, base, {
+        status: "review", reason: "Variabilnému symbolu zodpovedá viac objednávok.", orderId: null,
+      }), { merge: true });
+      result.forReview++;
+      continue;
+    }
+
+    const order = found.order;
+    const orderAmount = Math.round((Number(order.amount) || 0) * 100) / 100;
+
+    if (order.status !== "pending_payment") {
+      await ref.set(Object.assign({}, base, {
+        status: "already_paid",
+        reason: "Objednávka už bola vybavená skôr (" + order.status + ").",
+        orderId: found.id, orderName: order.name || null, orderAmount,
+      }), { merge: true });
+      continue;
+    }
+    if (!found.exact) {
+      await ref.set(Object.assign({}, base, {
+        status: "review",
+        reason: "Variabilný symbol sedí len čiastočne (banka ho zrejme skrátila) — potvrďte ručne.",
+        orderId: found.id, orderName: order.name || null, orderAmount,
+      }), { merge: true });
+      result.forReview++;
+      continue;
+    }
+    if (Math.abs(orderAmount - tx.amount) >= 0.01) {
+      await ref.set(Object.assign({}, base, {
+        status: "review",
+        reason: "Suma nesedí: prišlo " + tx.amount.toFixed(2) + " €, objednávka je na " + orderAmount.toFixed(2) + " €.",
+        orderId: found.id, orderName: order.name || null, orderAmount,
+      }), { merge: true });
+      result.forReview++;
+      continue;
+    }
+
+    if (settings.fioAutoIssueEnabled === false) {
+      await ref.set(Object.assign({}, base, {
+        status: "review",
+        reason: "Automatické vydávanie kódov je vypnuté v nastaveniach.",
+        orderId: found.id, orderName: order.name || null, orderAmount,
+      }), { merge: true });
+      result.forReview++;
+      continue;
+    }
+
+    try {
+      const issued = await issueCodesForOrder(found.id, "transfer", {
+        bankMoveId: tx.moveId,
+        bankPaidAt: tx.date || null,
+      });
+      await ref.set(Object.assign({}, base, {
+        status: "paid",
+        reason: null,
+        orderId: found.id, orderName: order.name || null, orderAmount,
+        codes: issued.codes || [],
+        issuedAt: FieldValue.serverTimestamp(),
+      }), { merge: true });
+      result.paidAutomatically++;
+      console.log("Fio: objednávka " + found.id + " (VS " + tx.variableSymbol + ") uhradená, kódy vydané.");
+    } catch (err) {
+      console.error("Fio: vydanie kódov zlyhalo pre objednávku " + found.id + ":", err);
+      await ref.set(Object.assign({}, base, {
+        status: "review",
+        reason: "Vydanie kódov zlyhalo: " + String(err && err.message ? err.message : err).slice(0, 300),
+        orderId: found.id, orderName: order.name || null, orderAmount,
+      }), { merge: true });
+      result.errors++;
+    }
+  }
+
+  await db.collection("settings").doc("fioSync").set({
+    lastRunAt: FieldValue.serverTimestamp(),
+    lastResult: result,
+    lastError: null,
+    accountIban: statement.info && statement.info.iban ? String(statement.info.iban) : null,
+  }, { merge: true });
+
+  return result;
+}
+
+async function runFioSyncGuarded(token, options) {
+  try {
+    return await runFioSync(token, options);
+  } catch (err) {
+    const message = String(err && err.message ? err.message : err).slice(0, 500);
+    await db.collection("settings").doc("fioSync").set({
+      lastRunAt: FieldValue.serverTimestamp(),
+      lastError: message,
+    }, { merge: true });
+    throw err;
+  }
+}
+
+exports.fioSync = onSchedule(
+  { schedule: "every 5 minutes", timeZone: "Europe/Bratislava", secrets: [FIO_API_TOKEN] },
+  async () => {
+    const token = (FIO_API_TOKEN.value() || "").trim();
+    if (!token) {
+      console.log("Fio: token nie je nastavený, preskakujem.");
+      return;
+    }
+    const settings = await getSettings();
+    if (settings.fioSyncEnabled === false) {
+      console.log("Fio: sťahovanie výpisu je vypnuté v nastaveniach.");
+      return;
+    }
+    const result = await runFioSyncGuarded(token);
+    if (result.paidAutomatically || result.unmatched || result.forReview) {
+      console.log("Fio výpis:", JSON.stringify(result));
+    }
+  }
+);
+
+/** Tlačidlo "Načítať pohyby teraz" v admin zóne. */
+exports.runFioSyncNow = onCall({ secrets: [FIO_API_TOKEN] }, async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže načítať bankový výpis.");
+  }
+  const token = (FIO_API_TOKEN.value() || "").trim();
+  if (!token) {
+    throw new HttpsError("failed-precondition",
+      "Token pre Fio API nie je nastavený. Nastavte ho príkazom: firebase functions:secrets:set FIO_API_TOKEN");
+  }
+  const days = Number(request.data && request.data.days) || undefined;
+  return await runFioSyncGuarded(token, { days });
+});
+
+/**
+ * Ručné priradenie prijatej platby k objednávke (keď zákazník poslal
+ * chybný variabilný symbol alebo žiadny).
+ */
+exports.matchBankTransactionToOrder = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže priradiť platbu.");
+  }
+  const { moveId, orderId } = request.data || {};
+  if (!moveId || !orderId) {
+    throw new HttpsError("invalid-argument", "Chýba platba alebo objednávka.");
+  }
+  const txRef = db.collection("bankTransactions").doc(String(moveId));
+  const txSnap = await txRef.get();
+  if (!txSnap.exists) throw new HttpsError("not-found", "Platba sa nenašla.");
+  const tx = txSnap.data();
+  if (["paid", "matched_manually"].includes(tx.status)) {
+    throw new HttpsError("failed-precondition", "Táto platba už bola priradená.");
+  }
+
+  const orderSnap = await db.collection("orders").doc(String(orderId)).get();
+  if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka sa nenašla.");
+  const order = orderSnap.data();
+
+  const issued = await issueCodesForOrder(String(orderId), "transfer", {
+    bankMoveId: String(moveId),
+    bankPaidAt: tx.date || null,
+    bankMatchedManually: true,
+  });
+
+  await txRef.set({
+    status: "matched_manually",
+    reason: null,
+    orderId: String(orderId),
+    orderName: order.name || null,
+    orderAmount: Math.round((Number(order.amount) || 0) * 100) / 100,
+    codes: issued.codes || [],
+    issuedAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  return { codes: issued.codes || [], alreadyIssued: !!issued.alreadyIssued };
+});
+
+/** Platba, ktorá s kurzami nesúvisí (vrátka, vlastný vklad, iný príjem). */
+exports.ignoreBankTransaction = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže skryť platbu.");
+  }
+  const { moveId, undo } = request.data || {};
+  if (!moveId) throw new HttpsError("invalid-argument", "Chýba platba.");
+  const ref = db.collection("bankTransactions").doc(String(moveId));
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Platba sa nenašla.");
+  if (["paid", "matched_manually"].includes(snap.data().status)) {
+    throw new HttpsError("failed-precondition", "Platba, ktorá už vydala kódy, sa skryť nedá.");
+  }
+  await ref.update({
+    status: undo ? "unmatched" : "ignored",
+    reason: undo ? "Vrátené medzi nespárované." : "Označené ako platba, ktorá sa kurzov netýka.",
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  return { status: undo ? "unmatched" : "ignored" };
 });

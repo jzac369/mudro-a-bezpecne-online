@@ -816,6 +816,24 @@
             </table>
           </div>
         </div>
+
+        <div class="card" style="margin-top:1.5rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;margin-bottom:.4rem;">
+            <h2 style="margin-bottom:0;">Bankový výpis (Fio)</h2>
+            <button class="btn btn-secondary" type="button" id="fio-refresh" style="padding:.45rem .9rem;font-size:.85rem;">Načítať pohyby teraz</button>
+          </div>
+          <p class="hint" id="fio-status" style="margin-bottom:.9rem;">Načítavam…</p>
+          <div style="overflow-x:auto;">
+            <table class="dash">
+              <thead><tr><th>Dátum</th><th>Odosielateľ</th><th>VS</th><th>Suma</th><th>Stav</th><th>Priradenie</th></tr></thead>
+              <tbody id="fio-transactions-body"><tr><td colspan="6" class="hint">Načítavam…</td></tr></tbody>
+            </table>
+          </div>
+          <p class="hint" style="margin-top:.7rem;">
+            Výpis sa sťahuje automaticky každých 5 minút. Keď variabilný symbol aj suma sedia s čakajúcou
+            objednávkou, kód sa odošle sám. Všetko ostatné čaká tu na vaše rozhodnutie.
+          </p>
+        </div>
       </section>
 
       <section class="dash-section" data-section="workshopy">
@@ -1675,10 +1693,159 @@ window.addEventListener("load", function () {
     const range = document.getElementById("platby-range");
     loadStripePayments(range.value);
     loadTransferPayments(range.value);
+    loadFioTransactions();
+    document.getElementById("fio-refresh").addEventListener("click", refreshFioNow);
     range.addEventListener("change", () => {
       loadStripePayments(range.value);
       loadTransferPayments(range.value);
     });
+  }
+
+
+  /* ---- Bankový výpis z Fio banky ---------------------------------------
+     Pohyby sťahuje na pozadí naplánovaná funkcia fioSync; tu ich len
+     zobrazujeme a dovoľujeme ručne priradiť to, čo automat nespároval
+     (typicky chybný alebo chýbajúci variabilný symbol). */
+
+  const FIO_STATUS_LABELS = {
+    paid: ["good", "Kód vydaný automaticky"],
+    matched_manually: ["good", "Priradené ručne"],
+    already_paid: ["info", "Objednávka už bola vybavená"],
+    review: ["warn", "Na kontrolu"],
+    unmatched: ["warn", "Nespárované"],
+    ignored: ["info", "Skryté"],
+  };
+
+  async function loadFioTransactions() {
+    const body = document.getElementById("fio-transactions-body");
+    const statusEl = document.getElementById("fio-status");
+    try {
+      const [txSnap, syncSnap, pendingSnap] = await Promise.all([
+        db.collection("bankTransactions").orderBy("date", "desc").limit(60).get(),
+        db.collection("settings").doc("fioSync").get(),
+        db.collection("orders").where("status", "==", "pending_payment").limit(200).get(),
+      ]);
+
+      const sync = syncSnap.exists ? syncSnap.data() : null;
+      if (!sync) {
+        statusEl.textContent = "Výpis sa zatiaľ ani raz nenačítal. Skontrolujte, či je nastavený token FIO_API_TOKEN.";
+        statusEl.style.color = "var(--warn)";
+      } else if (sync.lastError) {
+        statusEl.textContent = "Posledný pokus zlyhal: " + sync.lastError;
+        statusEl.style.color = "var(--warn)";
+      } else {
+        const when = sync.lastRunAt && sync.lastRunAt.toDate ? sync.lastRunAt.toDate().toLocaleString("sk-SK") : "—";
+        const r = sync.lastResult || {};
+        statusEl.textContent = "Naposledy načítané " + when + " — pohybov: " + (r.credits || 0) +
+          ", uhradených automaticky: " + (r.paidAutomatically || 0) +
+          ", čaká na vás: " + ((r.unmatched || 0) + (r.forReview || 0)) + ".";
+        statusEl.style.color = "";
+      }
+
+      const pending = pendingSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "sk"));
+      const options = pending.map((o) =>
+        "<option value='" + o.id + "'>VS " + escapeHtml(o.variableSymbol || "—") + " · " +
+        escapeHtml(o.name || "—") + " · " + (Number(o.amount) || 0).toFixed(2) + " €</option>"
+      ).join("");
+
+      if (txSnap.empty) {
+        body.innerHTML = "<tr><td colspan='6' class='hint'>Zatiaľ žiadne prijaté platby.</td></tr>";
+        return;
+      }
+
+      body.innerHTML = txSnap.docs.map((d) => {
+        const t = d.data();
+        const label = FIO_STATUS_LABELS[t.status] || ["info", t.status || "—"];
+        const chip = "<span class='chip " + label[0] + "'>" + escapeHtml(label[1]) + "</span>" +
+          (t.reason ? "<div class='hint' style='margin-top:.25rem;'>" + escapeHtml(t.reason) + "</div>" : "");
+
+        let assign;
+        if (t.status === "paid" || t.status === "matched_manually") {
+          assign = escapeHtml(t.orderName || "—") +
+            (t.codes && t.codes.length ? "<div class='hint mono'>" + escapeHtml(t.codes.join(", ")) + "</div>" : "");
+        } else if (t.status === "ignored") {
+          assign = "<button class='btn btn-secondary' type='button' data-fio-unignore='" + d.id +
+            "' style='padding:.3rem .7rem;font-size:.78rem;'>Vrátiť späť</button>";
+        } else if (!pending.length) {
+          assign = "<span class='hint'>Žiadne čakajúce objednávky</span>";
+        } else {
+          assign = "<div style='display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;'>" +
+            "<select data-fio-order='" + d.id + "' style='min-width:200px;padding:.3rem;font-size:.78rem;'>" +
+            options + "</select>" +
+            "<button class='btn btn-primary' type='button' data-fio-match='" + d.id +
+            "' style='padding:.3rem .7rem;font-size:.78rem;'>Priradiť</button>" +
+            "<button class='btn btn-secondary' type='button' data-fio-ignore='" + d.id +
+            "' style='padding:.3rem .7rem;font-size:.78rem;'>Skryť</button></div>";
+        }
+
+        return "<tr><td>" + escapeHtml(t.date || "—") + "</td><td>" +
+          escapeHtml(t.counterparty || "—") +
+          (t.message ? "<div class='hint'>" + escapeHtml(t.message) + "</div>" : "") +
+          "</td><td class='mono'>" + escapeHtml(t.variableSymbol || "—") + "</td><td>" +
+          (Number(t.amount) || 0).toFixed(2) + " " + escapeHtml(t.currency || "EUR") +
+          "</td><td>" + chip + "</td><td>" + assign + "</td></tr>";
+      }).join("");
+
+      body.querySelectorAll("[data-fio-match]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const moveId = btn.dataset.fioMatch;
+          const select = body.querySelector("[data-fio-order='" + moveId + "']");
+          const orderId = select && select.value;
+          if (!orderId) return;
+          if (!confirm("Priradiť platbu k tejto objednávke a odoslať prístupový kód?")) return;
+          btn.disabled = true;
+          try {
+            await functions.httpsCallable("matchBankTransactionToOrder")({ moveId, orderId });
+            logActivity("order", "Bankový prevod " + moveId + " priradený k objednávke " + orderId);
+            loadFioTransactions();
+          } catch (err) {
+            alert("Priradenie zlyhalo: " + err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      body.querySelectorAll("[data-fio-ignore], [data-fio-unignore]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const undo = !!btn.dataset.fioUnignore;
+          const moveId = undo ? btn.dataset.fioUnignore : btn.dataset.fioIgnore;
+          btn.disabled = true;
+          try {
+            await functions.httpsCallable("ignoreBankTransaction")({ moveId, undo });
+            loadFioTransactions();
+          } catch (err) {
+            alert("Nepodarilo sa uložiť: " + err.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      body.innerHTML = "<tr><td colspan='6' class='hint'>Výpis sa nepodarilo načítať.</td></tr>";
+      statusEl.textContent = "Chyba: " + err.message;
+      statusEl.style.color = "var(--warn)";
+    }
+  }
+
+  async function refreshFioNow() {
+    const btn = document.getElementById("fio-refresh");
+    const statusEl = document.getElementById("fio-status");
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = "Načítavam…";
+    statusEl.style.color = "";
+    try {
+      const res = await functions.httpsCallable("runFioSyncNow")({});
+      const r = res.data || {};
+      if (r.paidAutomatically) logActivity("order", "Fio: automaticky uhradených objednávok: " + r.paidAutomatically);
+      await loadFioTransactions();
+    } catch (err) {
+      statusEl.textContent = "Načítanie zlyhalo: " + err.message;
+      statusEl.style.color = "var(--warn)";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
   }
 
   async function loadStripePayments(days) {
