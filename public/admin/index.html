@@ -78,26 +78,32 @@
      podložka je preto kruhový prechod, ktorý sa po okrajoch stráca. */
   .sidebar-logo {
     display: block; width: auto; height: 44px; max-width: 100%;
-    padding: 10px 16px; box-sizing: content-box; border-radius: 16px;
-    background: radial-gradient(115% 120% at 50% 50%,
-      rgba(255,255,255,.97) 0%,
-      rgba(255,255,255,.94) 42%,
-      rgba(255,255,255,.60) 66%,
-      rgba(255,255,255,.22) 80%,
-      rgba(255,255,255,0) 92%);
+    /* Odsadenie je zámerne veľké — práve v ňom sa svetlo stráca. */
+    padding: 22px 30px; box-sizing: content-box;
+    background: radial-gradient(58% 62% at 50% 50%,
+      rgba(255,255,255,.96) 0%,
+      rgba(255,255,255,.90) 34%,
+      rgba(255,255,255,.62) 52%,
+      rgba(255,255,255,.28) 68%,
+      rgba(255,255,255,.08) 82%,
+      rgba(255,255,255,0) 100%);
   }
+  .sidebar-top { margin: -14px 0 -10px; }
   .sidebar-mark { display: none; }
   .dash-sidebar.collapsed .sidebar-logo { display: none; }
   .dash-sidebar.collapsed .sidebar-mark { display: block; color: #fff; }
   /* Tlačidlo bolo takmer neviditeľné — svetlé na svetlom nádychu panela. */
+  /* Predtým to bola svetlá škvrna na svetlom nádychu panela — nebolo ju
+     vidieť. Svetlé tlačidlo s tmavou šípkou sa nedá prehliadnuť. */
   .sidebar-toggle-btn {
-    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.45); border-radius: 9px;
-    width: 30px; height: 30px; flex: none;
-    display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;
-    transition: background .15s ease, border-color .15s ease;
+    background: rgba(255,255,255,.94); border: none; border-radius: 9px;
+    width: 32px; height: 32px; flex: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    color: #16375c; box-shadow: 0 2px 6px rgba(0,0,0,.28);
+    transition: background .15s ease, transform .15s ease;
   }
-  .sidebar-toggle-btn:hover { background: rgba(255,255,255,.34); border-color: #fff; }
-  .sidebar-toggle-btn svg { stroke-width: 2.6; }
+  .sidebar-toggle-btn:hover { background: #fff; transform: scale(1.06); }
+  .sidebar-toggle-btn svg { width: 18px; height: 18px; stroke-width: 3; }
   .sidebar-toggle-btn svg { width: 16px; height: 16px; transition: transform .2s ease; }
   .dash-sidebar.collapsed .sidebar-toggle-btn svg { transform: rotate(180deg); }
 
