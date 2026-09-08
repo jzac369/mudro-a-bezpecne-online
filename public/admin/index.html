@@ -280,6 +280,18 @@
   /* Šesť tlačidiel v jednom rade potrebuje svoju šírku; tabuľka sa preto
      radšej posúva vodorovne, než by sa riadky lámali do niekoľkých pásov. */
   #orders-table { min-width:2060px; }
+  /* Načítanie tabuľky trvá aj niekoľko sekúnd — musí byť jasne vidieť,
+     že sa pracuje, inak to pôsobí ako zamrznutá stránka. */
+  .tbl-loading { display:flex; align-items:center; gap:.9rem; padding:1.6rem 1.2rem; }
+  .tbl-loading .spin {
+    width:26px; height:26px; flex:none; border-radius:50%;
+    border:3px solid var(--line); border-top-color:var(--ink);
+    animation:tblspin .8s linear infinite;
+  }
+  @keyframes tblspin { to { transform:rotate(360deg); } }
+  .tbl-loading b { display:block; font-size:1rem; color:var(--ink); }
+  .tbl-loading span { display:block; font-size:.85rem; color:var(--text-mute); margin-top:.15rem; }
+  @media (prefers-reduced-motion: reduce) { .tbl-loading .spin { animation:none; } }
   /* Názov kurzu sa nemá zalamovať doprostred slova. */
   #orders-table td:nth-child(4) { white-space:nowrap; }
 
@@ -4880,7 +4892,11 @@ window.addEventListener("load", function () {
     // Načítanie detailov ku každej registrácii (kód, čas strávený, postup...)
     // beží sekvenčne a pri väčšom počte registrácií chvíľu trvá — bez tohto
     // riadku by tabuľka počas toho vyzerala prázdna/nefunkčná.
-    tbody.innerHTML = "<tr><td colspan='12' class='hint'>Načítavam registrácie…</td></tr>";
+    tbody.innerHTML =
+      "<tr><td colspan='12'><div class='tbl-loading'><div class='spin'></div>" +
+      "<div><b>Načítavam registrácie…</b>" +
+      "<span id='orders-loading-progress'>Ku každej registrácii sa dopĺňa kód, postup v kurze aj výsledok kvízu.</span>" +
+      "</div></div></td></tr>";
 
     let paid = 0, revenue = 0, completed = 0, todayCount = 0;
     // Počty pri čipoch sa rátajú vždy zo všetkých registrácií, nie len z
@@ -4893,8 +4909,15 @@ window.addEventListener("load", function () {
     const allOrders = [];
 
     const rows = [];
+    const progressEl = () => document.getElementById("orders-loading-progress");
+    let processed = 0;
     for (const doc of snap.docs) {
       if (myToken !== renderToken) return;
+      processed++;
+      if (processed % 3 === 0 || processed === snap.docs.length) {
+        const el = progressEl();
+        if (el) el.textContent = "Spracované " + processed + " z " + snap.docs.length + "…";
+      }
       const order = doc.data();
       allOrders.push(order);
       if (order.status !== "pending_payment") { paid++; revenue += order.amount || 0; }
@@ -4929,7 +4952,13 @@ window.addEventListener("load", function () {
               expiryBadge = dateStr;
             }
           }
-          const sessionsSnap = await db.collection("sessions").where("codeId", "==", codeId).get();
+          // Tri dotazy naraz namiesto troch za sebou — pri desiatkach
+          // registrácií je práve toto čakanie väčšina času načítania.
+          const [sessionsSnap, progressSnap, quizSnap] = await Promise.all([
+            db.collection("sessions").where("codeId", "==", codeId).get(),
+            db.collection("progress").doc(codeId).get(),
+            db.collection("quizResults").where("codeId", "==", codeId).orderBy("completedAt", "desc").limit(1).get(),
+          ]);
           timeSpentSec = sessionsSnap.docs.reduce((sum, s) => sum + (s.data().durationSec || 0), 0);
           timeSpent = timeSpentSec > 0 ? Math.round(timeSpentSec / 60) + " min" : "0 min";
           // Posledná aktivita = najnovšie odhlásenie, inak najnovšie prihlásenie.
@@ -4939,7 +4968,6 @@ window.addEventListener("load", function () {
             if (t && t.toDate && (!lastActivity || t.toDate() > lastActivity.toDate())) lastActivity = t;
           });
 
-          const progressSnap = await db.collection("progress").doc(codeId).get();
           if (progressSnap.exists) {
             const pdata = progressSnap.data();
             const COURSE_TOTAL = (window.COURSE_SLIDES && window.COURSE_SLIDES.length) || 35;
@@ -4955,7 +4983,6 @@ window.addEventListener("load", function () {
             }
           }
 
-          const quizSnap = await db.collection("quizResults").where("codeId", "==", codeId).orderBy("completedAt", "desc").limit(1).get();
           if (!quizSnap.empty) {
             const q = quizSnap.docs[0].data();
             quizPassed = q.passed;
