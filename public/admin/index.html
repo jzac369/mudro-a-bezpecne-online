@@ -242,6 +242,20 @@
   .modal-close { float:right; background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text-mute); }
   .session-row { display:flex; justify-content:space-between; padding:.4rem 0; border-bottom:1px solid var(--line); font-size:.88rem; }
   .workshop-settings-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1.2rem; }
+  /* Pevne tri stĺpce — na rozdiel od auto-fit sa riadky nerozbijú podľa
+     dĺžky obsahu, takže polia zostanú zarovnané pod sebou. */
+  .set-grid-3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem 1.2rem; }
+  @media (max-width: 1000px) { .set-grid-3 { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media (max-width: 640px) { .set-grid-3 { grid-template-columns:1fr; } }
+  .set-sub { font-size:.72rem; letter-spacing:.09em; text-transform:uppercase; color:var(--text-mute);
+    margin:1.4rem 0 .7rem; padding-top:1rem; border-top:1px solid var(--line); }
+  .set-sub.first { margin-top:0; padding-top:0; border-top:0; }
+  /* Prepínač na celú šírku karty — vysvetlivka pod názvom, nie vedľa
+     vstupných polí, kde robila stĺpce nerovnako vysoké. */
+  .set-switch { padding:.7rem 0; border-bottom:1px solid var(--line); margin-bottom:0; }
+  .set-switch:last-child { border-bottom:0; }
+  .set-switch label { display:flex; align-items:flex-start; gap:.6rem; font-weight:400; }
+  .set-switch .hint { display:block; margin-top:.15rem; }
   .new-reg-toast {
     position:fixed; top:1.2rem; right:1.2rem; background:var(--ink); color:#fff; padding:.8rem 1.2rem;
     border-radius:10px; font-size:.9rem; z-index:300; box-shadow:0 6px 20px rgba(0,0,0,.25);
@@ -1248,7 +1262,9 @@
           <div class="card" style="margin-bottom:1.5rem;">
             <h2>Fakturačné údaje</h2>
             <p class="hint" style="margin-bottom:1rem;">Použijú sa pri ručnom vystavení faktúry k objednávke (tlačidlo v detaile registrácie).</p>
-            <div class="workshop-settings-grid">
+
+            <p class="set-sub first">Dodávateľ</p>
+            <div class="set-grid-3">
               <div class="field">
                 <label for="s-inv-company">Názov spoločnosti</label>
                 <input type="text" id="s-inv-company" placeholder="Akadémia digitálneho vzdelávania DigiStart">
@@ -1256,6 +1272,10 @@
               <div class="field">
                 <label for="s-inv-address">Sídlo (adresa)</label>
                 <input type="text" id="s-inv-address">
+              </div>
+              <div class="field">
+                <label for="s-inv-iban">IBAN</label>
+                <input type="text" id="s-inv-iban" placeholder="SK50 8330 0000 0025 0342 5536">
               </div>
               <div class="field">
                 <label for="s-inv-ico">IČO</label>
@@ -1269,37 +1289,10 @@
                 <label for="s-inv-icdph">IČ DPH (ak ste platca)</label>
                 <input type="text" id="s-inv-icdph">
               </div>
-              <div class="field">
-                <label for="s-inv-iban">IBAN</label>
-                <input type="text" id="s-inv-iban" placeholder="SK50 8330 0000 0025 0342 5536">
-              </div>
-              <div class="field" style="border-top:1px solid var(--line);padding-top:1rem;">
-                <label style="display:flex;align-items:flex-start;gap:.6rem;font-weight:400;">
-                  <input type="checkbox" id="s-card-payment" style="width:auto;margin-top:.25rem;">
-                  <span><strong>Povoliť platbu kartou (Stripe)</strong><br>
-                  <span class="hint">Zákazníkom sa pri objednávke ponúkne aj platba kartou. Zapnite až vtedy, keď sú vo Firebase nastavené kľúče STRIPE_SECRET_KEY a STRIPE_WEBHOOK_SECRET — inak tlačidlo nebude fungovať.</span></span>
-                </label>
-              </div>
-              <div class="field" style="border-top:1px solid var(--line);padding-top:1rem;">
-                <label style="display:flex;align-items:flex-start;gap:.6rem;font-weight:400;">
-                  <input type="checkbox" id="s-fio-sync" style="width:auto;margin-top:.25rem;">
-                  <span><strong>Sťahovať bankový výpis z Fio</strong><br>
-                  <span class="hint">Každých 5 minút sa systém spýta Fio banky na prijaté platby. Vyžaduje nastavený token FIO_API_TOKEN. Interval sa mení len úpravou funkcie, nie tu.</span></span>
-                </label>
-              </div>
-              <div class="field">
-                <label style="display:flex;align-items:flex-start;gap:.6rem;font-weight:400;">
-                  <input type="checkbox" id="s-fio-auto" style="width:auto;margin-top:.25rem;">
-                  <span><strong>Vydávať kódy automaticky</strong><br>
-                  <span class="hint">Keď variabilný symbol aj suma sedia s čakajúcou objednávkou, kód sa odošle sám. Po vypnutí sa platby len zaznamenajú a čakajú na vaše potvrdenie v Platbách.</span></span>
-                </label>
-              </div>
-              <div class="field">
-                <label for="s-fio-days">Koľko dní dozadu sťahovať pohyby</label>
-                <input type="number" id="s-fio-days" min="1" max="90" style="max-width:120px;">
-                <p class="hint" style="margin:.3rem 0 0;">Bežne stačí 14. Vyššie číslo pomôže, keď systém dlhšie nebežal.</p>
-              </div>
+            </div>
 
+            <p class="set-sub">Kontakt na faktúre</p>
+            <div class="set-grid-3">
               <div class="field">
                 <label for="s-inv-email">E-mail dodávateľa</label>
                 <input type="email" id="s-inv-email" placeholder="info@digistart.sk">
@@ -1312,8 +1305,44 @@
                 <label for="s-inv-phone">Telefónne číslo</label>
                 <input type="text" id="s-inv-phone" placeholder="+421 900 000 000">
               </div>
-              <p class="hint" style="margin:0;">Čísla faktúr sa prideľujú automaticky v tvare KU + dátum + poradie v daný deň (napr. KU20260828001).</p>
             </div>
+            <p class="hint" style="margin:1rem 0 0;">Čísla faktúr sa prideľujú automaticky v tvare KU + dátum + poradie v daný deň (napr. KU20260828001).</p>
+          </div>
+
+          <div class="card" style="margin-bottom:1.5rem;">
+            <h2>Prijímanie platieb</h2>
+            <p class="hint" style="margin-bottom:1rem;">Ako môžu zákazníci zaplatiť a čo sa má diať po prijatí platby.</p>
+
+            <p class="set-sub first">Platba kartou</p>
+            <div class="field set-switch">
+              <label>
+                <input type="checkbox" id="s-card-payment" style="width:auto;margin-top:.25rem;">
+                <span><strong>Povoliť platbu kartou (Stripe)</strong>
+                <span class="hint">Zákazníkom sa pri objednávke ponúkne aj platba kartou. Zapnite až vtedy, keď sú vo Firebase nastavené kľúče STRIPE_SECRET_KEY a STRIPE_WEBHOOK_SECRET — inak tlačidlo nebude fungovať.</span></span>
+              </label>
+            </div>
+
+            <p class="set-sub">Bankový prevod — Fio banka</p>
+            <div class="field set-switch">
+              <label>
+                <input type="checkbox" id="s-fio-sync" style="width:auto;margin-top:.25rem;">
+                <span><strong>Sťahovať bankový výpis</strong>
+                <span class="hint">Každých 5 minút sa systém spýta Fio banky na prijaté platby. Vyžaduje nastavený token FIO_API_TOKEN. Interval sa mení len úpravou funkcie, nie tu.</span></span>
+              </label>
+            </div>
+            <div class="field set-switch">
+              <label>
+                <input type="checkbox" id="s-fio-auto" style="width:auto;margin-top:.25rem;">
+                <span><strong>Vydávať kódy automaticky</strong>
+                <span class="hint">Keď variabilný symbol aj suma sedia s čakajúcou objednávkou, kód sa odošle sám. Po vypnutí sa platby len zaznamenajú a čakajú na vaše potvrdenie v Platbách.</span></span>
+              </label>
+            </div>
+            <div class="field" style="margin-top:1rem;">
+              <label for="s-fio-days">Koľko dní dozadu sťahovať pohyby</label>
+              <input type="number" id="s-fio-days" min="1" max="90" style="max-width:120px;">
+              <p class="hint" style="margin:.3rem 0 0;">Bežne stačí 14. Vyššie číslo pomôže, keď systém dlhšie nebežal.</p>
+            </div>
+            <p class="hint" style="margin:1rem 0 0;">Prijaté platby a ručné párovanie nájdete v sekcii <strong>Platby</strong>.</p>
           </div>
 
           <div class="card" style="margin-bottom:1.5rem;">
@@ -1321,7 +1350,7 @@
             <div class="field">
               <label for="s-email-msg">Vlastná krátka správa / odkaz</label>
               <textarea id="s-email-msg" rows="2" style="width:100%;font:inherit;padding:.7rem;border-radius:10px;border:2px solid var(--line);"></textarea>
-              <p class="hint">Táto správa sa pošle spolu s kódom ako premenná <code>custom_message</code>. Aby sa reálne zobrazila, treba ju raz pridať aj do šablóny na stránke EmailJS (template_aspeze7) — inak sa v e-maile nezobrazí.</p>
+              <p class="hint">Pripojí sa k e-mailu s prístupovým kódom pod hlavný text. Vzhľad celého e-mailu upravíte v sekcii <strong>E-maily</strong> — správa sa tam vkladá na miesto <code>{{custom_message}}</code>.</p>
             </div>
           </div>
 
