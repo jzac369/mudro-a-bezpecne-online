@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pokyny na úhradu — Vzdelávacie kurzy DigiStart</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script defer src="assets/firebase-config.js"></script>
+<script defer src="assets/app.js"></script>
+<script defer src="assets/chat-widget.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <img class="brand-logo" src="assets/logo-digistart.png" alt="Vzdelávacie kurzy DigiStart">
+    </a>
+    <div class="text-tools">
+      <button type="button" data-text-scale="down" aria-label="Zmenšiť text">A-</button>
+      <button type="button" data-text-scale="up" aria-label="Zväčšiť text">A+</button>
+    </div>
+  </div>
+</header>
+
+<main class="container" style="padding:2.5rem 1.5rem 5rem;max-width:640px;">
+
+  <div id="state-loading">
+    <p class="lead">Načítavam objednávku…</p>
+  </div>
+
+  <div id="state-notfound" style="display:none;">
+    <h1>Túto objednávku sa nám nepodarilo nájsť</h1>
+    <p class="lead">Skontrolujte prosím, či ste stránku otvorili z odkazu, ktorý sme vám poslali e-mailom. Ak ste už zaplatili, nič sa nedeje — ozvite sa nám a všetko vyriešime.</p>
+    <a class="btn btn-secondary btn-block" style="text-decoration:none;margin-top:1.5rem;" href="index.html">Späť na úvodnú stránku</a>
+  </div>
+
+  <!-- Objednávka je už zaplatená — človek sa sem vrátil zo staršieho odkazu. -->
+  <div id="state-paid" style="display:none;">
+    <span class="chip good" style="margin-bottom:1rem;">Uhradené</span>
+    <h1>Táto objednávka je už zaplatená</h1>
+    <p class="lead">Prístupový kód sme vám poslali e-mailom<span id="paid-email"></span>. Ak vám neprišiel, pozrite sa prosím aj do priečinka Spam.</p>
+    <a class="btn btn-primary btn-block" style="text-decoration:none;margin-top:1.5rem;" href="prihlasenie.html">Prihlásiť sa do kurzu</a>
+  </div>
+
+  <div id="state-pending" style="display:none;">
+    <span class="chip warn" style="margin-bottom:1rem;">Čaká na úhradu</span>
+    <h1>Objednávka je zaznamenaná</h1>
+    <p class="lead">Ďakujeme! Zostáva už len poslať platbu z internetbankingu. Prístupový kód vám príde e-mailom automaticky, hneď ako peniaze prídu na účet.</p>
+
+    <div class="pay-mailed" id="mail-confirm" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      <p>Pokyny na platbu sme poslali na <strong id="mail-address"></strong>. Nemusíte si ich teda nikam prepisovať.</p>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.8rem;">Platobné údaje</h2>
+      <table class="pay-table">
+        <tr><td>Suma</td><td><strong id="pay-amount">—</strong></td></tr>
+        <tr><td>Číslo účtu (IBAN)</td><td><strong id="pay-iban">—</strong><button type="button" class="copy-btn" data-copy-from="pay-iban">Kopírovať</button></td></tr>
+        <tr><td>Variabilný symbol</td><td><strong id="pay-vs">—</strong><button type="button" class="copy-btn" data-copy-from="pay-vs">Kopírovať</button></td></tr>
+        <tr><td>Poznámka pre príjemcu</td><td><strong id="pay-note">—</strong></td></tr>
+      </table>
+      <p class="hint" style="margin-top:.9rem;">Variabilný symbol je dôležitý — podľa neho vašu platbu nájdeme a kód vám odíde automaticky.</p>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.8rem;">Čo bude nasledovať</h2>
+      <ol style="margin:0;padding-left:1.2rem;line-height:1.7;">
+        <li style="margin-bottom:.5rem;">Zaplatíte z internetbankingu, v mobilnej aplikácii banky alebo na pobočke.</li>
+        <li style="margin-bottom:.5rem;">Platba k nám dorazí — prevod medzi bankami trvá zvyčajne do jedného pracovného dňa.</li>
+        <li>Systém ju spáruje sám a pošle vám e-mailom 6-miestny prístupový kód.</li>
+      </ol>
+    </div>
+
+    <div class="card" style="margin-top:1.5rem;">
+      <h2 style="margin-bottom:.5rem;font-size:1.05rem;">Neviete si rady?</h2>
+      <p class="hint" style="margin:0;">Napíšte lektorovi cez zelené tlačidlo vpravo dole alebo na <a href="mailto:info@digistart.sk">info@digistart.sk</a>. Radi pomôžeme.</p>
+    </div>
+
+    <a class="btn btn-secondary btn-block" style="text-decoration:none;margin-top:1.5rem;" href="index.html">Späť na úvodnú stránku</a>
+  </div>
+
+</main>
+
+<a class="help-fab" href="#" role="button" aria-label="Napísať lektorovi">
+  <span class="help-fab-ava"><span class="help-fab-ini">J</span><img src="assets/lektor.jpg" alt="" onerror="this.remove()"><i class="help-fab-dot"></i></span>
+  <span class="help-fab-text"><b>Napíšte lektorovi</b><small>Jaroslav vám odpovie</small></span>
+</a>
+
+<script>
+  const orderId = new URLSearchParams(location.search).get("o");
+
+  function show(id) {
+    ["state-loading", "state-notfound", "state-paid", "state-pending"].forEach((s) => {
+      document.getElementById(s).style.display = s === id ? "block" : "none";
+    });
+  }
+
+  window.addEventListener("load", async () => {
+    if (!orderId) { show("state-notfound"); return; }
+    try {
+      const db = firebase.firestore();
+      const [res, settingsSnap] = await Promise.all([
+        firebase.app().functions("europe-west1").httpsCallable("getOrderPaymentStatus")({ orderId }),
+        db.collection("settings").doc("public").get(),
+      ]);
+      const d = res.data || {};
+      const settings = settingsSnap.exists ? settingsSnap.data() : {};
+
+      if (d.paid) {
+        document.getElementById("paid-email").textContent = d.emailMasked ? " na adresu " + d.emailMasked : "";
+        show("state-paid");
+        return;
+      }
+
+      document.getElementById("pay-amount").textContent = (d.amount || 0) + " €";
+      document.getElementById("pay-iban").textContent = settings.invoiceIban || "";
+      document.getElementById("pay-vs").textContent = d.variableSymbol || "";
+      document.getElementById("pay-note").textContent = d.buyerName || "";
+      if (d.instructionsSent && d.emailMasked) {
+        document.getElementById("mail-address").textContent = d.emailMasked;
+        document.getElementById("mail-confirm").style.display = "flex";
+      }
+      show("state-pending");
+    } catch (err) {
+      console.error(err);
+      show("state-notfound");
+    }
+  });
+
+  // Prepisovanie 24-znakového IBAN-u do mobilu je presne to miesto, kde
+  // vznikajú preklepy — a preklep vo variabilnom symbole znamená, že platba
+  // spadne medzi nespárované a kód nepríde sám.
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-copy-from]");
+    if (!btn) return;
+    const text = (document.getElementById(btn.dataset.copyFrom).textContent || "").trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text.replace(/\s+/g, ""));
+      const original = btn.textContent;
+      btn.textContent = "Skopírované ✓";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = original; btn.classList.remove("copied"); }, 1800);
+    } catch (err) {
+      // Bez povolenia na schránku (staršie prehliadače) aspoň text označíme,
+      // nech ho vie človek skopírovať sám.
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById(btn.dataset.copyFrom));
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  });
+</script>
+
+</body>
+</html>

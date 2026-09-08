@@ -142,6 +142,24 @@ label {
 .brand svg { width: 28px; height: 28px; color: var(--accent); flex: none; }
 /* V hlavičke je logo, nie text — značku má človek spoznať na prvý pohľad. */
 .brand-logo { height: 44px; width: auto; display: block; }
+/* Platobné údaje a tlačidlo na skopírovanie čísla účtu. */
+.pay-table { width: 100%; border-collapse: collapse; }
+.pay-table td { padding: .5rem 0; vertical-align: middle; }
+.pay-table td:first-child { color: var(--text-mute); }
+.pay-table td:last-child { text-align: right; }
+.copy-btn {
+  margin-left: .6rem; padding: .28rem .7rem; font-size: .8rem; font-weight: 700;
+  border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface);
+  color: var(--ink); white-space: nowrap;
+}
+.copy-btn:hover { border-color: var(--ink-soft); }
+.copy-btn.copied { border-color: var(--good); color: var(--good); background: var(--good-bg); }
+.pay-mailed {
+  display: flex; gap: .8rem; align-items: flex-start; margin-top: 1.5rem;
+  background: var(--good-bg); border-radius: 12px; padding: .9rem 1.1rem;
+}
+.pay-mailed svg { width: 22px; height: 22px; flex: none; color: var(--good); margin-top: .15rem; }
+.pay-mailed p { margin: 0; font-size: .95rem; line-height: 1.55; color: var(--good); }
 /* Zoznam "Čo dostanete" na objednávke — odrážky ako zelené fajky. */
 .incl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
 .incl-list li { position: relative; padding-left: 1.8rem; line-height: 1.5; }

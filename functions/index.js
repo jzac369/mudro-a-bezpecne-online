@@ -1269,6 +1269,108 @@ async function sendWelcomeSmtpEmail({ to, name, codes, workshopId, messageOverri
 // súhrn neuhradených objednávok pre admina) — všetky posielané cez SMTP.
 // Zámerne NEVYHADZUJE chybu: tieto e-maily sú vedľajší efekt inej akcie
 // (napr. rezervácie termínu), tá nesmie zlyhať len kvôli výpadku SMTP.
+/**
+ * Pošle pokyny na úhradu bankovým prevodom.
+ *
+ * Doteraz sa pri vytvorení objednávky neposielalo nič — kto zvolil prevod
+ * a zavrel okno, prišiel o IBAN aj variabilný symbol a nemal sa kam vrátiť,
+ * hoci mu to formulár sľuboval.
+ */
+async function sendPaymentInstructionsEmail({ to, name, workshopTitle, amount, iban, variableSymbol, orderUrl }) {
+  let status = "sent";
+  let errorMessage = "";
+  const row = (label, value, big) =>
+    '<tr><td style="padding:8px 0;font-size:15px;color:' + EMAIL_COLORS.muted + ';">' + escapeHtmlServer(label) +
+    '</td><td style="padding:8px 0;font-size:' + (big ? "19px" : "16px") + ';font-weight:bold;color:' +
+    EMAIL_COLORS.ink + ';text-align:right;">' + escapeHtmlServer(value) + '</td></tr>';
+
+  const body =
+    '          <tr>\n' +
+    '            <td style="padding:36px 40px 8px;">\n' +
+    '              <p style="margin:0 0 16px;font-size:17px;line-height:1.6;color:' + EMAIL_COLORS.ink + ';">Dobrý deň, <strong>' + escapeHtmlServer(name || "") + '</strong>,</p>\n' +
+    '              <p style="margin:0 0 20px;font-size:16px;line-height:1.65;color:' + EMAIL_COLORS.ink + ';">ďakujeme za objednávku kurzu <strong>' + escapeHtmlServer(workshopTitle || "") + '</strong>. Nižšie sú údaje na úhradu — kurz vám sprístupníme hneď, ako platba príde na účet.</p>\n' +
+    '              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:' + EMAIL_COLORS.paper2 + ';border-radius:12px;padding:6px 18px;">\n' +
+    row("Suma", amount + " €", true) +
+    row("IBAN", iban) +
+    row("Variabilný symbol", variableSymbol) +
+    row("Poznámka pre príjemcu", name || "") +
+    '              </table>\n' +
+    '              <p style="margin:22px 0 0;font-size:15px;line-height:1.65;color:' + EMAIL_COLORS.ink2 + ';">Variabilný symbol je dôležitý — podľa neho vašu platbu nájdeme a prístupový kód vám odíde automaticky. Prevod medzi bankami trvá zvyčajne do jedného pracovného dňa.</p>\n' +
+    (orderUrl
+      ? '              <p style="margin:18px 0 0;font-size:15px;line-height:1.65;"><a href="' + orderUrl + '" style="color:' + EMAIL_COLORS.green + ';font-weight:bold;">Znovu si zobraziť platobné údaje na stránke</a></p>\n'
+      : "") +
+    '            </td>\n' +
+    '          </tr>';
+
+  try {
+    const { transporter, cfg } = await getSmtpTransporter();
+    await transporter.sendMail(buildMailOptions(cfg, {
+      to,
+      subject: "Pokyny na úhradu — " + (workshopTitle || "kurz DigiStart"),
+      html: documentEmailShell(body, EMAIL_COLORS.accent),
+    }));
+  } catch (err) {
+    status = "failed";
+    errorMessage = String((err && err.message) || err).slice(0, 300);
+    console.error("Odoslanie pokynov na platbu zlyhalo:", err);
+  }
+
+  try {
+    await db.collection("mail").add({
+      to, docLabel: "pokyny na platbu", docNumber: variableSymbol || null, status, via: "smtp",
+      error: status === "failed" ? errorMessage : null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    console.error("Nepodarilo sa zapísať záznam o e-maile do kolekcie mail:", err);
+  }
+
+  if (status === "failed") throw new HttpsError("internal", "E-mail sa nepodarilo odoslať.");
+}
+
+/**
+ * Zákazník potvrdil, že platí prevodom — pošleme mu údaje e-mailom, aby si
+ * ich nemusel nikam prepisovať z obrazovky.
+ */
+exports.sendPaymentInstructions = onCall(async (request) => {
+  const { orderId } = request.data || {};
+  if (!orderId || typeof orderId !== "string") {
+    throw new HttpsError("invalid-argument", "Chýba číslo objednávky.");
+  }
+  await enforceRateLimit("sendPaymentInstructions", getRequestIp(request), 10, 30);
+
+  const orderRef = db.collection("orders").doc(orderId);
+  const snap = await orderRef.get();
+  if (!snap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
+  const order = snap.data();
+  if (order.status !== "pending_payment") {
+    throw new HttpsError("failed-precondition", "Táto objednávka je už vybavená.");
+  }
+
+  const settings = await getSettings();
+  const workshop = WORKSHOPS_QUIZ[order.workshopId];
+
+  await sendPaymentInstructionsEmail({
+    to: order.email,
+    name: order.firstName || order.name,
+    workshopTitle: workshop ? workshop.title : null,
+    amount: order.amount,
+    iban: settings.invoiceIban || "",
+    variableSymbol: order.variableSymbol || "",
+    // pickAllowedOrigin prijme len adresu zo zoznamu povolených — cudziu
+    // stránku do e-mailu podstrčiť nemožno.
+    orderUrl: pickAllowedOrigin(request.data && request.data.returnOrigin) + "/platba-prevodom.html?o=" + orderId,
+  });
+
+  await orderRef.update({
+    paymentMethodChosen: "transfer",
+    paymentInstructionsSentAt: FieldValue.serverTimestamp(),
+  });
+  await logOrderEvent(orderId, "Pokyny na platbu odoslané e-mailom", "systém");
+
+  return { sent: true, emailMasked: maskEmail(order.email || "") };
+});
+
 async function sendNotificationSmtpEmail({ to, name, subject, message }) {
   let status = "sent";
   let errorMessage = "";
@@ -3513,10 +3615,19 @@ exports.getOrderPaymentStatus = onCall(async (request) => {
     throw new HttpsError("not-found", "Objednávka neexistuje.");
   }
   const order = snap.data();
+  const workshop = WORKSHOPS_QUIZ[order.workshopId];
   return {
     status: order.status || null,
     paid: order.status === "code_sent",
     emailMasked: maskEmail(order.email || ""),
+    // Údaje potrebné na stránke s pokynmi na prevod. Vydávajú sa len tomu,
+    // kto pozná (neuhádnuteľné) číslo objednávky, a e-mail zostáva skrytý.
+    amount: Number(order.amount) || 0,
+    variableSymbol: order.variableSymbol || null,
+    firstName: order.firstName || null,
+    buyerName: order.name || null,
+    workshopTitle: workshop ? workshop.title : null,
+    instructionsSent: !!order.paymentInstructionsSentAt,
   };
 });
 

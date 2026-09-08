@@ -140,12 +140,16 @@
 
     <div class="card" id="pay-transfer-details" style="margin-top:1.5rem;">
       <h2 style="margin-bottom:.8rem;">Platobné údaje na prevod</h2>
-      <table style="width:100%;border-collapse:collapse;">
-        <tr><td style="padding:.4rem 0;color:var(--text-mute);">Suma</td><td style="padding:.4rem 0;font-weight:700;" id="pay-amount"></td></tr>
-        <tr><td style="padding:.4rem 0;color:var(--text-mute);">Číslo účtu (IBAN)</td><td style="padding:.4rem 0;font-weight:700;" id="pay-iban"></td></tr>
-        <tr><td style="padding:.4rem 0;color:var(--text-mute);">Variabilný symbol</td><td style="padding:.4rem 0;font-weight:700;" id="pay-vs"></td></tr>
+      <table class="pay-table">
+        <tr><td>Suma</td><td><strong id="pay-amount"></strong></td></tr>
+        <tr><td>Číslo účtu (IBAN)</td><td><strong id="pay-iban"></strong><button type="button" class="copy-btn" data-copy-from="pay-iban">Kopírovať</button></td></tr>
+        <tr><td>Variabilný symbol</td><td><strong id="pay-vs"></strong><button type="button" class="copy-btn" data-copy-from="pay-vs">Kopírovať</button></td></tr>
       </table>
       <p class="hint" style="margin-top:.8rem;">Variabilný symbol nám pomáha nájsť vašu platbu rýchlejšie — nezabudnite ho prosím uviesť.</p>
+
+      <button class="btn btn-primary btn-block" type="button" id="finish-transfer" style="margin-top:1.2rem;">Dokončiť objednávku</button>
+      <p class="hint" style="margin-top:.7rem;text-align:center;">Údaje vám zároveň pošleme e-mailom, aby ste ich nemuseli prepisovať teraz.</p>
+      <p class="hint" id="finish-transfer-error" style="display:none;color:var(--warn);margin-top:.6rem;"></p>
     </div>
 
     <div class="card" style="margin-top:1.5rem;">
@@ -401,6 +405,29 @@
     });
   });
 
+  // Prepisovanie 24-znakového IBAN-u do mobilu je presne to miesto, kde
+  // vznikajú preklepy — a preklep vo variabilnom symbole znamená, že platba
+  // spadne medzi nespárované a prístupový kód nepríde automaticky.
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-copy-from]");
+    if (!btn) return;
+    const text = (document.getElementById(btn.dataset.copyFrom).textContent || "").trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text.replace(/\s+/g, ""));
+      const original = btn.textContent;
+      btn.textContent = "Skopírované ✓";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = original; btn.classList.remove("copied"); }, 1800);
+    } catch (err) {
+      const range = document.createRange();
+      range.selectNodeContents(document.getElementById(btn.dataset.copyFrom));
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  });
+
   // Prepínanie medzi platbou kartou a prevodom + spustenie platby.
   function setupPayment(orderId, cardAvailable) {
     const cardLabel = document.getElementById("pay-method-card-label");
@@ -435,6 +462,27 @@
     cardRadio.addEventListener("change", refresh);
     transferRadio.addEventListener("change", refresh);
     refresh();
+
+    // Prevod potreboval vlastné zakončenie — doteraz sa objednávka
+    // „skončila“ tým, že si človek prepísal údaje z obrazovky a zavrel okno.
+    const finishBtn = document.getElementById("finish-transfer");
+    const finishError = document.getElementById("finish-transfer-error");
+    finishBtn.addEventListener("click", async () => {
+      finishBtn.disabled = true;
+      const label = finishBtn.textContent;
+      finishBtn.textContent = "Posielam údaje na e-mail…";
+      finishError.style.display = "none";
+      const target = "platba-prevodom.html?o=" + encodeURIComponent(orderId);
+      try {
+        const send = firebase.app().functions("europe-west1").httpsCallable("sendPaymentInstructions");
+        await send({ orderId: orderId, returnOrigin: location.origin + location.pathname.replace(/\/[^/]*$/, "") });
+      } catch (err) {
+        // Aj keď e-mail zlyhá, objednávka platí a údaje musí človek vidieť —
+        // preto ho na záverečnú stránku pustíme tak či tak.
+        console.error("Pokyny na platbu sa nepodarilo odoslať:", err);
+      }
+      window.location.href = target;
+    });
 
     payBtn.addEventListener("click", async () => {
       payBtn.disabled = true;
