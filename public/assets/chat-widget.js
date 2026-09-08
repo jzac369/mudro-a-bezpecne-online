@@ -36,8 +36,8 @@
          aktuálna stránka; farby sú tu zámerne pevné (tmavozelená +
          krémová + biela), aby chat vyzeral rovnako na každej stránke. */
       .mbo-chat-panel {
-        position: fixed; right: 1.4rem; bottom: 5.4rem; width: 300px; max-width: calc(100vw - 2rem);
-        height: auto; max-height: min(500px, calc(100vh - 7.5rem));
+        position: fixed; right: 1.2rem; bottom: 4.6rem; width: 314px; max-width: calc(100vw - 2rem);
+        height: auto; max-height: min(620px, calc(100vh - 6.2rem));
         background: #fff; border: 1px solid #e7dcc9; border-radius: 18px;
         box-shadow: 0 16px 44px rgba(16,50,47,.18); display: none; flex-direction: column; z-index: 60;
         /* Poistka pre nízke okná prehliadača: keď sa aj po zmenšení
@@ -50,19 +50,19 @@
       }
       .mbo-chat-panel.open { display: flex; }
       @media (max-width: 480px) {
-        .mbo-chat-panel { right: .6rem; left: .6rem; bottom: 5.4rem; width: auto; max-width: none; height: auto; max-height: calc(100vh - 7rem); }
+        .mbo-chat-panel { right: .6rem; left: .6rem; bottom: 4.4rem; width: auto; max-width: none; height: auto; max-height: calc(100vh - 5.6rem); }
       }
 
-      .mbo-chat-head { background: #12554a; color: #fff; padding: .85rem 1rem; flex: none; }
+      .mbo-chat-head { background: #12554a; color: #fff; padding: .6rem .8rem; flex: none; }
       .mbo-chat-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem; }
       .mbo-chat-head-titles { display: flex; align-items: center; gap: .65rem; }
-      .mbo-chat-head-titles h3 { color: #fff; margin: 0; font-size: 1.02rem; font-weight: 800; line-height: 1.25; }
+      .mbo-chat-head-titles h3 { color: #fff; margin: 0; font-size: .92rem; font-weight: 800; line-height: 1.25; }
       /* Avatar lektora — kým fotka nie je nahraná, zostanú iniciálky. */
       .mbo-ava {
-        position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%;
+        position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%;
         background: linear-gradient(160deg, #12554a, #0c3f37); color: #fff;
         display: inline-flex; align-items: center; justify-content: center;
-        font-weight: 700; font-size: .95rem; overflow: visible;
+        font-weight: 700; font-size: .8rem; overflow: visible;
         box-shadow: inset 0 0 0 2px rgba(255,255,255,.25);
       }
       .mbo-ava img {
@@ -70,74 +70,74 @@
         border-radius: 50%; object-fit: cover;
       }
       .mbo-ava .mbo-ava-dot {
-        position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px;
+        position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px;
         border-radius: 50%; background: #3fae6f; border: 2px solid #12554a;
       }
       .mbo-chat-panel.lektor-offline .mbo-ava .mbo-ava-dot { background: #c9c2b2; }
-      .mbo-chat-head-titles p { margin: .1rem 0 0; font-size: .8rem; color: #cfe3dc; }
+      .mbo-chat-head-titles p { margin: .05rem 0 0; font-size: .72rem; color: #cfe3dc; }
       .mbo-chat-close {
-        background: rgba(255,255,255,.14); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%;
+        background: rgba(255,255,255,.14); border: none; color: #fff; width: 24px; height: 24px; border-radius: 50%;
         padding: 0; cursor: pointer; flex: none; display: flex; align-items: center; justify-content: center;
       }
       .mbo-chat-close svg { width: 14px; height: 14px; display: block; }
       .mbo-chat-close:hover { background: rgba(255,255,255,.24); }
       .mbo-chat-pill {
-        display: inline-flex; align-items: center; gap: .4rem; margin-top: .5rem; padding: .25rem .6rem;
-        border-radius: 999px; background: rgba(255,255,255,.14); color: #fff; font-size: .78rem; font-weight: 700;
+        display: inline-flex; align-items: center; gap: .35rem; margin-top: .15rem; padding: .1rem .45rem;
+        border-radius: 999px; background: rgba(255,255,255,.14); color: #fff; font-size: .7rem; font-weight: 700;
       }
-      .mbo-chat-pill .mbo-dot { width: 8px; height: 8px; border-radius: 50%; background: #9aa8a4; flex: none; }
+      .mbo-chat-pill .mbo-dot { width: 7px; height: 7px; border-radius: 50%; background: #9aa8a4; flex: none; }
       .mbo-chat-pill.online .mbo-dot { background: #6fd39a; }
 
       .mbo-chat-status {
-        flex: none; display: flex; align-items: flex-start; gap: .6rem; padding: .7rem 1rem;
-        font-size: .92rem; line-height: 1.4; background: #f6efe2; color: #33514c; border-bottom: 1px solid #e7dcc9;
+        flex: none; display: flex; align-items: flex-start; gap: .5rem; padding: .5rem .8rem;
+        font-size: .8rem; line-height: 1.4; background: #f6efe2; color: #33514c; border-bottom: 1px solid #e7dcc9;
       }
       .mbo-chat-status.online { background: #e7f0ea; color: #12554a; }
-      .mbo-chat-status .mbo-status-icon { flex: none; width: 18px; height: 18px; margin-top: .1rem; color: #97500f; }
+      .mbo-chat-status .mbo-status-icon { flex: none; width: 15px; height: 15px; margin-top: .1rem; color: #97500f; }
       .mbo-chat-status.online .mbo-status-icon { color: #12554a; }
 
-      .mbo-chat-body { flex: 1; overflow-y: auto; padding: .9rem 1rem; display: flex; flex-direction: column; gap: .85rem; min-height: 0; }
+      .mbo-chat-body { flex: 1; overflow-y: auto; padding: .7rem .8rem; display: flex; flex-direction: column; gap: .6rem; min-height: 0; }
 
       .mbo-chat-msg { display: flex; flex-direction: column; max-width: 88%; }
       .mbo-chat-msg.admin { align-self: flex-start; align-items: flex-start; }
       .mbo-chat-msg.visitor { align-self: flex-end; align-items: flex-end; }
       .mbo-chat-msg.system { align-self: center; align-items: center; max-width: 100%; }
-      .mbo-chat-sender { font-size: .82rem; font-weight: 700; color: #12554a; margin-bottom: .3rem; padding-left: .2rem; }
-      .mbo-chat-bubble { padding: .65rem .85rem; border-radius: 14px; font-size: 1rem; line-height: 1.45; word-break: break-word; }
+      .mbo-chat-sender { font-size: .74rem; font-weight: 700; color: #12554a; margin-bottom: .3rem; padding-left: .2rem; }
+      .mbo-chat-bubble { padding: .5rem .7rem; border-radius: 12px; font-size: .88rem; line-height: 1.45; word-break: break-word; }
       .mbo-chat-bubble.visitor { background: #12554a; color: #fff; border-bottom-right-radius: 4px; }
       .mbo-chat-bubble.admin { background: #f6efe2; color: #23342f; border-bottom-left-radius: 4px; }
-      .mbo-chat-bubble.system { background: none; color: #6b7671; font-size: .85rem; text-align: center; }
-      .mbo-chat-meta { display: flex; align-items: center; gap: .3rem; margin-top: .35rem; font-size: .74rem; color: #8a9490; padding: 0 .2rem; }
-      .mbo-chat-meta .mbo-check { width: 14px; height: 14px; color: #6b9f8f; }
+      .mbo-chat-bubble.system { background: none; color: #6b7671; font-size: .78rem; text-align: center; }
+      .mbo-chat-meta { display: flex; align-items: center; gap: .3rem; margin-top: .25rem; font-size: .68rem; color: #8a9490; padding: 0 .2rem; }
+      .mbo-chat-meta .mbo-check { width: 12px; height: 12px; color: #6b9f8f; }
 
-      .mbo-chat-form { padding: .8rem 1rem; flex: none; }
-      .mbo-chat-form .field { margin-bottom: .9rem; }
-      .mbo-chat-form label { font-weight: 700; display: block; margin-bottom: .35rem; font-size: .9rem; color: #23342f; }
+      .mbo-chat-form { padding: .7rem .8rem; flex: none; }
+      .mbo-chat-form .field { margin-bottom: .55rem; }
+      .mbo-chat-form label { font-weight: 700; display: block; margin-bottom: .2rem; font-size: .8rem; color: #23342f; }
       .mbo-chat-form input, .mbo-chat-form textarea {
-        font-family: inherit; font-size: 1rem; padding: .75rem .9rem; border-radius: 10px; border: 1.5px solid #ddd0b8;
+        font-family: inherit; font-size: .9rem; padding: .5rem .7rem; border-radius: 9px; border: 1.5px solid #ddd0b8;
         width: 100%; box-sizing: border-box;
       }
       .mbo-chat-form input:focus, .mbo-chat-form textarea:focus, #mbo-chat-input:focus { outline: 2px solid #12554a; outline-offset: 1px; }
       .mbo-chat-form .btn-primary, #mbo-chat-start {
-        display: block; width: 100%; min-height: 52px; background: #12554a; color: #fff; border: none;
-        border-radius: 10px; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+        display: block; width: 100%; min-height: 42px; background: #12554a; color: #fff; border: none;
+        border-radius: 9px; font: inherit; font-size: .92rem; font-weight: 700; cursor: pointer;
       }
       .mbo-chat-form .btn-primary:hover, #mbo-chat-start:hover { background: #0c3f37; }
 
       /* Vstup takmer na celú šírku okna, tlačidlo Odoslať pod ním —
          nie vedľa seba. */
-      .mbo-chat-send-row { display: flex; flex-direction: column; gap: .5rem; padding: .75rem .9rem; border-top: 1px solid #e7dcc9; flex: none; }
+      .mbo-chat-send-row { display: flex; flex-direction: column; gap: .4rem; padding: .6rem .8rem; border-top: 1px solid #e7dcc9; flex: none; }
       .mbo-chat-send-row input {
-        width: 100%; min-height: 56px; font-family: inherit; font-size: 1rem; padding: 0 1rem;
-        border-radius: 12px; border: 1.5px solid #ddd0b8; box-sizing: border-box;
+        width: 100%; min-height: 44px; font-family: inherit; font-size: .92rem; padding: 0 .8rem;
+        border-radius: 10px; border: 1.5px solid #ddd0b8; box-sizing: border-box;
       }
       #mbo-chat-send {
-        width: 100%; min-height: 56px; padding: 0 .9rem; background: #12554a; color: #fff;
-        border: none; border-radius: 12px; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+        width: 100%; min-height: 44px; padding: 0 .8rem; background: #12554a; color: #fff;
+        border: none; border-radius: 10px; font: inherit; font-size: .92rem; font-weight: 700; cursor: pointer;
         display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
       }
       #mbo-chat-send:hover { background: #0c3f37; }
-      #mbo-chat-send svg { width: 18px; height: 18px; }
+      #mbo-chat-send svg { width: 16px; height: 16px; }
 
       .mbo-chat-dot {
         position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%;
@@ -145,12 +145,12 @@
       }
       .mbo-chat-dot.show { display: block; }
       .help-fab { position: fixed; }
-      .mbo-chat-typing { flex: none; padding: 0 1rem .5rem; font-size: .85rem; color: #6b7671; font-style: italic; }
+      .mbo-chat-typing { flex: none; padding: 0 .8rem .4rem; font-size: .78rem; color: #6b7671; font-style: italic; }
 
       /* Nenápadný textový odkaz, nie plnokrvné tlačidlo na celú šírku. */
       #mbo-chat-end {
         display: block; margin: 0 auto .7rem; background: none; border: none;
-        color: #8a9490; font: inherit; font-size: .82rem; padding: .3rem .6rem; cursor: pointer; text-align: center;
+        color: #8a9490; font: inherit; font-size: .76rem; padding: .25rem .6rem; cursor: pointer; text-align: center;
         text-decoration: underline; text-underline-offset: 2px;
       }
       #mbo-chat-end:hover { color: #97500f; }
@@ -168,10 +168,9 @@
     panel.innerHTML =
       "<div class='mbo-chat-head'>" +
       "<div class='mbo-chat-head-row'>" +
-      "<div class='mbo-chat-head-titles'>" + avatarHtml("") + "<div><h3>" + LECTURER.name + "</h3><p>váš lektor</p></div></div>" +
+      "<div class='mbo-chat-head-titles'>" + avatarHtml("") + "<div><h3>" + LECTURER.name + "</h3><span class='mbo-chat-pill' id='mbo-chat-pill'></span></div></div>" +
       "<button type='button' class='mbo-chat-close' aria-label='Zavrieť'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round'><path d='M6 6l12 12M18 6L6 18'/></svg></button>" +
       "</div>" +
-      "<span class='mbo-chat-pill' id='mbo-chat-pill'></span>" +
       "</div>" +
       "<div class='mbo-chat-status' id='mbo-chat-status'></div>" +
       "<div class='mbo-chat-body' id='mbo-chat-body'></div>" +
@@ -245,8 +244,8 @@
     function renderStatus() {
       statusEl.className = "mbo-chat-status " + (adminOnline ? "online" : "offline");
       statusEl.innerHTML = (adminOnline ? CHAT_OK_ICON : CLOCK_ICON) + "<span>" + (adminOnline
-        ? "Píšete skutočnému človeku. Nebojte sa opýtať na čokoľvek."
-        : "Napíšte pokojne teraz — odpoviem hneď, ako budem späť, najneskôr nasledujúci pracovný deň.") + "</span>";
+        ? "Píšete skutočnému človeku, nie automatu."
+        : "Napíšte pokojne teraz — odpoviem hneď, ako budem späť.") + "</span>";
 
       pillEl.className = "mbo-chat-pill " + (adminOnline ? "online" : "offline");
       pillEl.innerHTML = "<span class='mbo-dot'></span>" +
@@ -276,8 +275,8 @@
         "<div class='field'><label>E-mail" + (adminOnline ? " (nepovinné)" : "") + "</label><input type='email' id='mbo-chat-email'></div>" +
         "<div class='field'><label>Správa</label><textarea id='mbo-chat-msg' rows='3'></textarea></div>" +
         "<button type='button' class='btn-primary' id='mbo-chat-start'>Odoslať</button>" +
-        "<p id='mbo-chat-start-error' style='display:none;color:#b3261e;font-size:.9rem;margin-top:.6rem;'></p>" +
-        "<p style='margin-top:1rem;text-align:center;font-size:.9rem;color:#6b7671;'>Radšej e-mailom? <a href='mailto:info@digistart.sk' style='color:#12554a;font-weight:700;'>info@digistart.sk</a></p>";
+        "<p id='mbo-chat-start-error' style='display:none;color:#b3261e;font-size:.82rem;margin-top:.5rem;'></p>" +
+        "<p style='margin-top:.7rem;text-align:center;font-size:.8rem;color:#6b7671;'>Radšej e-mailom? <a href='mailto:info@digistart.sk' style='color:#12554a;font-weight:700;'>info@digistart.sk</a></p>";
 
       panel.querySelector("#mbo-chat-start").addEventListener("click", async () => {
         const name = panel.querySelector("#mbo-chat-name").value.trim();
