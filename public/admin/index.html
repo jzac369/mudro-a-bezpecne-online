@@ -67,21 +67,37 @@
   }
   .dash-sidebar.collapsed { width: 76px; min-width: 76px; padding: 1.2rem .6rem; }
   .sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: 0 .3rem; }
+  /* Bez min-width:0 by logo roztiahlo značku a tlačidlo na zbalenie menu
+     by sa vytlačilo mimo panela. */
+  .sidebar-top .brand { min-width: 0; overflow: hidden; }
   .dash-sidebar .brand { color: #fff; display: flex; align-items: center; gap: .6rem; font-weight: 700; }
   .dash-sidebar .brand svg { color: #fff; }
   .dash-sidebar.collapsed .brand span { display: none; }
+  /* Logo je tmavomodré s priehľadným pozadím, takže potrebuje svetlú
+     podložku. Ostrý biely obdĺžnik na modrom paneli ale reže do oka —
+     podložka je preto kruhový prechod, ktorý sa po okrajoch stráca. */
   .sidebar-logo {
-    display: block; width: 100%; max-width: 150px; height: auto;
-    background: #fff; border-radius: 9px; padding: 7px 10px; box-sizing: border-box;
+    display: block; width: auto; height: 44px; max-width: 100%;
+    padding: 10px 16px; box-sizing: content-box; border-radius: 16px;
+    background: radial-gradient(115% 120% at 50% 50%,
+      rgba(255,255,255,.97) 0%,
+      rgba(255,255,255,.94) 42%,
+      rgba(255,255,255,.60) 66%,
+      rgba(255,255,255,.22) 80%,
+      rgba(255,255,255,0) 92%);
   }
   .sidebar-mark { display: none; }
   .dash-sidebar.collapsed .sidebar-logo { display: none; }
   .dash-sidebar.collapsed .sidebar-mark { display: block; color: #fff; }
+  /* Tlačidlo bolo takmer neviditeľné — svetlé na svetlom nádychu panela. */
   .sidebar-toggle-btn {
-    background: rgba(255,255,255,.1); border: none; border-radius: 8px; width: 28px; height: 28px; flex: none;
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.45); border-radius: 9px;
+    width: 30px; height: 30px; flex: none;
     display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;
+    transition: background .15s ease, border-color .15s ease;
   }
-  .sidebar-toggle-btn:hover { background: rgba(255,255,255,.2); }
+  .sidebar-toggle-btn:hover { background: rgba(255,255,255,.34); border-color: #fff; }
+  .sidebar-toggle-btn svg { stroke-width: 2.6; }
   .sidebar-toggle-btn svg { width: 16px; height: 16px; transition: transform .2s ease; }
   .dash-sidebar.collapsed .sidebar-toggle-btn svg { transform: rotate(180deg); }
 
