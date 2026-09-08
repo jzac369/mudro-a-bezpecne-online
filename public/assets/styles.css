@@ -140,6 +140,9 @@ label {
   text-decoration: none;
 }
 .brand svg { width: 28px; height: 28px; color: var(--accent); flex: none; }
+/* V hlavičke je logo, nie text — značku má človek spoznať na prvý pohľad. */
+.brand-logo { height: 44px; width: auto; display: block; }
+@media (max-width: 560px) { .brand-logo { height: 34px; } }
 
 .text-tools {
   display: flex;
