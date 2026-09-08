@@ -1280,6 +1280,26 @@
                   <span class="hint">Zákazníkom sa pri objednávke ponúkne aj platba kartou. Zapnite až vtedy, keď sú vo Firebase nastavené kľúče STRIPE_SECRET_KEY a STRIPE_WEBHOOK_SECRET — inak tlačidlo nebude fungovať.</span></span>
                 </label>
               </div>
+              <div class="field" style="border-top:1px solid var(--line);padding-top:1rem;">
+                <label style="display:flex;align-items:flex-start;gap:.6rem;font-weight:400;">
+                  <input type="checkbox" id="s-fio-sync" style="width:auto;margin-top:.25rem;">
+                  <span><strong>Sťahovať bankový výpis z Fio</strong><br>
+                  <span class="hint">Každých 5 minút sa systém spýta Fio banky na prijaté platby. Vyžaduje nastavený token FIO_API_TOKEN. Interval sa mení len úpravou funkcie, nie tu.</span></span>
+                </label>
+              </div>
+              <div class="field">
+                <label style="display:flex;align-items:flex-start;gap:.6rem;font-weight:400;">
+                  <input type="checkbox" id="s-fio-auto" style="width:auto;margin-top:.25rem;">
+                  <span><strong>Vydávať kódy automaticky</strong><br>
+                  <span class="hint">Keď variabilný symbol aj suma sedia s čakajúcou objednávkou, kód sa odošle sám. Po vypnutí sa platby len zaznamenajú a čakajú na vaše potvrdenie v Platbách.</span></span>
+                </label>
+              </div>
+              <div class="field">
+                <label for="s-fio-days">Koľko dní dozadu sťahovať pohyby</label>
+                <input type="number" id="s-fio-days" min="1" max="90" style="max-width:120px;">
+                <p class="hint" style="margin:.3rem 0 0;">Bežne stačí 14. Vyššie číslo pomôže, keď systém dlhšie nebežal.</p>
+              </div>
+
               <div class="field">
                 <label for="s-inv-email">E-mail dodávateľa</label>
                 <input type="email" id="s-inv-email" placeholder="info@digistart.sk">
@@ -2593,6 +2613,9 @@ window.addEventListener("load", function () {
       document.getElementById("s-inv-icdph").value = data.invoiceIcDph || "";
       document.getElementById("s-inv-iban").value = data.invoiceIban || "";
       document.getElementById("s-card-payment").checked = !!data.cardPaymentEnabled;
+      document.getElementById("s-fio-sync").checked = data.fioSyncEnabled !== false;
+      document.getElementById("s-fio-auto").checked = data.fioAutoIssueEnabled !== false;
+      document.getElementById("s-fio-days").value = data.fioLookbackDays ?? 14;
       document.getElementById("s-inv-email").value = data.invoiceEmail || "";
       document.getElementById("s-inv-web").value = data.invoiceWeb || "";
       document.getElementById("s-inv-phone").value = data.invoicePhone || "";
@@ -2673,6 +2696,9 @@ window.addEventListener("load", function () {
       invoiceIcDph: document.getElementById("s-inv-icdph").value.trim(),
       invoiceIban: document.getElementById("s-inv-iban").value.trim(),
       cardPaymentEnabled: document.getElementById("s-card-payment").checked,
+      fioSyncEnabled: document.getElementById("s-fio-sync").checked,
+      fioAutoIssueEnabled: document.getElementById("s-fio-auto").checked,
+      fioLookbackDays: Math.min(Math.max(Number(document.getElementById("s-fio-days").value) || 14, 1), 90),
       invoiceEmail: document.getElementById("s-inv-email").value.trim(),
       invoiceWeb: document.getElementById("s-inv-web").value.trim(),
       invoicePhone: document.getElementById("s-inv-phone").value.trim(),
