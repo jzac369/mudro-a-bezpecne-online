@@ -1,0 +1,43 @@
+{
+  "13|clues[]|Vyhrážanie časom — „do 24 hodín“ má vyvolať paniku, aby ste nestihli premýšľať.":
+  "Podvodníci takmer vždy tlačia na čas. Veta „do 24 hodín“ má vo vás vyvolať stres, aby ste konali rýchlo a nestihli si správu overiť. Skutočná banka vám nikdy nedá 24 hodín na to, aby ste niekde zadali svoje údaje.",
+
+  "13|clues[]|Žiadosť o údaje cez odkaz — banka od vás nikdy nepýta prihlásenie cez odkaz v e-maile. Všimnite si aj preklep v adrese: „bankaa“.":
+  "Banka od vás nikdy nebude žiadať, aby ste sa prihlásili cez odkaz v e-maile. Všimnite si aj adresu stránky — je v nej preklep, „bankaa“ namiesto správneho názvu. Podvodníci si zámerne vytvárajú adresy, ktoré na prvý pohľad vyzerajú takmer rovnako ako tie pravé.",
+
+  "13|clues[]|Slovo „okamžite“ — časový nátlak sa opakuje, aby ste konali skôr, než sa poradíte.":
+  "Slovo „okamžite“ je ďalší nátlak na rýchle konanie — a v jednej správe sa tu opakuje už druhýkrát. Práve to je typické: podvodník potrebuje, aby ste sa nestihli s nikým poradiť.",
+
+  "13|footer|Nič neklikajte, nesťahujte ani neodpisujte. E-mail prepíšte alebo odfoťte do AI a opýtajte sa: „Je to podvod? Podľa čoho to spoznám?“":
+  "Ak vám podobná správa príde, na nič v nej neklikajte, nič nesťahujte a neodpisujte na ňu. Text e-mailu môžete odfotiť alebo prepísať do ChatGPT a opýtať sa: „Je toto podvod? Podľa čoho to spoznám?“ Ak si chcete byť istý, zavolajte do banky — ale na číslo, ktoré máte na svojej karte alebo na oficiálnej stránke banky, nikdy nie na číslo z tej správy.",
+
+  "14|cells[].text|„do 24 hodín“, „okamžite“, „posledná výzva“.":
+  "Napríklad „do 24 hodín“, „okamžite“ alebo „posledná výzva“. Podvodník potrebuje, aby ste konali skôr, než sa stihnete s niekým poradiť. Úrad ani banka vás takto nikdy nenaháňajú.",
+
+  "14|cells[].text|„účet bude zablokovaný“, „hrozí vám pokuta“.":
+  "Napríklad „váš účet bude zablokovaný“ alebo „hrozí vám pokuta“. Vystrašený človek prestane rozmýšľať a urobí, čo sa od neho žiada — presne s tým podvodníci počítajú.",
+
+  "14|cells[].text|„kliknite sem a prihláste sa“ — banky to od klientov nevyžadujú.":
+  "Napríklad „kliknite sem a prihláste sa“. Odkaz vás zavedie na stránku, ktorá vyzerá ako tá banková, ale patrí podvodníkovi. Banka po vás prihlásenie cez odkaz v e-maile nikdy nechce — do internet bankingu si vždy vojdite sami, cez svoju aplikáciu alebo adresu, ktorú poznáte.",
+
+  "14|cells[].text|Zlá slovenčina, chýbajúce mäkčene, čudné oslovenie.":
+  "Zlá slovenčina, chýbajúce mäkčene a dĺžne, čudné vety alebo oslovenie. Býva to preto, že správu prekladal automat. Pozor ale — dnes už podvodníci používajú umelú inteligenciu, takže bezchybná slovenčina sama o sebe nie je dôkazom, že správa je pravá.",
+
+  "14|cells[].text|banka-sk@gmail.com, info@vub-overenie.net.":
+  "Napríklad banka-sk@gmail.com alebo info@vub-overenie.net. Banka vám nikdy nepíše z bežnej bezplatnej schránky ani z adresy s dodatkami typu „-overenie“. Adresu odosielateľa si preto vždy prezrite celú, nie len meno, ktoré sa zobrazuje.",
+
+  "14|cells[].text|Heslo, PIN alebo číslo karty priamo v e-maile.":
+  "Správa chce, aby ste napísali heslo, PIN alebo číslo karty. Toto je najjasnejší znak podvodu, aký existuje: žiadna banka ani úrad tieto údaje e-mailom nikdy nežiada — majú ich totiž vo svojom systéme.",
+
+  "14|cells[].text|„Vážený zákazník“ namiesto vášho mena.":
+  "Napríklad „Vážený zákazník“ alebo „Vážený klient“. Vaša banka vás pozná menom a v správe ho použije. Všeobecné oslovenie znamená, že rovnaká správa išla naraz tisíckam ľudí.",
+
+  "9|tip|Pomôcka: konkrétne čísla, dátumy a paragrafy si overujeme. Všeobecné rady na opatrnosť sú bezpečné.":
+  "Pomôcka: všímajte si, čo presne vám AI tvrdí. Konkrétne čísla, dátumy, telefónne linky a paragrafy zákona si vždy overte inde — práve tie si AI najčastejšie vymyslí. Všeobecná rada na opatrnosť („radšej si to overte“) vám naopak uškodiť nemôže.",
+
+  "9|note|AI je ako ochotný, ale trochu roztržitý knihovník: takmer vždy podá správnu knihu, no občas siahne na nesprávnu policu.":
+  "Umelá inteligencia je ako ochotný, ale trochu roztržitý knihovník: takmer vždy vám podá správnu knihu, no občas siahne na nesprávnu policu — a tvári sa pritom rovnako isto. Preto platí jednoduché pravidlo: čím dôležitejšie rozhodnutie, tým skôr si jej odpoveď overte aj inde.",
+
+  "14|lead|Toto je vaša kontrolná tabuľka. Ak v správe nájdete čo i len jeden z týchto znakov, spozornite.":
+  "Toto je vaša kontrolná tabuľka — sedem znakov, ktoré sa v podvodných správach opakujú. Nemusíte nájsť všetky. Stačí jediný z nich a už je namieste spozornieť a správu si overiť."
+}
