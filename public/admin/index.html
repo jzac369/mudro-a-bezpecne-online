@@ -73,22 +73,10 @@
   .dash-sidebar .brand { color: #fff; display: flex; align-items: center; gap: .6rem; font-weight: 700; }
   .dash-sidebar .brand svg { color: #fff; }
   .dash-sidebar.collapsed .brand span { display: none; }
-  /* Logo je tmavomodré s priehľadným pozadím, takže potrebuje svetlú
-     podložku. Ostrý biely obdĺžnik na modrom paneli ale reže do oka —
-     podložka je preto kruhový prechod, ktorý sa po okrajoch stráca. */
-  .sidebar-logo {
-    display: block; width: auto; height: 44px; max-width: 100%;
-    /* Odsadenie je zámerne veľké — práve v ňom sa svetlo stráca. */
-    padding: 22px 30px; box-sizing: content-box;
-    background: radial-gradient(58% 62% at 50% 50%,
-      rgba(255,255,255,.96) 0%,
-      rgba(255,255,255,.90) 34%,
-      rgba(255,255,255,.62) 52%,
-      rgba(255,255,255,.28) 68%,
-      rgba(255,255,255,.08) 82%,
-      rgba(255,255,255,0) 100%);
-  }
-  .sidebar-top { margin: -14px 0 -10px; }
+  /* Na tmavom paneli je logo v bielej verzii (assets/logo-digistart-white.png,
+     vygenerovaná z farebného originálu) — nepotrebuje teda žiadnu podložku
+     ani prechod, ktorý by sa dal spraviť pekne len ťažko. */
+  .sidebar-logo { display: block; width: auto; height: 40px; max-width: 100%; }
   .sidebar-mark { display: none; }
   .dash-sidebar.collapsed .sidebar-logo { display: none; }
   .dash-sidebar.collapsed .sidebar-mark { display: block; color: #fff; }
@@ -97,14 +85,18 @@
      vidieť. Svetlé tlačidlo s tmavou šípkou sa nedá prehliadnuť. */
   .sidebar-toggle-btn {
     background: rgba(255,255,255,.94); border: none; border-radius: 9px;
-    width: 32px; height: 32px; flex: none;
+    width: 34px; min-width: 34px; height: 34px; flex: none; padding: 0;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     color: #16375c; box-shadow: 0 2px 6px rgba(0,0,0,.28);
     transition: background .15s ease, transform .15s ease;
   }
   .sidebar-toggle-btn:hover { background: #fff; transform: scale(1.06); }
-  .sidebar-toggle-btn svg { width: 18px; height: 18px; stroke-width: 3; }
-  .sidebar-toggle-btn svg { width: 16px; height: 16px; transition: transform .2s ease; }
+  /* Jediné pravidlo pre šípku — dve rôzne veľkosti tu už raz boli a to
+     neskoršie (16 px) prebilo to nové, takže šípku nebolo vidieť. */
+  .sidebar-toggle-btn svg {
+    width: 19px; height: 19px; flex: none; stroke-width: 3;
+    transition: transform .2s ease;
+  }
   .dash-sidebar.collapsed .sidebar-toggle-btn svg { transform: rotate(180deg); }
 
   .dash-nav { display: flex; flex-direction: column; gap: .2rem; flex: 1; overflow-y: auto; overflow-x: hidden; }
@@ -634,7 +626,7 @@
         <!-- Logo je tmavomodré s priehľadným pozadím, na tmavom bočnom paneli
              by zaniklo — preto sedí na svetlej podložke. V zbalenom menu
              zostáva len štítok. -->
-        <img class="sidebar-logo" src="../assets/logo-digistart.png" alt="DigiStart">
+        <img class="sidebar-logo" src="../assets/logo-digistart-white.png" alt="DigiStart">
         <svg class="icon sidebar-mark" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>
       </span>
       <button type="button" id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Zbaliť/rozbaliť menu" title="Zbaliť/rozbaliť menu">
