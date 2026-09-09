@@ -472,6 +472,9 @@ window.COURSE_SLIDES = [
       { title: "Pozrite si varovania NBS", text: "NBS zverejňuje aj upozornenia na rizikové alebo neoprávnené ponuky. Podvodníci pritom často zneužívajú názvy známych firiem, bánk alebo osobností." },
       { title: "Opýtajte sa AI na druhý názor", text: "Môžete napísať napríklad: „Ponúka mi investíciu firma XY. Na čo si mám dať pozor a ako si ju overím?“ AI vám pomôže pripraviť kontrolný zoznam, ale výsledok si vždy overte na oficiálnych stránkach." },
     ],
+    doneLabel: "Hotovo — prezreli ste si všetky tri spôsoby overenia.",
+    doneTitle: "Teraz už viete, ako si firmu preveriť.",
+    doneText: "Nemusíte si všetko pamätať. Dôležité je vedieť, že pred odoslaním peňazí si môžete firmu jednoducho overiť.",
     note: "Seriózna firma by vám mala dať čas na rozmyslenie a umožniť, aby ste si jej údaje a ponuku nezávisle overili.",
   },
   {

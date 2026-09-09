@@ -944,8 +944,11 @@
           openedCells.add(i);
           progress.set(openedCells.size);
           if (openedCells.size >= slide.cells.length) {
-            fb.show(true, "Prezreli ste si všetky znaky.",
-              "Nemusíte si ich pamätať naspamäť — stačí, aby vám napadli, keď príde podozrivá správa.");
+            // Tú istú mriežku používajú dve rôzne obrazovky — raz sú v nej
+            // varovné znaky, raz spôsoby overenia. Preto si znenie po
+            // dokončení môže každá obrazovka nastaviť po svojom.
+            fb.show(true, slide.doneTitle || "Prezreli ste si všetky znaky.",
+              slide.doneText || "Nemusíte si ich pamätať naspamäť — stačí, aby vám napadli, keď príde podozrivá správa.");
           } else {
             fb.hint(c.title, c.text);
           }
@@ -955,7 +958,9 @@
     });
     card.appendChild(grid);
     const progress = createProgressCounter(card, slide.cells.length, (done, all) =>
-      done >= all ? "Hotovo — prezreli ste si všetkých " + all + " znakov." : "Prezreté <strong>" + done + "</strong> z " + all);
+      done >= all
+        ? (slide.doneLabel || "Hotovo — prezreli ste si všetkých " + all + " znakov.")
+        : "Prezreté <strong>" + done + "</strong> z " + all);
     const fb = createFeedbackArea(card);
     note(card, slide.note);
   };
