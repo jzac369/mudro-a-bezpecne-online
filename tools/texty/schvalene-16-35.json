@@ -1,0 +1,1976 @@
+[
+ {
+  "row": 233,
+  "slideId": 16,
+  "path": "title",
+  "orig": "Falošná „faktúra o náhrade“",
+  "new": "Falošná „faktúra o náhrade“"
+ },
+ {
+  "row": 234,
+  "slideId": 16,
+  "path": "lead",
+  "orig": "Pozor — nie každý podvod straší. Tento naopak sľubuje peniaze, a práve tým je nebezpečný.",
+  "new": "Nie každý podvod straší. Niektorý vás naopak láka na peniaze — napríklad na nečakanú vratku. Práve sľub peňazí má oslabiť vašu pozornosť."
+ },
+ {
+  "row": 235,
+  "slideId": 16,
+  "path": "task",
+  "orig": "Nájdite <strong>3 varovné znaky</strong>. Kliknite na podčiarknuté časti a všímajte si, ako podvodník mieša sľub peňazí so žiadosťou o údaje.",
+  "new": "Nájdite <strong>3 varovné znaky</strong>. Kliknite na podčiarknuté časti a všimnite si, ako podvodník spája sľub peňazí so žiadosťou o vaše údaje."
+ },
+ {
+  "row": 236,
+  "slideId": 16,
+  "path": "message.from",
+  "orig": "vratky@vszp-portal.net",
+  "new": "vratky@vszp-portal.net"
+ },
+ {
+  "row": 237,
+  "slideId": 16,
+  "path": "message.subject",
+  "orig": "Máte nárok na vrátenie 490 €",
+  "new": "Máte nárok na vrátenie 490 €"
+ },
+ {
+  "row": 238,
+  "slideId": 16,
+  "path": "message.body",
+  "orig": "Dobrý deň, na základe kontroly vám vznikol preplatok [[490 €]]. Pre vrátenie peňazí zadajte číslo vašej platobnej karty (carte bancaire) [[nižšie]]. Sumu vám pripíšeme do 24 hodín po [[potvrdení údajov karty]].",
+  "new": "Dobrý deň, na základe kontroly vám vznikol preplatok [[490 €]]. Pre vrátenie peňazí zadajte číslo vašej platobnej karty (carte bancaire) [[nižšie]]. Sumu vám pripíšeme do 24 hodín po [[potvrdení údajov karty]]."
+ },
+ {
+  "row": 239,
+  "slideId": 16,
+  "path": "clues[]",
+  "orig": "Nečakaná „vratka“ 490 € — sľub peňazí je návnada, nikto vám len tak neposiela stovky eur.",
+  "new": "Nečakaná „vratka“ 490 € — sľub peňazí vás má nalákať, aby ste pokračovali bez overenia. Takúto vratku si vždy overte priamo u inštitúcie."
+ },
+ {
+  "row": 240,
+  "slideId": 16,
+  "path": "clues[]",
+  "orig": "Text je preložený strojovo — všimnite si francúzske „carte bancaire“, ktoré tam vôbec nepatrí.",
+  "new": "Zvláštny jazyk — v slovenskom texte sa zrazu objaví francúzske „carte bancaire“. Takáto chyba môže naznačovať strojovo preloženú podvodnú správu."
+ },
+ {
+  "row": 241,
+  "slideId": 16,
+  "path": "clues[]",
+  "orig": "Žiada údaje o karte — poisťovňa vracia peniaze na účet, nikdy si nepýta kartu cez e-mail.",
+  "new": "Žiadosť o údaje z karty — zdravotná poisťovňa ich na vrátenie preplatku cez e-mail nepotrebuje. Údaje z karty do takéhoto formulára nezadávajte."
+ },
+ {
+  "row": 242,
+  "slideId": 16,
+  "path": "footer",
+  "orig": "Ako si to overiť: zavolajte priamo poisťovni na oficiálne číslo z jej webovej stránky — nikdy nie na číslo uvedené v podozrivom e-maile.",
+  "new": "Chcete si overiť, či máte preplatok? Kontaktujte poisťovňu cez jej oficiálnu webovú stránku, aplikáciu alebo známe telefónne číslo — nie cez údaje z podozrivej správy."
+ },
+ {
+  "row": 243,
+  "slideId": 16,
+  "path": "evidenceImage.caption",
+  "orig": "Skutočná falošná „faktúra o náhrade“ vydávajúca sa za zdravotnú poisťovňu. Žiadna poisťovňa takto peniaze nevracia.",
+  "new": "Ukážka podvodnej správy vydávajúcej sa za zdravotnú poisťovňu. Sľubuje vratku peňazí a zároveň žiada údaje z platobnej karty."
+ },
+ {
+  "row": 244,
+  "slideId": 17,
+  "path": "title",
+  "orig": "„Váš balík čaká na potvrdenie platby“",
+  "new": "„Váš balík čaká na potvrdenie platby“"
+ },
+ {
+  "row": 245,
+  "slideId": 17,
+  "path": "lead",
+  "orig": "Najrozšírenejší podvod na Slovensku. Funguje preto, že takmer každý dnes niečo očakáva poštou.",
+  "new": "Ide o veľmi častý typ podvodu. Funguje aj preto, že veľa ľudí dnes naozaj čaká balík alebo zásielku."
+ },
+ {
+  "row": 246,
+  "slideId": 17,
+  "path": "task",
+  "orig": "Nájdite <strong>4 varovné znaky</strong>. Kliknite na podčiarknuté časti — všimnite si najmä, aká drobná je požadovaná suma.",
+  "new": "Nájdite <strong>4 varovné znaky</strong>. Kliknite na podčiarknuté časti a všimnite si najmä, aká malá je požadovaná suma."
+ },
+ {
+  "row": 247,
+  "slideId": 17,
+  "path": "message.from",
+  "orig": "info@postask.br",
+  "new": "info@postask.br"
+ },
+ {
+  "row": 248,
+  "slideId": 17,
+  "path": "message.subject",
+  "orig": "Balík čaká na vyzdvihnutie",
+  "new": "Balík čaká na vyzdvihnutie"
+ },
+ {
+  "row": 249,
+  "slideId": 17,
+  "path": "message.body",
+  "orig": "Dobry den, Vas balik nebolo mozne dorucit. [[Pre jeho doručenie je potrebné uhradiť malý poplatok 3,59 €.]] [[Prosíme, aby ste zaplatili po prijatí tento správy]] do 12 hodín. [[Kliknite tu]] pre potvrdenie platby. [[Odosielateľ: postask.br]]",
+  "new": "Dobry den, Vas balik nebolo mozne dorucit. [[Pre jeho doručenie je potrebné uhradiť malý poplatok 3,59 €.]] [[Prosíme, aby ste zaplatili po prijatí tento správy]] do 12 hodín. [[Kliknite tu]] pre potvrdenie platby. [[Odosielateľ: postask.br]]"
+ },
+ {
+  "row": 250,
+  "slideId": 17,
+  "path": "clues[]",
+  "orig": "Malý poplatok 3,59 € — drobná suma nevzbudí podozrenie. Podvodníkom však nejde o tie tri eurá, ale o údaje z vašej karty.",
+  "new": "Malý poplatok 3,59 € pôsobí nevinne a nemusí vzbudiť podozrenie. Cieľom však môže byť dostať vás na falošnú platobnú stránku a získať údaje z karty."
+ },
+ {
+  "row": 251,
+  "slideId": 17,
+  "path": "clues[]",
+  "orig": "Chyby v slovenčine — „aby ste zaplatili po prijatí tento správy“ a chýbajúce mäkčene v úvode.",
+  "new": "Chyby v slovenčine — napríklad „po prijatí tento správy“ a chýbajúce mäkčene. Nezvyčajný jazyk je jeden z varovných signálov."
+ },
+ {
+  "row": 252,
+  "slideId": 17,
+  "path": "clues[]",
+  "orig": "Tlačidlo „Kliknite tu“ vedie na falošnú platobnú stránku, ktorá vyzerá ako tá skutočná.",
+  "new": "Tlačidlo „Kliknite tu“ vás môže zaviesť na falošnú platobnú stránku, ktorá sa podobá na skutočnú stránku prepravcu."
+ },
+ {
+  "row": 253,
+  "slideId": 17,
+  "path": "clues[]",
+  "orig": "Adresa odosielateľa končí na „.br“ — to je Brazília, nie slovenská pošta.",
+  "new": "Adresa odosielateľa končí na „.br“, čo je doména Brazílie. Slovenská pošta by oficiálnu správu neposielala z takejto adresy."
+ },
+ {
+  "row": 254,
+  "slideId": 17,
+  "path": "footer",
+  "orig": "Čakáte naozaj balík? Sledovacie číslo si zadajte priamo na oficiálnej stránke pošty alebo prepravcu — nikdy nie cez odkaz zo správy.",
+  "new": "Naozaj čakáte balík? Stav zásielky si overte priamo v aplikácii alebo na oficiálnej stránke pošty či prepravcu — nie cez odkaz zo správy."
+ },
+ {
+  "row": 255,
+  "slideId": 17,
+  "path": "evidenceImage.caption",
+  "orig": "Skutočný podvodný e-mail vydávajúci sa za Slovenskú poštu. Adresa odosielateľa a drobný poplatok sú typickým vzorom tohto podvodu.",
+  "new": "Ukážka podvodného e-mailu vydávajúceho sa za Slovenskú poštu. Podozrivá adresa odosielateľa a malý poplatok patria medzi typické varovné znaky."
+ },
+ {
+  "row": 256,
+  "slideId": 18,
+  "path": "title",
+  "orig": "Telefonát „z banky“",
+  "new": "Telefonát „z banky“"
+ },
+ {
+  "row": 257,
+  "slideId": 18,
+  "path": "lead",
+  "orig": "E-maily už rozoznáte. Teraz si vyskúšajme situáciu, ktorá prebieha naživo a nedá vám čas na rozmyslenie.",
+  "new": "E-maily už viete preverovať. Teraz si vyskúšame telefonát, pri ktorom sa vás podvodník môže snažiť dostať pod časový tlak."
+ },
+ {
+  "row": 258,
+  "slideId": 18,
+  "path": "task",
+  "orig": "Zvoní vám telefón od neznámeho čísla. Kliknite na zelené tlačidlo <strong>„Prijať“</strong> a potom sa rozhodnite, ako budete reagovať — presne tak, ako by ste to urobili naozaj.",
+  "new": "Zvoní vám telefón z neznámeho čísla. Kliknite na zelené tlačidlo <strong>„Prijať“</strong> a potom sa rozhodnite, ako zareagujete — tak, ako by ste to urobili v skutočnosti."
+ },
+ {
+  "row": 259,
+  "slideId": 18,
+  "path": "flags[]",
+  "orig": "Neznáme číslo",
+  "new": "Neznáme číslo"
+ },
+ {
+  "row": 260,
+  "slideId": 18,
+  "path": "flags[]",
+  "orig": "Naliehavosť",
+  "new": "Naliehavosť"
+ },
+ {
+  "row": 261,
+  "slideId": 18,
+  "path": "flags[]",
+  "orig": "Tlak na rýchle konanie",
+  "new": "Tlak na rýchle konanie"
+ },
+ {
+  "row": 262,
+  "slideId": 18,
+  "path": "safeTip",
+  "orig": "Skutočná banka vám nikdy netelefonuje so žiadosťou o prevod peňazí na „bezpečný účet“. Ak máte pochybnosti, hovor ukončite a zavolajte si banke sami, na číslo zo zadnej strany karty.",
+  "new": "Ak vám volajúci tvrdí, že musíte peniaze previesť na „bezpečný účet“, hovor ukončite. Banku potom kontaktujte sami cez číslo na karte, v aplikácii alebo na jej oficiálnom webe."
+ },
+ {
+  "row": 263,
+  "slideId": 18,
+  "path": "nodes.*.speaker",
+  "orig": "Neznáme číslo",
+  "new": "Neznáme číslo"
+ },
+ {
+  "row": 264,
+  "slideId": 18,
+  "path": "nodes.*.text",
+  "orig": "„Dobrý deň, tu bezpečnostné oddelenie vašej banky. Váš účet bol práve napadnutý hackermi! Musíme okamžite previesť vaše peniaze na bezpečný účet. Nadiktujem vám číslo…“",
+  "new": "„Dobrý deň, tu bezpečnostné oddelenie vašej banky. Váš účet bol práve napadnutý hackermi! Musíme okamžite previesť vaše peniaze na bezpečný účet. Nadiktujem vám číslo…“"
+ },
+ {
+  "row": 265,
+  "slideId": 18,
+  "path": "nodes.*.text",
+  "orig": "Toto je presne to, čo podvodník chce počuť. Skutočná banka nikdy nežiada prevod peňazí na „bezpečný účet“ — taký účet vôbec neexistuje. Peniaze by skončili u podvodníka a späť by sa už nedali získať.",
+  "new": "Takýto postup je presne to, čo podvodník potrebuje. Banka vás nebude žiadať, aby ste svoje peniaze „zachránili“ prevodom na účet, ktorý vám nadiktuje volajúci. Peniaze by mohli skončiť u podvodníka a ich získanie späť môže byť veľmi ťažké."
+ },
+ {
+  "row": 266,
+  "slideId": 18,
+  "path": "nodes.*.text",
+  "orig": "Správne! Hovor pokojne ukončite a zavolajte si banke sami. Aj číslo na displeji sa dá napodobniť, preto voľte vždy číslo, ktoré poznáte vy — zo zadnej strany karty alebo z oficiálneho webu banky.",
+  "new": "Správne! Hovor pokojne ukončite a banku kontaktujte sami. Aj číslo zobrazené na displeji sa dá sfalšovať, preto použite číslo z karty, bankovej aplikácie alebo oficiálneho webu."
+ },
+ {
+  "row": 267,
+  "slideId": 18,
+  "path": "nodes.*.choiceHint",
+  "orig": "Čo teraz urobíte? Kliknite na jednu z možností.",
+  "new": "Čo teraz urobíte? Vyberte jednu z možností."
+ },
+ {
+  "row": 268,
+  "slideId": 18,
+  "path": "nodes.*.choices[].text",
+  "orig": "Nadiktujem číslo účtu, nech to vyriešia.",
+  "new": "Nadiktujem údaje a urobím prevod, aby účet ochránili."
+ },
+ {
+  "row": 269,
+  "slideId": 18,
+  "path": "nodes.*.choices[].text",
+  "orig": "Hovor ukončím a zavolám banke sám, na číslo zo zadnej strany karty.",
+  "new": "Hovor ukončím a banku kontaktujem sám cez oficiálne číslo."
+ },
+ {
+  "row": 270,
+  "slideId": 19,
+  "path": "title",
+  "orig": "„Babka, potrebujem peniaze“",
+  "new": "„Babka, potrebujem peniaze“"
+ },
+ {
+  "row": 271,
+  "slideId": 19,
+  "path": "lead",
+  "orig": "Tento podvod cieli na to najsilnejšie, čo máte — na city k rodine. Preto funguje aj na opatrných ľudí.",
+  "new": "Tento podvod využíva silné emócie a strach o blízkeho. Práve preto môže zaskočiť aj veľmi opatrného človeka."
+ },
+ {
+  "row": 272,
+  "slideId": 19,
+  "path": "task",
+  "orig": "Prečítajte si SMS v telefóne <strong>vľavo</strong>. Potom <strong>vpravo</strong> kliknite na to, čo by ste v tejto situácii naozaj urobili.",
+  "new": "Prečítajte si SMS v telefóne <strong>vľavo</strong>. Potom <strong>vpravo</strong> vyberte, čo by ste v takejto situácii urobili."
+ },
+ {
+  "row": 273,
+  "slideId": 19,
+  "path": "flags[]",
+  "orig": "Neznáme číslo",
+  "new": "Neznáme číslo"
+ },
+ {
+  "row": 274,
+  "slideId": 19,
+  "path": "flags[]",
+  "orig": "Naliehavosť",
+  "new": "Naliehavosť"
+ },
+ {
+  "row": 275,
+  "slideId": 19,
+  "path": "flags[]",
+  "orig": "Tajomstvo",
+  "new": "Tajomstvo"
+ },
+ {
+  "row": 276,
+  "slideId": 19,
+  "path": "flags[]",
+  "orig": "Tlak na rýchle konanie",
+  "new": "Tlak na rýchle konanie"
+ },
+ {
+  "row": 277,
+  "slideId": 19,
+  "path": "safeTip",
+  "orig": "Peniaze nikdy neposielajte len podľa SMS správy. Najprv si to overte — zavolajte na číslo, ktoré máte uložené vy, nie na to, z ktorého vám niekto píše.",
+  "new": "Peniaze neposielajte iba na základe SMS alebo správy. Najprv si situáciu overte — zavolajte blízkemu na číslo, ktoré už máte uložené."
+ },
+ {
+  "row": 278,
+  "slideId": 19,
+  "path": "nodes.*.speaker",
+  "orig": "Neznáme číslo (SMS)",
+  "new": "Neznáme číslo (SMS)"
+ },
+ {
+  "row": 279,
+  "slideId": 19,
+  "path": "nodes.*.text",
+  "orig": "„Babka, mal som nehodu. Potrebujem súrne peniaze. Prosím, nikomu o tom nehovor.“",
+  "new": "„Babka, mal som nehodu. Potrebujem súrne peniaze. Prosím, nikomu o tom nehovor.“"
+ },
+ {
+  "row": 280,
+  "slideId": 19,
+  "path": "nodes.*.text",
+  "orig": "Práve toto podvodníci chcú — naliehavosť a mlčanlivosť. Prosba „nikomu o tom nehovor“ je najsilnejší varovný znak: má zabrániť tomu, aby ste si to overili u rodiny.",
+  "new": "Naliehavosť a prosba o mlčanlivosť sú veľmi silné varovné signály. Veta „nikomu o tom nehovor“ má zabrániť tomu, aby ste si príbeh overili u rodiny."
+ },
+ {
+  "row": 281,
+  "slideId": 19,
+  "path": "nodes.*.text",
+  "orig": "Presne tak! Zavolajte na číslo, ktoré máte uložené vy — nikdy na to, z ktorého prišla správa. Pozor aj na hlas: AI dnes dokáže napodobniť hlas vášho blízkeho, takže ani povedomý hlas už nie je dôkaz.",
+  "new": "Správne! Zavolajte na číslo, ktoré máte uložené vy — nie na číslo zo správy. Pozor aj na hlasové správy: pomocou AI sa dnes dá hlas človeka napodobniť, preto samotný známy hlas nemusí byť dôkazom."
+ },
+ {
+  "row": 282,
+  "slideId": 19,
+  "path": "nodes.*.choiceHint",
+  "orig": "Čo urobíte?",
+  "new": "Čo urobíte?"
+ },
+ {
+  "row": 283,
+  "slideId": 19,
+  "path": "nodes.*.choices[].text",
+  "orig": "Hneď pošlem peniaze, veď je to naliehavé.",
+  "new": "Hneď pošlem peniaze, veď je to naliehavé."
+ },
+ {
+  "row": 284,
+  "slideId": 19,
+  "path": "nodes.*.choices[].text",
+  "orig": "Zavolám vnukovi na číslo, ktoré mám uložené.",
+  "new": "Zavolám vnukovi na číslo, ktoré mám uložené."
+ },
+ {
+  "row": 285,
+  "slideId": 20,
+  "path": "title",
+  "orig": "Skutočná banka vs. podvodník",
+  "new": "Skutočná banka vs. podvodník"
+ },
+ {
+  "row": 286,
+  "slideId": 20,
+  "path": "lead",
+  "orig": "Videli ste podvodný e-mail aj telefonát. Zhrňme si teraz, podľa čoho ich spoľahlivo odlíšite od skutočnej banky.",
+  "new": "Videli ste podvodný e-mail aj telefonát. Zhrňme si, ktoré správanie je pre banku bežné a ktoré je typické pre podvodníkov."
+ },
+ {
+  "row": 287,
+  "slideId": 20,
+  "path": "task",
+  "orig": "Kliknite na výrok a potom na políčko <strong>„Skutočná banka“</strong> alebo <strong>„Podvodník“</strong>, komu podľa vás patrí.",
+  "new": "Kliknite na výrok a potom vyberte <strong>„Skutočná banka“</strong> alebo <strong>„Podvodník“</strong> podľa toho, ku komu podľa vás patrí."
+ },
+ {
+  "row": 288,
+  "slideId": 20,
+  "path": "items[].text",
+  "orig": "nikdy nežiada PIN, heslá ani kódy zo SMS",
+  "new": "nikdy od vás nepýta heslo, celý PIN ani autorizačný kód zo SMS"
+ },
+ {
+  "row": 289,
+  "slideId": 20,
+  "path": "items[].text",
+  "orig": "dá vám dosť času na rozhodnutie a overenie",
+  "new": "dá vám priestor situáciu si overiť"
+ },
+ {
+  "row": 290,
+  "slideId": 20,
+  "path": "items[].text",
+  "orig": "rešpektuje, keď hovor ukončíte a zavoláte jej sami",
+  "new": "rešpektuje, keď hovor ukončíte a kontaktujete ju sami"
+ },
+ {
+  "row": 291,
+  "slideId": 20,
+  "path": "items[].text",
+  "orig": "nikdy nevyzve na prevod peňazí na „bezpečný účet“",
+  "new": "nežiada vás o prevod peňazí na „bezpečný účet“, ktorý vám nadiktuje volajúci"
+ },
+ {
+  "row": 292,
+  "slideId": 20,
+  "path": "items[].text",
+  "orig": "žiada PIN, heslá alebo kódy zo SMS",
+  "new": "pýta heslo, PIN alebo autorizačný kód zo SMS"
+ },
+ {
+  "row": 293,
+  "slideId": 20,
+  "path": "items[].text",
+  "orig": "tvrdí, že musíte okamžite previesť peniaze",
+  "new": "tvrdí, že musíte peniaze previesť okamžite"
+ },
+ {
+  "row": 294,
+  "slideId": 20,
+  "path": "items[].text",
+  "orig": "vytvára časový tlak — „musíte konať hneď“",
+  "new": "vytvára silný časový tlak — „musíte konať hneď“"
+ },
+ {
+  "row": 295,
+  "slideId": 20,
+  "path": "items[].text",
+  "orig": "bráni vám hovor ukončiť či zavolať do banky",
+  "new": "bráni vám hovor ukončiť alebo si situáciu overiť"
+ },
+ {
+  "row": 296,
+  "slideId": 20,
+  "path": "items[].why",
+  "orig": "Banka tieto údaje pozná zo svojho systému — nemá dôvod pýtať si ich od vás.",
+  "new": "Banka od vás nebude žiadať heslo, celý PIN ani autorizačný kód zo SMS. Tieto údaje nikomu neprezrádzajte."
+ },
+ {
+  "row": 297,
+  "slideId": 20,
+  "path": "items[].why",
+  "orig": "Seriózna inštitúcia vás nikdy nenaháňa. Časový tlak je nástroj podvodníkov.",
+  "new": "Dôveryhodná inštitúcia vám umožní situáciu si overiť. Silný časový nátlak je varovný signál."
+ },
+ {
+  "row": 298,
+  "slideId": 20,
+  "path": "items[].why",
+  "orig": "Banka vám dokonca sama odporučí, aby ste jej zavolali späť na oficiálne číslo.",
+  "new": "Ak máte pochybnosti, je správne hovor ukončiť a banku kontaktovať cez jej oficiálny kanál."
+ },
+ {
+  "row": 299,
+  "slideId": 20,
+  "path": "items[].why",
+  "orig": "Žiadny „bezpečný účet“ neexistuje — je to vymyslený pojem, ktorý používajú výhradne podvodníci.",
+  "new": "Banka vás nebude žiadať, aby ste peniaze posielali na „bezpečný účet“, ktorý vám nadiktuje volajúci. Takáto požiadavka je typickým znakom podvodu."
+ },
+ {
+  "row": 300,
+  "slideId": 20,
+  "path": "items[].why",
+  "orig": "Toto je najjasnejší znak podvodu. Kód zo SMS je posledná poistka pred odčerpaním peňazí.",
+  "new": "Ak si niekto pýta heslo, PIN alebo autorizačný kód zo SMS, je to veľmi silný znak podvodu. Takýto kód môže potvrdiť prihlásenie alebo platbu."
+ },
+ {
+  "row": 301,
+  "slideId": 20,
+  "path": "items[].why",
+  "orig": "Naliehavosť má vypnúť vaše premýšľanie. Vždy si vypýtajte čas na rozmyslenie.",
+  "new": "Naliehavosť má obmedziť čas na premýšľanie. Keď vás niekto tlačí do okamžitého rozhodnutia, spomaľte a situáciu si overte."
+ },
+ {
+  "row": 302,
+  "slideId": 20,
+  "path": "items[].why",
+  "orig": "Kto vás naháňa, chce vás pripraviť o peniaze. Platí to takmer bez výnimky.",
+  "new": "Silný časový tlak je varovný signál. Zastavte sa, nič neposielajte a overte si, s kým naozaj komunikujete."
+ },
+ {
+  "row": 303,
+  "slideId": 20,
+  "path": "items[].why",
+  "orig": "Podvodník vie, že overenie ho prezradí — preto sa mu snaží za každú cenu zabrániť.",
+  "new": "Podvodník nechce, aby ste si jeho príbeh overili. Preto vás môže odhovárať od ukončenia hovoru alebo od kontaktovania banky."
+ },
+ {
+  "row": 304,
+  "slideId": 20,
+  "path": "baskets[].label",
+  "orig": "Skutočná banka",
+  "new": "Skutočná banka"
+ },
+ {
+  "row": 305,
+  "slideId": 20,
+  "path": "baskets[].label",
+  "orig": "Podvodník",
+  "new": "Podvodník"
+ },
+ {
+  "row": 306,
+  "slideId": 20,
+  "path": "baskets[].desc",
+  "orig": "Dá vám čas a nikdy nepýta tajné údaje.",
+  "new": "Dá vám priestor na overenie a nepýta heslo, celý PIN ani autorizačné kódy."
+ },
+ {
+  "row": 307,
+  "slideId": 20,
+  "path": "baskets[].desc",
+  "orig": "Tlačí na čas a chce údaje hneď.",
+  "new": "Tlačí na rýchle konanie a žiada citlivé údaje alebo prevod peňazí."
+ },
+ {
+  "row": 308,
+  "slideId": 20,
+  "path": "note",
+  "orig": "Ak si nie ste istí, hovor ukončite a banku kontaktujte sami — výhradne na číslo z karty alebo oficiálneho webu.",
+  "new": "Ak si nie ste istí, hovor ukončite a banku kontaktujte sami — cez číslo na karte, bankovú aplikáciu alebo oficiálny web."
+ },
+ {
+  "row": 309,
+  "slideId": 21,
+  "path": "title",
+  "orig": "„Zázračná“ investičná ponuka",
+  "new": "„Zázračná“ investičná ponuka"
+ },
+ {
+  "row": 310,
+  "slideId": 21,
+  "path": "lead",
+  "orig": "Podvodníci neútočia len strachom. Rovnako často lákajú na sľub rýchleho zbohatnutia — a práve pri peniazoch sa oplatí byť najopatrnejší.",
+  "new": "Podvodníci nevyužívajú iba strach. Často lákajú aj na rýchly a vysoký zisk. Pri ponukách, ktoré znejú až príliš dobre, sa oplatí spomaliť a všetko si overiť."
+ },
+ {
+  "row": 311,
+  "slideId": 21,
+  "path": "task",
+  "orig": "Prečítajte si reklamu nižšie a kliknite na jedno z <strong>troch tlačidiel</strong> — ako rizikovo na vás pôsobí. Potom vám vysvetlíme, prečo.",
+  "new": "Prečítajte si reklamu nižšie a vyberte jedno z <strong>troch tlačidiel</strong> podľa toho, ako rizikovo na vás ponuka pôsobí. Potom si vysvetlíme prečo."
+ },
+ {
+  "row": 312,
+  "slideId": 21,
+  "path": "adText",
+  "orig": "„Investujte len 250 € a zarábajte 5 000 € mesačne! Garantovaný výnos bez rizika. Pridajte sa k tisíckam spokojných Slovákov. Ponuka platí len obmedzený čas!“",
+  "new": "„Investujte len 250 € a zarábajte 5 000 € mesačne! Garantovaný výnos bez rizika. Pridajte sa k tisíckam spokojných Slovákov. Ponuka platí len obmedzený čas!“"
+ },
+ {
+  "row": 313,
+  "slideId": 21,
+  "path": "sliderQuestion",
+  "orig": "Ako rizikovo na vás táto ponuka pôsobí?",
+  "new": "Ako rizikovo na vás táto ponuka pôsobí?"
+ },
+ {
+  "row": 314,
+  "slideId": 21,
+  "path": "riskLevels[].label",
+  "orig": "Bezpečné",
+  "new": "Bezpečné"
+ },
+ {
+  "row": 315,
+  "slideId": 21,
+  "path": "riskLevels[].label",
+  "orig": "Trochu rizikové",
+  "new": "Trochu rizikové"
+ },
+ {
+  "row": 316,
+  "slideId": 21,
+  "path": "riskLevels[].label",
+  "orig": "Veľmi rizikové",
+  "new": "Veľmi rizikové"
+ },
+ {
+  "row": 317,
+  "slideId": 21,
+  "path": "riskLevels[].why",
+  "orig": "Táto ponuka rozhodne nie je bezpečná. Sľubuje z 250 € mesačný zisk 5 000 € — také zhodnotenie neexistuje ani u najlepších investícií na svete. Slovo „garantovaný“ pri takomto výnose je istá známka podvodu.",
+  "new": "Táto ponuka obsahuje viacero veľmi silných varovných znakov. Sľubuje mimoriadne vysoký zisk z malej sumy, používa slovo „garantovaný“ a tvrdí, že je bez rizika. Takéto sľuby sú typické pre podvodné investičné ponuky."
+ },
+ {
+  "row": 318,
+  "slideId": 21,
+  "path": "riskLevels[].why",
+  "orig": "Nejde o „trochu“ rizikovú ponuku — ide o takmer istý podvod. Kombinácia „garantovaný výnos“ + „bez rizika“ + obrovské číslo sa v skutočnom finančnom svete nevyskytuje. Vysoký výnos vždy nesie vysoké riziko.",
+  "new": "Riziko je oveľa vyššie než „trochu“. Kombinácia vysokého garantovaného výnosu, údajnej nulovej straty a časového tlaku je veľmi podozrivá. Pri investovaní platí: vyšší možný výnos zvyčajne znamená aj vyššie riziko."
+ },
+ {
+  "row": 319,
+  "slideId": 21,
+  "path": "riskLevels[].why",
+  "orig": "Presne tak. Žiadna seriózna investícia negarantuje vysoký výnos bez rizika — to je pravidlo, ktoré neobíde nikto. Za 250 € mesačne 5 000 € je nezmysel, ktorý má len prilákať vaše peniaze.",
+  "new": "Správne. Seriózna investícia vám nesľúbi mimoriadne vysoký garantovaný zisk bez rizika. Takúto ponuku neplaťte hneď a najprv si overte firmu aj podmienky."
+ },
+ {
+  "row": 320,
+  "slideId": 21,
+  "path": "checklist[]",
+  "orig": "Má spoločnosť povolenie a dohliada na ňu Národná banka Slovenska?",
+  "new": "Má spoločnosť oprávnenie na túto finančnú službu a dá sa overiť v registri NBS?"
+ },
+ {
+  "row": 321,
+  "slideId": 21,
+  "path": "checklist[]",
+  "orig": "Sú jasne uvedené podmienky investície a všetky poplatky?",
+  "new": "Sú jasne uvedené podmienky investície, riziká a všetky poplatky?"
+ },
+ {
+  "row": 322,
+  "slideId": 21,
+  "path": "checklist[]",
+  "orig": "Môžem svoje peniaze kedykoľvek vybrať?",
+  "new": "Ako a za akých podmienok môžem svoje peniaze vybrať?"
+ },
+ {
+  "row": 323,
+  "slideId": 21,
+  "path": "checklistNote",
+  "orig": "Ak čo i len na jednu z týchto otázok nedostanete jasnú odpoveď, do investície nejdite. Tieto otázky si môžete nechať pripraviť aj od AI — stačí napísať: „Ponúkajú mi investíciu… Aké otázky mám položiť pred rozhodnutím?“",
+  "new": "Ak na dôležité otázky nedostanete jasnú odpoveď, peniaze neposielajte. Pomôcť môže aj AI — napríklad otázkou: „Ponúkajú mi túto investíciu. Aké veci si mám pred rozhodnutím overiť?“ Odpoveď AI si potom skontrolujte v dôveryhodných zdrojoch."
+ },
+ {
+  "row": 324,
+  "slideId": 21,
+  "path": "note",
+  "orig": "Zázračný zisk = zaručená strata. Zoznam licencovaných subjektov nájdete na www.nbs.sk.",
+  "new": "Vysoký „zaručený“ zisk bez rizika je silný varovný signál. Oprávnenie finančnej firmy si overte v registri na nbs.sk."
+ },
+ {
+  "row": 325,
+  "slideId": 21,
+  "path": "evidenceImage.caption",
+  "orig": "Presne takéto investičné reklamy s falošným logom energetickej firmy kolujú na Instagrame a Facebooku.",
+  "new": "Ukážka investičnej reklamy, ktorá zneužíva známe meno alebo značku a láka na nereálne vysoký výnos."
+ },
+ {
+  "row": 326,
+  "slideId": 22,
+  "path": "title",
+  "orig": "Ako si overiť firmu skôr, než jej dáte peniaze",
+  "new": "Ako si overiť firmu skôr, než jej dáte peniaze"
+ },
+ {
+  "row": 327,
+  "slideId": 22,
+  "path": "lead",
+  "orig": "Predtým než pošlete čo i len euro, dá sa firma preveriť za pár minút. Tu sú tri spôsoby, ktoré zvládnete aj sami.",
+  "new": "Predtým, než pošlete peniaze alebo niečo podpíšete, venujte pár minút overeniu firmy. Tu sú tri jednoduché spôsoby."
+ },
+ {
+  "row": 328,
+  "slideId": 22,
+  "path": "task",
+  "orig": "Kliknite postupne na <strong>všetky tri políčka</strong> a prečítajte si, ako sa dá firma preveriť.",
+  "new": "Kliknite postupne na <strong>všetky tri políčka</strong> a pozrite si, ako si môžete firmu preveriť."
+ },
+ {
+  "row": 329,
+  "slideId": 22,
+  "path": "cells[].title",
+  "orig": "Pozrite zoznam na www.nbs.sk",
+  "new": "Overte firmu na nbs.sk"
+ },
+ {
+  "row": 330,
+  "slideId": 22,
+  "path": "cells[].title",
+  "orig": "Prečítajte si varovania NBS",
+  "new": "Pozrite si varovania NBS"
+ },
+ {
+  "row": 331,
+  "slideId": 22,
+  "path": "cells[].title",
+  "orig": "Opýtajte sa AI na druhý názor",
+  "new": "Opýtajte sa AI na druhý názor"
+ },
+ {
+  "row": 332,
+  "slideId": 22,
+  "path": "cells[].text",
+  "orig": "Národná banka Slovenska vedie zoznam všetkých firiem, ktoré smú na Slovensku ponúkať investície. Ak tam firma nie je, nemá na to povolenie — a vaše peniaze nie sú chránené.",
+  "new": "Na stránke Národnej banky Slovenska si môžete overiť, či má firma oprávnenie na finančnú službu, ktorú vám ponúka. Skontrolujte presný názov firmy a jej identifikačné údaje."
+ },
+ {
+  "row": 333,
+  "slideId": 22,
+  "path": "cells[].text",
+  "orig": "Na tej istej stránke nájdete aj zoznam firiem, pred ktorými NBS priamo varuje. Podvodníci často zneužívajú mená bánk, energetických firiem či známych osobností.",
+  "new": "NBS zverejňuje aj upozornenia na rizikové alebo neoprávnené ponuky. Podvodníci pritom často zneužívajú názvy známych firiem, bánk alebo osobností."
+ },
+ {
+  "row": 334,
+  "slideId": 22,
+  "path": "cells[].text",
+  "orig": "Napíšte: „Ponúka mi investíciu firma XY. Povedz mi, na čo si mám dať pozor a ako si ju overím.“ Odpoveď si potom skontrolujte na nbs.sk — AI vám pomôže vedieť, čo hľadať.",
+  "new": "Môžete napísať napríklad: „Ponúka mi investíciu firma XY. Na čo si mám dať pozor a ako si ju overím?“ AI vám pomôže pripraviť kontrolný zoznam, ale výsledok si vždy overte na oficiálnych stránkach."
+ },
+ {
+  "row": 335,
+  "slideId": 22,
+  "path": "note",
+  "orig": "Seriózna firma vám nikdy nebráni požiadať si o čas na rozmyslenie a overenie.",
+  "new": "Seriózna firma by vám mala dať čas na rozmyslenie a umožniť, aby ste si jej údaje a ponuku nezávisle overili."
+ },
+ {
+  "row": 336,
+  "slideId": 23,
+  "path": "title",
+  "orig": "Opakovanie: nájdite chyták",
+  "new": "Opakovanie: nájdite chyták"
+ },
+ {
+  "row": 337,
+  "slideId": 23,
+  "path": "lead",
+  "orig": "Posledné cvičenie tejto časti. Tentoraz podvodník kombinuje hneď dve taktiky naraz — strach aj sľub peňazí.",
+  "new": "Na záver tejto časti si vyskúšate správu, ktorá spája dve taktiky naraz — strach aj sľub peňazí."
+ },
+ {
+  "row": 338,
+  "slideId": 23,
+  "path": "task",
+  "orig": "Nájdite <strong>3 varovné znaky</strong>. Skúste si najprv sami tipnúť, ktoré časti sú podozrivé, a až potom na ne kliknite.",
+  "new": "Nájdite <strong>3 varovné znaky</strong>. Najprv si skúste sami tipnúť, ktoré časti sú podozrivé, a až potom na ne kliknite."
+ },
+ {
+  "row": 339,
+  "slideId": 23,
+  "path": "message.from",
+  "orig": "podpora@banka-sk24.info",
+  "new": "podpora@banka-sk24.info"
+ },
+ {
+  "row": 340,
+  "slideId": 23,
+  "path": "message.subject",
+  "orig": "URGENTNÉ: Váš účet a výhra",
+  "new": "URGENTNÉ: Váš účet a výhra"
+ },
+ {
+  "row": 341,
+  "slideId": 23,
+  "path": "message.body",
+  "orig": "Vážený zákazník, [[váš účet bude do 2 hodín zablokovaný]], pokiaľ [[nepotvrdíte údaje kliknutím na odkaz]]. Zároveň vám oznamujeme, že ste vyžrebovaný a získavate [[500 € — stačí zaslať údaje o karte]].",
+  "new": "Vážený zákazník, [[váš účet bude do 2 hodín zablokovaný]], pokiaľ [[nepotvrdíte údaje kliknutím na odkaz]]. Zároveň vám oznamujeme, že ste vyžrebovaný a získavate [[500 € — stačí zaslať údaje o karte]]."
+ },
+ {
+  "row": 342,
+  "slideId": 23,
+  "path": "clues[]",
+  "orig": "Krátky časový limit (2 hodiny) vyvoláva paniku — ešte kratší než v predošlých príkladoch.",
+  "new": "Krátky časový limit „do 2 hodín“ má vyvolať stres a prinútiť vás konať skôr, než si správu overíte."
+ },
+ {
+  "row": 343,
+  "slideId": 23,
+  "path": "clues[]",
+  "orig": "Odkaz žiadajúci potvrdenie údajov — klasický phishing, ktorý už poznáte.",
+  "new": "Odkaz na „potvrdenie údajov“ je typický znak phishingu. Do internetbankingu sa prihlasujte iba cez oficiálnu aplikáciu alebo adresu, ktorú poznáte."
+ },
+ {
+  "row": 344,
+  "slideId": 23,
+  "path": "clues[]",
+  "orig": "Sľub výhry výmenou za údaje karty — podvodník mieša strach aj návnadu peniazmi v jednej správe.",
+  "new": "Sľub výhry výmenou za údaje z karty je ďalší silný varovný znak. Podvodník tu spája strach so sľubom peňazí."
+ },
+ {
+  "row": 345,
+  "slideId": 23,
+  "path": "footer",
+  "orig": "Zvládli ste tretiu časť! Rozoznáte podvodný e-mail, telefonát aj SMS. V ďalšej časti sa pozrieme na hoaxy a fotografie vytvorené umelou inteligenciou.",
+  "new": "Výborne. Už viete rozpoznať podozrivý e-mail, telefonát aj SMS. Ďalej sa pozrieme na hoaxy, dezinformácie a obrázky vytvorené umelou inteligenciou."
+ },
+ {
+  "row": 346,
+  "slideId": 24,
+  "path": "title",
+  "orig": "Poplašná správa zo sociálnej siete",
+  "new": "Poplašná správa zo sociálnej siete"
+ },
+ {
+  "row": 347,
+  "slideId": 24,
+  "path": "lead",
+  "orig": "Hoax nechce vaše peniaze priamo — chce vašu pozornosť a vaše zdieľanie. Šíri sa preto, že v nás vyvoláva silné emócie.",
+  "new": "Hoax často nechce vaše peniaze priamo. Snaží sa vyvolať silnú emóciu, aby ste správu bez overenia poslali ďalej."
+ },
+ {
+  "row": 348,
+  "slideId": 24,
+  "path": "task",
+  "orig": "Nájdite <strong>3 varovné signály hoaxu</strong>. Kliknite na podčiarknuté časti príspevku.",
+  "new": "Nájdite <strong>3 varovné signály hoaxu</strong>. Kliknite na podčiarknuté časti príspevku."
+ },
+ {
+  "row": 349,
+  "slideId": 24,
+  "path": "message.from",
+  "orig": "zdieľané na sociálnej sieti",
+  "new": "zdieľané na sociálnej sieti"
+ },
+ {
+  "row": 350,
+  "slideId": 24,
+  "path": "message.body",
+  "orig": "[[POZOR!]] EÚ od budúceho roka [[ZAKÁŽE hotovosť!]] Všetky peniaze budú len elektronické. [[Zdieľajte, kým to nezmažú!!!]]",
+  "new": "[[POZOR!]] EÚ od budúceho roka [[ZAKÁŽE hotovosť!]] Všetky peniaze budú len elektronické. [[Zdieľajte, kým to nezmažú!!!]]"
+ },
+ {
+  "row": 351,
+  "slideId": 24,
+  "path": "clues[]",
+  "orig": "VEĽKÉ PÍSMENÁ a výkričníky — snaha vyvolať silné emócie namiesto vecnej informácie.",
+  "new": "VEĽKÉ PÍSMENÁ a množstvo výkričníkov majú upútať pozornosť a vyvolať emócie. Samy osebe nedokazujú, že je správa nepravdivá, ale sú dôvodom spozornieť."
+ },
+ {
+  "row": 352,
+  "slideId": 24,
+  "path": "clues[]",
+  "orig": "Tvrdenie bez odkazu na oficiálny zdroj — pravdivá správa vždy uvádza, odkiaľ pochádza.",
+  "new": "Chýba overiteľný zdroj. Dôveryhodné tvrdenie by malo byť možné skontrolovať na oficiálnej stránke alebo vo viacerých spoľahlivých médiách."
+ },
+ {
+  "row": 353,
+  "slideId": 24,
+  "path": "clues[]",
+  "orig": "Výzva „zdieľajte, kým to nezmažú“ — tlak na okamžité šírenie, aby ste to nestihli overiť.",
+  "new": "Výzva „zdieľajte, kým to nezmažú“ vytvára tlak na okamžité šírenie. Namiesto zdieľania sa najprv zastavte a informáciu si overte."
+ },
+ {
+  "row": 354,
+  "slideId": 24,
+  "path": "footer",
+  "orig": "Kde si overiť pravdu: nbs.sk, slov-lex.sk (znenie zákonov), seriózne médiá alebo facebooková stránka Polícia SR — „Hoaxy a podvody“.",
+  "new": "Pravdu si overujte na oficiálnych stránkach, napríklad nbs.sk, slov-lex.sk alebo stránkach Polície SR, a porovnajte ju aj s dôveryhodnými médiami."
+ },
+ {
+  "row": 355,
+  "slideId": 25,
+  "path": "title",
+  "orig": "Skutočné príklady poplašných správ",
+  "new": "Skutočné príklady poplašných správ"
+ },
+ {
+  "row": 356,
+  "slideId": 25,
+  "path": "lead",
+  "orig": "Takto vyzerali dva hoaxy, ktoré na Slovensku obehli tisíce ľudí. Jeden vyvolával paniku, druhý dokonca ohrozoval zdravie.",
+  "new": "Pozrieme sa na dva príklady hoaxov, ktoré sa šírili medzi ľuďmi. Jeden vyvolával strach, druhý obsahoval nebezpečnú zdravotnú radu."
+ },
+ {
+  "row": 357,
+  "slideId": 25,
+  "path": "task",
+  "orig": "Kliknite na <strong>názov správy vľavo</strong> a potom na <strong>vysvetlenie vpravo</strong>, prečo je nebezpečná.",
+  "new": "Kliknite na <strong>názov správy vľavo</strong> a potom na <strong>vysvetlenie vpravo</strong>, prečo môže byť nebezpečná."
+ },
+ {
+  "row": 358,
+  "slideId": 25,
+  "path": "pairs[].left",
+  "orig": "„Tanky na Záhorí“",
+  "new": "„Tanky na Záhorí“"
+ },
+ {
+  "row": 359,
+  "slideId": 25,
+  "path": "pairs[].left",
+  "orig": "„Kašľaním proti infarktu“",
+  "new": "„Kašľaním proti infarktu“"
+ },
+ {
+  "row": 360,
+  "slideId": 25,
+  "path": "pairs[].right",
+  "orig": "VEĽKÉ PÍSMENÁ, výkričníky, „ZDIEĽAJTE!!“ — vyvoláva zbytočnú paniku.",
+  "new": "VEĽKÉ PÍSMENÁ, výkričníky a výzva „ZDIEĽAJTE!!“ tlačia na emócie a rýchle šírenie bez overenia."
+ },
+ {
+  "row": 361,
+  "slideId": 25,
+  "path": "pairs[].right",
+  "orig": "Nebezpečná zdravotná rada — pri podozrení na infarkt vždy volajte 155 alebo 112.",
+  "new": "Nebezpečná zdravotná rada — pri podozrení na infarkt volajte čo najskôr 155 alebo 112."
+ },
+ {
+  "row": 362,
+  "slideId": 25,
+  "path": "pairs[].why",
+  "orig": "Táto správa nemala žiadny oficiálny zdroj a šírila strach z vojny. Overiť sa dala za minútu na stránke polície.",
+  "new": "Správa šírila strach bez spoľahlivého zdroja. Namiesto ďalšieho zdieľania bolo potrebné overiť ju na oficiálnych stránkach."
+ },
+ {
+  "row": 363,
+  "slideId": 25,
+  "path": "pairs[].why",
+  "orig": "Toto je najnebezpečnejší typ hoaxu — môže stáť život. Pri infarkte je každá sekunda dôležitá a kašľanie situáciu len zhoršuje.",
+  "new": "Zdravotné hoaxy môžu byť obzvlášť nebezpečné, pretože môžu oddialiť správnu pomoc. Pri príznakoch infarktu neexperimentujte s internetovými radami — volajte 155 alebo 112."
+ },
+ {
+  "row": 364,
+  "slideId": 25,
+  "path": "note",
+  "orig": "Čím viac výkričníkov, tým menej pravdy. Skôr než správu zdieľate ďalej, dajte si chvíľu pauzu.",
+  "new": "Veľa výkričníkov a silných emócií nie je dôkazom klamstva, ale je to signál, že máte spomaliť. Pred zdieľaním si správu overte."
+ },
+ {
+  "row": 365,
+  "slideId": 25,
+  "path": "gallery[].caption",
+  "orig": "„Tanky na Záhorí“ — takto vyzerá skutočný hoax na Facebooku, aj s označením HOAX od stránky, ktorá klamstvá vyvracia.",
+  "new": "„Tanky na Záhorí“ — príklad poplašnej správy zo sociálnej siete, ktorá bola následne označená a vysvetlená ako hoax."
+ },
+ {
+  "row": 366,
+  "slideId": 25,
+  "path": "gallery[].caption",
+  "orig": "„Kašľaním proti infarktu“ — skutočná poplašná správa s nebezpečnou zdravotnou radou.",
+  "new": "„Kašľaním proti infarktu“ — príklad nebezpečnej zdravotnej dezinformácie."
+ },
+ {
+  "row": 367,
+  "slideId": 26,
+  "path": "title",
+  "orig": "Keď dezinformácia vyzerá ako spravodajstvo",
+  "new": "Keď dezinformácia vyzerá ako spravodajstvo"
+ },
+ {
+  "row": 368,
+  "slideId": 26,
+  "path": "lead",
+  "orig": "Najzákernejšie sú správy, ktoré vyzerajú ako seriózny článok — majú logo, autora aj odkaz na „štúdiu“. O to dôležitejšie je vedieť si položiť správne otázky.",
+  "new": "Niektoré dezinformácie vyzerajú ako bežný spravodajský článok — majú logo, autora aj odkaz na údajnú štúdiu. Preto sa oplatí pozrieť nielen na vzhľad, ale najmä na zdroje."
+ },
+ {
+  "row": 369,
+  "slideId": 26,
+  "path": "task",
+  "orig": "Kliknite postupne na <strong>všetky tri kľúče</strong>. Za každým je jedna otázka, ktorou takýto článok preveríte.",
+  "new": "Kliknite postupne na <strong>všetky tri kľúče</strong>. Za každým sa skrýva jedna otázka, ktorá vám pomôže článok preveriť."
+ },
+ {
+  "row": 370,
+  "slideId": 26,
+  "path": "cells[].title",
+  "orig": "Kde je pôvodná štúdia?",
+  "new": "Kde je pôvodný zdroj?"
+ },
+ {
+  "row": 371,
+  "slideId": 26,
+  "path": "cells[].title",
+  "orig": "Na akú emóciu hrá?",
+  "new": "Na akú emóciu článok hrá?"
+ },
+ {
+  "row": 372,
+  "slideId": 26,
+  "path": "cells[].title",
+  "orig": "Opýtajte sa AI",
+  "new": "Nechajte si pomôcť AI"
+ },
+ {
+  "row": 373,
+  "slideId": 26,
+  "path": "cells[].text",
+  "orig": "Odkaz vedie len na vlastný web stránky — na skutočnú štúdiu sa nedostanete. Seriózny článok vždy uvedie zdroj, ktorý sa dá otvoriť a overiť.",
+  "new": "Kliknite na uvedený zdroj a skúste sa dostať až k pôvodnej štúdii alebo oficiálnemu dokumentu. Dôveryhodný článok by mal umožniť tvrdenia overiť."
+ },
+ {
+  "row": 374,
+  "slideId": 26,
+  "path": "cells[].text",
+  "orig": "Strach o zdravie a domov sa zdieľa najrýchlejšie. Ak vo vás článok vyvoláva hnev alebo strach, je to dôvod spomaliť — nie zdieľať.",
+  "new": "Strach a hnev nás často nútia reagovať rýchlo. Ak vo vás článok vyvolá silnú emóciu, berte to ako signál: nezdieľať hneď, ale najprv overiť."
+ },
+ {
+  "row": 375,
+  "slideId": 26,
+  "path": "cells[].text",
+  "orig": "Napíšte: „Je pravda, že infrazvuk z veterných turbín spôsobuje srdcové choroby? Čo hovoria overené zdroje a kde si to môžem skontrolovať?“",
+  "new": "Môžete sa opýtať napríklad: „Je pravda, že infrazvuk z veterných turbín spôsobuje srdcové choroby? Uveď dôveryhodné zdroje, kde si to môžem overiť.“ Zdroje si potom otvorte a skontrolujte."
+ },
+ {
+  "row": 376,
+  "slideId": 26,
+  "path": "note",
+  "orig": "Pravdivá informácia sa dá overiť z viacerých nezávislých zdrojov. Ak ju nájdete len na jednom webe, buďte opatrní.",
+  "new": "Dôležité tvrdenie si skúste potvrdiť vo viacerých nezávislých dôveryhodných zdrojoch. Ak ho nachádzate iba na jednom neznámom webe, buďte opatrní."
+ },
+ {
+  "row": 377,
+  "slideId": 26,
+  "path": "evidenceImage.caption",
+  "orig": "Presne tento príspevok o veterných turbínach koloval na sociálnych sieťach — vyzerá ako spravodajstvo, no ide o zavádzajúci výklad jednej štúdie.",
+  "new": "Príklad príspevku o veterných turbínach, ktorý pôsobí ako spravodajstvo, no tvrdenia v ňom treba porovnať s pôvodnou štúdiou a ďalšími dôveryhodnými zdrojmi."
+ },
+ {
+  "row": 378,
+  "slideId": 27,
+  "path": "title",
+  "orig": "Skutočná fotografia, alebo AI?",
+  "new": "Skutočná fotografia, alebo AI?"
+ },
+ {
+  "row": 379,
+  "slideId": 27,
+  "path": "lead",
+  "orig": "Umelá inteligencia dnes vytvorí obrázok, ktorý na prvý pohľad vyzerá ako skutočná fotografia. Podvodníci ich používajú na vymyslené zbierky, falošné výhry aj reklamy so známymi osobnosťami.",
+  "new": "Umelá inteligencia dnes dokáže vytvoriť obrázky, ktoré vyzerajú veľmi vierohodne. Takéto obrázky sa môžu objaviť v podvodných zbierkach, falošných reklamách aj príspevkoch so známymi osobnosťami."
+ },
+ {
+  "row": 380,
+  "slideId": 27,
+  "path": "task",
+  "orig": "Uvidíte <strong>dve fotografie</strong>. Pri každej kliknite, či je podľa vás skutočná, alebo vytvorená umelou inteligenciou. Obrázok si môžete kliknutím zväčšiť.",
+  "new": "Uvidíte <strong>dve fotografie</strong>. Pri každej vyberte, či je podľa vás skutočná, alebo vytvorená umelou inteligenciou. Obrázok si môžete kliknutím zväčšiť."
+ },
+ {
+  "row": 381,
+  "slideId": 27,
+  "path": "rounds[].explain",
+  "orig": "Je to AI — všimnite si, že rozliata farba je nerealisticky dramatická, kvapky vo vzduchu nesedia s jedným prevrhnutým vedrom a perspektíva škvŕn na posteli aj stene pôsobí zvláštne. Mačka aj textúry vyzerajú takmer presvedčivo — a presne to robí AI fotografie nebezpečnými.",
+  "new": "Táto ukážka bola vytvorená pomocou AI. Niektoré detaily pôsobia neprirodzene — napríklad rozliata farba, kvapky či perspektíva. Pozor však: dnešné AI obrázky už často žiadne nápadné chyby nemajú."
+ },
+ {
+  "row": 382,
+  "slideId": 27,
+  "path": "rounds[].explain",
+  "orig": "Je to skutočná fotografia — svetlo, tiene aj drobné nedokonalosti (prirodzené záhyby oblečenia, nerovnomerné pozadie) sedia s bežným fotoaparátom. Nič nepôsobí „príliš dokonalo“.",
+  "new": "Táto ukážka je skutočná fotografia. Prirodzené svetlo, tiene a drobné nedokonalosti tu zodpovedajú fotografii z fotoaparátu. Ani to však samo osebe nie je dôkaz — pri dôležitom obrázku vždy overujte aj jeho zdroj a kontext."
+ },
+ {
+  "row": 383,
+  "slideId": 27,
+  "path": "checklist[].title",
+  "orig": "Ruky a prsty",
+  "new": "Ruky a prsty"
+ },
+ {
+  "row": 384,
+  "slideId": 27,
+  "path": "checklist[].title",
+  "orig": "Tvár",
+  "new": "Tvár a detaily"
+ },
+ {
+  "row": 385,
+  "slideId": 27,
+  "path": "checklist[].title",
+  "orig": "Text na obrázku",
+  "new": "Text na obrázku"
+ },
+ {
+  "row": 386,
+  "slideId": 27,
+  "path": "checklist[].title",
+  "orig": "Svetlo a tiene",
+  "new": "Svetlo a tiene"
+ },
+ {
+  "row": 387,
+  "slideId": 27,
+  "path": "checklist[].title",
+  "orig": "Pozadie",
+  "new": "Pozadie a súvislosti"
+ },
+ {
+  "row": 388,
+  "slideId": 27,
+  "path": "checklist[].text",
+  "orig": "Neprirodzený počet alebo tvar prstov — najčastejšia chyba AI.",
+  "new": "Nezvyčajný počet alebo tvar prstov môže byť stopou. Novšie AI však už ruky často vytvárajú správne, preto sa nespoliehajte iba na tento znak."
+ },
+ {
+  "row": 389,
+  "slideId": 27,
+  "path": "checklist[].text",
+  "orig": "Nesúmerné oči, príliš pravidelné zuby, zvláštne uši alebo okuliare.",
+  "new": "Všímajte si zvláštne oči, zuby, uši, okuliare alebo drobné detaily. Sú to len indície, nie spoľahlivý dôkaz."
+ },
+ {
+  "row": 390,
+  "slideId": 27,
+  "path": "checklist[].text",
+  "orig": "Nápisy bývajú nezrozumiteľné alebo s preklepmi.",
+  "new": "Nápisy môžu byť skomolené alebo nezmyselné. Aj v tomto sa však AI rýchlo zlepšuje."
+ },
+ {
+  "row": 391,
+  "slideId": 27,
+  "path": "checklist[].text",
+  "orig": "Tiene dopadajú rôznymi smermi, pokožka je príliš hladká.",
+  "new": "Skontrolujte, či svetlo a tiene dávajú zmysel a či predmety pôsobia, akoby boli v jednej scéne."
+ },
+ {
+  "row": 392,
+  "slideId": 27,
+  "path": "checklist[].text",
+  "orig": "Zdeformované alebo nelogické objekty, ktoré do scény nepatria.",
+  "new": "Hľadajte nelogické alebo zdeformované predmety a potom si položte dôležitejšiu otázku: odkiaľ obrázok pochádza a dá sa jeho príbeh overiť?"
+ },
+ {
+  "row": 393,
+  "slideId": 27,
+  "path": "note",
+  "orig": "Platí to aj pre videá — hovorí sa tomu deepfake. Fotografia už dnes nie je dôkazom, že sa niečo naozaj stalo.",
+  "new": "Platí to aj pri videách — hovoríme im deepfake videá. Samotná fotografia alebo video už nemusia dokazovať, že sa udalosť naozaj stala. Dôležitý je aj zdroj a kontext."
+ },
+ {
+  "row": 394,
+  "slideId": 28,
+  "path": "title",
+  "orig": "Zložitá zmluva? Odfoťte ju AI",
+  "new": "Zložitá zmluva? AI vám ju môže pomôcť vysvetliť"
+ },
+ {
+  "row": 395,
+  "slideId": 28,
+  "path": "lead",
+  "orig": "Doteraz sme AI používali na odhaľovanie podvodov. Teraz si ukážeme, ako vám pomôže aj pri úplne bežnom papieri — zmluve, ktorej nerozumiete.",
+  "new": "AI nemusí slúžiť iba na odhaľovanie podvodov. Môže vám pomôcť zrozumiteľne vysvetliť aj zložitý text zo zmluvy alebo iného dokumentu."
+ },
+ {
+  "row": 396,
+  "slideId": 28,
+  "path": "task",
+  "orig": "Uvidíte <strong>dve otázky</strong> k zmluve o dodávke elektriny. Kliknite na tú, ktorá vám prinesie užitočnejšiu odpoveď.",
+  "new": "Uvidíte <strong>dve otázky</strong> k zmluve o dodávke elektriny. Kliknite na tú, ktorá podľa vás prinesie užitočnejšiu odpoveď."
+ },
+ {
+  "row": 397,
+  "slideId": 28,
+  "path": "intro",
+  "orig": "Zmluvy, poistky, úvery — AI vám ich preloží do ľudskej reči. Stačí dokument odfotiť priamo v aplikácii.",
+  "new": "Pri zmluve sa pýtajte na konkrétne veci: poplatky, pokuty, dobu trvania či výpoveď. Citlivé údaje pred vložením dokumentu odstráňte alebo prekryte."
+ },
+ {
+  "row": 398,
+  "slideId": 28,
+  "path": "rounds[].weak",
+  "orig": "Je táto zmluva dobrá?",
+  "new": "Je táto zmluva dobrá?"
+ },
+ {
+  "row": 399,
+  "slideId": 28,
+  "path": "rounds[].good",
+  "orig": "Vysvetli mi ju jednoducho: Na čo si mám dať pozor? Aké sú tam poplatky a pokuty? Dá sa vypovedať?",
+  "new": "Vysvetli mi túto zmluvu jednoducho. Na čo si mám dať pozor? Aké sú v nej poplatky a pokuty? Ako sa dá ukončiť?"
+ },
+ {
+  "row": 400,
+  "slideId": 28,
+  "path": "rounds[].why",
+  "orig": "Konkrétne otázky prinesú konkrétne odpovede — napríklad o výške pokuty či dĺžke výpovednej lehoty. Na otázku „je dobrá?“ vám AI odpovie len všeobecne.",
+  "new": "Konkrétna otázka vedie k užitočnejšej odpovedi. AI môže upozorniť napríklad na pokutu, dobu trvania alebo výpovednú lehotu. Jej odpoveď si však vždy porovnajte s pôvodným textom zmluvy."
+ },
+ {
+  "row": 401,
+  "slideId": 28,
+  "path": "rounds[].answerPreview",
+  "orig": "Zmluva je na 24 mesiacov. Pri predčasnom ukončení hrozí pokuta 150 €. Pozor na článok 7 — zmluva sa automaticky predĺži, ak ju nevypoviete 3 mesiace vopred.",
+  "new": "Napríklad: „Zmluva je uzatvorená na 24 mesiacov. Pri predčasnom ukončení sa v článku 7 uvádza pokuta 150 €. Skontrolujte aj podmienky automatického predĺženia.“"
+ },
+ {
+  "row": 402,
+  "slideId": 28,
+  "path": "note",
+  "orig": "Osobné údaje na dokumente pred odfotením prekryte. Pri zmluvách vysokej hodnoty sa vždy poraďte aj s právnikom alebo notárom.",
+  "new": "Pred vložením dokumentu odstráňte alebo prekryte osobné a citlivé údaje. AI sa môže pomýliť, preto pri dôležitej zmluve rozhodujte podľa originálu a podľa potreby sa poraďte s odborníkom."
+ },
+ {
+  "row": 403,
+  "slideId": 29,
+  "path": "title",
+  "orig": "Trezor: čo nikdy nezadávame",
+  "new": "Trezor: čo do AI radšej nezadávame"
+ },
+ {
+  "row": 404,
+  "slideId": 29,
+  "path": "lead",
+  "orig": "AI je výborný pomocník, ale nie je určená na vaše citlivé údaje. Platí pri nej to isté pravidlo ako pri e-mailoch a telefonátoch.",
+  "new": "AI je užitočný pomocník, ale citlivé osobné a bankové údaje do chatu nepatria. Na vysvetlenie situácie ich väčšinou vôbec nepotrebuje."
+ },
+ {
+  "row": 405,
+  "slideId": 29,
+  "path": "task",
+  "orig": "Kliknite na kartičku a potom na políčko, kam patrí: <strong>Trezor</strong> (nikdy nikomu — ani AI), alebo <strong>Chat s AI</strong> (pokojne sa opýtajte).",
+  "new": "Kliknite na kartičku a potom ju zaraďte: <strong>Trezor</strong> (citlivý údaj — nezadávame), alebo <strong>Chat s AI</strong> (otázka bez citlivých údajov)."
+ },
+ {
+  "row": 406,
+  "slideId": 29,
+  "path": "tip",
+  "orig": "Do AI sa pýtame na vysvetlenie. Nikdy do nej nevkladáme citlivé osobné ani bankové údaje.",
+  "new": "Do AI opisujeme problém a pýtame sa na vysvetlenie. Heslá, bezpečnostné kódy a citlivé osobné údaje do nej nezadávame."
+ },
+ {
+  "row": 407,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "heslo do internetbankingu",
+  "new": "heslo do internetbankingu"
+ },
+ {
+  "row": 408,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "číslo karty, PIN a CVV/CVC",
+  "new": "číslo karty, PIN a CVV/CVC"
+ },
+ {
+  "row": 409,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "rodné číslo a číslo dokladu",
+  "new": "rodné číslo a číslo dokladu"
+ },
+ {
+  "row": 410,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "autorizačný SMS kód z banky",
+  "new": "autorizačný SMS kód z banky"
+ },
+ {
+  "row": 411,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "„budem 2 týždne preč, dom bude prázdny“",
+  "new": "„budem 2 týždne preč, dom bude prázdny“"
+ },
+ {
+  "row": 412,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "fotografia dokladu bez prekrytia",
+  "new": "fotografia dokladu bez prekrytia"
+ },
+ {
+  "row": 413,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "„je tento e-mail podozrivý?“",
+  "new": "„je tento e-mail podozrivý?“"
+ },
+ {
+  "row": 414,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "„ako spoznám podvodný telefonát?“",
+  "new": "„ako spoznám podvodný telefonát?“"
+ },
+ {
+  "row": 415,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "zmluva s vopred prekrytými osobnými údajmi",
+  "new": "časť zmluvy s prekrytými osobnými údajmi"
+ },
+ {
+  "row": 416,
+  "slideId": 29,
+  "path": "items[].text",
+  "orig": "„vysvetli mi tento výraz jednoducho“",
+  "new": "„vysvetli mi tento výraz jednoducho“"
+ },
+ {
+  "row": 417,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Heslo nepatrí nikam okrem prihlasovacej stránky vašej banky. Ani AI ho na nič nepotrebuje.",
+  "new": "Heslo do banky patrí iba do oficiálneho prihlasovania banky. AI ho na vysvetlenie situácie nepotrebuje."
+ },
+ {
+  "row": 418,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Kto pozná číslo karty spolu s CVV, môže s ňou zaplatiť. Tieto tri údaje spolu nikdy nikam nepíšte.",
+  "new": "Údaje z platobnej karty môžu byť zneužité na platby. Do chatu ich preto nevpisujte ani ich neposielajte cudzej osobe."
+ },
+ {
+  "row": 419,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "S rodným číslom a číslom dokladu sa dá zneužiť vaša totožnosť — napríklad na uzavretie pôžičky na vaše meno.",
+  "new": "Rodné číslo a údaje z dokladu patria medzi citlivé osobné údaje a môžu byť zneužité pri krádeži identity. Do AI ich na bežné vysvetlenie nezadávajte."
+ },
+ {
+  "row": 420,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Tento kód je posledná poistka pred odoslaním peňazí. Nikomu ho nediktujte ani neprepisujte — ani „pracovníkovi banky“.",
+  "new": "Autorizačný kód môže potvrdiť prihlásenie alebo platbu. Nikomu ho nediktujte ani neposielajte — ani človeku, ktorý sa vydáva za pracovníka banky."
+ },
+ {
+  "row": 421,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Informácia o vašej neprítomnosti je cenná pre zlodejov. Nezdieľajte ju na internete — ani v chate, ani na sociálnych sieťach.",
+  "new": "Informáciu o tom, že bude váš dom dlhšie prázdny, nie je rozumné verejne zdieľať. Na radu od AI presný termín ani adresu nepotrebujete."
+ },
+ {
+  "row": 422,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Na doklade je rodné číslo aj číslo dokladu naraz. Ak už dokument fotíte, citlivé údaje najprv prekryte papierikom.",
+  "new": "Fotografia dokladu obsahuje množstvo citlivých údajov. Ak potrebujete vysvetliť časť dokumentu, citlivé údaje najprv prekryte alebo použite iba potrebný výsek."
+ },
+ {
+  "row": 423,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Presne na toto je AI výborná. Text e-mailu neobsahuje vaše tajné údaje, takže ho môžete pokojne prepísať.",
+  "new": "Na takúto otázku vám AI môže pomôcť. Pred vložením e-mailu však odstráňte svoje meno, čísla účtov, odkazy s osobnými kódmi a ďalšie citlivé údaje."
+ },
+ {
+  "row": 424,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Všeobecná otázka o bezpečnosti — žiadne vaše osobné údaje. AI vám rada vysvetlí varovné znaky.",
+  "new": "Všeobecná otázka o bezpečnosti nevyžaduje vaše osobné údaje. AI vám môže vysvetliť typické varovné znaky."
+ },
+ {
+  "row": 425,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Takto je to správne: obsah zmluvy AI potrebuje, vaše meno a rodné číslo nie. Stačí ich prekryť.",
+  "new": "To je bezpečnejší postup. AI zvyčajne potrebuje text, ktorému nerozumiete, nie vaše meno, rodné číslo ani podpis. Pri citlivých zmluvách zvážte vloženie iba potrebnej časti."
+ },
+ {
+  "row": 426,
+  "slideId": 29,
+  "path": "items[].why",
+  "orig": "Ideálne využitie AI. Nič neriskujete a dostanete zrozumiteľné vysvetlenie ktoréhokoľvek cudzieho slova.",
+  "new": "Takáto všeobecná otázka je vhodným použitím AI. Na vysvetlenie výrazu nemusíte uvádzať žiadne osobné údaje."
+ },
+ {
+  "row": 427,
+  "slideId": 29,
+  "path": "baskets[].label",
+  "orig": "Trezor — nikdy nezadávame",
+  "new": "Trezor — nezadávame"
+ },
+ {
+  "row": 428,
+  "slideId": 29,
+  "path": "baskets[].label",
+  "orig": "Chat s AI — v poriadku",
+  "new": "Chat s AI — bez citlivých údajov"
+ },
+ {
+  "row": 429,
+  "slideId": 29,
+  "path": "baskets[].desc",
+  "orig": "Citlivé údaje, heslá, kódy, čísla kariet, neprekryté doklady.",
+  "new": "Heslá, PIN-y, autorizačné kódy, údaje z karty a neprekryté osobné doklady."
+ },
+ {
+  "row": 430,
+  "slideId": 29,
+  "path": "baskets[].desc",
+  "orig": "Otázky, vysvetlenie pojmov, posúdenie podozrivého obsahu bez citlivých údajov.",
+  "new": "Všeobecné otázky, vysvetlenie pojmov a posúdenie obsahu po odstránení citlivých údajov."
+ },
+ {
+  "row": 431,
+  "slideId": 29,
+  "path": "sideNote.title",
+  "orig": "Zapamätajte si",
+  "new": "Zapamätajte si"
+ },
+ {
+  "row": 432,
+  "slideId": 29,
+  "path": "sideNote.items[].text",
+  "orig": "AI môže pomôcť vysvetliť alebo posúdiť obsah.",
+  "new": "AI vám môže pomôcť vysvetliť text alebo upozorniť na možné riziká."
+ },
+ {
+  "row": 433,
+  "slideId": 29,
+  "path": "sideNote.items[].text",
+  "orig": "Nikdy nevpisujte citlivé osobné ani bankové údaje.",
+  "new": "Heslá, bezpečnostné kódy a citlivé osobné či bankové údaje do chatu nezadávajte."
+ },
+ {
+  "row": 434,
+  "slideId": 29,
+  "path": "sideNote.items[].text",
+  "orig": "Ak si nie ste istí, údaje najprv zakryte alebo sa poraďte s blízkym.",
+  "new": "Ak si nie ste istí, či je údaj potrebný, radšej ho odstráňte alebo prekryte. AI často dokáže poradiť aj bez neho."
+ },
+ {
+  "row": 435,
+  "slideId": 30,
+  "path": "title",
+  "orig": "Ako sa pýtať bezpečne",
+  "new": "Ako sa pýtať bezpečne"
+ },
+ {
+  "row": 436,
+  "slideId": 30,
+  "path": "lead",
+  "orig": "V predošlom kroku ste sa naučili, čo do AI nepatrí. Teraz si ukážeme, že sa dá opýtať bezpečne — a dostať pritom rovnako užitočnú odpoveď.",
+  "new": "Už viete, ktoré údaje do AI nepatria. Teraz si ukážeme, ako položiť otázku tak, aby bola užitočná aj bez zbytočných osobných a bankových údajov."
+ },
+ {
+  "row": 437,
+  "slideId": 30,
+  "path": "task",
+  "orig": "V otázke nižšie sú <strong>dva citlivé údaje</strong> zvýraznené oranžovou. Kliknite na každý z nich — vysvetlíme, prečo tam nepatrí, a vpravo sa vám poskladá bezpečná verzia otázky.",
+  "new": "V otázke nižšie sú <strong>dva údaje</strong>, ktoré AI na posúdenie situácie nepotrebuje. Kliknite na každý z nich a vpravo sa vám postupne poskladá bezpečnejšia verzia otázky."
+ },
+ {
+  "row": 438,
+  "slideId": 30,
+  "path": "sentence[].text",
+  "orig": "Mám na účte",
+  "new": "Mám na účte"
+ },
+ {
+  "row": 439,
+  "slideId": 30,
+  "path": "sentence[].text",
+  "orig": "12 400 €",
+  "new": "12 400 €"
+ },
+ {
+  "row": 440,
+  "slideId": 30,
+  "path": "sentence[].text",
+  "orig": "a mám ich poslať na účet",
+  "new": "a mám ich poslať na účet"
+ },
+ {
+  "row": 441,
+  "slideId": 30,
+  "path": "sentence[].text",
+  "orig": "SK44 0900 0000 0001 2345 6789",
+  "new": "SK44 0900 0000 0001 2345 6789"
+ },
+ {
+  "row": 442,
+  "slideId": 30,
+  "path": "sentence[].text",
+  "orig": "— je to bezpečné?",
+  "new": "— je to bezpečné?"
+ },
+ {
+  "row": 443,
+  "slideId": 30,
+  "path": "sentence[].why",
+  "orig": "Presná suma nie je pre radu od AI potrebná — stačí povedať, že ide o peniaze. Zároveň prezrádza, koľko máte.",
+  "new": "Presnú sumu AI na posúdenie podozrivej požiadavky nepotrebuje. Stačí povedať, že vás niekto žiada poslať peniaze."
+ },
+ {
+  "row": 444,
+  "slideId": 30,
+  "path": "sentence[].why",
+  "orig": "Číslo účtu je citlivý bankový údaj — a AI ho na posúdenie situácie vôbec nepotrebuje.",
+  "new": "Ani konkrétny IBAN nie je na túto radu potrebný. Radšej opíšte situáciu bez údajov o účte."
+ },
+ {
+  "row": 445,
+  "slideId": 30,
+  "path": "safeVersion",
+  "orig": "Niekto ma žiada, aby som poslal peniaze na neznámy účet. Je to bezpečné?",
+  "new": "Niekto ma žiada, aby som poslal peniaze na neznámy účet. Ako si môžem overiť, či nejde o podvod?"
+ },
+ {
+  "row": 446,
+  "slideId": 30,
+  "path": "takeaway",
+  "orig": "Opíšte situáciu, nie čísla. AI vám poradí rovnako dobre aj bez konkrétnych údajov.",
+  "new": "Opíšte situáciu, nie zbytočné osobné či bankové údaje. Na užitočnú radu ich AI väčšinou nepotrebuje."
+ },
+ {
+  "row": 447,
+  "slideId": 31,
+  "path": "title",
+  "orig": "Šesť zlatých pouček",
+  "new": "Šesť zlatých pravidiel"
+ },
+ {
+  "row": 448,
+  "slideId": 31,
+  "path": "lead",
+  "orig": "Toto je jadro celého kurzu. Šesť viet, ktoré vás ochránia pred väčšinou podvodov.",
+  "new": "Toto je jadro celého kurzu. Šesť jednoduchých pravidiel, ktoré vám pomôžu zastaviť sa skôr, než urobíte niečo rizikové."
+ },
+ {
+  "row": 449,
+  "slideId": 31,
+  "path": "task",
+  "orig": "Kliknite na <strong>začiatok poučky vľavo</strong> a potom na jej <strong>pokračovanie vpravo</strong>.",
+  "new": "Kliknite na <strong>začiatok pravidla vľavo</strong> a potom na jeho <strong>pokračovanie vpravo</strong>."
+ },
+ {
+  "row": 450,
+  "slideId": 31,
+  "path": "pairs[].left",
+  "orig": "„Kto ma naháňa,",
+  "new": "„Keď ma niekto naháňa,"
+ },
+ {
+  "row": 451,
+  "slideId": 31,
+  "path": "pairs[].left",
+  "orig": "„Banka nikdy",
+  "new": "„Heslo, PIN ani kód zo SMS"
+ },
+ {
+  "row": 452,
+  "slideId": 31,
+  "path": "pairs[].left",
+  "orig": "„Ak mám pochybnosti,",
+  "new": "„Ak mám pochybnosti,"
+ },
+ {
+  "row": 453,
+  "slideId": 31,
+  "path": "pairs[].left",
+  "orig": "„Zaručený vysoký zisk",
+  "new": "„Vysoký zisk bez rizika"
+ },
+ {
+  "row": 454,
+  "slideId": 31,
+  "path": "pairs[].left",
+  "orig": "„Umelá inteligencia radí,",
+  "new": "„Umelá inteligencia radí,"
+ },
+ {
+  "row": 455,
+  "slideId": 31,
+  "path": "pairs[].left",
+  "orig": "„Čím viac strachu a výkričníkov,",
+  "new": "„Silné emócie v správe?"
+ },
+ {
+  "row": 456,
+  "slideId": 31,
+  "path": "pairs[].right",
+  "orig": "chce ma pripraviť o peniaze.“",
+  "new": "spomalím a najprv si to overím.“"
+ },
+ {
+  "row": 457,
+  "slideId": 31,
+  "path": "pairs[].right",
+  "orig": "nepýta PIN ani heslo.“",
+  "new": "nikomu neprezrádzam.“"
+ },
+ {
+  "row": 458,
+  "slideId": 31,
+  "path": "pairs[].right",
+  "orig": "ukončím hovor a zavolám späť.“",
+  "new": "ukončím hovor a kontaktujem banku sám.“"
+ },
+ {
+  "row": 459,
+  "slideId": 31,
+  "path": "pairs[].right",
+  "orig": "je varovným signálom.“",
+  "new": "je silný varovný signál.“"
+ },
+ {
+  "row": 460,
+  "slideId": 31,
+  "path": "pairs[].right",
+  "orig": "rozhodnutie robí človek.“",
+  "new": "rozhodnutie robí človek.“"
+ },
+ {
+  "row": 461,
+  "slideId": 31,
+  "path": "pairs[].right",
+  "orig": "tým väčšia opatrnosť.“",
+  "new": "Najprv overím, až potom zdieľam.“"
+ },
+ {
+  "row": 462,
+  "slideId": 31,
+  "path": "pairs[].why",
+  "orig": "Podvodníci vytvárajú časový nátlak zámerne. Seriózna firma vám vždy nechá čas na rozmyslenie.",
+  "new": "Časový tlak je častou taktikou podvodníkov. Keď vás niekto núti konať okamžite, zastavte sa a situáciu si overte."
+ },
+ {
+  "row": 463,
+  "slideId": 31,
+  "path": "pairs[].why",
+  "orig": "Platí to bez výnimky — telefonicky, e-mailom aj SMS. Ak si ich niekto pýta, je to podvodník.",
+  "new": "Heslo, celý PIN ani autorizačný kód zo SMS nediktujte po telefóne ani neposielajte správou. Ak si ich niekto pýta, spozornite."
+ },
+ {
+  "row": 464,
+  "slideId": 31,
+  "path": "pairs[].why",
+  "orig": "Volajte iba na číslo zo zadnej strany karty alebo z oficiálneho webu — nikdy nie na to, ktoré vám nadiktujú.",
+  "new": "Ak sa volajúci vydáva za banku a niečo sa vám nezdá, hovor ukončite. Banku potom kontaktujte sami cez číslo na karte, aplikáciu alebo oficiálny web."
+ },
+ {
+  "row": 465,
+  "slideId": 31,
+  "path": "pairs[].why",
+  "orig": "Vysoký výnos vždy znamená vysoké riziko. Kto tvrdí opak, klame.",
+  "new": "Seriózne investovanie vždy nesie určité riziko. Mimoriadne vysoký „garantovaný“ zisk bez rizika je veľmi podozrivý."
+ },
+ {
+  "row": 466,
+  "slideId": 31,
+  "path": "pairs[].why",
+  "orig": "AI vám pomôže situáciu pochopiť, ale konečné slovo — najmä pri peniazoch — máte vždy vy.",
+  "new": "AI vám môže pomôcť situáciu pochopiť a pripraviť otázky. Konečné rozhodnutie — najmä pri peniazoch — však nerobte iba podľa jej odpovede."
+ },
+ {
+  "row": 467,
+  "slideId": 31,
+  "path": "pairs[].why",
+  "orig": "Dôveryhodné informácie bývajú pokojné a vecné. Panika je nástroj manipulácie.",
+  "new": "Strach, hnev alebo naliehavosť nás môžu prinútiť reagovať bez rozmýšľania. Pri emotívnej správe spomaľte a overte si ju."
+ },
+ {
+  "row": 468,
+  "slideId": 31,
+  "path": "note",
+  "orig": "Všetkých šesť pouček spája jedna myšlienka: spomaľte, spýtajte sa a overte si to skôr, než konáte.",
+  "new": "Všetkých šesť pravidiel spája jedna myšlienka: <strong>zastaviť sa, overiť si situáciu a až potom konať.</strong>"
+ },
+ {
+  "row": 469,
+  "slideId": 32,
+  "path": "title",
+  "orig": "Keď sa niečo stane",
+  "new": "Keď sa niečo stane"
+ },
+ {
+  "row": 470,
+  "slideId": 32,
+  "path": "lead",
+  "orig": "Aj opatrnému človeku sa môže stať, že naletí. Dôležité je vedieť, komu hneď zavolať — rýchlosť tu rozhoduje.",
+  "new": "Aj opatrnému človeku sa môže stať, že naletí podvodu. Vtedy je najdôležitejšie konať rýchlo a kontaktovať správne miesto."
+ },
+ {
+  "row": 471,
+  "slideId": 32,
+  "path": "task",
+  "orig": "Kliknite na <strong>situáciu vľavo</strong> a potom na <strong>správny kontakt vpravo</strong>.",
+  "new": "Kliknite na <strong>situáciu vľavo</strong> a potom na <strong>správny kontakt vpravo</strong>."
+ },
+ {
+  "row": 472,
+  "slideId": 32,
+  "path": "pairs[].left",
+  "orig": "Podozrivý pohyb na účte alebo strata karty",
+  "new": "Podozrivý pohyb na účte alebo strata karty"
+ },
+ {
+  "row": 473,
+  "slideId": 32,
+  "path": "pairs[].left",
+  "orig": "Naleteli ste podvodu, treba to nahlásiť",
+  "new": "Poslali ste peniaze podvodníkovi alebo ste mu prezradili údaje"
+ },
+ {
+  "row": 474,
+  "slideId": 32,
+  "path": "pairs[].left",
+  "orig": "Podozrivá investičná ponuka či firma",
+  "new": "Podozrivá investičná ponuka alebo finančná firma"
+ },
+ {
+  "row": 475,
+  "slideId": 32,
+  "path": "pairs[].right",
+  "orig": "Vaša banka — číslo zo zadnej strany karty.",
+  "new": "Vaša banka — kontakt z karty, aplikácie alebo oficiálneho webu."
+ },
+ {
+  "row": 476,
+  "slideId": 32,
+  "path": "pairs[].right",
+  "orig": "Polícia SR — linka 158 alebo tiesňová linka 112.",
+  "new": "Polícia SR — 158 alebo najbližšie oddelenie; pri tiesni volajte 112."
+ },
+ {
+  "row": 477,
+  "slideId": 32,
+  "path": "pairs[].right",
+  "orig": "Národná banka Slovenska — www.nbs.sk.",
+  "new": "Národná banka Slovenska — informácie a registre na nbs.sk."
+ },
+ {
+  "row": 478,
+  "slideId": 32,
+  "path": "pairs[].why",
+  "orig": "Volajte okamžite a požiadajte o zablokovanie karty či účtu. Čím skôr, tým väčšia šanca peniaze zachrániť.",
+  "new": "Banku kontaktujte čo najskôr. Môže zablokovať kartu, prístup alebo preveriť podozrivú transakciu. Čím skôr sa ozvete, tým viac možností môže mať na riešenie."
+ },
+ {
+  "row": 479,
+  "slideId": 32,
+  "path": "pairs[].why",
+  "orig": "Podvod nahláste aj vtedy, keď sa hanbíte. Nie ste prvý ani posledný a polícii to pomôže chytiť páchateľov.",
+  "new": "Podvod oznámte polícii a uschovajte si správy, čísla účtov, telefónne čísla či potvrdenia o platbe. Tieto údaje môžu pomôcť pri vyšetrovaní."
+ },
+ {
+  "row": 480,
+  "slideId": 32,
+  "path": "pairs[].why",
+  "orig": "NBS vedie zoznam licencovaných firiem aj varovania. Overte si to ešte predtým, než niečo podpíšete.",
+  "new": "Na nbs.sk si môžete overiť oprávnenie finančnej firmy a pozrieť upozornenia. Najlepšie je preveriť ponuku ešte pred odoslaním peňazí alebo podpisom."
+ },
+ {
+  "row": 481,
+  "slideId": 32,
+  "path": "note",
+  "orig": "Nehanbite sa ozvať. Podvodom naletia aj vzdelaní a opatrní ľudia — sú na to špeciálne trénovaní.",
+  "new": "Ak ste naleteli, neodkladajte riešenie zo strachu alebo hanby. Podvodníci používajú premyslené manipulačné techniky — dôležité je čo najskôr kontaktovať banku a podľa situácie políciu."
+ },
+ {
+  "row": 482,
+  "slideId": 33,
+  "path": "title",
+  "orig": "Záverečná bleskovka",
+  "new": "Záverečná bleskovka"
+ },
+ {
+  "row": 483,
+  "slideId": 33,
+  "path": "lead",
+  "orig": "Posledných päť situácií. Overme si, čo všetko ste sa v kurze naučili.",
+  "new": "Na záver vás čaká päť krátkych situácií. Overíte si na nich, čo ste si z kurzu odniesli."
+ },
+ {
+  "row": 484,
+  "slideId": 33,
+  "path": "task",
+  "orig": "Pri každej otázke kliknite <strong>Áno</strong> alebo <strong>Nie</strong>. Po odpovedi sa vám zobrazí vysvetlenie a môžete prejsť na ďalšiu.",
+  "new": "Pri každej otázke kliknite <strong>Áno</strong> alebo <strong>Nie</strong>. Hneď potom uvidíte vysvetlenie a môžete pokračovať."
+ },
+ {
+  "row": 485,
+  "slideId": 33,
+  "path": "tips[]",
+  "orig": "Hľadajte znaky nátlaku, naliehavosti a podozrivého odkazu.",
+  "new": "Všímajte si časový nátlak, strach, žiadosti o citlivé údaje a podozrivé odkazy."
+ },
+ {
+  "row": 486,
+  "slideId": 33,
+  "path": "tips[]",
+  "orig": "Neodpovedajte pod tlakom. Najprv sa zastavte a overte si informáciu.",
+  "new": "Keď vás niekto tlačí do rýchleho rozhodnutia, zastavte sa a informáciu si overte."
+ },
+ {
+  "row": 487,
+  "slideId": 33,
+  "path": "tips[]",
+  "orig": "Nejde o memorovanie, ale o rozpoznanie varovných signálov.",
+  "new": "Nemusíte si pamätať všetko naspamäť. Dôležité je spozornieť, keď sa objaví varovný signál."
+ },
+ {
+  "row": 488,
+  "slideId": 33,
+  "path": "questions[].short",
+  "orig": "E-mail vás naháňa časom a žiada kliknúť na odkaz",
+  "new": "E-mail vás naháňa časom a žiada kliknúť na odkaz"
+ },
+ {
+  "row": 489,
+  "slideId": 33,
+  "path": "questions[].short",
+  "orig": "Banka si od vás telefonicky pýta PIN",
+  "new": "Volajúci „z banky“ od vás pýta PIN"
+ },
+ {
+  "row": 490,
+  "slideId": 33,
+  "path": "questions[].short",
+  "orig": "Ponuka sľubuje garantovaný zisk bez rizika",
+  "new": "Ponuka sľubuje garantovaný vysoký zisk bez rizika"
+ },
+ {
+  "row": 491,
+  "slideId": 33,
+  "path": "questions[].short",
+  "orig": "Správa má veľa výkričníkov a žiada zdieľať ďalej",
+  "new": "Správa vyvoláva paniku a žiada okamžité zdieľanie"
+ },
+ {
+  "row": 492,
+  "slideId": 33,
+  "path": "questions[].short",
+  "orig": "Overiť si dôležitú informáciu na viacerých zdrojoch",
+  "new": "Overiť dôležitú informáciu vo viacerých zdrojoch"
+ },
+ {
+  "row": 493,
+  "slideId": 33,
+  "path": "questions[].text",
+  "orig": "E-mail vás naháňa časom a žiada kliknúť na odkaz — je to podozrivé?",
+  "new": "E-mail vás naháňa časom a žiada kliknúť na odkaz — je to podozrivé?"
+ },
+ {
+  "row": 494,
+  "slideId": 33,
+  "path": "questions[].text",
+  "orig": "Banka si od vás telefonicky pýta PIN — je to normálne?",
+  "new": "Človek, ktorý sa vydáva za pracovníka banky, od vás telefonicky pýta celý PIN — je to v poriadku?"
+ },
+ {
+  "row": 495,
+  "slideId": 33,
+  "path": "questions[].text",
+  "orig": "Ponuka sľubuje garantovaný zisk bez rizika — treba byť opatrný?",
+  "new": "Ponuka sľubuje garantovaný vysoký zisk bez rizika — je to varovný signál?"
+ },
+ {
+  "row": 496,
+  "slideId": 33,
+  "path": "questions[].text",
+  "orig": "Správa má veľa výkričníkov a žiada zdieľať ďalej — je to varovný signál?",
+  "new": "Správa vyvoláva paniku a žiada, aby ste ju okamžite zdieľali ďalej — je to varovný signál?"
+ },
+ {
+  "row": 497,
+  "slideId": 33,
+  "path": "questions[].text",
+  "orig": "Je v poriadku overiť si dôležitú informáciu na viacerých zdrojoch?",
+  "new": "Je správne overiť si dôležitú informáciu vo viacerých dôveryhodných zdrojoch?"
+ },
+ {
+  "row": 498,
+  "slideId": 33,
+  "path": "questions[].why",
+  "orig": "Áno. Časový nátlak a odkaz na kliknutie sú dva z najčastejších varovných znakov podvodu. Banka od vás prihlásenie cez odkaz v e-maile nikdy nežiada.",
+  "new": "Áno. Časový nátlak spolu s výzvou na kliknutie je dôvod spozornieť. Namiesto odkazu zo správy si banku alebo službu otvorte sami cez známu aplikáciu či oficiálnu adresu."
+ },
+ {
+  "row": 499,
+  "slideId": 33,
+  "path": "questions[].why",
+  "orig": "Nie. Žiadna banka si nikdy telefonicky ani e-mailom nepýta PIN, heslo ani kódy zo SMS. Ak sa to stane, ide o podvodníka — hovor ukončite.",
+  "new": "Nie. Banka od vás nebude telefonicky žiadať celý PIN, heslo do internetbankingu ani autorizačný kód zo SMS. Ak sa to stane, hovor ukončite a banku kontaktujte sami."
+ },
+ {
+  "row": 500,
+  "slideId": 33,
+  "path": "questions[].why",
+  "orig": "Áno. Zaručený vysoký zisk bez rizika v skutočnosti neexistuje — je to typický znak podvodnej investície. Firmu si overte na www.nbs.sk.",
+  "new": "Áno. Mimoriadne vysoký garantovaný zisk bez rizika je typický varovný signál. Pred investovaním si overte firmu, podmienky aj riziká."
+ },
+ {
+  "row": 501,
+  "slideId": 33,
+  "path": "questions[].why",
+  "orig": "Áno, presne takto vyzerajú hoaxy — čím viac výkričníkov, tým menej pravdy. Skôr než správu pošlete ďalej, overte si ju.",
+  "new": "Áno. Silné emócie a výzva na okamžité zdieľanie sú dôvodom spomaliť. Správu si najprv overte a až potom sa rozhodnite, či ju pošlete ďalej."
+ },
+ {
+  "row": 502,
+  "slideId": 33,
+  "path": "questions[].why",
+  "orig": "Áno, overenie z viacerých nezávislých zdrojov je vždy dobrý a bezpečný postup — platí to aj pre odpovede od umelej inteligencie.",
+  "new": "Áno. Dôležité informácie je rozumné porovnať vo viacerých nezávislých dôveryhodných zdrojoch. Platí to aj pre odpovede od umelej inteligencie."
+ },
+ {
+  "row": 503,
+  "slideId": 34,
+  "path": "title",
+  "orig": "Váš papierik vedľa telefónu",
+  "new": "Váš papierik vedľa telefónu"
+ },
+ {
+  "row": 504,
+  "slideId": 34,
+  "path": "lead",
+  "orig": "Šesť zlatých pravidiel na jednom mieste. Vytlačte si ich a nalepte vedľa telefónu alebo počítača — presne tam, kde ich budete potrebovať.",
+  "new": "Šesť najdôležitejších pravidiel na jednom mieste. Môžete si ich uložiť alebo vytlačiť a mať ich poruke pri telefóne či počítači."
+ },
+ {
+  "row": 505,
+  "slideId": 34,
+  "path": "task",
+  "orig": "Prečítajte si všetkých šesť pravidiel a potom kliknite na tlačidlo <strong>„Stiahnuť ako obrázok“</strong> pod nimi.",
+  "new": "Prečítajte si všetkých šesť pravidiel a potom kliknite na tlačidlo <strong>„Stiahnuť ako obrázok“</strong> pod nimi."
+ },
+ {
+  "row": 506,
+  "slideId": 34,
+  "path": "rules[]",
+  "orig": "Kto ma naháňa, chce ma pripraviť o peniaze.",
+  "new": "Keď ma niekto naháňa, spomalím a najprv si to overím."
+ },
+ {
+  "row": 507,
+  "slideId": 34,
+  "path": "rules[]",
+  "orig": "Banka nikdy nepýta PIN ani heslo.",
+  "new": "Heslo, PIN ani autorizačný kód zo SMS nikomu neprezrádzam."
+ },
+ {
+  "row": 508,
+  "slideId": 34,
+  "path": "rules[]",
+  "orig": "Ak mám pochybnosti, ukončím hovor a zavolám späť.",
+  "new": "Ak mám pochybnosti, ukončím hovor a kontaktujem banku sám."
+ },
+ {
+  "row": 509,
+  "slideId": 34,
+  "path": "rules[]",
+  "orig": "Zaručený vysoký zisk je varovným signálom.",
+  "new": "Vysoký zisk bez rizika je silný varovný signál."
+ },
+ {
+  "row": 510,
+  "slideId": 34,
+  "path": "rules[]",
+  "orig": "Umelá inteligencia radí, rozhodnutie robí človek.",
+  "new": "Umelá inteligencia radí, rozhodnutie robí človek."
+ },
+ {
+  "row": 511,
+  "slideId": 34,
+  "path": "rules[]",
+  "orig": "Čím viac strachu a výkričníkov, tým väčšia opatrnosť.",
+  "new": "Silné emócie? Najprv overím, až potom zdieľam."
+ },
+ {
+  "row": 512,
+  "slideId": 35,
+  "path": "title",
+  "orig": "Absolvovali ste kurz!",
+  "new": "Absolvovali ste kurz!"
+ },
+ {
+  "row": 513,
+  "slideId": 35,
+  "path": "lead",
+  "orig": "Ďakujeme, že ste si našli čas naučiť sa niečo nové. Rozoznáte podvodný e-mail, telefonát aj SMS, viete si overiť firmu a bezpečne používať umelú inteligenciu ako pomocníka.",
+  "new": "Ďakujeme, že ste si našli čas naučiť sa niečo nové. Už viete lepšie rozpoznať podozrivý e-mail, SMS či telefonát, overiť si finančnú ponuku a používať umelú inteligenciu bezpečnejšie."
+ },
+ {
+  "row": 514,
+  "slideId": 35,
+  "path": "quote",
+  "orig": "Ak si nie ste istí, radšej sa opýtajte dvakrát. Minúta navyše môže ušetriť stovky alebo aj tisíce eur.",
+  "new": "Keď si nie ste istí, doprajte si chvíľu na overenie. Jedna minúta navyše môže zabrániť veľkej chybe."
+ }
+]
