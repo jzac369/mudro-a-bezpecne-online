@@ -388,7 +388,7 @@ label {
 .course-medium-badge {
   display: inline-flex; align-items: center; gap: .5rem; font-family: "IBM Plex Mono", "Courier New", monospace;
   font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600;
-  padding: .4rem .9rem; border-radius: 99px; margin: .6rem 0 0;
+  padding: .4rem .9rem; border-radius: 99px; margin: .2rem 0 .7rem;
 }
 .course-medium-badge svg { width: 16px; height: 16px; }
 .course-medium-badge.email { background: #e7edf3; color: #2c5578; }

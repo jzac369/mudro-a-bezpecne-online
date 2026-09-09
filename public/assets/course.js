@@ -216,9 +216,15 @@
       "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8'>" + (PART_ICONS[slide.part] || "") + "</svg> ČASŤ " + slide.part);
     card.appendChild(kicker);
     card.appendChild(el("h2", null, slide.title));
+    if (slide.lead) card.appendChild(el("p", "course-lead", slide.lead));
+  }
+
+  // Štítok „Toto je e-mail / SMS / telefonát / príspevok“ hovorí, na čo sa
+  // človek pozerá — preto ho vykresľujeme tesne nad samotnú ukážku, nie pod
+  // nadpis, odkiaľ ho delil úvodný odstavec aj box so zadaním.
+  function mediumBadgeBefore(card, slide) {
     const badge = mediumBadge(slide.medium);
     if (badge) card.appendChild(badge);
-    if (slide.lead) card.appendChild(el("p", "course-lead", slide.lead));
   }
 
   function note(card, text) {
@@ -1124,6 +1130,7 @@
     inner.appendChild(body);
     shell.appendChild(inner);
     mock.appendChild(shell);
+    mediumBadgeBefore(card, slide);
     card.appendChild(mock);
 
     const progress = createProgressCounter(card, slide.clues.length, (done, all) =>
@@ -1198,6 +1205,7 @@
     const panelCol = el("div", "course-story-panel-col");
     grid.appendChild(mediaCol);
     grid.appendChild(panelCol);
+    mediumBadgeBefore(card, slide);
     card.appendChild(grid);
     const flagsRow = storyFlagsRow(slide.flags);
     if (flagsRow) card.appendChild(flagsRow);
@@ -1250,6 +1258,7 @@
     const panelCol = el("div", "course-story-panel-col");
     grid.appendChild(mediaCol);
     grid.appendChild(panelCol);
+    mediumBadgeBefore(card, slide);
     card.appendChild(grid);
     const flagsRow = storyFlagsRow(slide.flags);
     if (flagsRow) card.appendChild(flagsRow);
