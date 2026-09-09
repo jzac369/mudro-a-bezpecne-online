@@ -17,7 +17,7 @@ window.COURSE_SLIDES = [
     title: "Ako nenaletieť podvodníkom",
     lead: "Umelá inteligencia ako pomocník pri dôležitých finančných rozhodnutiach.",
     image: "assets/course-media/illustrations/cover-elderly-couple.jpg",
-    body: "Čaká vás 36 krátkych zastavení rozdelených do 5 častí. Pri každom si niečo vyskúšate a hneď sa dozviete, či ste odpovedali správne — aj prečo. Nič sa nedá pokaziť a kedykoľvek sa môžete vrátiť tam, kde ste skončili.",
+    body: "Čaká vás 37 krátkych zastavení rozdelených do 5 častí. Pri každom si niečo vyskúšate a hneď sa dozviete, či ste odpovedali správne — aj prečo. Nič sa nedá pokaziť a kedykoľvek sa môžete vrátiť tam, kde ste skončili.",
     task: "Prezrite si päť častí kurzu nižšie a potom kliknite na tlačidlo <strong>„Ďalej“</strong> v pravom dolnom rohu.",
   },
   {
@@ -497,6 +497,24 @@ window.COURSE_SLIDES = [
 
   // ---------- ČASŤ 4 · Hoaxy, fotky, zmluvy ----------
   {
+    // Slová „hoax“, „poplašná správa“ a „dezinformácia“ sa doteraz v tejto
+    // časti používali skôr, než ich kurz vysvetlil — vysvetlené boli len
+    // v slovníčku v Cvičeniach, ktoré si účastník otvorí až po Lekciách.
+    id: 37, part: 4, type: "revealgrid",
+    title: "Hoax, dezinformácia, podvod — v čom sa líšia",
+    lead: "V tejto časti budeme často hovoriť o hoaxoch a dezinformáciách. Sú to slová, ktoré počuť aj v správach, a je dobré vedieť, čo za nimi je. Odlíšiť ich pritom pomôže jediná otázka: čo od vás tá správa chce?",
+    task: "Kliknite postupne na <strong>všetky tri políčka</strong>. Pri každom nájdete jednoduché vysvetlenie aj príklad, aký ste už mohli vidieť.",
+    cells: [
+      { title: "Poplašná správa (hoax)", text: "Vymyslená správa, ktorá straší a tlačí na vás, aby ste ju poslali ďalej — „zdieľajte, kým to nezmažú“. Nechce od vás peniaze, chce vaše rozposlanie. Napríklad: „EÚ od budúceho roka zakáže hotovosť.“ Slovo hoax (číta sa „houks“) je len anglický názov pre poplašnú správu — je to teda to isté." },
+      { title: "Dezinformácia", text: "Nepravda, ktorá sa tvári ako spravodajstvo — má logo, dátum aj vážny tón. Nechce vás vystrašiť na jeden deň, chce postupne zmeniť váš názor na nejakú tému. Napríklad článok, ktorý vyzerá ako z novín, ale redakcia zaň nikdy neručila." },
+      { title: "Podvodná správa (phishing)", text: "To, čo už poznáte z tretej časti: falošná správa „od banky“, pošty alebo úradu. Tá nechce vaše zdieľanie ani váš názor — chce vaše peniaze alebo prihlasovacie údaje. Preto v nej vždy nájdete odkaz na kliknutie alebo žiadosť o platbu." },
+    ],
+    doneLabel: "Hotovo — poznáte rozdiel medzi všetkými tromi.",
+    doneTitle: "Máte to najdôležitejšie.",
+    doneText: "Nemusíte si tie názvy pamätať naspamäť. Keď vám niečo príde, stačí sa spýtať: chce to odo mňa zdieľanie, môj názor, alebo moje peniaze?",
+    note: "Obrana je pri všetkých troch rovnaká: nešíriť ďalej, kým si to neoveríte. Stačí názov alebo tvrdenie zo správy prepísať do vyhľadávača alebo do AI a opýtať sa: „Je to pravda? Kto to napísal?“",
+  },
+  {
     id: 24, part: 4, type: "spot", medium: "social",
     title: "Poplašná správa zo sociálnej siete",
     lead: "Hoax často nechce vaše peniaze priamo. Snaží sa vyvolať silnú emóciu, aby ste správu bez overenia poslali ďalej.",
@@ -552,7 +570,7 @@ window.COURSE_SLIDES = [
     task: "Uvidíte <strong>dve fotografie</strong>. Pri každej vyberte, či je podľa vás skutočná, alebo vytvorená umelou inteligenciou. Obrázok si môžete kliknutím zväčšiť.",
     rounds: [
       { image: "assets/course-media/evidence/ai-foto-macka-farba.jpg", answer: "ai", explain: "Táto ukážka bola vytvorená pomocou AI. Niektoré detaily pôsobia neprirodzene — napríklad rozliata farba, kvapky či perspektíva. Pozor však: dnešné AI obrázky už často žiadne nápadné chyby nemajú." },
-      { image: "assets/course-media/evidence/real-foto-muz-s-notebookom.jpg", answer: "real", explain: "Táto ukážka je skutočná fotografia. Prirodzené svetlo, tiene a drobné nedokonalosti tu zodpovedajú fotografii z fotoaparátu. Ani to však samo osebe nie je dôkaz — pri dôležitom obrázku vždy overujte aj jeho zdroj a kontext." },
+      { image: "assets/course-media/evidence/real-foto-deti-na-schodoch.jpg", answer: "real", explain: "Toto je skutočná fotografia. Všimnite si drobnosti, ktoré si nikto nevymýšľa: odreté schody, tenký prameň vlasov mimo účesu, mierne pokrčené šaty, tiene na tvárach sediace so slnkom. Ani to však samo osebe nie je dôkaz — pri dôležitom obrázku vždy overujte aj to, odkiaľ pochádza." },
     ],
     checklist: [
       { title: "Ruky a prsty", text: "Nezvyčajný počet alebo tvar prstov môže byť stopou. Novšie AI však už ruky často vytvárajú správne, preto sa nespoliehajte iba na tento znak." },
