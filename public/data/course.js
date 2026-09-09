@@ -569,7 +569,7 @@ window.COURSE_SLIDES = [
     lead: "Umelá inteligencia dnes dokáže vytvoriť obrázky, ktoré vyzerajú veľmi vierohodne. Takéto obrázky sa môžu objaviť v podvodných zbierkach, falošných reklamách aj príspevkoch so známymi osobnosťami.",
     task: "Uvidíte <strong>dve fotografie</strong>. Pri každej vyberte, či je podľa vás skutočná, alebo vytvorená umelou inteligenciou. Obrázok si môžete kliknutím zväčšiť.",
     rounds: [
-      { image: "assets/course-media/evidence/ai-foto-macka-farba.jpg", answer: "ai", explain: "Táto ukážka bola vytvorená pomocou AI. Niektoré detaily pôsobia neprirodzene — napríklad rozliata farba, kvapky či perspektíva. Pozor však: dnešné AI obrázky už často žiadne nápadné chyby nemajú." },
+      { image: "assets/course-media/evidence/ai-foto-seniori-prezentacia.jpg", answer: "ai", explain: "Tento obrázok vytvorila umelá inteligencia. Na prvý pohľad je príjemný a nič nekričí, že je vymyslený — a presne v tom je dnes problém. Keď sa pozriete pozorne: nápis na premietanom plátne má okraje ostrejšie, než by po premietaní boli, každý pri stole drží takmer rovnaký tablet, ruky sú v rovnakom držaní a celá scéna je nasvietená ako z reklamného katalógu, bez jediného tieňa navyše." },
       { image: "assets/course-media/evidence/real-foto-deti-na-schodoch.jpg", answer: "real", explain: "Toto je skutočná fotografia. Všimnite si drobnosti, ktoré si nikto nevymýšľa: odreté schody, tenký prameň vlasov mimo účesu, mierne pokrčené šaty, tiene na tvárach sediace so slnkom. Ani to však samo osebe nie je dôkaz — pri dôležitom obrázku vždy overujte aj to, odkiaľ pochádza." },
     ],
     checklist: [
