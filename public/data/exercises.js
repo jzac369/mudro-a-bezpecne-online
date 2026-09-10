@@ -15,12 +15,12 @@ window.COURSE_EXERCISES = [
     type: "glossary",
     icon: "book",
     title: "Slovníček pojmov",
-    short: "Sedemnásť cudzích slov z brožúrky, vysvetlených po našom — v troch krátkych častiach.",
+    short: "Sedemnásť cudzích slov z brožúrky — kartička po kartičke si overíte, ktoré už poznáte.",
     time: "12 minút",
-    intro: "V kurze aj v brožúrke sa objaví pár cudzích slov. Tu ich máte pokope a vysvetlené normálnou rečou. Nemusíte sa ich učiť naspamäť — úplne stačí, keď budete vedieť, kde si ich nájsť.",
-    task: "Kliknite na kartičku a otočí sa — na druhej strane je vysvetlenie. Sú tu tri krátke časti, po každej si môžete dať pauzu a pokračovať neskôr.",
-    // Zámerne rozdelené na tri kratšie časti — sedemnásť pojmov naraz je pre
-    // začiatočníka priveľa. Vishing a smishing tu nie sú, tie sa preberajú
+    intro: "V kurze aj v brožúrke sa objaví pár cudzích slov. Tu si ich prejdete po jednom a hneď zistíte, ktoré vám sedia. Nemusíte sa ich učiť naspamäť — úplne stačí, keď budete vedieť, kde si ich nájsť.",
+    task: "Kartička ukáže pojem. Máte desať sekúnd, aby ste ho nahlas vysvetlili — potom sa otočí a poviete, či ste to vedeli. Na konci uvidíte, na ktoré slová sa ešte pozrieť.",
+    // Skupiny slúžia už len pracovnému listu v PDF; na obrazovke idú pojmy
+    // v jednom náhodnom slede. Vishing a smishing tu nie sú, tie sa preberajú
     // v Lekciách na obrazovke „Slovníček pojmov“.
     parts: [
       {

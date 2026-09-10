@@ -1531,63 +1531,94 @@ tr.unconf .course-compare-mark { background: #8a8578; }
 .ex-msg-result.warn { background: var(--warn-bg); color: var(--course-warn-deep); }
 
 /* ---- Slovníček pojmov ---- */
-.gloss-nav { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.3rem; }
-.gloss-nav-item {
-  display: inline-flex; align-items: center; gap: .5rem;
-  background: var(--surface); border: 2px solid var(--line); border-radius: 999px;
-  padding: .5rem .95rem .5rem .5rem; font: inherit; font-size: .9rem; cursor: pointer;
-}
-.gloss-nav-item:hover { border-color: var(--ink-soft); }
-.gloss-nav-num {
-  width: 24px; height: 24px; border-radius: 50%; background: var(--surface-2); color: var(--text-mute);
-  display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .8rem; flex: none;
-}
-.gloss-nav-item.seen { border-color: var(--good); }
-.gloss-nav-item.seen .gloss-nav-num { background: var(--good); color: #fff; }
-.gloss-nav-item.active { border-color: var(--ink); background: var(--ink); color: #fff; font-weight: 700; }
-.gloss-nav-item.active .gloss-nav-num { background: rgba(255,255,255,.22); color: #fff; }
+/* ---------- Slovníček: jedna otáčacia kartička s časomierou ---------- */
+.fc-stage { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; }
 
-.gloss-part-head { margin-bottom: .4rem; }
-.gloss-part-eyebrow { margin: 0 0 .25rem; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-deep, #8f5a1e); }
-.gloss-part-head h3 { margin: 0 0 .3rem; font-size: 1.3rem; }
-.gloss-part-intro { margin: 0; color: var(--text-mute); font-size: .95rem; }
+.fc-start { text-align: center; max-width: 480px; padding: 1.6rem 0 .6rem; }
+.fc-start h3 { font-size: 1.4rem; margin-bottom: .4rem; }
+.fc-start-lead { color: var(--text-mute); margin: 0 0 1.6rem; }
+.fc-steps { display: flex; gap: 1.4rem; justify-content: center; margin: 0 0 1.8rem; padding: 0; list-style: none; text-align: center; }
+.fc-steps li { flex: 1; font-size: .88rem; line-height: 1.45; color: var(--text-mute); }
+.fc-steps b { display: block; font-size: 1.4rem; color: var(--accent); margin-bottom: .15rem; }
+.fc-go { font-size: 1.1rem; padding: .85rem 2.4rem; }
 
-/* Kartičky používajú vzhľad z Lekcií, len sú širšie — vysvetlenia sú dlhšie. */
-.gloss-grid .course-flip { flex: 0 1 258px; min-height: 210px; }
-.gloss-read { display: block; font-size: .8rem; opacity: .78; margin-top: .25rem; position: relative; }
-.gloss-back-term { margin: 0 0 .4rem !important; font-weight: 700; font-size: .92rem; color: var(--accent-deep, #8f5a1e); }
+/* Ukazovateľ postupu — vedľa seba popis a prúžok, nič viac. */
+.fc-meter { width: 100%; max-width: 520px; display: flex; align-items: center; gap: .8rem; }
+.fc-meter-label { font-size: .82rem; font-weight: 700; color: var(--text-mute); white-space: nowrap; }
+.fc-meter-track { flex: 1; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.fc-meter-fill { display: block; height: 100%; background: var(--good); border-radius: 99px; transition: width .3s ease; }
+
+/* Kartička. Predná strana je tmavá ako v Lekciách, zadná svetlá s vysvetlením. */
+.fc-card { width: 100%; max-width: 520px; height: 300px; perspective: 1400px; }
+.fc-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.4,.1,.2,1); }
+.fc-card.flipped .fc-inner { transform: rotateY(180deg); }
+.fc-face {
+  position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px;
+  padding: 1.8rem; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center;
+}
+.fc-front { box-shadow: 0 16px 32px -16px rgba(13,30,33,.6); }
+.fc-front::after { border-radius: 20px; }
+.fc-back {
+  background: var(--surface); border: 2px solid var(--accent, #c17a2e);
+  transform: rotateY(180deg); box-shadow: var(--course-shadow-soft);
+}
+.fc-term { color: #fff; font-size: 1.8rem; line-height: 1.25; margin: 0; position: relative; }
+.fc-read { color: #fff; font-size: .9rem; opacity: .75; margin-top: .3rem; position: relative; }
+.fc-prompt { color: #fff; font-size: .98rem; opacity: .8; line-height: 1.5; margin-top: 1.1rem; max-width: 300px; position: relative; }
+.fc-back-term { margin: 0 0 .6rem; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-deep, #8f5a1e); }
+.fc-back-text { margin: 0; font-size: 1.05rem; line-height: 1.6; }
+
+/* Časomiera v rohu kartičky. */
+.fc-ring { position: absolute; top: 1.1rem; right: 1.1rem; width: 52px; height: 52px; }
+.fc-ring svg { width: 52px; height: 52px; transform: rotate(-90deg); }
+.fc-ring circle { fill: none; stroke-width: 5; }
+.fc-ring .bg { stroke: rgba(255,255,255,.22); }
+.fc-ring .fg { stroke: var(--accent-soft, #f1ddc0); stroke-linecap: round; transition: stroke-dashoffset .1s linear; }
+.fc-ring span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 1.1rem; color: #fff; }
+
+.fc-foot { width: 100%; max-width: 520px; display: flex; justify-content: center; min-height: 3rem; }
+.fc-skip { background: none; border: 0; color: var(--text-mute); font: inherit; font-size: .9rem; text-decoration: underline; cursor: pointer; padding: .5rem; }
+.fc-skip:hover { color: var(--ink); }
+.fc-verdict { display: flex; gap: .8rem; width: 100%; }
+.fc-verdict .btn { flex: 1; justify-content: center; font-size: 1.05rem; padding: .85rem 1rem; }
+.fc-knew { background: var(--good); border: 2px solid var(--good); color: #fff; }
+.fc-knew:hover { background: var(--course-good-deep, #12554a); border-color: var(--course-good-deep, #12554a); }
+.fc-unknew { background: var(--surface); border: 2px solid var(--warn); color: var(--warn); }
+.fc-unknew:hover { background: var(--warn-bg); }
+
+/* Vyhodnotenie na záver. */
+.fc-done { text-align: center; max-width: 520px; padding-top: .6rem; }
+.fc-score { width: 130px; height: 130px; margin: 0 auto 1.2rem; position: relative; }
+.fc-score svg { width: 130px; height: 130px; transform: rotate(-90deg); }
+.fc-score circle { fill: none; stroke-width: 10; }
+.fc-score .bg { stroke: var(--surface-2); }
+.fc-score .fg { stroke: var(--good); stroke-linecap: round; }
+.fc-score span { position: absolute; inset: 14px; display: grid; place-items: center; align-content: center; line-height: 1.15; }
+.fc-score b { display: block; font-size: 1.7rem; color: var(--ink); }
+.fc-score small { font-size: .8rem; color: var(--text-mute); }
+.fc-done h3 { font-size: 1.35rem; margin-bottom: .4rem; }
+.fc-done-lead { color: var(--text-mute); margin: 0; }
+.fc-again { text-align: left; background: var(--surface-2); border-radius: 14px; padding: 1rem 1.2rem; margin: 1.4rem 0; }
+.fc-again h4 { margin: 0 0 .5rem; font-size: 1rem; }
+.fc-again-list { margin: 0; }
+.fc-again-list dt { font-weight: 700; margin-top: .6rem; }
+.fc-again-list dd { margin: .1rem 0 0; color: var(--text-mute); font-size: .94rem; line-height: 1.55; }
+.fc-acts { display: flex; gap: .7rem; justify-content: center; flex-wrap: wrap; margin-top: 1.2rem; }
+
 .gloss-read-inline { font-weight: 400; color: var(--text-mute); font-size: .9em; }
 
-.gloss-count { margin: 1rem 0 0; font-size: .92rem; color: var(--text-mute); text-align: center; }
-.gloss-count.complete { color: var(--course-good-deep); font-weight: 700; }
-.gloss-foot { display: flex; gap: .8rem; flex-wrap: wrap; margin-top: 1.4rem; }
-
-.gloss-q { background: var(--surface-2); border-radius: 16px; padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
-.gloss-q-num { margin: 0 0 .4rem; font-size: .82rem; font-weight: 700; color: var(--accent-deep, #8f5a1e); }
-.gloss-q-text { margin: 0 0 .9rem; font-weight: 700; font-size: 1.05rem; }
-.gloss-q-opts { display: flex; flex-direction: column; gap: .55rem; }
-.gloss-q-opt {
-  display: flex; align-items: center; gap: .6rem; text-align: left;
-  background: var(--surface); border: 2px solid var(--line); border-radius: 12px;
-  padding: .8rem 1rem; font: inherit; font-size: .96rem; cursor: pointer; min-height: 52px;
+@media (max-width: 620px) {
+  .fc-card { height: 280px; }
+  .fc-term { font-size: 1.5rem; }
+  .fc-steps { flex-direction: column; gap: .7rem; text-align: left; }
+  .fc-steps li { display: flex; align-items: baseline; gap: .6rem; }
+  .fc-steps b { margin-bottom: 0; }
+  .fc-verdict { flex-direction: column; }
 }
-.gloss-q-opt:hover:not(:disabled) { border-color: var(--ink-soft); }
-.gloss-q-opt:disabled { cursor: default; opacity: .55; }
-.gloss-q-opt.correct { border-color: var(--good); background: var(--good-bg); color: var(--course-good-deep); opacity: 1; }
-.gloss-q-opt.incorrect { border-color: var(--warn); background: var(--warn-bg); color: var(--course-warn-deep); opacity: 1; }
-.gloss-q-opt-icon { width: 18px; height: 18px; flex: none; display: inline-flex; }
-.gloss-q-opt-icon svg { width: 18px; height: 18px; }
-.gloss-q-result { display: none; margin-top: .8rem; padding: .85rem 1.05rem; border-radius: 12px; font-size: .92rem; line-height: 1.55; }
-.gloss-q-result.show { display: block; animation: course-rise .25s ease; }
-.gloss-q-result.ok { background: var(--good-bg); color: var(--course-good-deep); }
-.gloss-q-result.warn { background: var(--warn-bg); color: var(--course-warn-deep); }
 
-.gloss-summary { display: none; }
-.gloss-summary.show { display: block; margin-top: 1.4rem; animation: course-rise .25s ease; }
-.gloss-summary-score { font-size: 1.1rem; font-weight: 700; margin: 0 0 .4rem; }
 .gloss-full { margin-top: 1.6rem; border-top: 2px solid var(--line); padding-top: 1.2rem; }
 .gloss-full-title { margin: 0 0 .8rem; font-size: 1.15rem; }
-.gloss-full-group { margin: 1.1rem 0 .5rem; font-size: .8rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--accent-deep, #8f5a1e); }
 .gloss-full-list { margin: 0; }
 .gloss-full-list dt { font-weight: 700; margin-top: .6rem; }
 .gloss-full-list dd { margin: .15rem 0 0; color: var(--text-mute); font-size: .94rem; line-height: 1.55; }
