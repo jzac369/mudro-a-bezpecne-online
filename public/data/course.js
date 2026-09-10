@@ -17,7 +17,7 @@ window.COURSE_SLIDES = [
     title: "Ako nenaletieť podvodníkom",
     lead: "Umelá inteligencia ako pomocník pri dôležitých finančných rozhodnutiach.",
     image: "assets/course-media/illustrations/cover-elderly-couple.jpg",
-    body: "Čaká vás 37 krátkych zastavení rozdelených do 5 častí. Pri každom si niečo vyskúšate a hneď sa dozviete, či ste odpovedali správne — aj prečo. Nič sa nedá pokaziť a kedykoľvek sa môžete vrátiť tam, kde ste skončili.",
+    body: "Čaká vás 38 krátkych zastavení rozdelených do 5 častí. Pri každom si niečo vyskúšate a hneď sa dozviete, či ste odpovedali správne — aj prečo. Nič sa nedá pokaziť a kedykoľvek sa môžete vrátiť tam, kde ste skončili.",
     task: "Prezrite si päť častí kurzu nižšie a potom kliknite na tlačidlo <strong>„Ďalej“</strong> v pravom dolnom rohu.",
   },
   {
@@ -562,6 +562,25 @@ window.COURSE_SLIDES = [
       src: "assets/course-media/evidence/epoch-times-dezinformacia.jpg",
       caption: "Príklad príspevku o veterných turbínach, ktorý pôsobí ako spravodajstvo, no tvrdenia v ňom treba porovnať s pôvodnou štúdiou a ďalšími dôveryhodnými zdrojmi.",
     },
+  },
+  {
+    // Skutočný článok z augusta 2025. Čísla nižšie sú overené priamo
+    // v pôvodnej metaanalýze (BMC Gastroenterology, PMC12337427), nie
+    // prevzaté z článku, ktorý ich prekrúca.
+    id: 38, part: 4, type: "reveal",
+    title: "Nadpis sľubuje zázrak. Čo hovorí štúdia?",
+    lead: "Na sociálnej sieti vidíme väčšinou len nadpis a obrázok. Článok otvorí málokto — a predsa nám nadpis zostane v hlave ako informácia. Práve na tom je tento typ článkov postavený.",
+    task: "Kliknite postupne na <strong>všetkých päť kľúčov</strong>. Za prvými štyrmi je vždy jeden rozdiel medzi tým, čo sľubuje nadpis, a tým, čo štúdia naozaj zistila. Posledný ukazuje, ako si to overiť sami.",
+    layout: "keys",
+    cells: [
+      { title: "Nadpis tvrdí niečo, čo v štúdii nie je", text: "Nadpis hovorí, že brokolica poráža rakovinu lepšie než operácia, chemoterapia a ožarovanie dokopy. Štúdia, na ktorú sa článok odvoláva, nič také neskúmala a ani skúmať nemohla — nebol v nej jediný pacient, ktorý by dostával brokolicu namiesto liečby." },
+      { title: "Predchádzať nie je to isté ako liečiť", text: "Vedci sledovali, či ľudia, ktorí jedia viac kapustovitej zeleniny, ochorejú na rakovinu hrubého čreva menej často. To je otázka prevencie, teda ako ochoreniu predísť. Článok z toho urobil tvrdenie o liečbe človeka, ktorý už chorý je. To je úplne iná vec." },
+      { title: "Súvislosť nie je príčina", text: "Štúdia našla asi o pätinu nižší výskyt ochorenia u ľudí, ktorí jedia viac tejto zeleniny. Lenže takí ľudia sa zvyčajne aj inak stravujú, menej fajčia a viac sa hýbu — a to sa od zeleniny nedá oddeliť. Keď vedci výsledok očistili, prínos sa zmenšil natoľko, že doň spadla aj možnosť, že žiadny nie je." },
+      { title: "Kto to napísal a čo z toho má", text: "Pod článkom nie je meno autora, len slovo „redakcia“. Na tej istej stránke sa predávajú výživové doplnky a nájdete tam aj rady typu, že kremelina „zoškrabe lepok z hrubého čreva“. Keď niekto o zdraví píše a zároveň naň predáva prípravky, čítajte ho ako reklamu, nie ako správu." },
+      { title: "Ako si to overiť cez ChatGPT", text: "Nadpis skopírujte alebo odfoťte a napíšte AI presne toto: „Našiel som článok s nadpisom ‚Brokolica poráža rakovinu lepšie než operácia a chemoterapia‘. Je to pravda? Čo tá štúdia naozaj skúmala — liečbu chorých, alebo riziko, že človek ochorie? Odpovedz jednoducho a uveď zdroje, kde si to môžem overiť.“ Kľúčová je posledná veta: pýtajte si zdroje a potom si ich otvorte. Aj AI sa mýli — no na otázku „skúmala tá štúdia liečbu, alebo prevenciu?“ vám odpovie za pár sekúnd a presne to je ten rozdiel, na ktorom článok stojí. Pri zdraví je posledné slovo vždy lekárovo, nie AI." },
+    ],
+    doneText: "Všimnite si, že sme článok nemuseli vyvracať. Stačilo porovnať nadpis s tým, čo štúdia naozaj skúmala.",
+    note: "Zelenina je zdravá a jesť brokolicu má zmysel — o tom spor nie je. Nebezpečné je to, čo si z takého nadpisu odnesie človek, ktorý má v rodine niekoho chorého: že stačí zelenina a s liečbou sa dá počkať. Odkladanie onkologickej liečby stojí životy. Pri zdraví preto platí dvojnásobne: nadpis nie je informácia, kým si ju nepotvrdí lekár.",
   },
   {
     id: 27, part: 4, type: "guess",
