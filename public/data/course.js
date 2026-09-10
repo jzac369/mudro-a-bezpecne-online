@@ -800,7 +800,7 @@ window.COURSE_SLIDES = [
     id: 35, part: 5, type: "diploma",
     title: "Máte za sebou Lekcie!",
     lead: "Ďakujeme, že ste si našli čas. Už viete lepšie rozpoznať podozrivý e-mail, SMS či telefonát, overiť si finančnú ponuku a používať umelú inteligenciu bezpečnejšie. Toto však bol len jeden zo siedmich krokov kurzu. Pokračujte tlačidlom <strong>„Pokračovať na cvičenia“</strong> nižšie — čakajú vás Cvičenia, Zdroje a Záverečný kvíz, po ktorom dostanete certifikát.",
-    quote: "Keď si nie ste istí, doprajte si chvíľu na overenie. Jedna minúta navyše môže zabrániť veľkej chybe.",
+    quote: "Keď si niečím nie ste istý, spomaľte a venujte svoj čas overeniu si informácií. Možno len pár minút naviac vám môže pomôcť vyhnúť sa veľkej chybe.",
   },
 ];
 
