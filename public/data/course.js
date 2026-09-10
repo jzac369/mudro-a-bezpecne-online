@@ -581,6 +581,10 @@ window.COURSE_SLIDES = [
     ],
     doneText: "Všimnite si, že sme článok nemuseli vyvracať. Stačilo porovnať nadpis s tým, čo štúdia naozaj skúmala.",
     note: "Zelenina je zdravá a jesť brokolicu má zmysel — o tom spor nie je. Nebezpečné je to, čo si z takého nadpisu odnesie človek, ktorý má v rodine niekoho chorého: že stačí zelenina a s liečbou sa dá počkať. Odkladanie onkologickej liečby stojí životy. Pri zdraví preto platí dvojnásobne: nadpis nie je informácia, kým si ju nepotvrdí lekár.",
+    evidenceImage: {
+      src: "assets/course-media/evidence/brokolica-clickbait.jpg",
+      caption: "Skutočný článok zo slovenskej stránky, august 2025. Všimnite si, že namiesto mena autora je uvedená len „redakcia“ — a pod článkom už čaká 31 komentárov ľudí, ktorí ho zdieľali ďalej.",
+    },
   },
   {
     id: 27, part: 4, type: "guess",
