@@ -904,6 +904,9 @@
   RENDERERS.reveal = function (slide, card) {
     header(card, slide);
     taskBox(card, slide.task);
+    // Ukážka patrí nad kľúče, nie pod poučku: človek má najprv vidieť, o čom
+    // sa hovorí, a až potom čítať, čo je na nej zle.
+    evidenceFigure(card, slide.evidenceImage);
     const openedCells = new Set();
     const grid = el("div", "course-reveal course-reveal-" + slide.layout);
     slide.cells.forEach((c, i) => {
@@ -931,7 +934,6 @@
       done >= all ? "Hotovo — odkryli ste všetky kľúče." : "Odkryté <strong>" + done + "</strong> z " + all);
     const fb = createFeedbackArea(card);
     note(card, slide.note);
-    evidenceFigure(card, slide.evidenceImage);
   };
 
   RENDERERS.revealgrid = function (slide, card) {
