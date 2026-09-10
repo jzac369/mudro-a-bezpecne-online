@@ -148,6 +148,12 @@
         "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>" +
         (PART_ICONS[p.id] || "") + "</svg>");
       seg.appendChild(icon);
+      // Hotová časť dostane fajočku prečnievajúcu cez roh — postup má byť
+      // vidieť aj bez čítania popiskov.
+      if (p.id < slide.part) {
+        seg.appendChild(el("span", "course-map-check",
+          "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M4 12.5 9.5 18 20 6.5'/></svg>"));
+      }
       seg.appendChild(el("span", "course-map-seg-label", p.label));
       const firstSlideOfPart = this.slides.findIndex((s) => s.part === p.id);
       seg.addEventListener("click", () => {

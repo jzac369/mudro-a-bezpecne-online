@@ -353,7 +353,7 @@ label {
 /* Časti kurzu ako karty s ikonou — hotová časť je svetlá a plnofarebná,
    práve otvorená tmavá, tie pred nami tlmené. */
 .course-map-seg {
-  flex: 1 1 0; min-width: 120px; display: flex; flex-direction: column; align-items: center;
+  position: relative; flex: 1 1 0; min-width: 120px; display: flex; flex-direction: column; align-items: center;
   gap: .55rem; padding: 1rem .6rem; border-radius: 16px; background: var(--surface);
   border: 1.5px solid var(--line); transition: transform .18s ease, box-shadow .18s ease;
   cursor: pointer; font: inherit; color: var(--ink); -webkit-tap-highlight-color: transparent;
@@ -368,10 +368,20 @@ label {
 .course-map-icon.earned { background: var(--accent-soft, #f1ddc0); color: var(--accent-deep, #8f5a1e); }
 .course-map-seg-label { font-size: .95rem; text-align: center; color: var(--ink); font-weight: 700; line-height: 1.3; }
 
-/* Časti, ku ktorým sme sa ešte nedostali — tlmené, ale stále klikateľné. */
-.course-map-seg:not(.done):not(.active) { background: var(--bg); border-color: transparent; }
-.course-map-seg:not(.done):not(.active) .course-map-icon { background: var(--surface-2); color: var(--text-mute); }
+/* Fajočka hotovej časti — zámerne prečnieva cez roh a má lem vo farbe
+   pozadia, inak by splynula s okrajom karty. */
+.course-map-check {
+  position: absolute; top: -10px; right: -10px; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--good, #2f6b49); color: #fff; display: inline-flex; align-items: center;
+  justify-content: center; border: 3px solid var(--bg); box-sizing: border-box;
+}
+.course-map-check svg { width: 15px; height: 15px; }
+
+/* Časti, ku ktorým sme sa ešte nedostali — výrazne tlmené, ale klikateľné. */
+.course-map-seg:not(.done):not(.active) { background: #efeade; border-color: transparent; opacity: .5; }
+.course-map-seg:not(.done):not(.active) .course-map-icon { background: #e2ddd1; color: var(--text-mute); }
 .course-map-seg:not(.done):not(.active) .course-map-seg-label { color: var(--text-mute); }
+.course-map-seg:not(.done):not(.active):hover { opacity: .8; }
 
 .course-map-seg.active { background: var(--course-good-deep, #12554a); border-color: var(--course-good-deep, #12554a); box-shadow: var(--course-shadow-soft); }
 .course-map-seg.active .course-map-seg-label { color: #fff; }
@@ -379,6 +389,8 @@ label {
 
 @media (max-width: 620px) {
   .course-map-seg { min-width: 88px; padding: .7rem .35rem; gap: .4rem; }
+  .course-map-check { width: 22px; height: 22px; top: -8px; right: -8px; border-width: 2.5px; }
+  .course-map-check svg { width: 12px; height: 12px; }
   .course-map-icon { width: 40px; height: 40px; }
   .course-map-icon svg { width: 21px; height: 21px; }
   .course-map-seg-label { font-size: .78rem; }
