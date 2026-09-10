@@ -658,18 +658,33 @@ window.COURSE_SLIDES = [
   {
     id: 28, part: 4, type: "choice", stamp: true,
     title: "Zložitá zmluva? AI vám ju môže pomôcť vysvetliť",
-    lead: "AI nemusí slúžiť iba na odhaľovanie podvodov. Môže vám pomôcť zrozumiteľne vysvetliť aj zložitý text zo zmluvy alebo iného dokumentu.",
-    task: "Uvidíte <strong>dve otázky</strong> k zmluve o dodávke elektriny. Kliknite na tú, ktorá podľa vás prinesie užitočnejšiu odpoveď.",
-    intro: "Pri zmluve sa pýtajte na konkrétne veci: poplatky, pokuty, dobu trvania či výpoveď. Citlivé údaje pred vložením dokumentu odstráňte alebo prekryte.",
+    lead: "ChatGPT vám môže pomôcť preložiť zložitý text zmluvy do bežnej reči a upozorniť na dôležité body. Zmluvu však za vás neposúdi ani nenahrádza právnika.",
+    task: "Prezrite si štyri kroky nižšie a potom si vyskúšajte, ktorá otázka prinesie užitočnejšiu odpoveď.",
+    evidenceImage: {
+      src: "assets/course-media/evidence/zmluva-elektrina.jpg",
+      caption: "Príklad reálnej zmluvy o združenej dodávke elektriny. Meno dodávateľa aj všetky osobné údaje sme rozostreli.",
+    },
+    stepsTitle: "Ako na to — 4 kroky",
+    steps: [
+      { title: "Odfotografujte alebo nahrajte zmluvu", text: "Nahrajte fotografiu, PDF alebo snímku obrazovky zmluvy do ChatGPT." },
+      { title: "Skryte osobné údaje", text: "Pred nahraním prekryte rodné číslo, číslo účtu, podpis, adresu, zákaznícke číslo a ďalšie citlivé údaje." },
+      { title: "Pýtajte sa konkrétne", text: "Namiesto otázky „Je táto zmluva dobrá?“ sa pýtajte na konkrétne veci: poplatky, pokuty, dobu viazanosti, výpoveď, zmenu ceny alebo automatické predĺženie." },
+      { title: "Overte dôležité rozhodnutia", text: "AI sa môže pomýliť. Pri dôležitom rozhodnutí si odpoveď porovnajte s originálom zmluvy alebo sa poraďte s odborníkom." },
+    ],
+    chooseLabel: "Ktorá otázka vám dá užitočnejšiu odpoveď?",
     rounds: [
       {
         weak: "Je táto zmluva dobrá?",
-        good: "Vysvetli mi túto zmluvu jednoducho. Na čo si mám dať pozor? Aké sú v nej poplatky a pokuty? Ako sa dá ukončiť?",
-        why: "Konkrétna otázka vedie k užitočnejšej odpovedi. AI môže upozorniť napríklad na pokutu, dobu trvania alebo výpovednú lehotu. Jej odpoveď si však vždy porovnajte s pôvodným textom zmluvy.",
+        good: "Vysvetli mi túto zmluvu jednoducho. Na čo si mám dať pozor? Aké sú v nej poplatky, pokuty, viazanosť a podmienky výpovede?",
+        why: "Čím konkrétnejšia otázka, tým užitočnejšiu odpoveď vám AI môže dať. Jej odpoveď si však vždy porovnajte s pôvodným textom zmluvy.",
         answerPreview: "Napríklad: „Zmluva je uzatvorená na 24 mesiacov. Pri predčasnom ukončení sa v článku 7 uvádza pokuta 150 €. Skontrolujte aj podmienky automatického predĺženia.“",
       },
     ],
-    note: "Pred vložením dokumentu odstráňte alebo prekryte osobné a citlivé údaje. AI sa môže pomýliť, preto pri dôležitej zmluve rozhodujte podľa originálu a podľa potreby sa poraďte s odborníkom.",
+    prompt: {
+      title: "Vyskúšajte si prompt",
+      text: "Vysvetli mi túto zmluvu jednoduchou slovenčinou, akoby si ju vysvetľoval človeku, ktorý sa nevyzná v právnych pojmoch. Upozorni ma najmä na:\n– cenu a všetky poplatky,\n– pokuty a sankcie,\n– dobu viazanosti,\n– podmienky výpovede,\n– automatické predĺženie,\n– možnosť zmeny ceny.\nAk niečomu nerozumieš alebo to v dokumente nevidíš, povedz to a nevymýšľaj si.",
+    },
+    note: "AI vám môže zmluvu vysvetliť, ale nerozhoduje za vás. Dôležité údaje si vždy skontrolujte v origináli dokumentu.",
   },
 
   // ---------- ČASŤ 5 · Zlaté pravidlá a záver ----------

@@ -735,6 +735,29 @@ label {
 .course-ai-answer { background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: .7rem .9rem; font-style: italic; margin-top: .6rem; }
 
 /* reveal / keys */
+/* „Ako na to“ — očíslované kroky. */
+.course-howto { margin-top: 1.3rem; background: var(--surface-2); border-radius: 14px; padding: 1.1rem 1.2rem; }
+.course-howto-title { font-size: 1.05rem; margin: 0 0 .8rem; }
+.course-howto-step { display: flex; gap: .85rem; align-items: flex-start; padding: .6rem 0; border-bottom: 1px solid var(--line); }
+.course-howto-step:last-child { border-bottom: 0; padding-bottom: 0; }
+.course-howto-num {
+  flex: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; font-weight: 700; font-size: 1rem;
+  background: linear-gradient(160deg, var(--accent, #c17a2e), var(--accent-deep, #8f5a1e)); color: #fff;
+}
+.course-howto-step b { display: block; font-size: 1rem; margin-bottom: .15rem; }
+.course-howto-step span span { display: block; font-size: .95rem; line-height: 1.6; color: var(--text-mute); }
+
+/* Hotová otázka na skopírovanie. */
+.course-prompt { margin-top: 1.4rem; border: 2px solid var(--course-good-deep, #12554a); border-radius: 14px; padding: 1.1rem 1.2rem; background: var(--surface); }
+.course-prompt-title { font-size: 1.05rem; margin: 0 0 .7rem; color: var(--course-good-deep, #12554a); }
+.course-prompt-text {
+  background: var(--good-bg, #e3efe6); border-radius: 10px; padding: .9rem 1rem;
+  font-size: .98rem; line-height: 1.65; color: var(--text);
+}
+.course-prompt-copy { margin-top: .8rem; font-size: .95rem; padding: .6rem 1.2rem; }
+.course-prompt-copy.copied { border-color: var(--good, #2f6b49); color: var(--good, #2f6b49); }
+
 /* Porovnanie tvrdení článku s faktami — tabuľka, na mobile bloky pod sebou. */
 .course-compare { margin-top: 1.5rem; }
 .course-compare-title { font-size: 1.05rem; margin: 0 0 .7rem; }

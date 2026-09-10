@@ -346,6 +346,52 @@
     card.appendChild(wrap);
   }
 
+  // Očíslované kroky „Ako na to“. Zámerne veľké čísla a krátke vety —
+  // obrazovka má seniorovi ukázať postup, nie ho zavaliť textom.
+  function stepsBlock(card, steps, title) {
+    if (!steps || !steps.length) return;
+    const wrap = el("div", "course-howto");
+    if (title) wrap.appendChild(el("h3", "course-howto-title", title));
+    steps.forEach((st, i) => {
+      const row = el("div", "course-howto-step");
+      row.innerHTML =
+        "<span class='course-howto-num'>" + (i + 1) + "</span>" +
+        "<span><b>" + st.title + "</b><span>" + st.text + "</span></span>";
+      wrap.appendChild(row);
+    });
+    card.appendChild(wrap);
+  }
+
+  // Hotová otázka, ktorú si človek skopíruje a vloží do ChatGPT. Prepisovať
+  // šesť riadkov ručne by nikto nechcel.
+  function promptBlock(card, prompt) {
+    if (!prompt || !prompt.text) return;
+    const wrap = el("div", "course-prompt");
+    wrap.appendChild(el("h3", "course-prompt-title", prompt.title || "Vyskúšajte si túto otázku"));
+    const pre = el("div", "course-prompt-text", prompt.text.replace(/\n/g, "<br>"));
+    wrap.appendChild(pre);
+    const btn = el("button", "btn btn-secondary course-prompt-copy", "Skopírovať otázku");
+    btn.type = "button";
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(prompt.text);
+        btn.textContent = "Skopírované ✓";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "Skopírovať otázku"; btn.classList.remove("copied"); }, 2000);
+      } catch (err) {
+        // Bez povolenia na schránku aspoň text označíme, nech sa dá skopírovať ručne.
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = "Text je označený — skopírujte ho";
+      }
+    });
+    wrap.appendChild(btn);
+    card.appendChild(wrap);
+  }
+
   function galleryBlock(card, items) {
     if (!items || !items.length) return;
     const wrap = el("div", "course-gallery");
@@ -873,12 +919,17 @@
 
   RENDERERS.choice = function (slide, card) {
     header(card, slide);
+    evidenceFigure(card, slide.evidenceImage);
     taskBox(card, slide.task);
+    stepsBlock(card, slide.steps, slide.stepsTitle);
     if (slide.intro) card.appendChild(tipCallout(slide.intro));
     slide.rounds.forEach((r, idx) => {
       const box = el("div", "course-choice-round");
+      // Pri jedinej dvojici je nadpis "Otázka 1" zbytočný — obrazovka si
+      // môže miesto neho určiť vlastnú otázku.
       box.appendChild(el("p", "course-choice-num",
-        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 17h.01M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5'/></svg>Otázka " + (idx + 1)));
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 17h.01M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5'/></svg>" +
+        (slide.rounds.length === 1 && slide.chooseLabel ? slide.chooseLabel : "Otázka " + (idx + 1))));
       const opts = el("div", "course-choice-opts");
       const weak = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>" + r.weak + "</span>");
       const good = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>" + r.good + "</span>");
@@ -907,6 +958,7 @@
       box.appendChild(result);
       card.appendChild(box);
     });
+    promptBlock(card, slide.prompt);
     note(card, slide.note);
   };
 

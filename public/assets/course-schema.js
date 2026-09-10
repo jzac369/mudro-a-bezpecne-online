@@ -31,7 +31,7 @@
     sequence: ["title", "lead", "task", "steps[]", "doneText", "note"],
     hotspot: ["title", "lead", "task", "spots[].title", "spots[].text",
       "evidenceImage.caption", "evidenceImage.appLabel"],
-    choice: ["title", "lead", "task", "intro", "rounds[].weak", "rounds[].good", "rounds[].why",
+    choice: ["stepsTitle", "steps[].title", "steps[].text", "chooseLabel", "prompt.title", "prompt.text", "evidenceImage.caption", "title", "lead", "task", "intro", "rounds[].weak", "rounds[].good", "rounds[].why",
       "rounds[].answerPreview", "note"],
     belief: ["title", "lead", "task", "tip", "items[].text", "note"],
     reveal: ["title", "lead", "task", "cells[].title", "cells[].text", "doneText", "note",
