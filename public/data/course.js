@@ -692,13 +692,13 @@ window.COURSE_SLIDES = [
   // ---------- ČASŤ 5 · Zlaté pravidlá a záver ----------
   {
     id: 29, part: 5, type: "sort",
-    title: "Trezor: čo do AI radšej nezadávame",
+    title: "Čo do AI radšej nezadávame",
     lead: "AI je užitočný pomocník, ale citlivé osobné a bankové údaje do chatu nepatria. Na vysvetlenie situácie ich väčšinou vôbec nepotrebuje.",
-    task: "Kliknite na kartičku a potom ju zaraďte: <strong>Trezor</strong> (citlivý údaj — nezadávame), alebo <strong>Chat s AI</strong> (otázka bez citlivých údajov).",
+    task: "Kliknite na kartičku a potom ju zaraďte: <strong>Nezadávame</strong> (citlivý údaj), alebo <strong>Pokojne zadáme</strong> (otázka bez citlivých údajov).",
     tip: "Do AI opisujeme problém a pýtame sa na vysvetlenie. Heslá, bezpečnostné kódy a citlivé osobné údaje do nej nezadávame.",
     baskets: [
-      { id: "trezor", label: "Trezor — nezadávame", desc: "Heslá, PIN-y, autorizačné kódy, údaje z karty a neprekryté osobné doklady.", tone: "danger" },
-      { id: "chat", label: "Chat s AI — bez citlivých údajov", desc: "Všeobecné otázky, vysvetlenie pojmov a posúdenie obsahu po odstránení citlivých údajov.", tone: "safe" },
+      { id: "trezor", label: "Toto do AI nezadávame", desc: "Heslá, PIN-y, autorizačné kódy, údaje z karty a neprekryté osobné doklady.", tone: "danger" },
+      { id: "chat", label: "Toto pokojne zadáme", desc: "Všeobecné otázky, vysvetlenie pojmov a posúdenie obsahu po odstránení citlivých údajov.", tone: "safe" },
     ],
     sideNote: {
       title: "Zapamätajte si",
