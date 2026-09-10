@@ -136,15 +136,15 @@
       // rovnako ako by ste tam prešli tlačidlami Späť/Ďalej krok za krokom.
       const seg = el("button", "course-map-seg" + (p.id === slide.part ? " active" : (p.id < slide.part ? " done" : "")));
       seg.type = "button";
-      const stampInPart = this.stamps.some((sid) => {
-        const s = this.slides.find((x) => x.id === sid);
-        return s && s.part === p.id && this.earnedStamps.has(sid);
-      });
       seg.title = p.label;
       seg.setAttribute("aria-label", "Prejsť na časť: " + p.label);
       // Ikona časti namiesto bezvýznamnej bodky — na dlaždici má byť vidieť,
       // o čom tá časť je, ešte skôr, než si človek prečíta jej názov.
-      const icon = el("span", "course-map-icon" + (stampInPart ? " earned" : ""),
+      // Pečať sa kedysi prejavovala inou farbou ikony. Odkedy má hotová časť
+      // fajočku, boli na dlaždici dva rôzne signály o postupe naraz a jantárová
+      // farba pôsobila ako chyba — pečate sa naďalej počítajú, len sa tu
+      // nezobrazujú.
+      const icon = el("span", "course-map-icon",
         "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>" +
         (PART_ICONS[p.id] || "") + "</svg>");
       seg.appendChild(icon);
