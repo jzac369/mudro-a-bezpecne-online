@@ -946,6 +946,7 @@
     // sa hovorí, a až potom čítať, čo je na nej zle.
     evidenceFigure(card, slide.evidenceImage);
     const openedCells = new Set();
+    let allSeen = false;
     // Rozbaľovací zoznam namiesto stĺpcov: nadpisy sú vidieť všetky naraz a
     // otvorený text dostane celú šírku karty. V stĺpcoch sa lámal po dvoch
     // slovách a otvorená bunka rozhodila výšku celého riadku.
@@ -962,14 +963,19 @@
         "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg></span>";
       const content = el("div", "course-reveal-content", "<p>" + c.text + "</p>");
       btn.addEventListener("click", () => {
-        if (cell.classList.contains("open")) return;
-        cell.classList.add("open");
-        btn.setAttribute("aria-expanded", "true");
+        // Riadok sa dá zavrieť aj znova otvoriť. Prezretie sa ale počíta len
+        // raz a už sa neodpočítava — postup má odrážať, čo si človek prečítal,
+        // nie to, čo má práve otvorené.
+        const willOpen = !cell.classList.contains("open");
+        cell.classList.toggle("open", willOpen);
+        btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+        if (!willOpen) return;
         openedCells.add(i);
         progress.set(openedCells.size);
         // Text je odteraz priamo v otvorenom riadku — opakovať ho ešte raz
         // v páse pod cvičením by bola len zdvojená stena písmen.
-        if (openedCells.size >= slide.cells.length) {
+        if (openedCells.size >= slide.cells.length && !allSeen) {
+          allSeen = true;
           fb.show(true, "Prezreli ste všetko.", slide.doneText || "Toto sú pravidlá, ktoré vám pomôžu overiť si akúkoľvek informáciu.");
         }
       });
