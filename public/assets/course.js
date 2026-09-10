@@ -610,6 +610,8 @@
   RENDERERS.match = function (slide, card) {
     header(card, slide);
     taskBox(card, slide.task);
+    // Ukážky patria nad cvičenie — sú to tie správy, o ktorých je reč.
+    galleryBlock(card, slide.gallery);
     if (slide.tip) card.appendChild(tipCallout(slide.tip));
     const wrap = el("div", "course-match");
     const linesSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -717,7 +719,6 @@
     fb.hint("Ako na to?", "Kliknite najprv na políčko vľavo a potom na to vpravo, ktoré k nemu patrí. Ak sa dvojica trafí, spojí ich čiara.");
 
     note(card, slide.note);
-    galleryBlock(card, slide.gallery);
   };
 
   RENDERERS.sequence = function (slide, card) {
@@ -908,21 +909,31 @@
     // sa hovorí, a až potom čítať, čo je na nej zle.
     evidenceFigure(card, slide.evidenceImage);
     const openedCells = new Set();
+    // Rozbaľovací zoznam namiesto stĺpcov: nadpisy sú vidieť všetky naraz a
+    // otvorený text dostane celú šírku karty. V stĺpcoch sa lámal po dvoch
+    // slovách a otvorená bunka rozhodila výšku celého riadku.
     const grid = el("div", "course-reveal course-reveal-" + slide.layout);
     slide.cells.forEach((c, i) => {
       const cell = el("div", "course-reveal-cell");
-      const btn = el("button", "course-reveal-btn", slide.layout === "keys" ? ("Kľúč " + (i + 1)) : "Kliknite sem");
+      const btn = el("button", "course-reveal-btn");
       btn.type = "button";
-      const content = el("div", "course-reveal-content", "<h4>" + c.title + "</h4><p>" + c.text + "</p>");
+      btn.setAttribute("aria-expanded", "false");
+      btn.innerHTML =
+        "<span class='course-reveal-num'>" + (i + 1) + "</span>" +
+        "<span class='course-reveal-title'>" + c.title + "</span>" +
+        "<span class='course-reveal-chev' aria-hidden='true'>" +
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg></span>";
+      const content = el("div", "course-reveal-content", "<p>" + c.text + "</p>");
       btn.addEventListener("click", () => {
         if (cell.classList.contains("open")) return;
         cell.classList.add("open");
+        btn.setAttribute("aria-expanded", "true");
         openedCells.add(i);
         progress.set(openedCells.size);
+        // Text je odteraz priamo v otvorenom riadku — opakovať ho ešte raz
+        // v páse pod cvičením by bola len zdvojená stena písmen.
         if (openedCells.size >= slide.cells.length) {
-          fb.show(true, "Odkryli ste všetko.", slide.doneText || "Toto sú pravidlá, ktoré vám pomôžu overiť si akúkoľvek informáciu.");
-        } else {
-          fb.hint(c.title, c.text);
+          fb.show(true, "Prezreli ste všetko.", slide.doneText || "Toto sú pravidlá, ktoré vám pomôžu overiť si akúkoľvek informáciu.");
         }
       });
       cell.appendChild(btn);
@@ -931,7 +942,7 @@
     });
     card.appendChild(grid);
     const progress = createProgressCounter(card, slide.cells.length, (done, all) =>
-      done >= all ? "Hotovo — odkryli ste všetky kľúče." : "Odkryté <strong>" + done + "</strong> z " + all);
+      done >= all ? "Hotovo — prezreli ste všetky body." : "Prezreté <strong>" + done + "</strong> z " + all);
     const fb = createFeedbackArea(card);
     note(card, slide.note);
   };
