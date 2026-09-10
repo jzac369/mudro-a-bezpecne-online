@@ -370,25 +370,6 @@
     wrap.appendChild(el("h3", "course-prompt-title", prompt.title || "Vyskúšajte si túto otázku"));
     const pre = el("div", "course-prompt-text", prompt.text.replace(/\n/g, "<br>"));
     wrap.appendChild(pre);
-    const btn = el("button", "btn btn-secondary course-prompt-copy", "Skopírovať otázku");
-    btn.type = "button";
-    btn.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(prompt.text);
-        btn.textContent = "Skopírované ✓";
-        btn.classList.add("copied");
-        setTimeout(() => { btn.textContent = "Skopírovať otázku"; btn.classList.remove("copied"); }, 2000);
-      } catch (err) {
-        // Bez povolenia na schránku aspoň text označíme, nech sa dá skopírovať ručne.
-        const range = document.createRange();
-        range.selectNodeContents(pre);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        btn.textContent = "Text je označený — skopírujte ho";
-      }
-    });
-    wrap.appendChild(btn);
     card.appendChild(wrap);
   }
 
@@ -930,23 +911,38 @@
       box.appendChild(el("p", "course-choice-num",
         "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='12' r='9'/><path d='M12 17h.01M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5'/></svg>" +
         (slide.rounds.length === 1 && slide.chooseLabel ? slide.chooseLabel : "Otázka " + (idx + 1))));
-      const opts = el("div", "course-choice-opts");
-      const weak = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>" + r.weak + "</span>");
-      const good = el("button", "course-choice-opt", "<span class='course-choice-opt-icon'></span><span>" + r.good + "</span>");
-      [weak, good].forEach((b) => (b.type = "button"));
+      // Dve veľké karty vedľa seba, označené A a B. Po výbere obe zostanú
+      // čitateľné a doplní sa k nim, čím presne je otázka dobrá alebo slabá —
+      // človek si tak porovná, v čom sa líšia.
+      const opts = el("div", "course-choice-opts course-choice-cards");
+      const card2 = (letter, text) => {
+        const b = el("button", "course-choice-opt");
+        b.type = "button";
+        b.innerHTML =
+          "<span class='course-choice-letter'>" + letter + "</span>" +
+          "<span class='course-choice-body'><span class='course-choice-q'>" + text + "</span>" +
+          "<span class='course-choice-verdict'></span></span>" +
+          "<span class='course-choice-opt-icon'></span>";
+        return b;
+      };
+      const weak = card2("A", r.weak);
+      const good = card2("B", r.good);
       const result = el("div", "course-choice-result");
 
       function lock(chosenGood) {
         weak.disabled = true; good.disabled = true;
         good.classList.add("correct");
         good.querySelector(".course-choice-opt-icon").innerHTML = OPT_ICON_GOOD;
-        if (!chosenGood) {
-          weak.classList.add("incorrect");
-          weak.querySelector(".course-choice-opt-icon").innerHTML = OPT_ICON_BAD;
-        }
-        let html = "<p><strong>" + (chosenGood ? "Presne tak." : "Lepšia je druhá možnosť.") + "</strong> " + r.why + "</p>";
+        good.querySelector(".course-choice-verdict").textContent =
+          r.goodVerdict || "Konkrétna otázka — AI vie, na čo sa má pozrieť.";
+        weak.classList.add("incorrect");
+        weak.querySelector(".course-choice-opt-icon").innerHTML = OPT_ICON_BAD;
+        weak.querySelector(".course-choice-verdict").textContent =
+          r.weakVerdict || "Príliš všeobecná — odpoveď bude tiež všeobecná.";
+        let html = "<p><strong>" + (chosenGood ? "Správne." : "Lepšia je otázka B.") + "</strong> " + r.why + "</p>";
         if (r.answerPreview) html += "<p class='course-ai-answer'>„" + r.answerPreview + "“ — takto by mohla znieť odpoveď AI.</p>";
         result.innerHTML = html;
+        result.classList.add(chosenGood ? "ok" : "warn");
         result.classList.add("show");
       }
       weak.addEventListener("click", () => lock(false));

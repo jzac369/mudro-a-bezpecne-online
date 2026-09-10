@@ -712,6 +712,25 @@ label {
 .course-choice-num svg { width: 18px; height: 18px; flex: none; }
 .course-belief-text { font-size: 1.02rem; margin: 0 0 .9rem; }
 .course-choice-opts { display: flex; flex-direction: column; gap: .6rem; }
+/* Dvojica otázok ako karty vedľa seba — na porovnanie treba vidieť obe naraz. */
+.course-choice-cards { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+@media (max-width: 700px) { .course-choice-cards { grid-template-columns: 1fr; } }
+.course-choice-cards .course-choice-opt {
+  align-items: flex-start; gap: .7rem; padding: 1rem 1.05rem; border-radius: 14px;
+  border: 2px solid var(--line); background: var(--surface); text-align: left; height: 100%;
+}
+.course-choice-letter {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; font-weight: 700; font-size: .95rem;
+  background: var(--surface-2); color: var(--ink);
+}
+.course-choice-cards .course-choice-opt.correct .course-choice-letter { background: var(--good); color: #fff; }
+.course-choice-cards .course-choice-opt.incorrect .course-choice-letter { background: var(--warn); color: #fff; }
+.course-choice-body { flex: 1; display: flex; flex-direction: column; gap: .35rem; }
+.course-choice-q { font-size: 1rem; line-height: 1.5; font-weight: 700; }
+.course-choice-verdict:empty { display: none; }
+.course-choice-verdict { font-size: .88rem; font-weight: 400; line-height: 1.5; opacity: .9; }
+.course-prompt-note { margin: .7rem 0 0; font-size: .9rem; color: var(--text-mute); }
 .course-choice-opts-row { flex-direction: row; }
 .course-choice-opt {
   display: flex; align-items: center; gap: .7rem;
@@ -755,8 +774,6 @@ label {
   background: var(--good-bg, #e3efe6); border-radius: 10px; padding: .9rem 1rem;
   font-size: .98rem; line-height: 1.65; color: var(--text);
 }
-.course-prompt-copy { margin-top: .8rem; font-size: .95rem; padding: .6rem 1.2rem; }
-.course-prompt-copy.copied { border-color: var(--good, #2f6b49); color: var(--good, #2f6b49); }
 
 /* Porovnanie tvrdení článku s faktami — tabuľka, na mobile bloky pod sebou. */
 .course-compare { margin-top: 1.5rem; }
