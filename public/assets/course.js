@@ -390,19 +390,24 @@
     taskBox(card, slide.task);
     const grid = el("div", "course-tiles");
     const opened = new Set();
+    let enoughShown = false;
     slide.tiles.forEach((t, i) => {
       const tile = el("div", "course-tile", "<h3>" + t.title + "</h3>");
       tile.addEventListener("click", () => {
-        if (tile.classList.contains("open")) return;
-        tile.classList.add("open");
-        tile.innerHTML = "<h3>" + t.title + "</h3><p>" + t.text + "</p>";
+        // Dlaždica sa dá zavrieť aj znova otvoriť; prezretie sa započíta raz
+        // a už sa neodpočítava.
+        const willOpen = !tile.classList.contains("open");
+        tile.classList.toggle("open", willOpen);
+        tile.innerHTML = willOpen
+          ? "<h3>" + t.title + "</h3><p>" + t.text + "</p>"
+          : "<h3>" + t.title + "</h3>";
+        if (!willOpen) return;
         opened.add(i);
         progress.set(Math.min(opened.size, slide.minOpened));
-        if (opened.size >= slide.minOpened) {
+        if (opened.size >= slide.minOpened && !enoughShown) {
+          enoughShown = true;
           fb.show(true, "Skvelé, prezreli ste si dostatok kapitol.",
-            "Pokojne si otvorte aj zvyšné — alebo pokračujte tlačidlom „Ď alej“ dole.");
-        } else {
-          fb.hint("Otvorili ste „" + t.title + "“.", t.text);
+            "Pokojne si otvorte aj zvyšné — alebo pokračujte tlačidlom „Ďalej“ dole.");
         }
       });
       grid.appendChild(tile);
@@ -1012,8 +1017,6 @@
             // dokončení môže každá obrazovka nastaviť po svojom.
             fb.show(true, slide.doneTitle || "Prezreli ste si všetky znaky.",
               slide.doneText || "Nemusíte si ich pamätať naspamäť — stačí, aby vám napadli, keď príde podozrivá správa.");
-          } else {
-            fb.hint(c.title, c.text);
           }
         }
       });
