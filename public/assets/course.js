@@ -1624,11 +1624,23 @@
     slide.rules.forEach((r) => list.appendChild(el("li", null, r)));
     paper.appendChild(list);
     card.appendChild(paper);
-    const btn = el("button", "btn btn-secondary", "Stiahnuť ako obrázok");
-    btn.type = "button";
-    btn.style.marginTop = "1rem";
-    btn.addEventListener("click", () => downloadPaper(paper, slide.rules));
-    card.appendChild(btn);
+    // Keď je pripravená hotová grafika, stiahne sa ona. Kreslenie na plátno
+    // zostáva ako záloha pre obrazovky, ktoré vlastný obrázok nemajú.
+    if (slide.downloadImage) {
+      const link = el("a", "btn btn-secondary", "Stiahnuť ako obrázok");
+      link.href = slide.downloadImage;
+      link.download = "sest-zlatych-pravidiel.jpg";
+      link.style.marginTop = "1rem";
+      link.style.display = "inline-block";
+      link.style.textDecoration = "none";
+      card.appendChild(link);
+    } else {
+      const btn = el("button", "btn btn-secondary", "Stiahnuť ako obrázok");
+      btn.type = "button";
+      btn.style.marginTop = "1rem";
+      btn.addEventListener("click", () => downloadPaper(paper, slide.rules));
+      card.appendChild(btn);
+    }
   };
 
   function downloadPaper(paperEl, rules) {

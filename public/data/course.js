@@ -786,6 +786,7 @@ window.COURSE_SLIDES = [
     title: "Váš papierik vedľa telefónu",
     lead: "Šesť najdôležitejších pravidiel na jednom mieste. Môžete si ich uložiť alebo vytlačiť a mať ich poruke pri telefóne či počítači.",
     task: "Prečítajte si všetkých šesť pravidiel a potom kliknite na tlačidlo <strong>„Stiahnuť ako obrázok“</strong> pod nimi.",
+    downloadImage: "assets/course-media/sest-zlatych-pravidiel.jpg",
     rules: [
       "Keď ma niekto naháňa, spomalím a najprv si to overím.",
       "Heslo, PIN ani autorizačný kód zo SMS nikomu neprezrádzam.",
@@ -797,8 +798,8 @@ window.COURSE_SLIDES = [
   },
   {
     id: 35, part: 5, type: "diploma",
-    title: "Absolvovali ste kurz!",
-    lead: "Ďakujeme, že ste si našli čas naučiť sa niečo nové. Už viete lepšie rozpoznať podozrivý e-mail, SMS či telefonát, overiť si finančnú ponuku a používať umelú inteligenciu bezpečnejšie.",
+    title: "Máte za sebou Lekcie!",
+    lead: "Ďakujeme, že ste si našli čas. Už viete lepšie rozpoznať podozrivý e-mail, SMS či telefonát, overiť si finančnú ponuku a používať umelú inteligenciu bezpečnejšie. Toto však bol len jeden zo siedmich krokov kurzu. Pokračujte tlačidlom <strong>„Pokračovať na cvičenia“</strong> nižšie — čakajú vás Cvičenia, Zdroje a Záverečný kvíz, po ktorom dostanete certifikát.",
     quote: "Keď si nie ste istí, doprajte si chvíľu na overenie. Jedna minúta navyše môže zabrániť veľkej chybe.",
   },
 ];
