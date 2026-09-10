@@ -587,36 +587,35 @@ window.COURSE_SLIDES = [
     },
   },
   {
-    // Skutočný článok z roku 2017, ktorý sa šíri dodnes. Údaje o dávke sú
-    // overené v American Cancer Society (0,4 mSv za mamografiu oboch prsníkov,
-    // teda toľko, čo prirodzené pozadie za 1 až 2 mesiace). Prepočet 1 rad =
-    // 10 mSv je bežná fyzikálna premena, nie tvrdenie z článku.
+    // Skutočný článok z roku 2017, ktorý sa šíri dodnes. Dávka žiarenia je
+    // overená v American Cancer Society (0,4 mSv za mamografiu oboch prsníkov);
+    // prepočet 1 rad = 10 mSv je bežná fyzikálna premena.
     id: 39, part: 4, type: "reveal",
     title: "Keď sa z pravdivých faktov poskladá nepravda",
-    lead: "Tento článok tvrdí, že mamografia spôsobuje rakovinu. Vyšiel v roku 2017 — a ľudia ho zdieľajú dodnes, už vyše 580-krát. Nebezpečný nie je preto, že by si vymýšľal. Nebezpečný je preto, že skoro každý jeho fakt je pravdivý.",
-    task: "Kliknite postupne na <strong>všetkých šesť bodov</strong>. Ukážeme si, ako sa dá z pravdivých informácií poskladať záver, ktorý pravdivý nie je.",
+    lead: "Tento článok z roku 2017 tvrdí, že mamografia môže spôsobovať rakovinu. Ľudia ho zdieľajú dodnes. A práve preto je zaujímavý: mnohé fakty v ňom sú pravdivé. Problém je v tom, aké závery z nich autor vyvodzuje.",
+    task: "Kliknite postupne na <strong>všetkých šesť bodov</strong> a pozrite sa, ako vzniká zavádzajúca správa.",
     layout: "keys",
     cells: [
-      { title: "Začína pravdou — a preto mu veríme", text: "Mamografia naozaj používa ionizujúce žiarenie. Žiarenie naozaj môže poškodiť bunky. A mamografia naozaj má svoje nevýhody. Prvé vety článku sú pravdivé, takže čitateľ si povie: toto sedí. A od tej chvíle prijíma aj to, čo príde potom." },
-      { title: "Skok, ktorý nikto nevidí", text: "Článok uvádza, že medzi ženami, ktoré chodili na mamografiu, sa našlo viac nádorov než medzi tými, čo nechodili. To je pravda — a autor z toho urobí záver, že mamografia rakovinu spôsobuje. Skutočné vysvetlenie je pritom jednoduché: kto sa vyšetruje, u toho sa aj viac nájde. Vyšetrenie nádor nevytvorí, len ho odhalí." },
-      { title: "Číslo, ktoré nesedí ani zďaleka", text: "Článok tvrdí, že jedna mamografia znamená asi 1 rad žiarenia. Skutočná dávka pri vyšetrení oboch prsníkov je približne 0,4 milisievertu — a 1 rad je 10 milisievertov. Článok teda uvádza dávku zhruba dvadsaťpäťkrát vyššiu, než aká naozaj je. Pre predstavu: 0,4 milisievertu je toľko žiarenia, koľko na vás pôsobí z prírody za jeden až dva mesiace bežného života." },
-      { title: "Riziko, ktoré štúdie hľadali a nenašli", text: "Článok straší, že stlačenie prsníka pri vyšetrení môže vytlačiť nádorové bunky do krvi a rozniesť ich po tele. Presne toto vedci merali: u 24 pacientok odobrali krv pred stlačením a po ňom. Žiadny nárast nádorových buniek nenašli. Znie to hrozivo, ale nepotvrdilo sa to." },
-      { title: "„O čom vám lekár nepovie“ — a pritom povie", text: "Nadpis sľubuje utajované riziká. Lenže tie riziká utajované nie sú: falošne pozitívne nálezy, zbytočné biopsie aj nadmerná diagnostika sú verejne uvedené na stránkach amerického Národného onkologického ústavu, kam sa dostane ktokoľvek. Článok predáva pocit, že vám niekto niečo tají — a to je jeho najsilnejšia zbraň." },
-      { title: "Ako si to overiť cez ChatGPT", text: "Skopírujte nadpis a napíšte AI: „Prečítal som článok s nadpisom ‚Mamografia a rakovina prsníka: Riziká, o ktorých vám lekár nepovie‘. Aké sú skutočné riziká mamografie podľa odborných zdrojov? Aká je skutočná dávka žiarenia pri jednej mamografii? Odpovedz jednoducho a uveď zdroje.“ Potom si tie zdroje otvorte. Keď vám AI ukáže stránku onkologického ústavu, kde sú riziká vypísané, hneď viete, že slovo „nepovie“ v nadpise nesedí. A o svojom vyšetrení sa vždy rozprávajte s lekárom, nie s AI." },
+      { title: "Začína pravdou — a preto mu veríme", text: "Mamografia naozaj používa ionizujúce žiarenie. Žiarenie môže poškodzovať bunky a mamografia má aj svoje nevýhody. Keď článok začne pravdivými faktmi, ľahšie uveríme aj tomu, čo príde potom." },
+      { title: "Skok, ktorý si nemusíme všimnúť", text: "Medzi vyšetrovanými ženami sa našlo viac nádorov. Autor naznačuje: mamografia ich spôsobila. Lenže kto sa vyšetruje, u toho sa aj viac nájde. Vyšetrenie nádor nevytvorí — môže ho odhaliť." },
+      { title: "Číslo, ktoré nesedí", text: "Článok uvádza dávku približne 1 rad, teda 10 mSv. Bežná mamografia oboch prsníkov predstavuje približne 0,4 mSv — asi 25-krát menej. Je to približne toľko prirodzeného žiarenia, koľko dostaneme za jeden až dva mesiace života." },
+      { title: "Hrozivé tvrdenie bez dôkazu", text: "Podľa článku môže stlačenie prsníka vytlačiť nádorové bunky do krvi a rozšíriť rakovinu. Vedci to skúmali: u 24 pacientok porovnali krv pred mamografiou a po nej. Nárast nádorových buniek nezistili." },
+      { title: "„Čo vám lekár nepovie“", text: "Znie to, akoby niekto riziká mamografie tajil. V skutočnosti odborné zdroje otvorene hovoria o falošne pozitívnych výsledkoch, zbytočných biopsiách, nadmernej diagnostike aj malej dávke žiarenia. Pocit „toto pred vami zatajujú“ je častý spôsob, ako nás článok presviedča." },
+      { title: "Overte si to pomocou AI", text: "Skúste sa ChatGPT opýtať: „Aké sú skutočné riziká mamografie podľa odborných zdrojov? Aká je dávka žiarenia pri jednom vyšetrení? Uveď zdroje.“ Potom si zdroje otvorte a skontrolujte. AI používajte ako pomocníka pri overovaní, nie ako jediný zdroj zdravotných informácií." },
     ],
     compare: {
       title: "Čo tvrdí článok a čo hovoria fakty",
       rows: [
-        { claim: "Ionizujúce žiarenie môže poškodiť bunky.", verdict: "true", fact: "Pravda. Práve preto sa dávky držia čo najnižšie a skríning sa neodporúča každý rok každému." },
-        { claim: "Skríning vedie aj k nadmernej diagnostike.", verdict: "true", fact: "Pravda a odborníci o tom otvorene píšu. Nájde sa aj pomalý nádor, ktorý by žene nikdy nespôsobil ťažkosti." },
-        { claim: "Jedna mamografia dá asi 1 rad žiarenia.", verdict: "false", fact: "V skutočnosti okolo 0,4 milisievertu. Jeden rad je 10 milisievertov — teda asi 25-krát viac, než mamografia naozaj dá." },
-        { claim: "Viac mamografií znamená viac rakoviny, takže ju spôsobujú.", verdict: "false", fact: "Vyšetrenie nádor nevytvorí, len ho nájde. Kto chodí na kontroly, u toho sa jednoducho viac nálezov objaví." },
-        { claim: "Stlačenie prsníka rozšíri nádor do tela.", verdict: "false", fact: "Merané u 24 pacientok pred stlačením a po ňom — žiadny nárast nádorových buniek v krvi sa nezistil." },
-        { claim: "Lekári tieto riziká zamlčujú.", verdict: "false", fact: "Sú verejne vypísané na stránkach amerického Národného onkologického ústavu. Nič sa netají." },
+        { claim: "Ionizujúce žiarenie môže poškodiť bunky.", verdict: "true", fact: "Platí. Preto sa dávky držia čo najnižšie." },
+        { claim: "Mamografický skríning môže viesť aj k nadmernej diagnostike.", verdict: "true", fact: "Platí a odborné zdroje o tom otvorene píšu." },
+        { claim: "Jedna mamografia znamená približne 1 rad žiarenia.", verdict: "false", fact: "Bežne ide približne o 0,4 mSv, nie 10 mSv." },
+        { claim: "Viac nádorov medzi vyšetrovanými ženami dokazuje, že ich spôsobila mamografia.", verdict: "misleading", fact: "Viac vyšetrujeme = viac nádorov odhalíme." },
+        { claim: "Stlačenie prsníka pri mamografii rozšíri rakovinu po tele.", verdict: "unconfirmed", fact: "Dostupné klinické merania to nepotvrdili." },
+        { claim: "Lekári riziká mamografie zatajujú.", verdict: "misleading", fact: "Odborné zdroje o nich verejne informujú." },
       ],
     },
-    doneText: "Všimnite si, že sme nemuseli poprieť ani jeden vedecký fakt. Stačilo pozrieť sa, čo z nich autor vyvodil.",
-    note: "Toto je najnebezpečnejší druh dezinformácie: nie vymyslené fakty, ale pravdivé fakty poskladané tak, aby viedli k nepravdivému záveru. A škoda je celkom konkrétna — žena, ktorá po prečítaní takého článku nepôjde na vyšetrenie, sa o nádore dozvie neskôr, než mohla. O svojom vyšetrení sa preto poraďte so svojím lekárom, nie s článkom na internete.",
+    doneText: "Nemuseli sme poprieť ani jeden vedecký fakt. Stačilo pozrieť sa, čo z nich autor vyvodil.",
+    note: "Dezinformácia nemusí obsahovať vymyslené fakty. Niekedy stačí poskladať pravdivé fakty tak, aby viedli k nepravdivému záveru. Pri zdravotných rozhodnutiach preto informácie overujte z dôveryhodných zdrojov a o vyšetrení sa poraďte s lekárom.",
     evidenceImage: {
       src: "assets/course-media/evidence/mamografia-clickbait.jpg",
       caption: "Skutočný článok z roku 2017. Meno stránky sme zámerne prekryli — poučný je nadpis a číslo pri tlačidle zdieľania: vyše 580 ľudí ho poslalo ďalej a šíri sa aj po rokoch.",

@@ -309,25 +309,40 @@
     card.appendChild(fig);
   }
 
-  // Porovnanie „čo tvrdí článok“ verzus „čo hovoria fakty“. Zámerne to nie je
-  // klasická tabuľka: na mobile sa stĺpce lámu na nečitateľné prúžky, preto je
-  // z každého riadku samostatná kartička s odznakom.
+  // Porovnanie „čo tvrdí článok“ verzus „ako to je v skutočnosti“ ako tabuľka.
+  // Na úzkych obrazovkách sa riadky prepnú do blokov pod sebou — trojstĺpcová
+  // tabuľka by sa na mobile zlisovala na nečitateľné prúžky.
+  const COMPARE_VERDICTS = {
+    "true":        { cls: "ok",     mark: "✓", label: "Pravda" },
+    "false":       { cls: "no",     mark: "✕", label: "Nepravda" },
+    "misleading":  { cls: "partly", mark: "!", label: "Zavádzajúce" },
+    "unconfirmed": { cls: "unconf", mark: "?", label: "Nepotvrdené" },
+  };
+
   function compareBlock(card, compare) {
     if (!compare || !compare.rows || !compare.rows.length) return;
     const wrap = el("div", "course-compare");
     if (compare.title) wrap.appendChild(el("h3", "course-compare-title", compare.title));
+
+    const scroller = el("div", "course-compare-scroll");
+    const table = el("table", "course-compare-table");
+    table.innerHTML =
+      "<thead><tr><th scope='col'>Hodnotenie</th><th scope='col'>Tvrdenie článku</th>" +
+      "<th scope='col'>Ako to je v skutočnosti</th></tr></thead>";
+    const tbody = el("tbody");
     compare.rows.forEach((row) => {
-      const verdict = row.verdict === "true" ? "ok" : (row.verdict === "partly" ? "partly" : "no");
-      const mark = verdict === "ok" ? "✓" : (verdict === "partly" ? "!" : "✕");
-      const label = verdict === "ok" ? "Pravda" : (verdict === "partly" ? "Sčasti" : "Nepravda");
-      const item = el("div", "course-compare-row " + verdict);
-      item.innerHTML =
-        "<div class='course-compare-claim'>" +
-        "<span class='course-compare-mark' aria-hidden='true'>" + mark + "</span>" +
-        "<span><span class='course-compare-label'>" + label + "</span>" + row.claim + "</span></div>" +
-        "<p class='course-compare-fact'>" + row.fact + "</p>";
-      wrap.appendChild(item);
+      const v = COMPARE_VERDICTS[row.verdict] || COMPARE_VERDICTS["false"];
+      const tr = el("tr", v.cls);
+      tr.innerHTML =
+        "<td data-col='Hodnotenie'><span class='course-compare-badge'>" +
+        "<span class='course-compare-mark' aria-hidden='true'>" + v.mark + "</span>" + v.label + "</span></td>" +
+        "<td data-col='Tvrdenie článku'>" + row.claim + "</td>" +
+        "<td data-col='Ako to je v skutočnosti'>" + row.fact + "</td>";
+      tbody.appendChild(tr);
     });
+    table.appendChild(tbody);
+    scroller.appendChild(table);
+    wrap.appendChild(scroller);
     card.appendChild(wrap);
   }
 
