@@ -142,7 +142,12 @@
       });
       seg.title = p.label;
       seg.setAttribute("aria-label", "Prejsť na časť: " + p.label);
-      seg.appendChild(el("span", "course-map-dot" + (stampInPart ? " earned" : "")));
+      // Ikona časti namiesto bezvýznamnej bodky — na dlaždici má byť vidieť,
+      // o čom tá časť je, ešte skôr, než si človek prečíta jej názov.
+      const icon = el("span", "course-map-icon" + (stampInPart ? " earned" : ""),
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>" +
+        (PART_ICONS[p.id] || "") + "</svg>");
+      seg.appendChild(icon);
       seg.appendChild(el("span", "course-map-seg-label", p.label));
       const firstSlideOfPart = this.slides.findIndex((s) => s.part === p.id);
       seg.addEventListener("click", () => {
