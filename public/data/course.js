@@ -617,6 +617,10 @@ window.COURSE_SLIDES = [
     },
     doneText: "Všimnite si, že sme nemuseli poprieť ani jeden vedecký fakt. Stačilo pozrieť sa, čo z nich autor vyvodil.",
     note: "Toto je najnebezpečnejší druh dezinformácie: nie vymyslené fakty, ale pravdivé fakty poskladané tak, aby viedli k nepravdivému záveru. A škoda je celkom konkrétna — žena, ktorá po prečítaní takého článku nepôjde na vyšetrenie, sa o nádore dozvie neskôr, než mohla. O svojom vyšetrení sa preto poraďte so svojím lekárom, nie s článkom na internete.",
+    evidenceImage: {
+      src: "assets/course-media/evidence/mamografia-clickbait.jpg",
+      caption: "Skutočný článok z roku 2017. Meno stránky sme zámerne prekryli — poučný je nadpis a číslo pri tlačidle zdieľania: vyše 580 ľudí ho poslalo ďalej a šíri sa aj po rokoch.",
+    },
   },
   {
     id: 40, part: 4, type: "reveal",

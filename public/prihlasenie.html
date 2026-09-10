@@ -92,12 +92,22 @@
     errorEl.style.display = "none";
     restrictedEl.style.display = "none";
 
+    // Overenie kódu a načítanie kurzu trvá pár sekúnd. Bez tejto zmeny sa po
+    // stlačení nedeje viditeľne nič a človek klikne znova.
+    const submitBtn = e.target.querySelector("button[type='submit']");
+    const submitLabel = submitBtn.textContent;
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Overujem kód…";
+
     try {
       const verifyCode = firebase.app().functions("europe-west1").httpsCallable("verifyCode");
       const result = await verifyCode({ name, code });
       await firebase.auth().signInWithCustomToken(result.data.token);
       sessionStorage.setItem("mbo_participant_name", result.data.participantName);
       sessionStorage.setItem("mbo_participant_firstname", result.data.firstName || result.data.participantName);
+      // Tlačidlo zámerne zostáva zablokované — stránka sa práve prepína na kurz.
+      submitBtn.textContent = "Otváram kurz…";
       location.href = "workshop.html?w=" + encodeURIComponent(result.data.workshopId);
     } catch (err) {
       if (err.details && err.details.reason === "deactivated") {
@@ -114,6 +124,8 @@
         errorEl.textContent = "Meno alebo kód nesedí. Skontrolujte prosím veľké/malé písmená a skúste znova.";
         errorEl.style.display = "block";
       }
+      submitBtn.disabled = false;
+      submitBtn.textContent = submitLabel;
     }
   });
 </script>
