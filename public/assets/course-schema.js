@@ -35,6 +35,7 @@
       "rounds[].answerPreview", "note"],
     belief: ["title", "lead", "task", "tip", "items[].text", "note"],
     reveal: ["title", "lead", "task", "cells[].title", "cells[].text", "doneText", "note",
+      "compare.title", "compare.rows[].claim", "compare.rows[].fact",
       "evidenceImage.caption"],
     revealgrid: ["title", "lead", "task", "cells[].title", "cells[].text",
       "doneLabel", "doneTitle", "doneText", "note"],

@@ -17,7 +17,7 @@ window.COURSE_SLIDES = [
     title: "Ako nenaletieť podvodníkom",
     lead: "Umelá inteligencia ako pomocník pri dôležitých finančných rozhodnutiach.",
     image: "assets/course-media/illustrations/cover-elderly-couple.jpg",
-    body: "Čaká vás 38 krátkych zastavení rozdelených do 5 častí. Pri každom si niečo vyskúšate a hneď sa dozviete, či ste odpovedali správne — aj prečo. Nič sa nedá pokaziť a kedykoľvek sa môžete vrátiť tam, kde ste skončili.",
+    body: "Čaká vás 40 krátkych zastavení rozdelených do 5 častí. Pri každom si niečo vyskúšate a hneď sa dozviete, či ste odpovedali správne — aj prečo. Nič sa nedá pokaziť a kedykoľvek sa môžete vrátiť tam, kde ste skončili.",
     task: "Prezrite si päť častí kurzu nižšie a potom kliknite na tlačidlo <strong>„Ďalej“</strong> v pravom dolnom rohu.",
   },
   {
@@ -585,6 +585,54 @@ window.COURSE_SLIDES = [
       src: "assets/course-media/evidence/brokolica-clickbait.jpg",
       caption: "Skutočný článok zo slovenskej stránky, august 2025. Všimnite si, že namiesto mena autora je uvedená len „redakcia“ — a pod článkom už čaká 31 komentárov ľudí, ktorí ho zdieľali ďalej.",
     },
+  },
+  {
+    // Skutočný článok z roku 2017, ktorý sa šíri dodnes. Údaje o dávke sú
+    // overené v American Cancer Society (0,4 mSv za mamografiu oboch prsníkov,
+    // teda toľko, čo prirodzené pozadie za 1 až 2 mesiace). Prepočet 1 rad =
+    // 10 mSv je bežná fyzikálna premena, nie tvrdenie z článku.
+    id: 39, part: 4, type: "reveal",
+    title: "Keď sa z pravdivých faktov poskladá nepravda",
+    lead: "Tento článok tvrdí, že mamografia spôsobuje rakovinu. Vyšiel v roku 2017 — a ľudia ho zdieľajú dodnes, už vyše 580-krát. Nebezpečný nie je preto, že by si vymýšľal. Nebezpečný je preto, že skoro každý jeho fakt je pravdivý.",
+    task: "Kliknite postupne na <strong>všetkých šesť bodov</strong>. Ukážeme si, ako sa dá z pravdivých informácií poskladať záver, ktorý pravdivý nie je.",
+    layout: "keys",
+    cells: [
+      { title: "Začína pravdou — a preto mu veríme", text: "Mamografia naozaj používa ionizujúce žiarenie. Žiarenie naozaj môže poškodiť bunky. A mamografia naozaj má svoje nevýhody. Prvé vety článku sú pravdivé, takže čitateľ si povie: toto sedí. A od tej chvíle prijíma aj to, čo príde potom." },
+      { title: "Skok, ktorý nikto nevidí", text: "Článok uvádza, že medzi ženami, ktoré chodili na mamografiu, sa našlo viac nádorov než medzi tými, čo nechodili. To je pravda — a autor z toho urobí záver, že mamografia rakovinu spôsobuje. Skutočné vysvetlenie je pritom jednoduché: kto sa vyšetruje, u toho sa aj viac nájde. Vyšetrenie nádor nevytvorí, len ho odhalí." },
+      { title: "Číslo, ktoré nesedí ani zďaleka", text: "Článok tvrdí, že jedna mamografia znamená asi 1 rad žiarenia. Skutočná dávka pri vyšetrení oboch prsníkov je približne 0,4 milisievertu — a 1 rad je 10 milisievertov. Článok teda uvádza dávku zhruba dvadsaťpäťkrát vyššiu, než aká naozaj je. Pre predstavu: 0,4 milisievertu je toľko žiarenia, koľko na vás pôsobí z prírody za jeden až dva mesiace bežného života." },
+      { title: "Riziko, ktoré štúdie hľadali a nenašli", text: "Článok straší, že stlačenie prsníka pri vyšetrení môže vytlačiť nádorové bunky do krvi a rozniesť ich po tele. Presne toto vedci merali: u 24 pacientok odobrali krv pred stlačením a po ňom. Žiadny nárast nádorových buniek nenašli. Znie to hrozivo, ale nepotvrdilo sa to." },
+      { title: "„O čom vám lekár nepovie“ — a pritom povie", text: "Nadpis sľubuje utajované riziká. Lenže tie riziká utajované nie sú: falošne pozitívne nálezy, zbytočné biopsie aj nadmerná diagnostika sú verejne uvedené na stránkach amerického Národného onkologického ústavu, kam sa dostane ktokoľvek. Článok predáva pocit, že vám niekto niečo tají — a to je jeho najsilnejšia zbraň." },
+      { title: "Ako si to overiť cez ChatGPT", text: "Skopírujte nadpis a napíšte AI: „Prečítal som článok s nadpisom ‚Mamografia a rakovina prsníka: Riziká, o ktorých vám lekár nepovie‘. Aké sú skutočné riziká mamografie podľa odborných zdrojov? Aká je skutočná dávka žiarenia pri jednej mamografii? Odpovedz jednoducho a uveď zdroje.“ Potom si tie zdroje otvorte. Keď vám AI ukáže stránku onkologického ústavu, kde sú riziká vypísané, hneď viete, že slovo „nepovie“ v nadpise nesedí. A o svojom vyšetrení sa vždy rozprávajte s lekárom, nie s AI." },
+    ],
+    compare: {
+      title: "Čo tvrdí článok a čo hovoria fakty",
+      rows: [
+        { claim: "Ionizujúce žiarenie môže poškodiť bunky.", verdict: "true", fact: "Pravda. Práve preto sa dávky držia čo najnižšie a skríning sa neodporúča každý rok každému." },
+        { claim: "Skríning vedie aj k nadmernej diagnostike.", verdict: "true", fact: "Pravda a odborníci o tom otvorene píšu. Nájde sa aj pomalý nádor, ktorý by žene nikdy nespôsobil ťažkosti." },
+        { claim: "Jedna mamografia dá asi 1 rad žiarenia.", verdict: "false", fact: "V skutočnosti okolo 0,4 milisievertu. Jeden rad je 10 milisievertov — teda asi 25-krát viac, než mamografia naozaj dá." },
+        { claim: "Viac mamografií znamená viac rakoviny, takže ju spôsobujú.", verdict: "false", fact: "Vyšetrenie nádor nevytvorí, len ho nájde. Kto chodí na kontroly, u toho sa jednoducho viac nálezov objaví." },
+        { claim: "Stlačenie prsníka rozšíri nádor do tela.", verdict: "false", fact: "Merané u 24 pacientok pred stlačením a po ňom — žiadny nárast nádorových buniek v krvi sa nezistil." },
+        { claim: "Lekári tieto riziká zamlčujú.", verdict: "false", fact: "Sú verejne vypísané na stránkach amerického Národného onkologického ústavu. Nič sa netají." },
+      ],
+    },
+    doneText: "Všimnite si, že sme nemuseli poprieť ani jeden vedecký fakt. Stačilo pozrieť sa, čo z nich autor vyvodil.",
+    note: "Toto je najnebezpečnejší druh dezinformácie: nie vymyslené fakty, ale pravdivé fakty poskladané tak, aby viedli k nepravdivému záveru. A škoda je celkom konkrétna — žena, ktorá po prečítaní takého článku nepôjde na vyšetrenie, sa o nádore dozvie neskôr, než mohla. O svojom vyšetrení sa preto poraďte so svojím lekárom, nie s článkom na internete.",
+  },
+  {
+    id: 40, part: 4, type: "reveal",
+    title: "Prečo takéto články vôbec vznikajú",
+    lead: "Zostáva jedna otázka: prečo to niekto píše? Nie je za tým zlomyseľnosť ani náhoda. Vo väčšine prípadov je za tým jednoduchý dôvod — peniaze.",
+    task: "Kliknite postupne na <strong>všetkých päť bodov</strong>. Keď pochopíte, ako sa na tom zarába, budete takéto články spoznávať oveľa ľahšie.",
+    layout: "keys",
+    cells: [
+      { title: "Platí sa za kliknutia", text: "Na stránkach býva reklama a jej majiteľ dostáva zaplatené podľa toho, koľko ľudí ju uvidí. Čím viac návštevníkov, tým viac peňazí. A nič neprivedie ľudí spoľahlivejšie než strach alebo sľub zázraku — preto nadpisy vyzerajú tak, ako vyzerajú. Nudný pravdivý nadpis nezarobí." },
+      { title: "Predávajú sa doplnky a zázračné prípravky", text: "Všimnite si, čo sa na tej istej stránke predáva. Článok o tom, že lekári niečo taja, je najlepšia príprava na ponuku prírodného prípravku hneď pod ním. Keď niekto píše o zdraví a zároveň naň predáva výrobky, čítajte ten článok ako reklamu." },
+      { title: "Zdieľanie je pre nich reklama zadarmo", text: "Keď článok pošlete ďalej, urobíte pre autora prácu, za ktorú by inak platil. Preto sú v takých textoch výzvy typu „zdieľajte, kým to nezmažú“. Vaša dobrá vôľa varovať známych je súčasťou ich obchodného plánu." },
+      { title: "Nedôvera sa dá speňažiť", text: "Vety ako „o čom vám lekár nepovie“ nemajú informovať. Majú vytvoriť vzťah: oni sú tí, čo vám povedia pravdu, a ostatní vám klamú. Kto tomu uverí, vracia sa na tú stránku znova a kupuje, čo mu ponúkne. Preto sa tieto články neútočia na fakty, ale na dôveru." },
+      { title: "Čo s tým môžete urobiť vy", text: "Nezdieľať. To je celé — a je to viac, než sa zdá, lebo bez zdieľania sa takýto článok nikam nedostane. Ak vám ho niekto pošle, nemusíte sa hádať; stačí odpísať, že ste si to overili a nesedí to, a poslať odkaz na dôveryhodný zdroj. A keď si nie ste istý, opýtajte sa AI slovami: „Kto prevádzkuje túto stránku a predáva na nej niečo?“" },
+    ],
+    doneText: "Za väčšinou takýchto článkov nie je konšpirácia. Je za nimi obchod.",
+    note: "Nemusíte poznať meno stránky ani jej majiteľa. Stačí si pri každom poplašnom článku položiť jedinú otázku: kto na tom zarobí, keď tomu uverím? Ak je odpoveď „ten, kto to napísal“, viete dosť.",
   },
   {
     id: 27, part: 4, type: "guess",

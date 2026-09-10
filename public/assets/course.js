@@ -309,6 +309,28 @@
     card.appendChild(fig);
   }
 
+  // Porovnanie „čo tvrdí článok“ verzus „čo hovoria fakty“. Zámerne to nie je
+  // klasická tabuľka: na mobile sa stĺpce lámu na nečitateľné prúžky, preto je
+  // z každého riadku samostatná kartička s odznakom.
+  function compareBlock(card, compare) {
+    if (!compare || !compare.rows || !compare.rows.length) return;
+    const wrap = el("div", "course-compare");
+    if (compare.title) wrap.appendChild(el("h3", "course-compare-title", compare.title));
+    compare.rows.forEach((row) => {
+      const verdict = row.verdict === "true" ? "ok" : (row.verdict === "partly" ? "partly" : "no");
+      const mark = verdict === "ok" ? "✓" : (verdict === "partly" ? "!" : "✕");
+      const label = verdict === "ok" ? "Pravda" : (verdict === "partly" ? "Sčasti" : "Nepravda");
+      const item = el("div", "course-compare-row " + verdict);
+      item.innerHTML =
+        "<div class='course-compare-claim'>" +
+        "<span class='course-compare-mark' aria-hidden='true'>" + mark + "</span>" +
+        "<span><span class='course-compare-label'>" + label + "</span>" + row.claim + "</span></div>" +
+        "<p class='course-compare-fact'>" + row.fact + "</p>";
+      wrap.appendChild(item);
+    });
+    card.appendChild(wrap);
+  }
+
   function galleryBlock(card, items) {
     if (!items || !items.length) return;
     const wrap = el("div", "course-gallery");
@@ -944,6 +966,7 @@
     const progress = createProgressCounter(card, slide.cells.length, (done, all) =>
       done >= all ? "Hotovo — prezreli ste všetky body." : "Prezreté <strong>" + done + "</strong> z " + all);
     const fb = createFeedbackArea(card);
+    compareBlock(card, slide.compare);
     note(card, slide.note);
   };
 
