@@ -80,7 +80,7 @@ window.COURSE_EXERCISES = [
         why: "Je to jedna z najúčinnejších ochrán účtu. Aj keby niekto zistil vaše heslo, bez kódu z SMS sa dnu nedostane.",
       },
     ],
-    note: "Narazíte na iné cudzie slovo? Opýtajte sa AI: „Vysvetli mi slovo … jednoducho, ako pre seniora, a uveď príklad.“",
+    note: "Ak narazíte na cudzie slovo, ktorému nerozumiete — opýtajte sa AI: „Vysvetli mi toto slovo jednoducho, ako pre seniora, a uveď príklad.“",
     worksheetNote: "Tento zoznam si môžete vytlačiť a nechať pri počítači. Keď na niektoré slovo znova narazíte, budete ho mať poruke.",
   },
 
