@@ -1,8 +1,7 @@
 // Praktické cvičenia (krok 4 kurzu).
 //
 // Vykresľuje prehľad cvičení ako dlaždice a po kliknutí otvorí jedno
-// cvičenie. Každé sa dá vyplniť na obrazovke a stiahnuť ako pracovný
-// list vo formáte PDF.
+// cvičenie. Všetko sa vypĺňa priamo na obrazovke.
 //
 // Použitie:
 //   window.initExercises(container, {
@@ -79,14 +78,22 @@
 
   // ---------- Prehľad s dlaždicami ----------
 
+  // Stránka okolo cvičení má vlastné tlačidlo na ďalší krok kurzu. Patrí
+  // k prehľadu, nie do rozrobeného cvičenia — preto o prepnutí pohľadu
+  // dáme vedieť von.
+  Exercises.prototype.announceView = function (view) {
+    if (this.opts.onView) this.opts.onView(view);
+  };
+
   Exercises.prototype.renderOverview = function () {
     var self = this;
+    this.announceView("overview");
     this.root.innerHTML = "";
 
     var head = el("div", "ex-overview-head");
     head.appendChild(el("h2", null, "Praktické cvičenia"));
     head.appendChild(el("p", "ex-overview-lead",
-      this.list.length + " cvičení, ktoré si môžete urobiť priamo tu na obrazovke — alebo si ich stiahnuť ako pracovný list vo formáte PDF a vyplniť perom."));
+      this.list.length + " cvičení, ktoré si urobíte priamo tu na obrazovke. Nič sa v nich nedá pokaziť a kedykoľvek sa k nim môžete vrátiť."));
     this.root.appendChild(head);
 
     var progress = el("div", "ex-progress");
@@ -131,6 +138,7 @@
     if (!ex) return;
     var index = this.list.indexOf(ex);
 
+    this.announceView("exercise");
     this.root.innerHTML = "";
 
     var back = el("button", "ex-back", "← Späť na prehľad cvičení");
@@ -162,17 +170,22 @@
 
     if (ex.note) card.appendChild(el("div", "course-note", "<strong>Zapamätajte si:</strong> " + esc(ex.note)));
 
+    // Cvičenie si vie pätičku vykresliť samo, na správnom mieste svojho
+    // postupu. Potom by tu tlačidlá len pribúdali.
+    if (ex.ownFooter) {
+      this.finishCurrent = function () { self.markDone(ex.id); };
+      this.downloadCurrentPdf = function (btn) { self.downloadPdf(ex, api, btn); };
+      this.openNext = function () {
+        var next = self.list[index + 1];
+        if (next) self.openExercise(next.id);
+        else self.renderOverview();
+        self.root.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+      return;
+    }
+
     // Pätička s tlačidlami
     var foot = el("div", "ex-foot");
-
-    var pdfBtn = el("button", "btn btn-secondary ex-pdf-btn",
-      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 3v12'/><path d='m7 12 5 5 5-5'/><path d='M5 21h14'/></svg>" +
-      "Stiahnuť ako PDF");
-    pdfBtn.type = "button";
-    pdfBtn.addEventListener("click", function () {
-      self.downloadPdf(ex, api, pdfBtn);
-    });
-    foot.appendChild(pdfBtn);
 
     var doneBtn = el("button", "btn btn-primary", self.done.has(ex.id) ? "Hotové ✓" : "Označiť ako hotové");
     doneBtn.type = "button";
@@ -595,32 +608,6 @@
       "Vaša hotová otázka pre AI"));
     box.appendChild(el("p", "ex-prompt-text", esc(text)));
 
-    var copyBtn = el("button", "btn btn-secondary ex-copy-btn", "Skopírovať otázku");
-    copyBtn.type = "button";
-    copyBtn.addEventListener("click", function () {
-      var done = function () {
-        copyBtn.textContent = "Skopírované ✓";
-        setTimeout(function () { copyBtn.textContent = "Skopírovať otázku"; }, 2200);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, fallback);
-      } else {
-        fallback();
-      }
-      function fallback() {
-        var ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand("copy"); done(); } catch (e) {
-          copyBtn.textContent = "Skopírujte text rukou";
-        }
-        document.body.removeChild(ta);
-      }
-    });
-    box.appendChild(copyBtn);
     if (note) box.appendChild(el("p", "ex-prompt-note", esc(note)));
     return box;
   }
@@ -857,64 +844,48 @@
 
     // ---------- hotová otázka pre AI ----------
     function renderPrompt(sc) {
-      stage.appendChild(el("p", "of-lead-p", esc(sc.lead)));
+      // Úvodná veta je už v hlavičke kroku, tu by bola druhýkrát.
       var box = el("div", "of-prompt");
       box.appendChild(el("p", "of-prompt-text", esc(sc.prompt)));
       stage.appendChild(box);
 
-      var copy = el("button", "btn btn-primary of-copy", "Skopírovať otázku");
-      copy.type = "button";
-      copy.addEventListener("click", function () { copyText(sc.prompt, copy); });
-      stage.appendChild(copy);
-
-      stage.appendChild(el("p", "of-warn", esc(sc.warn)));
+      stage.appendChild(el("p", "of-warn",
+        "<strong>Pamätajte:</strong> " + esc(sc.warn)));
       var nav = navRow(true);
       nextBtn(nav);
       stage.appendChild(nav);
     }
 
     // ---------- záver ----------
+    // Cvičenie sa označí za hotové samotným dôjdením sem; ďalšie tlačidlo
+    // na to netreba.
     function renderSummary(sc) {
-      var box = el("div", "of-summary");
-      box.appendChild(el("p", "of-summary-strong", esc(sc.leadStrong)));
-      box.appendChild(el("p", "of-summary-lead", esc(sc.lead)));
-      var ul = el("ul", "of-summary-list");
-      sc.items.forEach(function (i) { ul.appendChild(el("li", null, esc(i))); });
-      box.appendChild(ul);
-      stage.appendChild(box);
-      stage.appendChild(el("p", "of-closing", esc(sc.closing)));
+      if (app.finishCurrent) app.finishCurrent();
 
-      var nav = navRow(true);
-      var fin = nextBtn(nav, sc.finishLabel || "Dokončiť cvičenie", function () {
-        if (app.finishCurrent) app.finishCurrent();
-        fin.textContent = "Hotové ✓";
-        fin.disabled = true;
+      stage.appendChild(el("p", "of-done-text", esc(sc.closing)));
+      stage.appendChild(el("p", "of-done-flag", "✓ Cvičenie dokončené"));
+
+      var main = el("button", "btn btn-primary of-next", sc.mainLabel || "Späť na cvičenia");
+      main.type = "button";
+      main.addEventListener("click", function () {
+        app.renderOverview();
+        app.root.scrollIntoView({ behavior: "smooth", block: "start" });
       });
-      stage.appendChild(nav);
-    }
+      stage.appendChild(main);
 
-    function copyText(text, btn) {
-      var done = function () {
-        btn.textContent = "Skopírované ✓";
-        setTimeout(function () { btn.textContent = "Skopírovať otázku"; }, 2200);
-      };
-      function fallback() {
-        var ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand("copy"); done(); } catch (e) {
-          btn.textContent = "Skopírujte text rukou";
-        }
-        document.body.removeChild(ta);
+      var links = el("div", "of-links");
+      if (app.opts.onResources) {
+        var res = el("button", "of-link", "Pozrieť užitočné zdroje →");
+        res.type = "button";
+        res.addEventListener("click", function () { app.opts.onResources(); });
+        links.appendChild(res);
       }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, fallback);
-      } else {
-        fallback();
-      }
+      var back = el("button", "of-link", "← Späť");
+      back.type = "button";
+      back.addEventListener("click", function () { at--; render(); });
+      links.appendChild(back);
+
+      stage.appendChild(links);
     }
 
     render();

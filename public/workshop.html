@@ -499,11 +499,16 @@
       body.innerHTML = "<p class='hint'>Cvičenia sa nepodarilo načítať. Skúste prosím obnoviť stránku.</p>";
       return;
     }
+    const nextStepBtn = document.getElementById("exercise-done-btn");
     state.exercisesApp = window.initExercises(body, {
       exercises: window.COURSE_EXERCISES,
       done: doneIds || [],
       store: state.store,
       onDone: (ids) => saveProgress({ exercisesDone: ids }),
+      // Tlačidlo na ďalší krok kurzu patrí k prehľadu cvičení. V otvorenom
+      // cvičení by si konkurovalo s jeho vlastnou cestou dopredu.
+      onView: (view) => { if (nextStepBtn) nextStepBtn.hidden = view !== "overview"; },
+      onResources: () => { markStepDone("cvicenia"); setActiveStep("zdroje"); },
     });
   }
 

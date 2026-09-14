@@ -1,7 +1,7 @@
 // Praktické cvičenia (krok 4 kurzu).
 //
 // Každé cvičenie sa dá urobiť priamo na obrazovke a zároveň stiahnuť
-// ako pracovný list vo formáte PDF a vyplniť perom.
+// priamo na obrazovke.
 //
 // Polia:
 //   id     — používa sa na zapamätanie, ktoré cvičenia sú hotové
@@ -148,6 +148,9 @@ window.COURSE_EXERCISES = [
     // poplatok výmenou za aktivačný poplatok, viazanosť a pokutu.
     id: "ponuky",
     type: "offers",
+    // Cvičenie si pätičku vykresľuje samo — až na poslednom kroku a len
+    // s jedinou hlavnou akciou.
+    ownFooter: true,
     icon: "scales",
     title: "Ktorá ponuka je výhodnejšia?",
     short: "Porovnajte dve ponuky a zistite, čo sa môže skrývať za nízkou mesačnou cenou.",
@@ -240,16 +243,18 @@ window.COURSE_EXERCISES = [
       },
       {
         kind: "prompt",
-        title: "Ako by vám pri porovnaní mohla pomôcť AI?",
-        lead: "Ak máte dve ponuky, môžete AI požiadať, aby vám ich prehľadne porovnala.",
+        title: "Ako vám môže pomôcť AI?",
+        lead: "Ak chcete porovnať dve ponuky, môžete sa AI opýtať napríklad takto:",
         prompt: "Porovnaj mi tieto dve ponuky. Vypočítaj celkové náklady a upozorni ma na viazanosť, jednorazové poplatky, pokuty a podmienky ukončenia. Vysvetli mi rozdiel jednoducho.",
         warn: "Výpočty a dôležité podmienky si vždy skontrolujte aj v pôvodnej zmluve alebo cenníku.",
       },
       {
         kind: "summary",
-        title: "Zapamätajte si",
-        leadStrong: "Najnižšia mesačná cena nemusí znamenať najvýhodnejšiu ponuku.",
-        lead: "Pred rozhodnutím si skontrolujte najmä:",
+        title: "Hotovo",
+        closing: "Teraz už viete, že pri porovnávaní ponúk nestačí pozerať iba na mesačnú cenu.",
+        mainLabel: "Späť na cvičenia",
+        // Zoznam toho, čo si pred rozhodnutím overiť, ostáva v pracovnom
+        // liste — na obrazovke by sa bil s jedinou hlavnou akciou.
         items: [
           "celkovú cenu",
           "jednorazové poplatky",
@@ -257,8 +262,6 @@ window.COURSE_EXERCISES = [
           "poplatok za predčasné ukončenie",
           "čo sa stane, ak budete chcieť službu zrušiť",
         ],
-        closing: "AI vám môže pomôcť ponuky porovnať. Rozhodnutie však robíte vy.",
-        finishLabel: "Dokončiť cvičenie",
       },
     ],
     worksheetNote: "Najnižšia mesačná cena nemusí znamenať najvýhodnejšiu ponuku. Vždy si porovnajte celkovú cenu vrátane jednorazových poplatkov, viazanosť aj poplatok za predčasné ukončenie.",
@@ -459,7 +462,7 @@ window.COURSE_EXERCISES = [
     short: "Osem vecí, ktoré si doma zariadite raz — a budete pokojnejší po zvyšok roka.",
     time: "15 minút",
     intro: "Toto nie je test vedomostí, ale zoznam konkrétnych vecí, ktoré sa oplatí naozaj urobiť. Väčšina z nich zaberie pár minút.",
-    task: "Odškrtnite si, čo už máte hotové. Zvyšné si nechajte na neskôr — zoznam si môžete stiahnuť a vytlačiť.",
+    task: "Odškrtnite si, čo už máte hotové. Zvyšné si nechajte na neskôr — kedykoľvek sa sem môžete vrátiť.",
     items: [
       { text: "Číslo mojej banky mám uložené v telefóne pod menom banky (opísané zo zadnej strany karty, nie z internetu).", why: "Keď vám niekto zavolá „z banky“, zavoláte späť na uložené číslo a hneď viete, na čom ste." },
       { text: "Moja rodina vie, že im nikdy nepošlem peniaze len na základe SMS alebo správy — vždy najprv zavolám.", why: "Toto je najúčinnejšia obrana proti podvodu „vnuk v núdzi“. Dohodnite sa na tom nahlas." },
@@ -478,10 +481,10 @@ window.COURSE_EXERCISES = [
     type: "emergency-card",
     icon: "phone",
     title: "Karta prvej pomoci pri podvode",
-    short: "Vyplňte si svoje čísla a vytlačte si kartičku k telefónu — keď sa niečo stane, nebudete hľadať.",
+    short: "Pripravte si svoje čísla na jedno miesto — keď sa niečo stane, nebudete ich hľadať.",
     time: "5 minút",
     intro: "Keď zistíte, že ste naleteli, rozhodujú minúty. Vtedy sa čísla nehľadajú dobre — preto si ich pripravíme dopredu.",
-    task: "Vyplňte políčka nižšie. Vytvoríme vám kartičku, ktorú si vytlačíte a necháte pri telefóne alebo vložíte do peňaženky.",
+    task: "Vyplňte políčka nižšie. Zostaví sa vám z nich kartička — čísla z nej si potom prepíšte na papier a nechajte pri telefóne alebo vložte do peňaženky.",
     fields: [
       { key: "banka", label: "Moja banka", placeholder: "napríklad: Slovenská sporiteľňa" },
       { key: "bankaTel", label: "Číslo na banku (opíšte zo zadnej strany karty)", placeholder: "napríklad: 0850 111 888" },
@@ -499,6 +502,6 @@ window.COURSE_EXERCISES = [
       "Nahláste to polícii na 158 (alebo 112).",
       "Nič nemažte — správy a e-maily sa môžu hodiť ako dôkaz.",
     ],
-    note: "Kartičku si vytlačte a nechajte pri telefóne. Ak sa nič nestane, len tam bude ležať. Ak sa stane, ušetrí vám drahocenné minúty.",
+    note: "Papierik s číslami nechajte pri telefóne. Ak sa nič nestane, len tam bude ležať. Ak sa stane, ušetrí vám drahocenné minúty.",
   },
 ];
