@@ -54,7 +54,7 @@ window.COURSE_EXERCISES = [
           { term: "QR kód", text: "Štvorcový čiarový kód, ktorý sa odfotí mobilom a otvorí webovú stránku. Podvodníci ho vedia nalepiť napríklad na parkovací automat — naskenovaním sa dostanete na falošnú platobnú stránku." },
           { term: "Verejná Wi-Fi sieť", text: "Bezplatné pripojenie na internet, napríklad v kaviarni alebo na letisku. Cez takúto sieť radšej nerobte internetbanking — bezpečnejšie sú mobilné dáta alebo domáca Wi-Fi." },
           { term: "PIN", text: "Tajný číselný kód ku karte. Nikdy ho nikomu nehovoríme — ani pracovníkovi banky, ba ani rodine." },
-          { term: "CVV / CVC", text: "Trojčíslie na zadnej strane platobnej karty. Kto ho pozná spolu s číslom karty, môže s vašou kartou zaplatiť." },
+          { term: "CVV / CVC", text: "Trojčíslie na zadnej strane platobnej karty. Kto ho pozná spolu s číslom karty a dátumom exspirácie karty, môže s vašou kartou zaplatiť." },
           { term: "Dvojfaktorové overenie", text: "Dvojitý zámok: okrem hesla treba zadať aj kód, napríklad z SMS. Sťažuje zlodejom prístup k vášmu účtu." },
         ],
       },
