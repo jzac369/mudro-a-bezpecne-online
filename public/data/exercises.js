@@ -139,7 +139,7 @@ window.COURSE_EXERCISES = [
         why: "Podvod („nové číslo“). Najsilnejší varovný znak je veta „nevolaj“ — zámerne bráni telefonickému overeniu, po ktorom by ste inak siahli ako prví. Vždy zavolajte na číslo, ktoré máte uložené vy.",
       },
     ],
-    note: "Všetky tri správy sú podvod. To je zámer — v skutočnom živote nechodí označené, ktorá správa je nebezpečná. Preto platí: pri každej žiadosti o peniaze alebo údaje spomaľte a overte si to.",
+    note: "Všetky tri správy boli podvod. Urobili sme to naschvál. Tu ste vopred vedeli, že medzi správami podvod hľadáte — v skutočnosti vám takáto správa príde sama, medzi bežnými správami, a nikto vás dopredu nevaruje. Preto pri každej žiadosti o peniaze alebo o vaše údaje spomaľte a overte si ju.",
   },
 
   {
