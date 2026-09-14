@@ -413,6 +413,36 @@
     document.querySelectorAll(".step-panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === step));
     history.replaceState(null, "", "?w=" + state.workshopId + "&step=" + step);
     saveProgress({ currentStep: step });
+    if (step === "certifikat") ensureCertificateShown();
+  }
+
+  // Certifikát sa kedysi vykresľoval len raz, hneď po kvíze. Kto sa na krok
+  // vrátil neskôr, videl prázdnu kartu. Pri návrate ho preto vykreslíme
+  // znova — už bez desaťsekundového čakania, to má zmysel len prvýkrát.
+  function ensureCertificateShown() {
+    if (!isCertUnlocked() || state.certRendering) return;
+    const area = document.getElementById("cert-area");
+    const loading = document.getElementById("cert-loading");
+    if (!area || area.style.display === "block") return;
+    if (loading && loading.style.display === "flex") return;
+
+    const name = state.certificateName ||
+      sessionStorage.getItem("mbo_participant_name") ||
+      "Účastník kurzu";
+
+    state.certRendering = true;
+    document.getElementById("cert-ready-block").style.display = "";
+    showCertificate(name)
+      .catch(function (err) {
+        console.error("Certifikát sa nepodarilo vykresliť:", err);
+        area.style.display = "block";
+        if (!area.querySelector(".cert-missing")) {
+          area.insertAdjacentHTML("afterbegin",
+            "<div class='cert-missing'><p class='cert-missing-title'>Certifikát sa nepodarilo pripraviť.</p>" +
+            "<p class='cert-missing-hint'>Skúste prosím obnoviť stránku. Ak to nepomôže, napíšte nám na info@digistart.sk — certifikát vám pošleme e-mailom.</p></div>");
+        }
+      })
+      .then(function () { state.certRendering = false; });
   }
 
   function markStepDone(step) {
@@ -695,6 +725,10 @@
       return;
     }
 
+    // Príznak drží prípravu certifikátu v rukách tejto funkcie — prepnutie
+    // kroku nižšie by inak spustilo aj vykreslenie pri návrate a desať
+    // sekúnd čakania by nemalo čo ukázať.
+    state.certRendering = true;
     setActiveStep("certifikat");
     document.getElementById("cert-locked-hint").style.display = "none";
     document.getElementById("cert-area").style.display = "none";
@@ -712,8 +746,10 @@
       await showCertificate(participantName);
       readyBlock.style.display = "";
       loading.style.display = "none";
+      state.certRendering = false;
       await markCourseCompleted();
     } catch (err) {
+      state.certRendering = false;
       console.error("Certifikát sa nepodarilo pripraviť:", err);
       loading.style.display = "none";
       readyBlock.style.display = "none";
@@ -887,6 +923,10 @@
             body.querySelectorAll(".cert-missing").forEach((n) => n.remove());
             const confirmedName = await askCertificateName(participantName);
             sessionStorage.setItem("mbo_participant_name", confirmedName);
+            // Meno musí prežiť aj zatvorenie prehliadača — inak by sa
+            // certifikát pri návrate nedal vykresliť.
+            state.certificateName = confirmedName;
+            saveProgress({ certificateName: confirmedName });
             revealCertificateWithLoading(confirmedName, body);
           });
           body.appendChild(goCertBtn);
@@ -1226,6 +1266,9 @@
             if (btn) btn.classList.add("done");
           }
         });
+      }
+      if (progressData && progressData.certificateName) {
+        state.certificateName = progressData.certificateName;
       }
       updateCertLock();
 
