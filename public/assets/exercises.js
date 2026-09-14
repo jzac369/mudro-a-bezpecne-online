@@ -696,8 +696,8 @@
       return h;
     }
 
-    function offerCards() {
-      var wrap = el("div", "of-cards");
+    function offerCards(compact) {
+      var wrap = el("div", "of-cards" + (compact ? " compact" : ""));
       (ex.offers || []).forEach(function (o) {
         var card = el("div", "of-card");
         card.appendChild(el("p", "of-card-name", esc(o.name)));
@@ -779,7 +779,6 @@
       stage.appendChild(el("p", "of-question", esc(sc.question)));
       var opts = el("div", "of-opts");
       var nav = navRow(at > 0);
-      var result = el("div", "of-result");
 
       sc.options.forEach(function (o) {
         var b = el("button", "of-opt", esc(o.label));
@@ -787,24 +786,27 @@
         b.addEventListener("click", function () {
           state.picks[at] = o.key;
           app.persist();
+          // Prvý dojem nemá čo vyhodnocovať, tak sa nezdržiavame — ďalšia
+          // otázka príde sama.
           [].forEach.call(opts.children, function (x) {
             x.disabled = true;
             x.classList.toggle("chosen", x === b);
           });
-          result.innerHTML = "<p class='of-after'>" + esc(sc.after) + "</p>";
-          result.classList.add("show");
-          if (!nav.querySelector(".of-next")) nextBtn(nav);
+          at++;
+          render();
         });
         opts.appendChild(b);
       });
 
       stage.appendChild(opts);
-      stage.appendChild(result);
       stage.appendChild(nav);
     }
 
     // ---------- otázka s vyhodnotením a výpočtom ----------
     function renderQuiz(sc) {
+      // Ponuky ostávajú na očiach — bez nich by sa otázky museli počítať
+      // spamäti.
+      if (sc.offers) stage.appendChild(offerCards(true));
       stage.appendChild(el("p", "of-question", esc(sc.question)));
       var opts = el("div", "of-opts");
       var nav = navRow(at > 0);
@@ -871,6 +873,13 @@
 
       stage.appendChild(el("p", "of-done-text", esc(sc.closing)));
       stage.appendChild(el("p", "of-done-flag", "✓ Cvičenie dokončené"));
+
+      if (sc.aiText) {
+        var ai = el("div", "of-ai");
+        ai.appendChild(el("p", "of-ai-title", esc(sc.aiTitle || "")));
+        ai.appendChild(el("p", "of-ai-text", esc(sc.aiText)));
+        stage.appendChild(ai);
+      }
 
       var main = el("button", "btn btn-primary of-next", sc.mainLabel || "Späť na cvičenia");
       main.type = "button";

@@ -186,12 +186,13 @@ window.COURSE_EXERCISES = [
         question: "Ktorá ponuka vás na prvý pohľad viac láka?",
         options: [{ key: "A", label: "Ponuka A" }, { key: "B", label: "Ponuka B" }],
         // Tu ešte niet zlej odpovede — ide o prvý dojem, s ktorým budeme
-        // ďalej pracovať.
-        after: "Pozrime sa teraz na skutočné náklady.",
+        // ďalej pracovať. Preto sa hneď po kliknutí ide ďalej.
       },
       {
         kind: "quiz",
         title: "Koľko zaplatíte za rok?",
+        lead: "Pozrime sa teraz na skutočné náklady.",
+        offers: true,
         question: "Ktorá ponuka bude lacnejšia za prvých 12 mesiacov?",
         options: [
           { key: "A", label: "Ponuka A", correct: true },
@@ -210,6 +211,7 @@ window.COURSE_EXERCISES = [
       {
         kind: "quiz",
         title: "Je teda A automaticky lepšia?",
+        offers: true,
         question: "Ponuka A je o 6 € lacnejšia. Znamená to, že je určite výhodnejšia?",
         options: [
           { key: "ano", label: "Áno" },
@@ -227,6 +229,7 @@ window.COURSE_EXERCISES = [
         kind: "quiz",
         title: "Nečakaná situácia",
         lead: "Predstavte si, že po 6 mesiacoch chcete službu zrušiť.",
+        offers: true,
         question: "Ktorá ponuka bude v tejto situácii výhodnejšia?",
         options: [
           { key: "A", label: "Ponuka A" },
@@ -266,6 +269,8 @@ window.COURSE_EXERCISES = [
         kind: "summary",
         title: "Hotovo",
         closing: "Teraz už viete, že pri porovnávaní ponúk nestačí pozerať iba na mesačnú cenu.",
+        aiTitle: "Zdali sa vám niektoré otázky náročné?",
+        aiText: "Nevadí — presne s tým vám vie pomôcť AI. Stačí jej ponuky opísať alebo odfotiť a porovná ich za vás naraz: celkovú cenu, jednorazové poplatky, viazanosť aj podmienky ukončenia. Vy sa potom rozhodujete už len medzi dvoma jasnými číslami.",
         mainLabel: "Späť na cvičenia",
         // Zoznam toho, čo si pred rozhodnutím overiť, ostáva v pracovnom
         // liste — na obrazovke by sa bil s jedinou hlavnou akciou.

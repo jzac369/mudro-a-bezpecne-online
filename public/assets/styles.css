@@ -1641,6 +1641,14 @@ tr.unconf .course-compare-mark { background: #8a8578; }
 .of-card-rows dt { font-size: 1rem; color: var(--text-mute); }
 .of-card-rows dd { margin: 0; font-size: 1.12rem; font-weight: 700; color: var(--ink); text-align: right; }
 
+/* Ponuky pri ďalších otázkach — to isté, len tichšie, na pripomenutie. */
+.of-cards.compact { gap: .8rem; margin-bottom: .4rem; }
+.of-cards.compact .of-card { padding: .85rem 1rem; background: var(--surface-2); border-color: transparent; }
+.of-cards.compact .of-card-name { margin-bottom: .5rem; font-size: 1.05rem; }
+.of-cards.compact .of-card-rows { gap: .25rem .7rem; }
+.of-cards.compact .of-card-rows dt { font-size: .92rem; }
+.of-cards.compact .of-card-rows dd { font-size: 1rem; }
+
 .of-question { margin: 1.5rem 0 .9rem; font-size: 1.18rem; font-weight: 700; color: var(--ink); }
 
 /* Odpovede — veľké tlačidlá cez celú šírku. */
@@ -1660,7 +1668,6 @@ tr.unconf .course-compare-mark { background: #8a8578; }
 
 .of-result { display: none; }
 .of-result.show { display: block; margin-top: 1.4rem; animation: course-rise .25s ease; }
-.of-after { margin: 0; font-size: 1.12rem; font-weight: 700; color: var(--course-good-deep, #12554a); }
 .of-verdict-msg { margin: 0 0 1.1rem; font-size: 1.08rem; font-weight: 700; }
 .of-verdict-msg.ok { color: var(--course-good-deep, #12554a); }
 .of-verdict-msg.warn { color: var(--warn); }
@@ -1712,6 +1719,11 @@ tr.unconf .course-compare-mark { background: #8a8578; }
   background: var(--good-bg); color: var(--course-good-deep, #12554a); border-radius: 999px;
   font-size: 1.05rem; font-weight: 700; align-self: flex-start;
 }
+/* Odkaz na AI v závere — pointa, nie ďalšia úloha. */
+.of-ai { background: var(--surface-2); border-radius: 14px; padding: 1.1rem 1.3rem; margin-bottom: 1.6rem; }
+.of-ai-title { margin: 0 0 .5rem; font-size: 1.08rem; font-weight: 700; color: var(--ink); }
+.of-ai-text { margin: 0; font-size: 1.02rem; line-height: 1.7; color: var(--text); }
+
 .of-links { display: flex; flex-wrap: wrap; gap: 1.4rem; margin-top: 1.3rem; }
 .of-link { background: none; border: 0; font: inherit; font-size: 1rem; color: var(--text-mute); text-decoration: underline; cursor: pointer; padding: .45rem 0; }
 .of-link:hover { color: var(--ink); }
