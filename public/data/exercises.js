@@ -146,54 +146,83 @@ window.COURSE_EXERCISES = [
     id: "prompt",
     type: "prompt-builder",
     icon: "message",
-    title: "Poskladajte si otázku pre AI",
-    short: "Vyberte situáciu, doplňte pár slov a máte hotovú otázku, ktorú stačí odpísať do ChatGPT.",
-    time: "7 minút",
-    intro: "Dobre položená otázka je polovica úspechu. Tu si ju poskladáte krok za krokom — a hotovú si môžete skopírovať alebo vytlačiť.",
-    task: "Vyberte situáciu, v ktorej sa práve nachádzate, a doplňte políčka. Otázku pre AI vám poskladáme sami.",
+    title: "Čo sa chcete opýtať AI?",
+    short: "Vyberte, s čím potrebujete pomôcť, doplňte pár slov a otázku pre AI dostanete hotovú.",
+    time: "5 minút",
+    intro: "Nemusíte vedieť, ako otázku správne napísať. Vyberte, s čím potrebujete pomôcť, a my ju vytvoríme za vás.",
+    step1Title: "S čím potrebujete pomôcť?",
+    step3Title: "Vaša otázka je pripravená",
+    // Každá situácia sa pýta na jedinú vec. Viac políčok naraz bolo pre
+    // začiatočníka priveľa a otázka sa dá poskladať aj z jednej odpovede.
     situations: [
       {
         id: "email",
         label: "Prišiel mi podozrivý e-mail",
-        fields: [
-          { key: "odosielatel", label: "Kto e-mail údajne poslal?", placeholder: "napríklad: moja banka" },
-          { key: "ziada", label: "Čo od vás žiada?", placeholder: "napríklad: aby som klikol na odkaz a prihlásil sa" },
-        ],
-        template: "Som senior a prišiel mi e-mail, ktorý má byť od {odosielatel}. Žiada odo mňa, {ziada}. Je to dôveryhodné, alebo môže ísť o podvod? Uveď konkrétne varovné znaky a vysvetli mi to jednoducho.",
+        question: "Od koho mal e-mail prísť?",
+        hint: "Napíšte iba stručne, kto je podľa e-mailu odosielateľ.",
+        placeholder: "napríklad: moja banka",
+        help: "Stačí napísať napríklad: banka, pošta alebo úrad.",
+        template:
+          "Som senior a prišiel mi e-mail. Má byť od: {odpoved}. " +
+          "Vysvetli mi jednoducho, bez zložitých slov, či môže ísť o podvod.\n" +
+          "Povedz mi:\n" +
+          "– podľa čoho sa podvodný e-mail spozná,\n" +
+          "– čo mám urobiť teraz,\n" +
+          "– ako si to mám overiť.",
       },
       {
         id: "telefonat",
         label: "Volal mi niekto podozrivý",
-        fields: [
-          { key: "kto", label: "Za koho sa volajúci vydával?", placeholder: "napríklad: za pracovníka banky" },
-          { key: "chcel", label: "Čo od vás chcel?", placeholder: "napríklad: aby som previedol peniaze na bezpečný účet" },
-        ],
-        template: "Som senior a volal mi človek, ktorý tvrdil, že je {kto}. Chcel odo mňa, {chcel}. Je toto bežný postup? Poraď mi jednoducho, čo mám urobiť a ako si to mám overiť.",
+        question: "Za koho sa volajúci vydával?",
+        hint: "Napíšte iba stručne, za koho sa predstavil.",
+        placeholder: "napríklad: pracovník banky",
+        help: "Stačí napísať napríklad: banka, polícia alebo technik.",
+        template:
+          "Som senior a volal mi neznámy človek. Tvrdil, že je: {odpoved}. " +
+          "Vysvetli mi jednoducho, bez zložitých slov, či to môže byť podvod.\n" +
+          "Povedz mi:\n" +
+          "– podľa čoho sa takýto podvod spozná,\n" +
+          "– čo mám urobiť teraz,\n" +
+          "– ako si to mám overiť.",
       },
       {
         id: "investicia",
         label: "Ponúkajú mi investíciu",
-        fields: [
-          { key: "firma", label: "Ako sa firma alebo ponuka volá?", placeholder: "napríklad: Zlatý fond Invest" },
-          { key: "slubuje", label: "Čo sľubuje?", placeholder: "napríklad: garantovaný zisk 5 000 € mesačne" },
-        ],
-        template: "Som senior a ponúkajú mi investíciu: {firma}. Sľubuje {slubuje}. Aké riziká to prináša? Ako si overím, či je firma dôveryhodná, a aké otázky mám položiť pred rozhodnutím? Vysvetli mi to jednoducho.",
+        question: "Čo vám sľubujú?",
+        hint: "Napíšte iba stručne, čo vám ponuka sľubuje.",
+        placeholder: "napríklad: zisk 500 € mesačne",
+        help: "Stačí napísať napríklad: vysoký zisk, zaručený výnos alebo rýchle zbohatnutie.",
+        template:
+          "Som senior a niekto mi ponúka investíciu. Sľubuje: {odpoved}. " +
+          "Vysvetli mi jednoducho, bez zložitých slov, čo to znamená.\n" +
+          "Povedz mi:\n" +
+          "– aké sú riziká,\n" +
+          "– podľa čoho spoznám podvodnú ponuku,\n" +
+          "– ako si overím, či je firma dôveryhodná.",
       },
       {
         id: "zmluva",
         label: "Nerozumiem zmluve",
-        fields: [
-          { key: "cohoZmluva", label: "O akú zmluvu ide?", placeholder: "napríklad: o dodávke elektriny" },
-        ],
-        template: "Som senior a mám pred sebou zmluvu {cohoZmluva}. Vysvetli mi ju jednoducho, bez cudzích slov: Na čo si mám dať pozor? Aké sú tam poplatky a pokuty? Dá sa vypovedať a dokedy?",
+        question: "O akej zmluve chcete vedieť viac?",
+        hint: "Napíšte iba stručne, čoho sa zmluva týka.",
+        placeholder: "napríklad: dodávka elektriny",
+        help: "Stačí napísať napríklad: internet, poistenie alebo dodávka elektriny.",
+        template:
+          "Som senior a mám pred sebou zmluvu, ktorá sa týka: {odpoved}. " +
+          "Vysvetli mi ju jednoducho, bez zložitých slov.\n" +
+          "Povedz mi:\n" +
+          "– na čo si mám dať pozor,\n" +
+          "– aké sú poplatky a pokuty,\n" +
+          "– na ako dlho je zmluva uzatvorená,\n" +
+          "– ako ju môžem ukončiť.",
       },
     ],
-    note: "Všimnite si, že v žiadnej z otázok nie je vaše meno, adresa ani číslo účtu. Situáciu treba opísať — údaje netreba.",
+    safety: "Do AI nevkladajte svoje meno, adresu, rodné číslo, číslo účtu, heslá ani PIN. Stačí opísať situáciu. Osobné údaje AI nepotrebuje.",
     worksheetPrompts: [
-      { label: "PODOZRIVÝ E-MAIL", text: "Prepíšem ti obsah e-mailu: … Je dôveryhodný, alebo môže ísť o podvod? Uveď varovné znaky." },
-      { label: "PODOZRIVÝ TELEFONÁT", text: "Volal mi človek, ktorý tvrdil, že je z … Žiadal odo mňa … Je to bežný postup? Poraď, čo mám urobiť." },
-      { label: "INVESTIČNÁ PONUKA", text: "Ponúkajú mi investíciu: … Aké riziká predstavuje? Ako si overím, že je spoločnosť dôveryhodná?" },
-      { label: "ZMLUVA ALEBO ÚRADNÝ LIST", text: "Odfotil som ti zmluvu. Vysvetli mi ju jednoducho. Na čo si mám dať pozor? Aké sú tam poplatky a pokuty?" },
+      { label: "PODOZRIVÝ E-MAIL", text: "Prišiel mi e-mail. Má byť od … Vysvetli mi jednoducho, či môže ísť o podvod a čo mám urobiť." },
+      { label: "PODOZRIVÝ TELEFONÁT", text: "Volal mi človek, ktorý tvrdil, že je … Vysvetli mi jednoducho, či to môže byť podvod a ako si to mám overiť." },
+      { label: "INVESTIČNÁ PONUKA", text: "Ponúkajú mi investíciu. Sľubuje … Aké sú riziká a ako si overím, či je firma dôveryhodná?" },
+      { label: "ZMLUVA ALEBO ÚRADNÝ LIST", text: "Mám pred sebou zmluvu, ktorá sa týka … Vysvetli mi ju jednoducho: na čo si mám dať pozor, aké sú poplatky a ako ju môžem ukončiť." },
     ],
   },
 

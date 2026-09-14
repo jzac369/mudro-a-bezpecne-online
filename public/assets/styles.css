@@ -1623,10 +1623,81 @@ tr.unconf .course-compare-mark { background: #8a8578; }
 .gloss-full-list dt { font-weight: 700; margin-top: .6rem; }
 .gloss-full-list dd { margin: .15rem 0 0; color: var(--text-mute); font-size: .94rem; line-height: 1.55; }
 
-.ex-situations { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1.1rem; }
-.ex-situation { background: var(--surface); border: 2px solid var(--line); border-radius: 999px; padding: .6rem 1.1rem; font: inherit; font-size: .92rem; cursor: pointer; }
-.ex-situation:hover { border-color: var(--ink-soft); }
-.ex-situation.active { border-color: var(--ink); background: var(--ink); color: #fff; font-weight: 700; }
+/* ---------- Otázka pre AI: tri kroky, na obrazovke vždy len jeden ---------- */
+.pb-stage { display: flex; flex-direction: column; }
+
+.pb-step-head { margin: .4rem 0 1.1rem; }
+.pb-step-head h3 { display: flex; align-items: center; gap: .7rem; margin: 0; font-size: 1.35rem; }
+.pb-step-num {
+  flex: none; width: 38px; height: 38px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700;
+  background: var(--ink); color: #fff;
+}
+.pb-step-hint { margin: .6rem 0 0 3rem; color: var(--text-mute); font-size: 1rem; }
+
+/* Štyri veľké možnosti pod sebou — cieľ je plná šírka riadka, nech sa dá
+   trafiť aj prstom na mobile. */
+.pb-choices { display: flex; flex-direction: column; gap: .8rem; }
+.pb-choice {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  width: 100%; text-align: left; font: inherit; font-size: 1.15rem; font-weight: 700;
+  color: var(--ink); background: var(--surface); border: 2px solid var(--line);
+  border-radius: 14px; padding: 1.15rem 1.3rem; cursor: pointer;
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.pb-choice:hover { border-color: var(--ink); transform: translateY(-2px); box-shadow: var(--course-shadow-soft); }
+.pb-choice:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.pb-choice-go { flex: none; width: 30px; height: 30px; display: inline-flex; color: var(--accent); }
+.pb-choice-go svg { width: 30px; height: 30px; }
+
+/* Hotový krok zmrštený do riadka. */
+.pb-done-row {
+  display: flex; align-items: center; gap: .8rem; background: var(--surface-2);
+  border-radius: 12px; padding: .7rem 1rem; margin-bottom: .8rem;
+}
+.pb-done-num {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex;
+  align-items: center; justify-content: center; font-size: .92rem; font-weight: 700;
+  background: var(--good); color: #fff;
+}
+.pb-done-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pb-done-label { font-size: .82rem; color: var(--text-mute); }
+.pb-done-text b { font-size: 1.02rem; color: var(--ink); }
+.pb-change { flex: none; background: none; border: 0; font: inherit; font-size: .95rem; font-weight: 700; color: var(--focus); text-decoration: underline; cursor: pointer; padding: .35rem .2rem; }
+
+/* Jedno políčko na odpoveď — veľké, nič vedľa neho. */
+.pb-answer { display: flex; flex-direction: column; align-items: flex-start; }
+.pb-input {
+  width: 100%; font: inherit; font-size: 1.15rem; padding: .9rem 1.1rem;
+  border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text);
+}
+.pb-input:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(47,107,110,.18); }
+.pb-help { margin: .6rem 0 0; font-size: .98rem; color: var(--text-mute); }
+.pb-error { display: none; margin: .7rem 0 0; font-size: .98rem; font-weight: 700; color: var(--warn); }
+.pb-error.show { display: block; }
+.pb-next { margin-top: 1.2rem; font-size: 1.1rem; padding: .85rem 2.2rem; }
+.pb-back { margin-top: 1rem; background: none; border: 0; font: inherit; font-size: 1rem; color: var(--text-mute); text-decoration: underline; cursor: pointer; padding: .5rem .2rem; align-self: flex-start; }
+.pb-back:hover { color: var(--ink); }
+
+/* Hotová otázka. Zalomenie riadkov je súčasťou textu, preto pre-line. */
+.pb-out { background: var(--good-bg); border: 2px solid var(--good); border-radius: 16px; padding: 1.3rem 1.4rem; }
+.pb-out-text { margin: 0; white-space: pre-line; font-size: 1.12rem; line-height: 1.65; color: var(--text); }
+.pb-copy { margin-top: 1.1rem; align-self: flex-start; font-size: 1.1rem; padding: .9rem 2.2rem; }
+.pb-copy.copied { background: var(--good); border-color: var(--good); }
+.pb-warn {
+  margin-top: 1.4rem; background: var(--warn-bg); border-left: 6px solid var(--warn);
+  border-radius: 0 12px 12px 0; padding: 1.05rem 1.25rem; font-size: 1.02rem; line-height: 1.6;
+}
+.pb-warn strong { color: var(--warn); }
+
+@media (max-width: 620px) {
+  .pb-step-head h3 { font-size: 1.15rem; gap: .55rem; }
+  .pb-step-num { width: 32px; height: 32px; font-size: 1rem; }
+  .pb-step-hint { margin-left: 0; font-size: .95rem; }
+  .pb-choice { font-size: 1.05rem; padding: 1rem 1.1rem; }
+  .pb-copy, .pb-next { width: 100%; justify-content: center; }
+}
+
 
 .ex-fields { display: flex; flex-direction: column; gap: .9rem; }
 .ex-field-label { display: block; font-size: .92rem; margin-bottom: .3rem; }

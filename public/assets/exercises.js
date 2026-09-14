@@ -677,86 +677,195 @@
 
   // 3 · Poskladajte si otázku pre AI
   RENDERERS["prompt-builder"] = function (ex, host, app) {
-    var state = app.answers[ex.id] || (app.answers[ex.id] = { situation: ex.situations[0].id, values: {} });
+    var state = app.answers[ex.id] || (app.answers[ex.id] = { values: {} });
+    if (!state.values) state.values = {};
 
-    var picker = el("div", "ex-situations");
-    var fieldsWrap = el("div", "ex-fields");
-    var outWrap = el("div", "ex-prompt-box");
-    host.appendChild(picker);
-    host.appendChild(fieldsWrap);
-    host.appendChild(outWrap);
+    // Na obrazovke je vždy len jeden krok. Hotové kroky sa zmrštia do
+    // jedného riadka s tlačidlom „Zmeniť“, aby bolo vidieť, čo už človek
+    // vybral, a dalo sa to opraviť bez začínania odznova.
+    var step = 1, chosen = null;
 
-    var buttons = ex.situations.map(function (s) {
-      var b = el("button", "ex-situation", esc(s.label));
-      b.type = "button";
-      b.addEventListener("click", function () {
-        state.situation = s.id;
-        app.persist();
-        buttons.forEach(function (x) { x.classList.remove("active"); });
-        b.classList.add("active");
-        renderFields();
-      });
-      picker.appendChild(b);
-      return b;
-    });
+    var stage = el("div", "pb-stage");
+    host.appendChild(stage);
 
     function current() {
-      return ex.situations.find(function (s) { return s.id === state.situation; }) || ex.situations[0];
+      return chosen || ex.situations[0];
+    }
+
+    function value() {
+      var s = current();
+      return (state.values[s.id] || "").trim();
     }
 
     function build() {
       var s = current();
-      var text = s.template;
-      s.fields.forEach(function (f) {
-        var v = (state.values[s.id] && state.values[s.id][f.key]) || "";
-        text = text.replace("{" + f.key + "}", v || "…");
-      });
-      return text;
+      return s.template.replace("{odpoved}", value() || "…");
     }
 
-    function renderOut() {
-      outWrap.innerHTML = "";
-      outWrap.appendChild(promptBlock(build(), ex.note));
+    // Riadok s už vybranou odpoveďou — krátky, s tlačidlom na zmenu.
+    function doneRow(num, label, answer, goTo) {
+      var row = el("div", "pb-done-row");
+      row.innerHTML =
+        "<span class='pb-done-num'>" + num + "</span>" +
+        "<span class='pb-done-text'><span class='pb-done-label'>" + esc(label) + "</span>" +
+        "<b>" + esc(answer) + "</b></span>";
+      var change = el("button", "pb-change", "Zmeniť");
+      change.type = "button";
+      change.addEventListener("click", function () { step = goTo; render(); });
+      row.appendChild(change);
+      return row;
     }
 
-    function renderFields() {
-      var s = current();
-      if (!state.values[s.id]) state.values[s.id] = {};
-      fieldsWrap.innerHTML = "";
-      s.fields.forEach(function (f) {
-        var row = el("div", "ex-field");
-        row.appendChild(el("label", "ex-field-label", esc(f.label)));
-        var inp = el("input", "ex-field-input");
-        inp.type = "text";
-        inp.placeholder = f.placeholder || "";
-        inp.value = state.values[s.id][f.key] || "";
-        inp.addEventListener("input", function () {
-          state.values[s.id][f.key] = inp.value;
-          renderOut();
-          app.persist();
+    function stepHead(num, title, hint) {
+      var h = el("div", "pb-step-head");
+      h.innerHTML = "<h3><span class='pb-step-num'>" + num + "</span>" + esc(title) + "</h3>" +
+        (hint ? "<p class='pb-step-hint'>" + esc(hint) + "</p>" : "");
+      return h;
+    }
+
+    function backBtn(to) {
+      var b = el("button", "pb-back", "← Späť");
+      b.type = "button";
+      b.addEventListener("click", function () { step = to; render(); });
+      return b;
+    }
+
+    function render() {
+      stage.innerHTML = "";
+
+      // ---------- 1 · výber situácie ----------
+      if (step === 1) {
+        stage.appendChild(stepHead(1, ex.step1Title || "S čím potrebujete pomôcť?"));
+        var grid = el("div", "pb-choices");
+        ex.situations.forEach(function (sit) {
+          var b = el("button", "pb-choice" + (chosen && chosen.id === sit.id ? " active" : ""),
+            "<span class='pb-choice-text'>" + esc(sit.label) + "</span>" +
+            "<span class='pb-choice-go'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M5 12h13M13 6l6 6-6 6'/></svg></span>");
+          b.type = "button";
+          b.addEventListener("click", function () {
+            chosen = sit;
+            state.situation = sit.id;
+            app.persist();
+            step = 2;
+            render();
+          });
+          grid.appendChild(b);
         });
-        row.appendChild(inp);
-        fieldsWrap.appendChild(row);
-      });
-      renderOut();
+        stage.appendChild(grid);
+        return;
+      }
+
+      var sit = current();
+      stage.appendChild(doneRow(1, ex.step1Title || "S čím potrebujete pomôcť?", sit.label, 1));
+
+      // ---------- 2 · jedna doplňujúca otázka ----------
+      if (step === 2) {
+        stage.appendChild(stepHead(2, sit.question, sit.hint));
+        var box = el("div", "pb-answer");
+        var inp = el("input", "pb-input");
+        inp.type = "text";
+        inp.placeholder = sit.placeholder || "";
+        inp.value = state.values[sit.id] || "";
+        inp.setAttribute("aria-label", sit.question);
+        box.appendChild(inp);
+        if (sit.help) box.appendChild(el("p", "pb-help", esc(sit.help)));
+
+        var err = el("p", "pb-error");
+        box.appendChild(err);
+
+        var go = el("button", "btn btn-primary pb-next", "Pokračovať");
+        go.type = "button";
+        go.addEventListener("click", function () {
+          if (!inp.value.trim()) {
+            err.textContent = "Napíšte prosím pár slov, nech vieme otázku doplniť.";
+            err.classList.add("show");
+            inp.focus();
+            return;
+          }
+          state.values[sit.id] = inp.value.trim();
+          app.persist();
+          step = 3;
+          render();
+        });
+        inp.addEventListener("input", function () { err.classList.remove("show"); });
+        inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go.click(); });
+
+        box.appendChild(go);
+        box.appendChild(backBtn(1));
+        stage.appendChild(box);
+        setTimeout(function () { if (inp.isConnected) inp.focus(); }, 60);
+        return;
+      }
+
+      // ---------- 3 · hotová otázka ----------
+      stage.appendChild(doneRow(2, sit.question, value(), 2));
+      stage.appendChild(stepHead(3, ex.step3Title || "Vaša otázka je pripravená"));
+
+      var text = build();
+      var out = el("div", "pb-out");
+      out.appendChild(el("p", "pb-out-text", esc(text)));
+      stage.appendChild(out);
+
+      var copy = el("button", "btn btn-primary pb-copy", "Skopírovať otázku");
+      copy.type = "button";
+      copy.addEventListener("click", function () { copyText(text, copy); });
+      stage.appendChild(copy);
+
+      if (ex.safety) {
+        var warn = el("div", "pb-warn");
+        warn.innerHTML = "<strong>Dôležité:</strong> " + esc(ex.safety);
+        stage.appendChild(warn);
+      }
+
+      var again = el("button", "pb-back", "Poskladať ďalšiu otázku");
+      again.type = "button";
+      again.addEventListener("click", function () { step = 1; render(); });
+      stage.appendChild(again);
     }
 
-    buttons[0].classList.add("active");
-    renderFields();
+    // Skopírovanie textu aj v prehliadačoch bez prístupu k schránke.
+    function copyText(text, btn) {
+      var done = function () {
+        btn.textContent = "Skopírované ✓";
+        btn.classList.add("copied");
+        setTimeout(function () {
+          btn.textContent = "Skopírovať otázku";
+          btn.classList.remove("copied");
+        }, 2200);
+      };
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) {
+          btn.textContent = "Skopírujte text rukou";
+        }
+        document.body.removeChild(ta);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else {
+        fallback();
+      }
+    }
+
+    render();
 
     return {
       worksheet: function () {
         return {
           title: ex.title,
-          intro: ex.task,
+          intro: ex.intro,
           blocks: [
-            { type: "promptBox", label: "MOJA OTÁZKA", text: build() },
             { type: "heading", text: "Vzorové otázky na doma" },
-            { type: "paragraph", text: "Tam, kde sú tri bodky, doplňte vlastné informácie.", muted: true },
+            { type: "paragraph", text: "Tam, kde sú tri bodky, doplňte vlastné slová.", muted: true },
           ].concat((ex.worksheetPrompts || []).map(function (p) {
             return { type: "promptBox", label: p.label, text: p.text };
           })).concat([
-            { type: "note", text: ex.note },
+            { type: "note", text: ex.safety },
           ]),
         };
       },
