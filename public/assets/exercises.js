@@ -202,6 +202,13 @@
           self.root.scrollIntoView({ behavior: "smooth", block: "start" });
         });
         foot.appendChild(nextBtn);
+      } else if (self.opts.onResources) {
+        // Za posledným cvičením už nie je kam ísť v rámci cvičení —
+        // ponúkneme rovno ďalší krok kurzu.
+        var onward = el("button", "btn btn-secondary", "Pokračovať na užitočné zdroje →");
+        onward.type = "button";
+        onward.addEventListener("click", function () { self.opts.onResources(); });
+        foot.appendChild(onward);
       } else {
         foot.appendChild(el("span", "ex-all-done", "Prešli ste všetky cvičenia."));
       }
