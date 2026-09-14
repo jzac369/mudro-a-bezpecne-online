@@ -1942,8 +1942,14 @@ tr.unconf .course-compare-mark { background: #8a8578; }
   body.printing-card * { visibility: hidden; }
   body.printing-card .ex-card-preview,
   body.printing-card .ex-card-preview * { visibility: visible; }
+  /* Kartička ide na papier kompaktne a v tom istom pomere strán ako na
+     obrazovke — preto pevná šírka a zmenšenie celku, nie preliatie textu
+     do šírky stránky. */
   body.printing-card .ex-card-preview {
-    position: absolute; left: 0; top: 0; width: 100%;
+    position: absolute; left: 0; top: 0; margin: 0;
+    width: 751px; transform: scale(.7); transform-origin: top left;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
+  body.printing-card .ex-card { box-shadow: none; }
+  @page { margin: 12mm; }
 }
