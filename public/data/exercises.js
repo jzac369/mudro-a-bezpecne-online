@@ -500,10 +500,10 @@ window.COURSE_EXERCISES = [
     type: "emergency-card",
     icon: "phone",
     title: "Karta prvej pomoci pri podvode",
-    short: "Pripravte si svoje čísla na jedno miesto — keď sa niečo stane, nebudete ich hľadať.",
+    short: "Pripravte si svoje čísla na jedno miesto a vytlačte si ich — keď sa niečo stane, nebudete hľadať.",
     time: "5 minút",
     intro: "Keď zistíte, že ste naleteli, rozhodujú minúty. Vtedy sa čísla nehľadajú dobre — preto si ich pripravíme dopredu.",
-    task: "Vyplňte políčka nižšie. Zostaví sa vám z nich kartička — čísla z nej si potom prepíšte na papier a nechajte pri telefóne alebo vložte do peňaženky.",
+    task: "Vyplňte políčka nižšie. Zostaví sa vám z nich kartička, ktorú si môžete rovno vytlačiť a nechať pri telefóne alebo vložiť do peňaženky.",
     fields: [
       { key: "banka", label: "Moja banka", placeholder: "napríklad: Slovenská sporiteľňa" },
       { key: "bankaTel", label: "Tel. číslo na banku (opíšte zo zadnej strany karty)", placeholder: "napríklad: 0850 111 888" },
@@ -513,7 +513,6 @@ window.COURSE_EXERCISES = [
     fixedRows: [
       { label: "Polícia SR", value: "158" },
       { label: "Tiesňová linka", value: "112" },
-      { label: "Overenie firmy a investície", value: "www.nbs.sk" },
     ],
     steps: [
       "Zavolajte banke a požiadajte o zablokovanie karty alebo účtu.",
@@ -521,6 +520,6 @@ window.COURSE_EXERCISES = [
       "Nahláste to polícii na 158 (alebo 112).",
       "Nič nemažte — správy a e-maily sa môžu hodiť ako dôkaz.",
     ],
-    note: "Papierik s číslami nechajte pri telefóne. Ak sa nič nestane, len tam bude ležať. Ak sa stane, ušetrí vám drahocenné minúty.",
+    note: "Kartičku nechajte pri telefóne. Ak sa nič nestane, len tam bude ležať. Ak sa stane, ušetrí vám drahocenné minúty.",
   },
 ];

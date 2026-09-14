@@ -1217,6 +1217,24 @@
     }
     renderCard();
 
+    // Tlač len samotnej kartičky. Trieda na <body> počas tlače schová
+    // zvyšok stránky — hotové PDF ani nové okno na to netreba.
+    var print = el("button", "btn btn-secondary ex-print-btn",
+      "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>" +
+      "<path d='M6 9V3h12v6'/><path d='M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2'/>" +
+      "<path d='M6 14h12v7H6z'/></svg>Vytlačiť kartičku");
+    print.type = "button";
+    print.addEventListener("click", function () {
+      document.body.classList.add("printing-card");
+      var clear = function () { document.body.classList.remove("printing-card"); };
+      window.addEventListener("afterprint", clear, { once: true });
+      window.print();
+      // Niektoré prehliadače „afterprint“ neohlásia; poistka, nech na
+      // stránke nezostane skrytý obsah.
+      setTimeout(clear, 3000);
+    });
+    host.appendChild(print);
+
     return {
       worksheet: function () {
         var rows = [
