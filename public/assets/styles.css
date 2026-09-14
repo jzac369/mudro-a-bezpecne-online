@@ -1939,6 +1939,8 @@ tr.unconf .course-compare-mark { background: #8a8578; }
 .ex-print-btn svg { width: 18px; height: 18px; }
 
 @media print {
+  /* Na papier ide biely podklad, nie béžové pozadie stránky. */
+  html, body.printing-card { background: #fff !important; }
   body.printing-card * { visibility: hidden; }
   body.printing-card .ex-card-preview,
   body.printing-card .ex-card-preview * { visibility: visible; }

@@ -242,10 +242,12 @@
     }
 
     function renderStatus() {
-      statusEl.className = "mbo-chat-status " + (adminOnline ? "online" : "offline");
-      statusEl.innerHTML = (adminOnline ? CHAT_OK_ICON : CLOCK_ICON) + "<span>" + (adminOnline
-        ? "Píšete skutočnému človeku, nie automatu."
-        : "Napíšte pokojne teraz — ozveme sa hneď, ako budeme späť.") + "</span>";
+      // Keď sme online, hovorí to už zelený štítok nad správou — druhá veta
+      // o tom istom je navyše. Mimo služby má riadok čo povedať.
+      statusEl.className = "mbo-chat-status offline";
+      statusEl.hidden = adminOnline;
+      statusEl.innerHTML = CLOCK_ICON +
+        "<span>Napíšte pokojne teraz — ozveme sa hneď, ako budeme späť.</span>";
 
       pillEl.className = "mbo-chat-pill " + (adminOnline ? "online" : "offline");
       pillEl.innerHTML = "<span class='mbo-dot'></span>" +
