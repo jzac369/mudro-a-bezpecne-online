@@ -506,9 +506,9 @@ window.COURSE_EXERCISES = [
     task: "Vyplňte políčka nižšie. Zostaví sa vám z nich kartička — čísla z nej si potom prepíšte na papier a nechajte pri telefóne alebo vložte do peňaženky.",
     fields: [
       { key: "banka", label: "Moja banka", placeholder: "napríklad: Slovenská sporiteľňa" },
-      { key: "bankaTel", label: "Číslo na banku (opíšte zo zadnej strany karty)", placeholder: "napríklad: 0850 111 888" },
+      { key: "bankaTel", label: "Tel. číslo na banku (opíšte zo zadnej strany karty)", placeholder: "napríklad: 0850 111 888" },
       { key: "blizky", label: "Blízka osoba, ktorej zavolám", placeholder: "napríklad: dcéra Katka" },
-      { key: "blizkyTel", label: "Číslo na blízku osobu", placeholder: "napríklad: 0900 123 456" },
+      { key: "blizkyTel", label: "Tel. číslo na blízku osobu", placeholder: "napríklad: 0900 123 456" },
     ],
     fixedRows: [
       { label: "Polícia SR", value: "158" },
