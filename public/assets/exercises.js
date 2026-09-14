@@ -849,6 +849,13 @@
       box.appendChild(el("p", "of-prompt-text", esc(sc.prompt)));
       stage.appendChild(box);
 
+      if (sc.answer) {
+        var ans = el("div", "of-answer");
+        ans.appendChild(el("p", "of-answer-label", esc(sc.answerTitle || "Takto by mohla odpoveď vyzerať")));
+        ans.appendChild(el("p", "of-answer-text", esc(sc.answer)));
+        stage.appendChild(ans);
+      }
+
       stage.appendChild(el("p", "of-warn",
         "<strong>Pamätajte:</strong> " + esc(sc.warn)));
       var nav = navRow(true);

@@ -1697,6 +1697,12 @@ tr.unconf .course-compare-mark { background: #8a8578; }
 .of-prompt { background: var(--good-bg); border: 2px solid var(--good); border-radius: 16px; padding: 1.3rem 1.4rem; }
 .of-prompt-text { margin: 0; font-size: 1.1rem; line-height: 1.65; }
 .of-copy { margin-top: 1rem; align-self: flex-start; font-size: 1rem; padding: .65rem 1.4rem; }
+/* Ukážka odpovede AI — zámerne tichšia než samotná otázka, je to len
+   predstava, nie niečo, s čím má človek pracovať. */
+.of-answer { margin-top: 1.3rem; background: var(--surface-2); border-radius: 14px; padding: 1.1rem 1.3rem; }
+.of-answer-label { margin: 0 0 .7rem; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-mute); }
+.of-answer-text { margin: 0; white-space: pre-line; font-size: 1.02rem; line-height: 1.7; color: var(--text); }
+
 .of-warn { margin: 1.3rem 0 0; background: var(--surface-2); border-left: 6px solid var(--accent); border-radius: 0 12px 12px 0; padding: 1rem 1.2rem; font-size: 1.02rem; line-height: 1.6; }
 
 /* Záver — jedna hlavná akcia, ostatné ako nenápadné odkazy. */

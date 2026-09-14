@@ -246,6 +246,20 @@ window.COURSE_EXERCISES = [
         title: "Ako vám môže pomôcť AI?",
         lead: "Ak chcete porovnať dve ponuky, môžete sa AI opýtať napríklad takto:",
         prompt: "Porovnaj mi tieto dve ponuky. Vypočítaj celkové náklady a upozorni ma na viazanosť, jednorazové poplatky, pokuty a podmienky ukončenia. Vysvetli mi rozdiel jednoducho.",
+        // Ukážka odpovede, aby človek vedel, čo môže čakať. Čísla sedia
+        // s výpočtami v predchádzajúcich krokoch.
+        answerTitle: "Takto by mohla odpoveď vyzerať",
+        answer:
+          "Za prvý rok:\n" +
+          "Ponuka A — 12 € × 12 mesiacov = 144 €, plus jednorazová aktivácia 30 €. Spolu 174 €.\n" +
+          "Ponuka B — 15 € × 12 mesiacov = 180 €, aktivácia 0 €. Spolu 180 €.\n" +
+          "Rozdiel je 6 € v prospech ponuky A.\n\n" +
+          "Na čo si dať pozor:\n" +
+          "Ponuka A je viazaná na 24 mesiacov a za predčasné ukončenie si účtuje 80 €.\n" +
+          "Ponuka B nemá viazanosť ani poplatok za ukončenie.\n\n" +
+          "Čo z toho vyplýva:\n" +
+          "Ak službu využijete celé dva roky, ponuka A je o niečo lacnejšia. Ak by ste ju chceli zrušiť skôr, napríklad po pol roku, ponuka A vás vyjde na 182 € a ponuka B na 90 €.\n\n" +
+          "Odporúčam overiť si ešte, či sa zmluva po skončení viazanosti automaticky predlžuje a či sa cena môže počas nej meniť.",
         warn: "Výpočty a dôležité podmienky si vždy skontrolujte aj v pôvodnej zmluve alebo cenníku.",
       },
       {
