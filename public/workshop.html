@@ -80,6 +80,18 @@
   .quiz-option { display:flex; align-items:flex-start; gap:.7rem; padding:.7rem; border:2px solid var(--line); border-radius:10px; margin-bottom:.6rem; cursor:pointer; }
   .quiz-option.selected { border-color: var(--focus); background: var(--surface-2); }
   .quiz-option input { width:auto; margin-top:.2rem; }
+  /* Darček za dokončenie kurzu — kód má byť to prvé, čo na karte vidno. */
+  .bonus-card { border: 2px solid var(--accent); }
+  .bonus-code {
+    display: flex; justify-content: center; margin: 1.2rem 0;
+  }
+  .bonus-code span {
+    display: inline-block; padding: .7rem 1.6rem; border-radius: 12px;
+    background: var(--accent-soft, #f1ddc0); color: var(--accent-deep, #8f5a1e);
+    font-family: "IBM Plex Mono", "Courier New", monospace; font-weight: 700;
+    font-size: 1.6rem; letter-spacing: .12em;
+  }
+  @media (max-width: 620px) { .bonus-code span { font-size: 1.25rem; letter-spacing: .08em; padding: .6rem 1rem; } }
   .feedback-ok { color: var(--good); font-weight:700; }
   .feedback-bad { color: var(--warn); font-weight:700; }
   .continue-banner {
@@ -301,6 +313,17 @@
         <p class="hint" id="cert-email-status" style="margin-top:.6rem;"></p>
       </div>
     </div>
+  </section>
+
+  <!-- Odmena pre toho, kto kurz dotiahol do konca. Stojí zámerne až za
+       certifikátom — najprv to, po čo si človek prišiel, potom ponuka. -->
+  <section class="card step-panel bonus-card" data-panel="certifikat" style="margin-top:1.5rem;">
+    <h2>Máme pre vás darček</h2>
+    <p>Kurz ste nielen dokončili, ale zvládli ste ho so skvelým výsledkom. To si zaslúži odmenu — a zároveň pozvanie, aby ste v tom pokračovali.</p>
+    <p>Na ktorýkoľvek ďalší kurz z našej ponuky vám dávame <strong>zľavu 4 €</strong>. Stačí pri objednávke zadať tento kód:</p>
+    <p class="bonus-code"><span>SIKOVNIK26</span></p>
+    <p class="hint">Kód zadáte v objednávkovom formulári do políčka „Zľavový kód“. Platí na akýkoľvek kurz a môžete ho pokojne posunúť aj niekomu, komu by sa naše kurzy zišli.</p>
+    <a class="btn btn-primary" href="index.html#kurzy" style="text-decoration:none;display:inline-block;margin-top:.6rem;">Pozrieť ďalšie kurzy</a>
   </section>
 
   <section class="card step-panel" data-panel="certifikat" style="margin-top:1.5rem;" id="feedback-card">
