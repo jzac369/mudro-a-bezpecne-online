@@ -106,7 +106,7 @@ window.COURSE_EXERCISES = [
       "Som senior a chcem si prejsť svoj mesačný rozpočet. Moje mesačné príjmy sú spolu {prijem} € " +
       "a výdavky {vydavky} €. Je môj rozpočet vyrovnaný? Ktoré výdavky by som mohol znížiť a ako? " +
       "Vysvetli mi to jednoducho, bez cudzích slov.",
-    note: "Všimnite si, že v otázke nie je číslo účtu ani meno banky — AI ich na radu vôbec nepotrebuje.",
+    note: "Všimnite si, že v otázke pre umelú inteligenciu nie sú žiadne citlivé údaje — AI ich na to, aby vám vedela poradiť, vôbec nepotrebuje.",
     worksheetNote: "Ak si tabuľku vyplníte perom, môžete ju odfotiť priamo do aplikácie ChatGPT. Nikdy však nefoťte doklady s rodným číslom, číslom občianskeho preukazu, karty ani účtu.",
   },
 
@@ -174,7 +174,7 @@ window.COURSE_EXERCISES = [
         id: "investicia",
         label: "Ponúkajú mi investíciu",
         fields: [
-          { key: "firma", label: "Ako sa firma alebo ponuka volá?", placeholder: "napríklad: SPP SK akcie" },
+          { key: "firma", label: "Ako sa firma alebo ponuka volá?", placeholder: "napríklad: Zlatý fond Invest" },
           { key: "slubuje", label: "Čo sľubuje?", placeholder: "napríklad: garantovaný zisk 5 000 € mesačne" },
         ],
         template: "Som senior a ponúkajú mi investíciu: {firma}. Sľubuje {slubuje}. Aké riziká to prináša? Ako si overím, či je firma dôveryhodná, a aké otázky mám položiť pred rozhodnutím? Vysvetli mi to jednoducho.",
@@ -265,7 +265,7 @@ window.COURSE_EXERCISES = [
         id: "balik",
         phrases: ["nedoručený balík", "nedoruceny balik", "balík", "balik", "zásielka", "zasielka", "colný poplatok", "colny poplatok", "sms z pošty", "sms z posty", "doplatiť", "doplatit"],
         keywords: ["posta", "kurier", "dorucen", "zasiel", "sledovac"],
-        text: "Toto je v súčasnosti najrozšírenejší podvod na Slovensku.\n\nSkutočná pošta ani kuriér nikdy nežiadajú doplatok cez odkaz v SMS. Suma býva zámerne drobná — dve, tri eurá — aby nevzbudila podozrenie. Podvodníkom však nejde o tie eurá, ale o údaje z vašej platobnej karty.\n\nČo odporúčam:\n\n1. **Na odkaz neklikajte** a správu nechajte tak.\n2. **Ak naozaj čakáte balík,** zadajte sledovacie číslo priamo na oficiálnej stránke pošty alebo prepravcu — nikdy nie cez odkaz zo správy.\n3. **Správu potom môžete zmazať.**\n\nVšimnite si aj adresu v odkaze — býva to niečo ako „sk-posta.delivery-pay.com“, čo nie je stránka Slovenskej pošty.",
+        text: "Toto je jeden z najrozšírenejších podvodov na Slovensku.\n\nSkutočná pošta ani kuriér nikdy nežiadajú doplatok cez odkaz v SMS. Suma býva zámerne drobná — dve, tri eurá — aby nevzbudila podozrenie. Podvodníkom však nejde o tie eurá, ale o údaje z vašej platobnej karty.\n\nČo odporúčam:\n\n1. **Na odkaz neklikajte** a správu nechajte tak.\n2. **Ak naozaj čakáte balík,** zadajte sledovacie číslo priamo na oficiálnej stránke pošty alebo prepravcu — nikdy nie cez odkaz zo správy.\n3. **Správu potom môžete zmazať.**\n\nVšimnite si aj adresu v odkaze — býva to niečo ako „sk-posta.delivery-pay.com“, čo nie je stránka Slovenskej pošty.",
         followUps: [
           { q: "Ako spoznám pravú adresu stránky?", to: "adresa" },
           { q: "Už som zadal údaje z karty, čo teraz?", to: "coteraz" },
@@ -325,7 +325,7 @@ window.COURSE_EXERCISES = [
         id: "aifoto",
         phrases: ["vyrobená umelou inteligenciou", "vyrobena umelou inteligenciou", "je tá fotka", "je ta fotka", "je to skutočná fotografia", "deepfake", "falošné video", "falosne video", "vo videu odporúčal"],
         keywords: ["fotk", "fotogra", "obrazok", "video"],
-        text: "Fotografia ani video dnes už nie sú dôkazom, že sa niečo naozaj stalo.\n\n**Na čom sa AI obrázky najčastejšie prezradia:**\n\n• **Ruky a prsty** — nesprávny počet alebo zvláštny tvar.\n• **Text v obrázku** — nápisy bývajú nezrozumiteľné alebo s preklepmi.\n• **Pozadie** — zdeformované predmety, ktoré do scény nepatria.\n• **Značka ✦** v rohu — niektoré siete takto označujú obsah vytvorený AI.\n\nPozor najmä na videá, kde známa osobnosť odporúča investíciu. Tvár aj hlas sa dnes dajú napodobniť a je to jeden z najčastejších podvodov. Žiadny skutočný odborník nebude cez reklamu sľubovať zaručený zisk.\n\nAk si nie ste istí, obrázok neposielajte ďalej.",
+        text: "Fotografia ani video dnes už nie sú dôkazom, že sa niečo naozaj stalo.\n\n**Na čom sa AI obrázky najčastejšie prezradia:**\n\n• **Ruky, prsty, zuby, šperky** — býva ich nesprávny počet alebo zvláštny tvar. Novšie programy to však už zvládajú, takže bezchybné ruky nie sú dôkazom pravosti.\n• **Text v obrázku** — nápisy bývajú nezrozumiteľné alebo s preklepmi.\n• **Pozadie** — zdeformované predmety, ktoré do scény nepatria.\n• **Označenie od siete** — Facebook, Instagram aj TikTok pri niektorých príspevkoch píšu, že obsah vytvorila AI. Že označenie chýba, ale nič nedokazuje.\n\nPozor najmä na videá, kde známa osobnosť odporúča investíciu. Tvár aj hlas sa dnes dajú napodobniť a je to jeden z najčastejších podvodov. Žiadny skutočný odborník nebude cez reklamu sľubovať zaručený zisk.\n\nAk si nie ste istí, obrázok neposielajte ďalej.",
         followUps: [
           { q: "Ponúkajú mi investíciu, ktorú odporúčala známa osobnosť.", to: "investicia" },
           { q: "Kde si overím, či je správa pravdivá?", to: "overit" },
