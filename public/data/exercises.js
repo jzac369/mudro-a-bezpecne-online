@@ -193,7 +193,7 @@ window.COURSE_EXERCISES = [
         title: "Koľko zaplatíte za rok?",
         lead: "Pozrime sa teraz na skutočné náklady.",
         offers: true,
-        question: "Ktorá ponuka bude lacnejšia za prvých 12 mesiacov?",
+        question: "Ktorá ponuka bude lacnejšia počas prvých 12 mesiacov?",
         options: [
           { key: "A", label: "Ponuka A", correct: true },
           { key: "B", label: "Ponuka B" },
