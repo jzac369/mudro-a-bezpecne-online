@@ -143,87 +143,125 @@ window.COURSE_EXERCISES = [
   },
 
   {
-    id: "prompt",
-    type: "prompt-builder",
-    icon: "message",
-    title: "Čo sa chcete opýtať AI?",
-    short: "Vyberte, s čím potrebujete pomôcť, doplňte pár slov a otázku pre AI dostanete hotovú.",
-    time: "5 minút",
-    intro: "Nemusíte vedieť, ako otázku správne napísať. Vyberte, s čím potrebujete pomôcť, a my ju vytvoríme za vás.",
-    step1Title: "S čím potrebujete pomôcť?",
-    step3Title: "Vaša otázka je pripravená",
-    // Každá situácia sa pýta na jedinú vec. Viac políčok naraz bolo pre
-    // začiatočníka priveľa a otázka sa dá poskladať aj z jednej odpovede.
-    situations: [
+    // Modelový príklad služby s viazanosťou. Čísla sú vymyslené, ale
+    // zodpovedajú tomu, ako bývajú takéto ponuky postavené: nižší mesačný
+    // poplatok výmenou za aktivačný poplatok, viazanosť a pokutu.
+    id: "ponuky",
+    type: "offers",
+    icon: "scales",
+    title: "Ktorá ponuka je výhodnejšia?",
+    short: "Porovnajte dve ponuky a zistite, čo sa môže skrývať za nízkou mesačnou cenou.",
+    time: "7 minút",
+    intro: "Predstavte si, že si vyberáte novú službu. Máte dve ponuky. Skúste zistiť, ktorá je pre vás výhodnejšia.",
+    leadStrong: "Nie vždy rozhoduje najnižšia mesačná cena.",
+    offers: [
       {
-        id: "email",
-        label: "Prišiel mi podozrivý e-mail",
-        question: "Od koho mal e-mail prísť?",
-        hint: "Napíšte iba stručne, kto je podľa e-mailu odosielateľ.",
-        placeholder: "napríklad: moja banka",
-        help: "Stačí napísať napríklad: banka, pošta alebo úrad.",
-        template:
-          "Som senior a prišiel mi e-mail. Má byť od: {odpoved}. " +
-          "Vysvetli mi jednoducho, bez zložitých slov, či môže ísť o podvod.\n" +
-          "Povedz mi:\n" +
-          "– podľa čoho sa podvodný e-mail spozná,\n" +
-          "– čo mám urobiť teraz,\n" +
-          "– ako si to mám overiť.",
+        key: "A",
+        name: "Ponuka A",
+        rows: [
+          { label: "Mesačný poplatok", value: "12 €" },
+          { label: "Aktivácia", value: "30 €" },
+          { label: "Viazanosť", value: "24 mesiacov" },
+          { label: "Predčasné ukončenie", value: "80 €" },
+        ],
       },
       {
-        id: "telefonat",
-        label: "Volal mi niekto podozrivý",
-        question: "Za koho sa volajúci vydával?",
-        hint: "Napíšte iba stručne, za koho sa predstavil.",
-        placeholder: "napríklad: pracovník banky",
-        help: "Stačí napísať napríklad: banka, polícia alebo technik.",
-        template:
-          "Som senior a volal mi neznámy človek. Tvrdil, že je: {odpoved}. " +
-          "Vysvetli mi jednoducho, bez zložitých slov, či to môže byť podvod.\n" +
-          "Povedz mi:\n" +
-          "– podľa čoho sa takýto podvod spozná,\n" +
-          "– čo mám urobiť teraz,\n" +
-          "– ako si to mám overiť.",
-      },
-      {
-        id: "investicia",
-        label: "Ponúkajú mi investíciu",
-        question: "Čo vám sľubujú?",
-        hint: "Napíšte iba stručne, čo vám ponuka sľubuje.",
-        placeholder: "napríklad: zisk 500 € mesačne",
-        help: "Stačí napísať napríklad: vysoký zisk, zaručený výnos alebo rýchle zbohatnutie.",
-        template:
-          "Som senior a niekto mi ponúka investíciu. Sľubuje: {odpoved}. " +
-          "Vysvetli mi jednoducho, bez zložitých slov, čo to znamená.\n" +
-          "Povedz mi:\n" +
-          "– aké sú riziká,\n" +
-          "– podľa čoho spoznám podvodnú ponuku,\n" +
-          "– ako si overím, či je firma dôveryhodná.",
-      },
-      {
-        id: "zmluva",
-        label: "Nerozumiem zmluve",
-        question: "O akej zmluve chcete vedieť viac?",
-        hint: "Napíšte iba stručne, čoho sa zmluva týka.",
-        placeholder: "napríklad: dodávka elektriny",
-        help: "Stačí napísať napríklad: internet, poistenie alebo dodávka elektriny.",
-        template:
-          "Som senior a mám pred sebou zmluvu, ktorá sa týka: {odpoved}. " +
-          "Vysvetli mi ju jednoducho, bez zložitých slov.\n" +
-          "Povedz mi:\n" +
-          "– na čo si mám dať pozor,\n" +
-          "– aké sú poplatky a pokuty,\n" +
-          "– na ako dlho je zmluva uzatvorená,\n" +
-          "– ako ju môžem ukončiť.",
+        key: "B",
+        name: "Ponuka B",
+        rows: [
+          { label: "Mesačný poplatok", value: "15 €" },
+          { label: "Aktivácia", value: "0 €" },
+          { label: "Viazanosť", value: "žiadna" },
+          { label: "Predčasné ukončenie", value: "0 €" },
+        ],
       },
     ],
-    safety: "Do AI nevkladajte svoje meno, adresu, rodné číslo, číslo účtu, heslá ani PIN. Stačí opísať situáciu. Osobné údaje AI nepotrebuje.",
-    worksheetPrompts: [
-      { label: "PODOZRIVÝ E-MAIL", text: "Prišiel mi e-mail. Má byť od … Vysvetli mi jednoducho, či môže ísť o podvod a čo mám urobiť." },
-      { label: "PODOZRIVÝ TELEFONÁT", text: "Volal mi človek, ktorý tvrdil, že je … Vysvetli mi jednoducho, či to môže byť podvod a ako si to mám overiť." },
-      { label: "INVESTIČNÁ PONUKA", text: "Ponúkajú mi investíciu. Sľubuje … Aké sú riziká a ako si overím, či je firma dôveryhodná?" },
-      { label: "ZMLUVA ALEBO ÚRADNÝ LIST", text: "Mám pred sebou zmluvu, ktorá sa týka … Vysvetli mi ju jednoducho: na čo si mám dať pozor, aké sú poplatky a ako ju môžem ukončiť." },
+    screens: [
+      {
+        kind: "compare",
+        title: "Porovnanie ponúk",
+        question: "Ktorá ponuka vás na prvý pohľad viac láka?",
+        options: [{ key: "A", label: "Ponuka A" }, { key: "B", label: "Ponuka B" }],
+        // Tu ešte niet zlej odpovede — ide o prvý dojem, s ktorým budeme
+        // ďalej pracovať.
+        after: "Pozrime sa teraz na skutočné náklady.",
+      },
+      {
+        kind: "quiz",
+        title: "Koľko zaplatíte za rok?",
+        question: "Ktorá ponuka bude lacnejšia za prvých 12 mesiacov?",
+        options: [
+          { key: "A", label: "Ponuka A", correct: true },
+          { key: "B", label: "Ponuka B" },
+          { key: "?", label: "Neviem — ukážte mi výpočet", neutral: true },
+        ],
+        okText: "Správne. Rozdiel je iba 6 €.",
+        badText: "Nevadí. Pozrite sa na výpočet — rozdiel je menší, než sa môže na prvý pohľad zdať.",
+        neutralText: "Nič sa nedeje, prejdeme si to spolu.",
+        calc: [
+          { name: "Ponuka A", lines: ["12 € × 12 mesiacov = 144 €", "aktivácia 30 €"], total: "174 €" },
+          { name: "Ponuka B", lines: ["15 € × 12 mesiacov = 180 €"], total: "180 €" },
+        ],
+        verdict: "Ponuka A je za prvý rok lacnejšia iba o 6 €.",
+      },
+      {
+        kind: "quiz",
+        title: "Je teda A automaticky lepšia?",
+        question: "Ponuka A je o 6 € lacnejšia. Znamená to, že je určite výhodnejšia?",
+        options: [
+          { key: "ano", label: "Áno" },
+          { key: "nie", label: "Nie", correct: true },
+        ],
+        okText: "Presne tak. Cena nie je jediné, čo treba porovnať.",
+        badText: "Nie je to také jednoduché. Cena nie je jediné, čo treba porovnať.",
+        columns: [
+          { name: "Ponuka A", tone: "warn", items: ["viazanosť na 24 mesiacov", "poplatok 80 € za predčasné ukončenie"] },
+          { name: "Ponuka B", tone: "good", items: ["nemá viazanosť", "nemá poplatok za ukončenie"] },
+        ],
+        closing: "Ak budete službu používať dlho, Ponuka A môže byť zaujímavá. Ak chcete mať možnosť kedykoľvek odísť, Ponuka B môže byť napriek vyššej mesačnej cene vhodnejšia.",
+      },
+      {
+        kind: "quiz",
+        title: "Nečakaná situácia",
+        lead: "Predstavte si, že po 6 mesiacoch chcete službu zrušiť.",
+        question: "Ktorá ponuka bude v tejto situácii výhodnejšia?",
+        options: [
+          { key: "A", label: "Ponuka A" },
+          { key: "B", label: "Ponuka B", correct: true },
+        ],
+        okText: "Presne tak. Pozrite sa, o koľko ide.",
+        badText: "Pozrite sa na výpočet — tentoraz to dopadlo inak.",
+        calc: [
+          { name: "Ponuka A", lines: ["6 × 12 € = 72 €", "aktivácia = 30 €", "predčasné ukončenie = 80 €"], total: "182 €" },
+          { name: "Ponuka B", lines: ["6 × 15 € = 90 €"], total: "90 €" },
+        ],
+        verdict: "Rozdiel: 92 €",
+        closing: "Nízka mesačná cena teda ešte nemusí znamenať, že ponuka bude najvýhodnejšia vo vašej konkrétnej situácii.",
+      },
+      {
+        kind: "prompt",
+        title: "Ako by vám pri porovnaní mohla pomôcť AI?",
+        lead: "Ak máte dve ponuky, môžete AI požiadať, aby vám ich prehľadne porovnala.",
+        prompt: "Porovnaj mi tieto dve ponuky. Vypočítaj celkové náklady a upozorni ma na viazanosť, jednorazové poplatky, pokuty a podmienky ukončenia. Vysvetli mi rozdiel jednoducho.",
+        warn: "Výpočty a dôležité podmienky si vždy skontrolujte aj v pôvodnej zmluve alebo cenníku.",
+      },
+      {
+        kind: "summary",
+        title: "Zapamätajte si",
+        leadStrong: "Najnižšia mesačná cena nemusí znamenať najvýhodnejšiu ponuku.",
+        lead: "Pred rozhodnutím si skontrolujte najmä:",
+        items: [
+          "celkovú cenu",
+          "jednorazové poplatky",
+          "viazanosť",
+          "poplatok za predčasné ukončenie",
+          "čo sa stane, ak budete chcieť službu zrušiť",
+        ],
+        closing: "AI vám môže pomôcť ponuky porovnať. Rozhodnutie však robíte vy.",
+        finishLabel: "Dokončiť cvičenie",
+      },
     ],
+    worksheetNote: "Najnižšia mesačná cena nemusí znamenať najvýhodnejšiu ponuku. Vždy si porovnajte celkovú cenu vrátane jednorazových poplatkov, viazanosť aj poplatok za predčasné ukončenie.",
   },
 
   {

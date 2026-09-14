@@ -32,6 +32,7 @@
     shield: "<path d='M12 3l8 4v5c0 5-3.4 8.4-8 9.5C7.4 20.4 4 17 4 12V7l8-4Z'/><path d='M9.5 12l2 2 3.5-3.5'/>",
     phone: "<path d='M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.36 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z'/>",
     book: "<path d='M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2Z'/><path d='M8 7h7M8 11h5'/>",
+    scales: "<path d='M12 4v16M7 20h10M4 8h16l-3 6a3.2 3.2 0 0 1-5 0Zm0 0 3 6a3.2 3.2 0 0 0 5 0'/><circle cx='12' cy='5' r='1.4' fill='currentColor' stroke='none'/>",
   };
 
   function icon(name, cls) {
@@ -46,7 +47,13 @@
     this.root = root;
     this.opts = opts || {};
     this.list = this.opts.exercises || window.COURSE_EXERCISES || [];
-    this.done = new Set(this.opts.done || []);
+    // Do uloženého postupu sa časom dostanú aj cvičenia, ktoré už
+    // neexistujú. Bez tohto filtra by ukazovateľ hlásil viac hotových
+    // cvičení, než ich v kurze je.
+    var known = this.list.map(function (x) { return x.id; });
+    this.done = new Set((this.opts.done || []).filter(function (id) {
+      return known.indexOf(id) !== -1;
+    }));
     this.store = this.opts.store || null;
     // Rozpracované odpovede držíme aj v pamäti prehliadača, aby ich
     // nechcené obnovenie stránky nezmazalo.
@@ -187,6 +194,9 @@
       }
     });
     foot.appendChild(doneBtn);
+    // Cvičenie si vie povedať o dokončenie samo — nech nemusí mať vlastnú
+    // logiku a nech sa postup ukladá na jedinom mieste.
+    this.finishCurrent = function () { if (!doneBtn.disabled) doneBtn.click(); };
     this.root.appendChild(foot);
   };
 
@@ -676,162 +686,217 @@
   };
 
   // 3 · Poskladajte si otázku pre AI
-  RENDERERS["prompt-builder"] = function (ex, host, app) {
-    var state = app.answers[ex.id] || (app.answers[ex.id] = { values: {} });
-    if (!state.values) state.values = {};
+  // 3 · Ktorá ponuka je výhodnejšia?
+  // Na obrazovke je vždy len jeden krok. Výpočty sa píšu po riadkoch, nie
+  // v jednom výraze — človek si tak vie overiť, odkiaľ suma pochádza.
+  RENDERERS.offers = function (ex, host, app) {
+    var state = app.answers[ex.id] || (app.answers[ex.id] = { picks: {} });
+    if (!state.picks) state.picks = {};
 
-    // Na obrazovke je vždy len jeden krok. Hotové kroky sa zmrštia do
-    // jedného riadka s tlačidlom „Zmeniť“, aby bolo vidieť, čo už človek
-    // vybral, a dalo sa to opraviť bez začínania odznova.
-    var step = 1, chosen = null;
-
-    var stage = el("div", "pb-stage");
+    var screens = ex.screens || [];
+    var at = 0;
+    var stage = el("div", "of-stage");
     host.appendChild(stage);
 
-    function current() {
-      return chosen || ex.situations[0];
-    }
-
-    function value() {
-      var s = current();
-      return (state.values[s.id] || "").trim();
-    }
-
-    function build() {
-      var s = current();
-      return s.template.replace("{odpoved}", value() || "…");
-    }
-
-    // Riadok s už vybranou odpoveďou — krátky, s tlačidlom na zmenu.
-    function doneRow(num, label, answer, goTo) {
-      var row = el("div", "pb-done-row");
-      row.innerHTML =
-        "<span class='pb-done-num'>" + num + "</span>" +
-        "<span class='pb-done-text'><span class='pb-done-label'>" + esc(label) + "</span>" +
-        "<b>" + esc(answer) + "</b></span>";
-      var change = el("button", "pb-change", "Zmeniť");
-      change.type = "button";
-      change.addEventListener("click", function () { step = goTo; render(); });
-      row.appendChild(change);
-      return row;
-    }
-
-    function stepHead(num, title, hint) {
-      var h = el("div", "pb-step-head");
-      h.innerHTML = "<h3><span class='pb-step-num'>" + num + "</span>" + esc(title) + "</h3>" +
-        (hint ? "<p class='pb-step-hint'>" + esc(hint) + "</p>" : "");
+    function head(sc, num) {
+      var h = el("div", "of-head");
+      h.innerHTML =
+        "<p class='of-step'>Krok " + num + " zo " + screens.length + "</p>" +
+        "<h3>" + esc(sc.title) + "</h3>" +
+        // Záver má svoj úvodný riadok vnútri zeleného rámčeka, tu by bol
+        // druhýkrát.
+        (sc.lead && sc.kind !== "summary" ? "<p class='of-lead'>" + esc(sc.lead) + "</p>" : "");
       return h;
     }
 
-    function backBtn(to) {
-      var b = el("button", "pb-back", "← Späť");
+    function offerCards() {
+      var wrap = el("div", "of-cards");
+      (ex.offers || []).forEach(function (o) {
+        var card = el("div", "of-card");
+        card.appendChild(el("p", "of-card-name", esc(o.name)));
+        var dl = el("dl", "of-card-rows");
+        o.rows.forEach(function (r) {
+          dl.appendChild(el("dt", null, esc(r.label)));
+          dl.appendChild(el("dd", null, esc(r.value)));
+        });
+        card.appendChild(dl);
+        wrap.appendChild(card);
+      });
+      return wrap;
+    }
+
+    function calcBlocks(calc) {
+      var wrap = el("div", "of-calcs");
+      calc.forEach(function (c) {
+        var box = el("div", "of-calc");
+        box.appendChild(el("p", "of-calc-name", esc(c.name)));
+        var lines = el("ul", "of-calc-lines");
+        c.lines.forEach(function (l) { lines.appendChild(el("li", null, esc(l))); });
+        box.appendChild(lines);
+        box.appendChild(el("p", "of-calc-total", "Spolu: <b>" + esc(c.total) + "</b>"));
+        wrap.appendChild(box);
+      });
+      return wrap;
+    }
+
+    function columns(cols) {
+      var wrap = el("div", "of-cols");
+      cols.forEach(function (c) {
+        var box = el("div", "of-col " + (c.tone === "good" ? "good" : "warn"));
+        box.appendChild(el("p", "of-col-name", esc(c.name)));
+        var ul = el("ul", null);
+        c.items.forEach(function (i) { ul.appendChild(el("li", null, esc(i))); });
+        box.appendChild(ul);
+        wrap.appendChild(box);
+      });
+      return wrap;
+    }
+
+    function navRow(canBack) {
+      var row = el("div", "of-nav");
+      if (canBack) {
+        var back = el("button", "of-back", "← Späť");
+        back.type = "button";
+        back.addEventListener("click", function () { at--; render(); });
+        row.appendChild(back);
+      }
+      return row;
+    }
+
+    function nextBtn(row, label, fn) {
+      var b = el("button", "btn btn-primary of-next", label || "Pokračovať →");
       b.type = "button";
-      b.addEventListener("click", function () { step = to; render(); });
+      b.addEventListener("click", fn || function () { at++; render(); });
+      row.insertBefore(b, row.firstChild);
       return b;
     }
 
     function render() {
       stage.innerHTML = "";
+      var sc = screens[at];
+      if (!sc) return;
+      stage.appendChild(head(sc, at + 1));
 
-      // ---------- 1 · výber situácie ----------
-      if (step === 1) {
-        stage.appendChild(stepHead(1, ex.step1Title || "S čím potrebujete pomôcť?"));
-        var grid = el("div", "pb-choices");
-        ex.situations.forEach(function (sit) {
-          var b = el("button", "pb-choice" + (chosen && chosen.id === sit.id ? " active" : ""),
-            "<span class='pb-choice-text'>" + esc(sit.label) + "</span>" +
-            "<span class='pb-choice-go'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'><path d='M5 12h13M13 6l6 6-6 6'/></svg></span>");
-          b.type = "button";
-          b.addEventListener("click", function () {
-            chosen = sit;
-            state.situation = sit.id;
-            app.persist();
-            step = 2;
-            render();
-          });
-          grid.appendChild(b);
-        });
-        stage.appendChild(grid);
-        return;
-      }
-
-      var sit = current();
-      stage.appendChild(doneRow(1, ex.step1Title || "S čím potrebujete pomôcť?", sit.label, 1));
-
-      // ---------- 2 · jedna doplňujúca otázka ----------
-      if (step === 2) {
-        stage.appendChild(stepHead(2, sit.question, sit.hint));
-        var box = el("div", "pb-answer");
-        var inp = el("input", "pb-input");
-        inp.type = "text";
-        inp.placeholder = sit.placeholder || "";
-        inp.value = state.values[sit.id] || "";
-        inp.setAttribute("aria-label", sit.question);
-        box.appendChild(inp);
-        if (sit.help) box.appendChild(el("p", "pb-help", esc(sit.help)));
-
-        var err = el("p", "pb-error");
-        box.appendChild(err);
-
-        var go = el("button", "btn btn-primary pb-next", "Pokračovať");
-        go.type = "button";
-        go.addEventListener("click", function () {
-          if (!inp.value.trim()) {
-            err.textContent = "Napíšte prosím pár slov, nech vieme otázku doplniť.";
-            err.classList.add("show");
-            inp.focus();
-            return;
-          }
-          state.values[sit.id] = inp.value.trim();
-          app.persist();
-          step = 3;
-          render();
-        });
-        inp.addEventListener("input", function () { err.classList.remove("show"); });
-        inp.addEventListener("keydown", function (e) { if (e.key === "Enter") go.click(); });
-
-        box.appendChild(go);
-        box.appendChild(backBtn(1));
-        stage.appendChild(box);
-        setTimeout(function () { if (inp.isConnected) inp.focus(); }, 60);
-        return;
-      }
-
-      // ---------- 3 · hotová otázka ----------
-      stage.appendChild(doneRow(2, sit.question, value(), 2));
-      stage.appendChild(stepHead(3, ex.step3Title || "Vaša otázka je pripravená"));
-
-      var text = build();
-      var out = el("div", "pb-out");
-      out.appendChild(el("p", "pb-out-text", esc(text)));
-      stage.appendChild(out);
-
-      var copy = el("button", "btn btn-primary pb-copy", "Skopírovať otázku");
-      copy.type = "button";
-      copy.addEventListener("click", function () { copyText(text, copy); });
-      stage.appendChild(copy);
-
-      if (ex.safety) {
-        var warn = el("div", "pb-warn");
-        warn.innerHTML = "<strong>Dôležité:</strong> " + esc(ex.safety);
-        stage.appendChild(warn);
-      }
-
-      var again = el("button", "pb-back", "Poskladať ďalšiu otázku");
-      again.type = "button";
-      again.addEventListener("click", function () { step = 1; render(); });
-      stage.appendChild(again);
+      if (sc.kind === "compare") return renderCompare(sc);
+      if (sc.kind === "quiz") return renderQuiz(sc);
+      if (sc.kind === "prompt") return renderPrompt(sc);
+      return renderSummary(sc);
     }
 
-    // Skopírovanie textu aj v prehliadačoch bez prístupu k schránke.
+    // ---------- porovnanie a prvý dojem ----------
+    function renderCompare(sc) {
+      // Veta, kvôli ktorej celé cvičenie existuje. Stojí len na prvej
+      // obrazovke, ďalej by už len zaberala miesto.
+      if (ex.leadStrong) stage.appendChild(el("p", "of-strong", esc(ex.leadStrong)));
+      stage.appendChild(offerCards());
+      stage.appendChild(el("p", "of-question", esc(sc.question)));
+      var opts = el("div", "of-opts");
+      var nav = navRow(at > 0);
+      var result = el("div", "of-result");
+
+      sc.options.forEach(function (o) {
+        var b = el("button", "of-opt", esc(o.label));
+        b.type = "button";
+        b.addEventListener("click", function () {
+          state.picks[at] = o.key;
+          app.persist();
+          [].forEach.call(opts.children, function (x) {
+            x.disabled = true;
+            x.classList.toggle("chosen", x === b);
+          });
+          result.innerHTML = "<p class='of-after'>" + esc(sc.after) + "</p>";
+          result.classList.add("show");
+          if (!nav.querySelector(".of-next")) nextBtn(nav);
+        });
+        opts.appendChild(b);
+      });
+
+      stage.appendChild(opts);
+      stage.appendChild(result);
+      stage.appendChild(nav);
+    }
+
+    // ---------- otázka s vyhodnotením a výpočtom ----------
+    function renderQuiz(sc) {
+      stage.appendChild(el("p", "of-question", esc(sc.question)));
+      var opts = el("div", "of-opts");
+      var nav = navRow(at > 0);
+      var result = el("div", "of-result");
+
+      sc.options.forEach(function (o) {
+        var b = el("button", "of-opt", esc(o.label));
+        b.type = "button";
+        b.addEventListener("click", function () {
+          state.picks[at] = o.key;
+          app.persist();
+          [].forEach.call(opts.children, function (x) { x.disabled = true; });
+          b.classList.add(o.correct ? "correct" : (o.neutral ? "chosen" : "wrong"));
+
+          var msg = o.neutral ? sc.neutralText : (o.correct ? sc.okText : sc.badText);
+          result.innerHTML = "";
+          if (msg) {
+            // „Neviem“ nie je zlá odpoveď, nech sa nečervená ako chyba.
+            var tone = o.correct ? "ok" : (o.neutral ? "neutral" : "warn");
+            var p = el("p", "of-verdict-msg " + tone, esc(msg));
+            result.appendChild(p);
+          }
+          if (sc.calc) result.appendChild(calcBlocks(sc.calc));
+          if (sc.verdict) result.appendChild(el("p", "of-verdict", esc(sc.verdict)));
+          if (sc.columns) result.appendChild(columns(sc.columns));
+          if (sc.closing) result.appendChild(el("p", "of-closing", esc(sc.closing)));
+          result.classList.add("show");
+          if (!nav.querySelector(".of-next")) nextBtn(nav);
+        });
+        opts.appendChild(b);
+      });
+
+      stage.appendChild(opts);
+      stage.appendChild(result);
+      stage.appendChild(nav);
+    }
+
+    // ---------- hotová otázka pre AI ----------
+    function renderPrompt(sc) {
+      stage.appendChild(el("p", "of-lead-p", esc(sc.lead)));
+      var box = el("div", "of-prompt");
+      box.appendChild(el("p", "of-prompt-text", esc(sc.prompt)));
+      stage.appendChild(box);
+
+      var copy = el("button", "btn btn-primary of-copy", "Skopírovať otázku");
+      copy.type = "button";
+      copy.addEventListener("click", function () { copyText(sc.prompt, copy); });
+      stage.appendChild(copy);
+
+      stage.appendChild(el("p", "of-warn", esc(sc.warn)));
+      var nav = navRow(true);
+      nextBtn(nav);
+      stage.appendChild(nav);
+    }
+
+    // ---------- záver ----------
+    function renderSummary(sc) {
+      var box = el("div", "of-summary");
+      box.appendChild(el("p", "of-summary-strong", esc(sc.leadStrong)));
+      box.appendChild(el("p", "of-summary-lead", esc(sc.lead)));
+      var ul = el("ul", "of-summary-list");
+      sc.items.forEach(function (i) { ul.appendChild(el("li", null, esc(i))); });
+      box.appendChild(ul);
+      stage.appendChild(box);
+      stage.appendChild(el("p", "of-closing", esc(sc.closing)));
+
+      var nav = navRow(true);
+      var fin = nextBtn(nav, sc.finishLabel || "Dokončiť cvičenie", function () {
+        if (app.finishCurrent) app.finishCurrent();
+        fin.textContent = "Hotové ✓";
+        fin.disabled = true;
+      });
+      stage.appendChild(nav);
+    }
+
     function copyText(text, btn) {
       var done = function () {
         btn.textContent = "Skopírované ✓";
-        btn.classList.add("copied");
-        setTimeout(function () {
-          btn.textContent = "Skopírovať otázku";
-          btn.classList.remove("copied");
-        }, 2200);
+        setTimeout(function () { btn.textContent = "Skopírovať otázku"; }, 2200);
       };
       function fallback() {
         var ta = document.createElement("textarea");
@@ -856,18 +921,17 @@
 
     return {
       worksheet: function () {
-        return {
-          title: ex.title,
-          intro: ex.intro,
-          blocks: [
-            { type: "heading", text: "Vzorové otázky na doma" },
-            { type: "paragraph", text: "Tam, kde sú tri bodky, doplňte vlastné slová.", muted: true },
-          ].concat((ex.worksheetPrompts || []).map(function (p) {
-            return { type: "promptBox", label: p.label, text: p.text };
-          })).concat([
-            { type: "note", text: ex.safety },
-          ]),
-        };
+        var blocks = [];
+        (ex.offers || []).forEach(function (o) {
+          blocks.push({ type: "table", caption: o.name, rows: o.rows });
+        });
+        var last = screens[screens.length - 1] || {};
+        blocks.push({ type: "heading", text: "Pred rozhodnutím si skontrolujte" });
+        blocks.push({ type: "checklist", items: (last.items || []).map(function (t) { return { text: t }; }) });
+        var ai = screens.filter(function (x) { return x.kind === "prompt"; })[0];
+        if (ai) blocks.push({ type: "promptBox", label: "OTÁZKA PRE AI", text: ai.prompt });
+        blocks.push({ type: "note", text: ex.worksheetNote });
+        return { title: ex.title, intro: ex.intro, blocks: blocks };
       },
     };
   };

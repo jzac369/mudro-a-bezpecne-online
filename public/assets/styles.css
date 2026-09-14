@@ -1623,81 +1623,101 @@ tr.unconf .course-compare-mark { background: #8a8578; }
 .gloss-full-list dt { font-weight: 700; margin-top: .6rem; }
 .gloss-full-list dd { margin: .15rem 0 0; color: var(--text-mute); font-size: .94rem; line-height: 1.55; }
 
-/* ---------- Otázka pre AI: tri kroky, na obrazovke vždy len jeden ---------- */
-.pb-stage { display: flex; flex-direction: column; }
+/* ---------- Ktorá ponuka je výhodnejšia? ---------- */
+.of-stage { display: flex; flex-direction: column; }
 
-.pb-step-head { margin: .4rem 0 1.1rem; }
-.pb-step-head h3 { display: flex; align-items: center; gap: .7rem; margin: 0; font-size: 1.35rem; }
-.pb-step-num {
-  flex: none; width: 38px; height: 38px; border-radius: 50%; display: inline-flex;
-  align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700;
-  background: var(--ink); color: #fff;
-}
-.pb-step-hint { margin: .6rem 0 0 3rem; color: var(--text-mute); font-size: 1rem; }
+.of-head { margin-bottom: 1.2rem; }
+.of-step { margin: 0 0 .3rem; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-deep, #8f5a1e); }
+.of-head h3 { margin: 0; font-size: 1.45rem; }
+.of-lead { margin: .6rem 0 0; font-size: 1.08rem; color: var(--text); }
+.of-lead-p { margin: 0 0 1.1rem; font-size: 1.08rem; color: var(--text); }
+.of-strong { margin: 0 0 1.2rem; font-size: 1.1rem; font-weight: 700; color: var(--accent-deep, #8f5a1e); }
 
-/* Štyri veľké možnosti pod sebou — cieľ je plná šírka riadka, nech sa dá
-   trafiť aj prstom na mobile. */
-.pb-choices { display: flex; flex-direction: column; gap: .8rem; }
-.pb-choice {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  width: 100%; text-align: left; font: inherit; font-size: 1.15rem; font-weight: 700;
+/* Dve ponuky vedľa seba; na mobile pod sebou. */
+.of-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.of-card { background: var(--surface); border: 2px solid var(--line); border-radius: 16px; padding: 1.2rem 1.3rem; }
+.of-card-name { margin: 0 0 .8rem; font-size: 1.25rem; font-weight: 700; color: var(--ink); }
+.of-card-rows { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: .5rem .8rem; align-items: baseline; }
+.of-card-rows dt { font-size: 1rem; color: var(--text-mute); }
+.of-card-rows dd { margin: 0; font-size: 1.12rem; font-weight: 700; color: var(--ink); text-align: right; }
+
+.of-question { margin: 1.5rem 0 .9rem; font-size: 1.18rem; font-weight: 700; color: var(--ink); }
+
+/* Odpovede — veľké tlačidlá cez celú šírku. */
+.of-opts { display: flex; flex-direction: column; gap: .7rem; }
+.of-opt {
+  width: 100%; text-align: left; font: inherit; font-size: 1.12rem; font-weight: 700;
   color: var(--ink); background: var(--surface); border: 2px solid var(--line);
-  border-radius: 14px; padding: 1.15rem 1.3rem; cursor: pointer;
-  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  border-radius: 14px; padding: 1rem 1.2rem; cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
 }
-.pb-choice:hover { border-color: var(--ink); transform: translateY(-2px); box-shadow: var(--course-shadow-soft); }
-.pb-choice:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.pb-choice-go { flex: none; width: 30px; height: 30px; display: inline-flex; color: var(--accent); }
-.pb-choice-go svg { width: 30px; height: 30px; }
+.of-opt:hover:not(:disabled) { border-color: var(--ink); }
+.of-opt:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.of-opt:disabled { cursor: default; opacity: .55; }
+.of-opt.chosen { opacity: 1; border-color: var(--ink); background: var(--surface-2); }
+.of-opt.correct { opacity: 1; border-color: var(--good); background: var(--good-bg); color: var(--course-good-deep, #12554a); }
+.of-opt.wrong { opacity: 1; border-color: var(--warn); background: var(--warn-bg); color: var(--course-warn-deep, #7b3a16); }
 
-/* Hotový krok zmrštený do riadka. */
-.pb-done-row {
-  display: flex; align-items: center; gap: .8rem; background: var(--surface-2);
-  border-radius: 12px; padding: .7rem 1rem; margin-bottom: .8rem;
-}
-.pb-done-num {
-  flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex;
-  align-items: center; justify-content: center; font-size: .92rem; font-weight: 700;
-  background: var(--good); color: #fff;
-}
-.pb-done-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.pb-done-label { font-size: .82rem; color: var(--text-mute); }
-.pb-done-text b { font-size: 1.02rem; color: var(--ink); }
-.pb-change { flex: none; background: none; border: 0; font: inherit; font-size: .95rem; font-weight: 700; color: var(--focus); text-decoration: underline; cursor: pointer; padding: .35rem .2rem; }
+.of-result { display: none; }
+.of-result.show { display: block; margin-top: 1.4rem; animation: course-rise .25s ease; }
+.of-after { margin: 0; font-size: 1.12rem; font-weight: 700; color: var(--course-good-deep, #12554a); }
+.of-verdict-msg { margin: 0 0 1.1rem; font-size: 1.08rem; font-weight: 700; }
+.of-verdict-msg.ok { color: var(--course-good-deep, #12554a); }
+.of-verdict-msg.warn { color: var(--warn); }
+.of-verdict-msg.neutral { color: var(--text-mute); }
 
-/* Jedno políčko na odpoveď — veľké, nič vedľa neho. */
-.pb-answer { display: flex; flex-direction: column; align-items: flex-start; }
-.pb-input {
-  width: 100%; font: inherit; font-size: 1.15rem; padding: .9rem 1.1rem;
-  border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text);
-}
-.pb-input:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(47,107,110,.18); }
-.pb-help { margin: .6rem 0 0; font-size: .98rem; color: var(--text-mute); }
-.pb-error { display: none; margin: .7rem 0 0; font-size: .98rem; font-weight: 700; color: var(--warn); }
-.pb-error.show { display: block; }
-.pb-next { margin-top: 1.2rem; font-size: 1.1rem; padding: .85rem 2.2rem; }
-.pb-back { margin-top: 1rem; background: none; border: 0; font: inherit; font-size: 1rem; color: var(--text-mute); text-decoration: underline; cursor: pointer; padding: .5rem .2rem; align-self: flex-start; }
-.pb-back:hover { color: var(--ink); }
+/* Výpočet po riadkoch — nie jeden dlhý výraz. */
+.of-calcs { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.of-calc { background: var(--surface-2); border-radius: 14px; padding: 1.1rem 1.2rem; }
+.of-calc-name { margin: 0 0 .6rem; font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+.of-calc-lines { margin: 0; padding: 0; list-style: none; }
+.of-calc-lines li { font-size: 1.05rem; line-height: 1.9; color: var(--text); font-variant-numeric: tabular-nums; }
+.of-calc-total { margin: .7rem 0 0; padding-top: .6rem; border-top: 2px solid var(--line); font-size: 1.05rem; }
+.of-calc-total b { font-size: 1.3rem; color: var(--ink); }
 
-/* Hotová otázka. Zalomenie riadkov je súčasťou textu, preto pre-line. */
-.pb-out { background: var(--good-bg); border: 2px solid var(--good); border-radius: 16px; padding: 1.3rem 1.4rem; }
-.pb-out-text { margin: 0; white-space: pre-line; font-size: 1.12rem; line-height: 1.65; color: var(--text); }
-.pb-copy { margin-top: 1.1rem; align-self: flex-start; font-size: 1.1rem; padding: .9rem 2.2rem; }
-.pb-copy.copied { background: var(--good); border-color: var(--good); }
-.pb-warn {
-  margin-top: 1.4rem; background: var(--warn-bg); border-left: 6px solid var(--warn);
-  border-radius: 0 12px 12px 0; padding: 1.05rem 1.25rem; font-size: 1.02rem; line-height: 1.6;
-}
-.pb-warn strong { color: var(--warn); }
-
-@media (max-width: 620px) {
-  .pb-step-head h3 { font-size: 1.15rem; gap: .55rem; }
-  .pb-step-num { width: 32px; height: 32px; font-size: 1rem; }
-  .pb-step-hint { margin-left: 0; font-size: .95rem; }
-  .pb-choice { font-size: 1.05rem; padding: 1rem 1.1rem; }
-  .pb-copy, .pb-next { width: 100%; justify-content: center; }
+.of-verdict {
+  margin: 1.2rem 0 0; background: var(--accent-soft, #f1ddc0); border-radius: 14px;
+  padding: 1rem 1.2rem; font-size: 1.18rem; font-weight: 700; color: var(--accent-deep, #8f5a1e); text-align: center;
 }
 
+/* Čo má ktorá ponuka navyše. */
+.of-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.2rem; }
+.of-col { border-radius: 14px; padding: 1rem 1.2rem; }
+.of-col.warn { background: var(--warn-bg); }
+.of-col.good { background: var(--good-bg); }
+.of-col-name { margin: 0 0 .5rem; font-size: 1.08rem; font-weight: 700; }
+.of-col.warn .of-col-name { color: var(--warn); }
+.of-col.good .of-col-name { color: var(--course-good-deep, #12554a); }
+.of-col ul { margin: 0; padding-left: 1.2rem; }
+.of-col li { font-size: 1.02rem; line-height: 1.65; }
+
+.of-closing { margin: 1.3rem 0 0; font-size: 1.06rem; line-height: 1.65; color: var(--text); }
+
+/* Hotová otázka pre AI. */
+.of-prompt { background: var(--good-bg); border: 2px solid var(--good); border-radius: 16px; padding: 1.3rem 1.4rem; }
+.of-prompt-text { margin: 0; font-size: 1.1rem; line-height: 1.65; }
+.of-copy { margin-top: 1.1rem; align-self: flex-start; font-size: 1.08rem; padding: .85rem 2rem; }
+.of-warn { margin: 1.3rem 0 0; background: var(--surface-2); border-left: 6px solid var(--accent); border-radius: 0 12px 12px 0; padding: 1rem 1.2rem; font-size: 1.02rem; line-height: 1.6; }
+
+/* Záver. */
+.of-summary { background: var(--good-bg); border: 2px solid var(--good); border-radius: 16px; padding: 1.4rem 1.5rem; }
+.of-summary-strong { margin: 0 0 .8rem; font-size: 1.18rem; font-weight: 700; color: var(--course-good-deep, #12554a); }
+.of-summary-lead { margin: 0 0 .6rem; font-size: 1.05rem; }
+.of-summary-list { margin: 0; padding-left: 1.3rem; }
+.of-summary-list li { font-size: 1.05rem; line-height: 1.8; }
+
+.of-nav { display: flex; align-items: center; gap: 1.2rem; margin-top: 1.6rem; flex-wrap: wrap; }
+.of-next { font-size: 1.1rem; padding: .9rem 2.2rem; }
+.of-back { background: none; border: 0; font: inherit; font-size: 1rem; color: var(--text-mute); text-decoration: underline; cursor: pointer; padding: .5rem .2rem; }
+.of-back:hover { color: var(--ink); }
+
+@media (max-width: 700px) {
+  .of-cards, .of-calcs, .of-cols { grid-template-columns: 1fr; }
+  .of-head h3 { font-size: 1.22rem; }
+  .of-opt { font-size: 1.05rem; }
+  .of-next, .of-copy { width: 100%; justify-content: center; }
+  .of-nav { flex-direction: column-reverse; align-items: stretch; gap: .4rem; }
+}
 
 .ex-fields { display: flex; flex-direction: column; gap: .9rem; }
 .ex-field-label { display: block; font-size: .92rem; margin-bottom: .3rem; }
