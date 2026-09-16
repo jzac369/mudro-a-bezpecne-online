@@ -200,8 +200,11 @@
   /* Pripravovaný kurz — zámerne pokojný, nie „nedokončený“ */
   .is-soon { background: #fcfaf6; }
   .is-soon .course-img { display: grid; place-items: center; background: var(--paper-2); }
+  /* Fotografia pripravovaného kurzu prekryje zástupnú ikonu. Keby sa obrázok
+     nenačítal, karta stále vyzerá zámerne. */
+  .is-soon .course-img img { position: absolute; inset: 0; }
   .is-soon .badge-circle { background: var(--line-2); color: #fff; }
-  .soon-ribbon { position: absolute; top: 16px; left: 16px; background: rgba(16,50,47,.9); color: #fff; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 7px 13px; border-radius: 999px; }
+  .soon-ribbon { position: absolute; z-index: 2; top: 16px; left: 16px; background: rgba(16,50,47,.9); color: #fff; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 7px 13px; border-radius: 999px; }
   .soon-note { font-size: var(--fs-small); color: var(--muted); }
   .mini-btn[disabled] { background: transparent; color: var(--muted); border: 1.5px dashed var(--line-2); cursor: not-allowed; }
   .mini-btn[disabled]:hover { background: transparent; border-color: var(--line-2); }
@@ -405,8 +408,9 @@
         </div>
       </article>
 
-      <article class="ds-course-card" id="card-zaciname-s-ai">
+      <article class="ds-course-card is-soon has-photo" id="card-zaciname-s-ai">
         <div class="course-img">
+          <span class="soon-ribbon">Pripravujeme</span>
           <img src="assets/hero/senior-ai-asistent.jpg" alt="Seniorka pri notebooku komunikuje s AI asistentom" onerror="this.style.display='none';">
           <div class="badge-circle orange">AI</div>
         </div>
@@ -418,18 +422,19 @@
             <li>Vyskúšate si prvý rozhovor s AI asistentom</li>
             <li>Bez technického žargónu a zložitého nastavovania</li>
           </ul>
-          <div class="price-row"><span class="price" id="price-zaciname-s-ai">19 €</span><a class="mini-btn" href="objednavka.html?w=zaciname-s-ai">Kúpiť kurz →</a></div>
+          <div class="price-row"><span class="soon-note">Čoskoro k dispozícii</span><button class="mini-btn" type="button" disabled>Pripravujeme</button></div>
         </div>
       </article>
 
-      <article class="ds-course-card is-soon">
+      <article class="ds-course-card is-soon has-photo">
         <div class="course-img">
           <span class="soon-ribbon">Pripravujeme</span>
           <svg viewBox="0 0 24 24" width="58" height="58" fill="none" stroke="#c3b69f" stroke-width="1.3"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 20h8M12 17v3M6.5 8.5h7M6.5 12h4"/></svg>
+          <img src="assets/hero/senior-digitalne-zrucnosti.jpg" alt="Senior pri notebooku doma, okolo neho ikony e-mailu, vyhľadávania, videohovoru a fotografií" onerror="this.style.display='none';">
           <div class="badge-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18"/></svg></div>
         </div>
         <div class="card-body">
-          <h3>Digitálne zručnosti do praxe</h3>
+          <h3>Digitálne zručnosti v praxi</h3>
           <div class="ds-sub">Internet, e-služby a komunikácia bez stresu</div>
           <ul class="checks">
             <li>Hľadáte informácie a používate e-služby</li>
