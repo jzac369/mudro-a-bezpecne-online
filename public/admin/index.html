@@ -14,6 +14,7 @@
 <script defer src="../assets/firebase-config.js"></script>
 <script defer src="../data/workshops.js"></script>
 <script defer src="../data/course.js"></script>
+<script defer src="../data/course-zaciname-s-ai.js"></script>
 <script defer src="../assets/course-schema.js"></script>
 <script defer src="../assets/pdf-pages.js"></script>
 <script defer src="../assets/vendor/qrcode-generator.js"></script>
@@ -998,7 +999,14 @@
 
         <div class="card" style="margin-top:1.5rem;">
           <h2 style="margin-bottom:.3rem;">Obsah lekcií (krok 3)</h2>
-          <p class="hint" style="margin-bottom:1.2rem;">Tento obsah (35 obrazoviek) je momentálne spoločný pre všetky kurzy vyššie — úprava textu sa prejaví vo všetkých. Herné nastavenie (napr. ktorá odpoveď je správna) sa cez tento formulár meniť nedá.</p>
+          <p class="hint" style="margin-bottom:1rem;">Každý kurz má vlastné obrazovky — najprv vyberte kurz, potom obrazovku vľavo. Herné nastavenie (napr. ktorá odpoveď je správna) sa cez tento formulár meniť nedá.</p>
+          <label class="field" style="max-width:420px;margin-bottom:1.2rem;">
+            <span>Kurz</span>
+            <select id="course-edit-workshop">
+              <option value="bezpecne-financie">Ako nenaletieť podvodníkom</option>
+              <option value="zaciname-s-ai">Začíname s umelou inteligenciou</option>
+            </select>
+          </label>
           <div class="grid-2" style="align-items:start;gap:1.2rem;">
             <div class="card" style="max-height:70vh;overflow-y:auto;background:var(--surface-2);">
               <div id="course-slide-list"></div>
@@ -3289,15 +3297,26 @@ window.addEventListener("load", function () {
     return courseContentCache;
   }
 
+  // Obrazovky vybraného kurzu. Úpravy textov sa ukladajú podľa čísla
+  // obrazovky a čísla sa medzi kurzmi neprekrývajú, takže si kurzy texty
+  // navzájom neprepíšu.
+  function editedCourseSlides() {
+    const sel = document.getElementById("course-edit-workshop");
+    const id = sel ? sel.value : "bezpecne-financie";
+    const lib = (window.COURSE_LIBRARY || {})[id];
+    return (lib && lib.slides) || window.COURSE_SLIDES || null;
+  }
+
   async function renderCourseSlideList() {
     const list = document.getElementById("course-slide-list");
-    if (!window.COURSE_SLIDES) {
+    const slides = editedCourseSlides();
+    if (!slides) {
       list.innerHTML = "<p class='hint'>Dáta kurzu sa nepodarilo načítať.</p>";
       return;
     }
     const cache = await loadCourseContentCache();
     list.innerHTML = "";
-    window.COURSE_SLIDES.forEach((slide) => {
+    slides.forEach((slide) => {
       const row = document.createElement("button");
       row.type = "button";
       row.className = "course-slide-row";
@@ -3319,7 +3338,8 @@ window.addEventListener("load", function () {
     const editorCard = document.getElementById("course-editor-card");
     editorCard.innerHTML = "<p class='hint'>Načítavam…</p>";
 
-    const defaultSlide = window.COURSE_SLIDES.find((s) => s.id === slideId);
+    const slides = editedCourseSlides() || [];
+    const defaultSlide = slides.find((s) => s.id === slideId);
     if (!defaultSlide) { editorCard.innerHTML = "<p class='hint'>Obrazovka sa nenašla.</p>"; return; }
 
     const cache = await loadCourseContentCache();
@@ -6356,6 +6376,12 @@ window.addEventListener("load", function () {
     loadWorkshopSettings();
     loadFeedback();
     renderCourseSlideList();
+    // Prepnutie kurzu prekreslí zoznam obrazoviek a zavrie rozrobený editor.
+    document.getElementById("course-edit-workshop").addEventListener("change", () => {
+      activeCourseSlideId = null;
+      document.getElementById("course-editor-card").innerHTML = "<p class='hint'>Vyberte obrazovku vľavo.</p>";
+      renderCourseSlideList();
+    });
     loadGeneralSettings().then(watchOrders);
     startPresenceHeartbeat();
     watchChats();
