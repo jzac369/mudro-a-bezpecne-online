@@ -2775,7 +2775,7 @@ window.addEventListener("load", function () {
         workshopId: document.getElementById("g-workshop").value,
       });
       resultEl.innerHTML = "Vygenerovaný kód: <span class='mono code-copy' data-copy-code='" + res.data.code + "' title='Kliknutím skopírovať'>" + res.data.code + "</span>";
-      logActivity("order", "Prístupový kód vygenerovaný ručne: " + res.data.code);
+      logActivity("order", "Prístupový kód vygenerovaný ručne, bez platby (objednávka 0 €): " + res.data.code);
       const copyEl = resultEl.querySelector("[data-copy-code]");
       copyEl.addEventListener("click", () => {
         navigator.clipboard.writeText(copyEl.dataset.copyCode).then(() => {

@@ -480,8 +480,9 @@ exports.generateCode = onCall(async (request) => {
   }
   const participantName = fullName(firstName, lastName || "");
 
-  const workshopSnap = await db.collection("workshops").doc(workshopId).get();
-  const amount = workshopSnap.exists ? workshopSnap.data().price || 0 : 0;
+  // Ručne vydaný kód nie je predaj — nikto zaň nezaplatil. Objednávka preto
+  // dostane nulovú sumu, aby ručné kódy nezvyšovali tržby v prehľadoch.
+  const amount = 0;
 
   // Vytvoríme aj objednávku, aby sa ručne vygenerovaný kód zobrazil
   // v admin zóne v Registráciách rovnako ako bežná (uhradená) rezervácia.
