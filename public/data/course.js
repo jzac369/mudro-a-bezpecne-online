@@ -813,3 +813,10 @@ window.COURSE_PARTS = [
   { id: 4, label: "Hoaxy, fotky, zmluvy", intro: "Poplašné správy zo sociálnych sietí, AI fotografie a zložité zmluvy v ľudskej reči.", image: "assets/course-media/illustrations/part4-ai-vs-realna-foto.jpg" },
   { id: 5, label: "Zlaté pravidlá", intro: "Čo nikdy nezadávame — ani do AI — a čo robiť, ak sa niečo stane.", image: "assets/course-media/illustrations/part5-zlate-pravidla.jpg" },
 ];
+
+// Obsah patrí konkrétnemu kurzu. Knižnica nižšie drží obsah všetkých kurzov;
+// workshop.html si z nej pri prihlásení vyberie ten správny.
+window.COURSE_LIBRARY = window.COURSE_LIBRARY || {};
+window.COURSE_LIBRARY["bezpecne-financie"] = window.COURSE_LIBRARY["bezpecne-financie"] || {};
+window.COURSE_LIBRARY["bezpecne-financie"].slides = window.COURSE_SLIDES;
+window.COURSE_LIBRARY["bezpecne-financie"].parts = window.COURSE_PARTS;

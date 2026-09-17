@@ -14,12 +14,15 @@
 <script defer src="assets/firebase-config.js"></script>
 <script defer src="data/workshops.js"></script>
 <script defer src="data/course.js"></script>
+<script defer src="data/course-zaciname-s-ai.js"></script>
 <script defer src="assets/course-schema.js"></script>
 <script defer src="assets/course.js"></script>
 <script defer src="assets/app.js"></script>
 <script defer src="assets/autosave.js"></script>
 <script defer src="data/exercises.js"></script>
+<script defer src="data/exercises-zaciname-s-ai.js"></script>
 <script defer src="data/resources.js"></script>
+<script defer src="data/resources-zaciname-s-ai.js"></script>
 <script defer src="assets/worksheet.js"></script>
 <script defer src="assets/pdf-export.js"></script>
 <script defer src="assets/exercises.js"></script>
@@ -575,6 +578,8 @@
     check: "<circle cx='12' cy='12' r='9'/><path d='M8 12.5l2.5 2.5L16 9.5'/>",
     book: "<path d='M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2Z'/><path d='M8 7h7M8 11h7'/>",
     star: "<path d='M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.2l5.9-.9Z'/>",
+    robot: "<rect x='4' y='8' width='16' height='12' rx='3'/><path d='M12 8V4M9 4h6'/><circle cx='9' cy='14' r='1.2' fill='currentColor' stroke='none'/><circle cx='15' cy='14' r='1.2' fill='currentColor' stroke='none'/>",
+    search: "<circle cx='11' cy='11' r='7'/><path d='m20 20-3.5-3.5'/>",
   };
 
   function escapeHtml(s) {
@@ -1111,6 +1116,17 @@
       state.codeId = tokenResult.claims.codeId;
       state.workshopId = new URLSearchParams(location.search).get("w") || tokenResult.claims.workshopId;
       state.workshop = window.WORKSHOPS[state.workshopId] ? Object.assign({}, window.WORKSHOPS[state.workshopId]) : null;
+
+      // Každý kurz má vlastné Lekcie, Cvičenia aj Zdroje. Vyberieme obsah
+      // toho kurzu, do ktorého je účastník prihlásený; ak preň obsah ešte
+      // nie je pripravený, zostane ten pôvodný.
+      const courseContent = (window.COURSE_LIBRARY || {})[state.workshopId];
+      if (courseContent) {
+        if (courseContent.slides) window.COURSE_SLIDES = courseContent.slides;
+        if (courseContent.parts) window.COURSE_PARTS = courseContent.parts;
+        if (courseContent.exercises) window.COURSE_EXERCISES = courseContent.exercises;
+        if (courseContent.resources) window.COURSE_RESOURCES = courseContent.resources;
+      }
 
       // Rozpracovaná práca (čísla v cvičení, odpovede v kvíze) sa drží aj
       // v pamäti prehliadača, aby ju nechcené obnovenie stránky nezmazalo.

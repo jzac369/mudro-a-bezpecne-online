@@ -523,3 +523,9 @@ window.COURSE_EXERCISES = [
     note: "Kartičku nechajte pri telefóne. Ak sa nič nestane, len tam bude ležať. Ak sa stane, ušetrí vám drahocenné minúty.",
   },
 ];
+
+// Obsah patrí konkrétnemu kurzu. Knižnica nižšie drží obsah všetkých kurzov;
+// workshop.html si z nej pri prihlásení vyberie ten správny.
+window.COURSE_LIBRARY = window.COURSE_LIBRARY || {};
+window.COURSE_LIBRARY["bezpecne-financie"] = window.COURSE_LIBRARY["bezpecne-financie"] || {};
+window.COURSE_LIBRARY["bezpecne-financie"].exercises = window.COURSE_EXERCISES;

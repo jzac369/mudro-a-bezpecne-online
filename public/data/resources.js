@@ -188,5 +188,9 @@
   ];
 
   root.COURSE_RESOURCES = RESOURCES;
+  // Zdroje tiež patria konkrétnemu kurzu — pozri COURSE_LIBRARY.
+  root.COURSE_LIBRARY = root.COURSE_LIBRARY || {};
+  root.COURSE_LIBRARY["bezpecne-financie"] = root.COURSE_LIBRARY["bezpecne-financie"] || {};
+  root.COURSE_LIBRARY["bezpecne-financie"].resources = RESOURCES;
   if (typeof module !== "undefined" && module.exports) module.exports = RESOURCES;
 })(typeof window !== "undefined" ? window : globalThis);

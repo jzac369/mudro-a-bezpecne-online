@@ -622,6 +622,14 @@
   // 2 · Lov na podvody
   RENDERERS["scam-hunt"] = function (ex, host, app) {
     var answered = 0;
+    // Rovnaké cvičenie sa hodí aj na inú dvojicu odpovedí než „podvod /
+    // v poriadku“ — napríklad „uverím / overím si to“. Popisky si preto
+    // môže určiť samotné cvičenie.
+    var L = ex.labels || {};
+    var YES = L.yes || "Toto je podvod";
+    var NO = L.no || "Toto je v poriadku";
+    var YES_VERDICT = L.yesVerdict || "Pozor — toto je podvod.";
+    var NO_VERDICT = L.noVerdict || "Táto správa je v poriadku.";
     var progress = el("p", "ex-hint-pill", "Posúdené <strong>0</strong> z " + ex.messages.length);
 
     ex.messages.forEach(function (m, i) {
@@ -630,8 +638,8 @@
       box.appendChild(el("blockquote", "ex-msg-text", esc(m.text)));
 
       var opts = el("div", "ex-msg-opts");
-      var scam = el("button", "ex-msg-opt", "Toto je podvod");
-      var okBtn = el("button", "ex-msg-opt", "Toto je v poriadku");
+      var scam = el("button", "ex-msg-opt", esc(YES));
+      var okBtn = el("button", "ex-msg-opt", esc(NO));
       [scam, okBtn].forEach(function (b) { b.type = "button"; });
       var result = el("div", "ex-msg-result");
 
@@ -644,7 +652,7 @@
           "<span class='ex-msg-opt-icon'>" + (correct ? CHECK : CROSS) + "</span>");
         result.className = "ex-msg-result show " + (correct ? "ok" : "warn");
         result.innerHTML = "<strong>" +
-          (correct ? "Správne." : (m.isScam ? "Pozor — toto je podvod." : "Táto správa je v poriadku.")) +
+          (correct ? "Správne." : (m.isScam ? YES_VERDICT : NO_VERDICT)) +
           "</strong> " + esc(m.why);
         answered++;
         progress.innerHTML = answered >= ex.messages.length
@@ -671,7 +679,7 @@
           blocks: [
             { type: "messages", items: ex.messages.map(function (m) {
               return { label: m.label, text: m.text }; }),
-              answerLabel: "Je to podvod? Podľa čoho to spoznám?" },
+              answerLabel: ex.worksheetQuestion || "Je to podvod? Podľa čoho to spoznám?" },
             { type: "note", text: ex.note },
           ],
         };
@@ -1205,16 +1213,24 @@
       return v ? esc(v) : "<span class='ex-card-blank'>" + placeholder + "</span>";
     }
 
+    // Dvojice políčok, z ktorých sa skladajú riadky kartičky. Bez zadania
+    // ostáva pôvodná kartička s číslami na banku a blízku osobu.
+    var CARD_ROWS = ex.cardRows || [
+      { label: "banka", value: "bankaTel", labelHint: "moja banka", valueHint: "číslo z karty" },
+      { label: "blizky", value: "blizkyTel", labelHint: "blízka osoba", valueHint: "číslo" },
+    ];
+
     function renderCard() {
       preview.innerHTML =
         "<div class='ex-card'>" +
         "<div class='ex-card-head'>" +
-        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>" + ICONS.phone + "</svg>" +
-        "<span>Keď sa niečo stane — komu volám</span></div>" +
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>" + (ICONS[ex.cardIcon] || ICONS.phone) + "</svg>" +
+        "<span>" + esc(ex.cardTitle || "Keď sa niečo stane — komu volám") + "</span></div>" +
         "<div class='ex-card-rows'>" +
-        "<div class='ex-card-row'><span>" + val("banka", "moja banka") + "</span><strong>" + val("bankaTel", "číslo z karty") + "</strong></div>" +
-        "<div class='ex-card-row'><span>" + val("blizky", "blízka osoba") + "</span><strong>" + val("blizkyTel", "číslo") + "</strong></div>" +
-        ex.fixedRows.map(function (r) {
+        CARD_ROWS.map(function (r) {
+          return "<div class='ex-card-row'><span>" + val(r.label, r.labelHint || "") + "</span><strong>" + val(r.value, r.valueHint || "") + "</strong></div>";
+        }).join("") +
+        (ex.fixedRows || []).map(function (r) {
           return "<div class='ex-card-row fixed'><span>" + esc(r.label) + "</span><strong>" + esc(r.value) + "</strong></div>";
         }).join("") +
         "</div>" +
@@ -1244,17 +1260,16 @@
 
     return {
       worksheet: function () {
-        var rows = [
-          { label: state.values.banka || "Moja banka", value: state.values.bankaTel || "" },
-          { label: state.values.blizky || "Blízka osoba", value: state.values.blizkyTel || "" },
-        ].concat(ex.fixedRows);
+        var rows = CARD_ROWS.map(function (r) {
+          return { label: state.values[r.label] || r.labelHint || "", value: state.values[r.value] || "" };
+        }).concat(ex.fixedRows || []);
         return {
           title: ex.title,
           intro: "Vystrihnite si túto stranu a nechajte ju pri telefóne alebo v peňaženke.",
           blocks: [
-            { type: "heading", text: "Komu volám" },
+            { type: "heading", text: ex.cardTitle || "Komu volám" },
             { type: "table", rows: rows, valueWidth: 200 },
-            { type: "heading", text: "Čo urobím — v tomto poradí" },
+            { type: "heading", text: ex.stepsTitle || "Čo urobím — v tomto poradí" },
             { type: "checklist", items: ex.steps.map(function (s) { return { text: s }; }) },
             { type: "note", text: ex.note },
           ],
