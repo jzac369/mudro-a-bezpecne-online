@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Stránky za prihlásením a medzikroky objednávky do vyhľadávania nepatria.
+Disallow: /admin/
+Disallow: /workshop.html
+Disallow: /objednavka.html
+Disallow: /platba-prevodom.html
+Disallow: /platba-uspesna.html
+Disallow: /stratenykod.html
+
+Sitemap: https://kurzy.digistart.sk/sitemap.xml
