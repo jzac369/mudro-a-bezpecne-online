@@ -153,9 +153,9 @@ window.COURSE_EXERCISES = [
     ownFooter: true,
     icon: "scales",
     title: "Ktorá ponuka je výhodnejšia?",
-    short: "Porovnajte dve ponuky a zistite, čo sa môže skrývať za nízkou mesačnou cenou.",
+    short: "Dva mobilné paušály vedľa seba — zistite, čo sa môže skrývať za nižšou mesačnou cenou.",
     time: "7 minút",
-    intro: "Predstavte si, že si vyberáte novú službu. Máte dve ponuky. Skúste zistiť, ktorá je pre vás výhodnejšia.",
+    intro: "Predstavte si, že si vyberáte nový paušál od mobilného operátora. Máte pred sebou dve ponuky. Skúste zistiť, ktorá je pre vás výhodnejšia.",
     leadStrong: "Nie vždy rozhoduje najnižšia mesačná cena.",
     offers: [
       {
@@ -228,7 +228,7 @@ window.COURSE_EXERCISES = [
       {
         kind: "quiz",
         title: "Nečakaná situácia",
-        lead: "Predstavte si, že po 6 mesiacoch chcete službu zrušiť.",
+        lead: "Predstavte si, že po 6 mesiacoch chcete prejsť k inému operátorovi.",
         offers: true,
         question: "Ktorá ponuka bude v tejto situácii výhodnejšia?",
         options: [
@@ -247,8 +247,8 @@ window.COURSE_EXERCISES = [
       {
         kind: "prompt",
         title: "Ako vám môže pomôcť AI?",
-        lead: "Ak chcete porovnať dve ponuky, môžete sa AI opýtať napríklad takto:",
-        prompt: "Porovnaj mi tieto dve ponuky. Vypočítaj celkové náklady a upozorni ma na viazanosť, jednorazové poplatky, pokuty a podmienky ukončenia. Vysvetli mi rozdiel jednoducho.",
+        lead: "Ak máte pred sebou dve ponuky — paušály, poistenie či dodávku energií — môžete sa AI opýtať napríklad takto:",
+        prompt: "Porovnaj mi tieto dve ponuky mobilných paušálov. Vypočítaj celkové náklady a upozorni ma na viazanosť, jednorazové poplatky, pokuty a podmienky ukončenia. Vysvetli mi rozdiel jednoducho.",
         // Ukážka odpovede, aby človek vedel, čo môže čakať. Čísla sedia
         // s výpočtami v predchádzajúcich krokoch.
         answerTitle: "Takto by mohla odpoveď vyzerať",
