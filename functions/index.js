@@ -2116,24 +2116,6 @@ const V_ORANGE = "#c9651c";
 const V_MUTED = "#8a8474";
 const V_LINE = "#ded6c6";
 
-/* --- ikonky v páse s parametrami (v šablóne zámerne nie sú) --- */
-function vIcoMonitor(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.1).strokeColor(c);
-  doc.roundedRect(x - s * 0.5, y - s * 0.4, s, s * 0.68, s * 0.08).stroke();
-  doc.moveTo(x - s * 0.24, y + s * 0.42).lineTo(x + s * 0.24, y + s * 0.42).stroke();
-}
-function vIcoClock(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.09).strokeColor(c);
-  doc.circle(x, y, s * 0.5).stroke();
-  doc.moveTo(x, y - s * 0.28).lineTo(x, y).lineTo(x + s * 0.22, y + s * 0.1).stroke();
-}
-function vIcoPerson(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.1).strokeColor(c);
-  doc.circle(x, y - s * 0.22, s * 0.2).stroke();
-  doc.moveTo(x - s * 0.36, y + s * 0.44)
-    .bezierCurveTo(x - s * 0.34, y + s * 0.02, x + s * 0.34, y + s * 0.02, x + s * 0.36, y + s * 0.44).stroke();
-}
-
 // QR sa kreslí ako vektor, nie ako vložený obrázok — je ostrejší pri tlači
 // a nezávisí od toho, či čítačka PDF zvládne dekódovať PNG vo vnútri.
 function vDrawQr(doc, text, x, y, size, color) {
@@ -2163,29 +2145,12 @@ function vFitSize(doc, font, text, maxWidth, size) {
   return s;
 }
 
-// Z počtu dní urobí text, ktorý sa dá prečítať ("90 dní" -> "3 mesiace").
-function validityWords(days) {
-  const d = Number(days) || 0;
-  if (d <= 0) return "bez obmedzenia";
-  if (d % 365 === 0) return d / 365 === 1 ? "1 rok" : (d / 365) + " roky";
-  const months = Math.round(d / 30);
-  if (months >= 1 && Math.abs(months * 30 - d) <= 2) {
-    if (months === 1) return "1 mesiac";
-    if (months <= 4) return months + " mesiace";
-    return months + " mesiacov";
-  }
-  return d + " " + dayWord(d);
-}
-
-// "3 mesiace" znie v riadku s trvaním kurzu lepšie slovom.
-const VOUCHER_SLOVOM = { "1 mesiac": "jeden mesiac", "2 mesiace": "dva mesiace", "3 mesiace": "tri mesiace", "4 mesiace": "štyri mesiace" };
-
 function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }) {
-  const W = doc.page.width, H = doc.page.height;
+  const W = doc.page.width;
   const K = W / VOUCHER_SRC_W;
   const px = (v) => v * K;
 
-  doc.image(VOUCHER_TEMPLATE, 0, 0, { width: W, height: H });
+  doc.image(VOUCHER_TEMPLATE, 0, 0, { width: W, height: doc.page.height });
 
   // Tvrdé stropy na dĺžku: pole na meno aj na odkaz má na poukaze pevné
   // miesto a pri veľmi dlhom texte by sa písmo zmenšilo do nečitateľna.
@@ -2195,8 +2160,6 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   const subtitle = order.workshopSubtitleSnapshot || "";
 
   const dni = Number(validityDays) || 0;
-  const platnost = validityWords(dni);
-  const platnostSlovom = VOUCHER_SLOVOM[platnost] || platnost;
   const zaklad = codeCreatedAt instanceof Date ? codeCreatedAt : new Date();
   const platnostDo = dni > 0
     ? new Date(zaklad.getTime() + dni * 24 * 3600 * 1000).toLocaleDateString("sk-SK")
@@ -2206,89 +2169,65 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   // PDFKit kreslí text od hornej hrany riadku, nie od základne.
   const zvislyStred = (size, yStred) => yStred - size * 0.72;
 
-  /* --- logo --- */
-  doc.image(VOUCHER_LOGO, px(544), px(34), { height: px(58) });
+  /* --- logo do voľného miesta nad "Pre:" --- */
+  doc.image(VOUCHER_LOGO, px(512), px(28), { height: px(62) });
 
-  /* --- meno obdarovaného --- */
+  /* --- meno obdarovaného (pole 510–1078, 188–246) --- */
   if (recipient) {
-    const size = vFitSize(doc, FONT_BOLD, recipient, px(470), px(46));
+    const size = vFitSize(doc, FONT_BOLD, recipient, px(534), px(40));
     doc.fontSize(size).fillColor(V_INK)
-      .text(recipient, px(546), zvislyStred(size, px(228)), { lineBreak: false });
-  } else {
-    // Darca meno nezadal — necháme mu čiaru na dopísanie rukou.
-    doc.lineWidth(px(1.6)).strokeColor(V_LINE).dash(px(5), { space: px(5) })
-      .moveTo(px(546), px(248)).lineTo(px(1010), px(248)).stroke().undash();
+      .text(recipient, px(528), zvislyStred(size, px(217)), { lineBreak: false });
   }
 
-  /* --- osobný odkaz darcu --- */
-  // Odkaz má medzi menom a vodorovnou linkou (y = 325) miesto na dva
-  // riadky. Písmo sa hľadá zhora nadol tak, aby sa doň text zmestil —
-  // jednoriadkový odkaz tak zostane pekne veľký a dlhší sa primerane
-  // zmenší, namiesto aby spadol na najmenšiu možnú veľkosť.
+  /* --- osobný odkaz darcu (pole 510–1078, 258–305) ---
+     Veľkosť sa hľadá zhora nadol, aby krátky odkaz zostal pekne veľký
+     a dlhší sa zmenšil len primerane, namiesto skoku na najmenšiu. */
   if (message) {
     const text = "„" + message + "“";
-    const sirka = px(520), vyska = px(52);
+    const sirka = px(534), vyska = px(42);
     doc.font(FONT_REGULAR);
-    let size = px(19);
-    while (size > px(12.5)) {
+    let size = px(18);
+    while (size > px(11.5)) {
       doc.fontSize(size);
-      if (doc.heightOfString(text, { width: sirka, lineGap: px(2) }) <= vyska) break;
-      size -= px(0.6);
+      if (doc.heightOfString(text, { width: sirka, lineGap: px(1.5) }) <= vyska) break;
+      size -= px(0.5);
     }
-    doc.fontSize(size).fillColor(V_MUTED).text(text, px(546), px(266), {
-      width: sirka, height: vyska, lineGap: px(2), ellipsis: true,
+    doc.fontSize(size).fillColor(V_MUTED).text(text, px(528), px(263), {
+      width: sirka, height: vyska, lineGap: px(1.5), ellipsis: true,
     });
   }
 
-  /* --- názov a podnadpis kurzu --- */
+  /* --- názov kurzu (pole 510–1436, 373–442) --- */
   {
-    const size = vFitSize(doc, FONT_BOLD, workshop, px(860), px(44));
+    const size = vFitSize(doc, FONT_BOLD, workshop, px(890), px(42));
     doc.fontSize(size).fillColor(V_TEAL)
-      .text(workshop, px(546), zvislyStred(size, px(419)), { width: px(866), lineBreak: false });
+      .text(workshop, px(528), zvislyStred(size, px(407)), { width: px(896), lineBreak: false });
   }
+
+  /* --- podnadpis kurzu (pole 511–1436, 452–508) --- */
   if (subtitle) {
-    const size = vFitSize(doc, FONT_BOLD, subtitle, px(860), px(24));
+    const size = vFitSize(doc, FONT_BOLD, subtitle, px(890), px(26));
     doc.fontSize(size).fillColor(V_ORANGE)
-      .text(subtitle, px(546), zvislyStred(size, px(475)), { width: px(866), lineBreak: false });
+      .text(subtitle, px(528), zvislyStred(size, px(480)), { width: px(896), lineBreak: false });
   }
 
-  /* --- pás s parametrami: tri sloty, obsah vystredený v každom --- */
-  const sy = px(548);
-  [[vIcoMonitor, "Online", 543, 787],
-   [vIcoClock, "6 hodín až " + platnostSlovom, 793, 1030],
-   [vIcoPerson, "vlastným tempom", 1035, 1227]].forEach(([ico, text, x0, x1]) => {
-    const size = vFitSize(doc, FONT_REGULAR, text, px(x1 - x0 - 40), px(16.5));
-    doc.fontSize(size);
-    const sirkaIkony = px(30);
-    const zaciatok = px((x0 + x1) / 2) - (sirkaIkony + doc.widthOfString(text)) / 2;
-    ico(doc, zaciatok + px(11), sy, px(22), V_TEAL);
-    doc.fillColor(V_INK).text(text, zaciatok + sirkaIkony, zvislyStred(size, sy), { lineBreak: false });
-  });
-
-  /* --- hodnota v políčku "Prístup na" --- */
-  {
-    const size = vFitSize(doc, FONT_BOLD, platnost, px(180), px(19));
-    doc.fontSize(size).fillColor(V_INK)
-      .text(platnost, px(1230), zvislyStred(size, px(566)), { width: px(190), align: "center", lineBreak: false });
-  }
-
-  /* --- prihlasovací kód --- */
+  /* --- prihlasovací kód (vnútorné pole 543–1192, 604–693) --- */
   {
     const text = String(code).split("").join("   ");
-    const size = vFitSize(doc, FONT_BOLD, text, px(640), px(52));
+    const size = vFitSize(doc, FONT_BOLD, text, px(600), px(58));
     doc.fontSize(size).fillColor(V_INK)
-      .text(text, px(543), zvislyStred(size, px(703)), { width: px(687), align: "center", lineBreak: false });
+      .text(text, px(543), zvislyStred(size, px(648)), { width: px(650), align: "center", lineBreak: false });
   }
 
   /* --- QR kód: vedie na prihlásenie aj s predvyplneným kódom --- */
-  vDrawQr(doc, loginUrl, px(1268), px(628), px(130), V_INK);
+  vDrawQr(doc, loginUrl, px(1254), px(567), px(118), V_INK);
 
-  /* --- dátum platnosti --- */
+  /* --- dátum platnosti (pole 905–1104, 797–839) --- */
   {
     const text = platnostDo ? "do " + platnostDo : "bez obmedzenia";
-    const size = vFitSize(doc, FONT_BOLD, text, px(200), px(21));
+    const size = vFitSize(doc, FONT_BOLD, text, px(184), px(21));
     doc.fontSize(size).fillColor(V_INK)
-      .text(text, px(920), zvislyStred(size, px(856)), { lineBreak: false });
+      .text(text, px(905), zvislyStred(size, px(818)), { width: px(199), align: "center", lineBreak: false });
   }
 }
 
