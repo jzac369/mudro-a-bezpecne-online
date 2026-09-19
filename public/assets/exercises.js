@@ -577,7 +577,7 @@
         .replace("{vydavky}", String(expense));
       promptBox.style.display = "block";
       promptBox.innerHTML = "";
-      promptBox.appendChild(promptBlock(text, ex.note));
+      promptBox.appendChild(promptBlock(text));
     }
 
     recount();
@@ -608,14 +608,13 @@
   };
 
   // Spoločný blok s hotovou otázkou pre AI + tlačidlo na skopírovanie.
-  function promptBlock(text, note) {
+  function promptBlock(text) {
     var box = el("div", "ex-prompt");
     box.appendChild(el("p", "ex-prompt-label",
       "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M21 11.5a8.4 8.4 0 0 1-8.5 8.4 8.6 8.6 0 0 1-3.7-.8L4 20l1-4.6a8.3 8.3 0 0 1-1-4A8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5Z'/></svg>" +
       "Vaša hotová otázka pre AI"));
     box.appendChild(el("p", "ex-prompt-text", esc(text)));
 
-    if (note) box.appendChild(el("p", "ex-prompt-note", esc(note)));
     return box;
   }
 

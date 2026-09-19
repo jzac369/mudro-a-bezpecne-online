@@ -1509,7 +1509,6 @@ tr.unconf .course-compare-mark { background: #8a8578; }
 .ex-prompt-label svg { width: 18px; height: 18px; }
 .ex-prompt-text { background: var(--surface); border-radius: 12px; padding: .9rem 1.05rem; margin: 0 0 .8rem; font-size: .98rem; line-height: 1.6; color: var(--ink); }
 .ex-copy-btn { padding: .6rem 1.1rem; font-size: .92rem; }
-.ex-prompt-note { margin: .7rem 0 0; font-size: .85rem; color: var(--accent-deep, #8f5a1e); }
 
 .ex-msg { background: var(--surface-2); border-radius: 16px; padding: 1.1rem 1.25rem; margin-bottom: 1.1rem; }
 .ex-msg-label { font-weight: 700; font-size: .85rem; color: var(--accent-deep, #8f5a1e); margin: 0 0 .5rem; }
