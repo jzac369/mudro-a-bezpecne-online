@@ -2103,9 +2103,11 @@ function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
 //  text sedí priamo na papieri. Vyzerá to jemnejšie, ale znamená to, že
 //  o zvislý rytmus aj o odstup od ilustrácie sa musí postarať tento kód.
 //
-//  Písma sú tie isté, aké sú natlačené v šablóne: Playfair Display na
-//  nadpisy a Nunito Sans na popisky a údaje. Overené porovnaním tvarov
-//  písmen pri rovnakej výške verzálok — Lora ani Lato nesedeli.
+//  Celý dopĺňaný text je v Nunito Sans — v tom istom písme, akým je
+//  v šablóne vysádzaný spodný riadok ("Poukaz uplatníte na:",
+//  "certifikát") aj ostatné popisky. Overené porovnaním tvarov písmen
+//  pri rovnakej výške verzálok; Mulish, Lato, Open Sans ani Source Sans
+//  nesedeli. Tučné hodnoty v šablóne majú váhu okolo 700.
 //
 //  Súradnice sú v pixeloch predlohy (1491 × 1055) a prepočítavajú sa na
 //  body strany pomerom K.
@@ -2115,11 +2117,10 @@ const VOUCHER_TEMPLATE = __dirname + "/assets/poukaz-sablona.png";
 const VOUCHER_LOGO = __dirname + "/assets/logo-digistart-green.png";
 const VOUCHER_SRC_W = 1491;
 
-const V_SERIF = __dirname + "/assets/Playfair-500.ttf";
-const V_SERIF_B = __dirname + "/assets/Playfair-600.ttf";
-const V_SANS = __dirname + "/assets/NunitoSans-400.ttf";
 const V_SANS_L = __dirname + "/assets/NunitoSans-300.ttf";
-const V_SANS_B = __dirname + "/assets/NunitoSans-600.ttf";
+const V_SANS = __dirname + "/assets/NunitoSans-400.ttf";
+const V_SANS_SB = __dirname + "/assets/NunitoSans-600.ttf";
+const V_SANS_B = __dirname + "/assets/NunitoSans-700.ttf";
 
 const V_INK = "#123f37";
 const V_TEAL = "#134a40";
@@ -2192,7 +2193,7 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
 
   function popisok(text, y) {
     const size = px(13);
-    doc.font(V_SANS_B).fontSize(size).fillColor(V_LABEL)
+    doc.font(V_SANS_SB).fontSize(size).fillColor(V_LABEL)
       .text(text, X, ucaria(y), { baseline: "alphabetic", characterSpacing: px(2.6), lineBreak: false });
   }
 
@@ -2202,7 +2203,7 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   /* --- komu je poukaz určený --- */
   if (recipient) {
     popisok("PRE", 176);
-    const size = vFitSize(doc, V_SERIF_B, recipient, SIRKA_HORE, px(46));
+    const size = vFitSize(doc, V_SANS_B, recipient, SIRKA_HORE, px(41));
     doc.fontSize(size).fillColor(V_INK)
       .text(recipient, X, ucaria(228), { baseline: "alphabetic", lineBreak: false });
   }
@@ -2226,7 +2227,7 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   /* --- kurz --- */
   popisok("ONLINE KURZ", 374);
   {
-    const size = vFitSize(doc, V_SERIF, workshop, SIRKA_DOLE, px(39));
+    const size = vFitSize(doc, V_SANS_SB, workshop, SIRKA_DOLE, px(35));
     doc.fontSize(size).fillColor(V_TEAL)
       .text(workshop, X, ucaria(432), { baseline: "alphabetic", lineBreak: false });
   }
