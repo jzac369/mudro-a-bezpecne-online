@@ -504,6 +504,7 @@
       <p class="hint" id="aff-welcome"></p>
     </div>
     <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-secondary" id="aff-demo-btn" type="button">Ukázať ukážku</button>
       <a class="btn btn-secondary" href="../partnerske-podmienky.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">Partnerské podmienky</a>
       <button class="btn btn-secondary" id="aff-logout-btn" type="button">Odhlásiť sa</button>
     </div>
@@ -523,6 +524,13 @@
   </div>
 
   <div id="aff-main" style="display:none;">
+
+    <!-- Pruh musí byť neprehliadnuteľný — partner si nesmie pomýliť ukážkové
+         sumy so skutočnou províziou. -->
+    <div id="aff-demo-banner" style="display:none;background:var(--warn-bg,#f7e6da);border:2px solid var(--warn,#9c4a1f);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1.2rem;">
+      <p style="margin:0 0 .3rem;font-weight:700;color:var(--warn,#9c4a1f);">Toto je len ukážka</p>
+      <p style="margin:0;">Čísla aj objednávky nižšie sú vymyslené a slúžia na predstavu, ako bude portál vyzerať, keď vám začnú chodiť prvé objednávky. Váš kód, odkaz aj percento provízie sú pritom skutočné. Svoje údaje si zobrazíte tlačidlom <strong>„Späť na moje údaje“</strong> hore.</p>
+    </div>
 
     <div id="aff-announcements"></div>
 
@@ -6109,6 +6117,76 @@ window.addEventListener("load", function () {
     });
   }
 
+  // Posledné skutočné dáta partnera — aby sa z ukážky dalo vrátiť späť
+  // bez ďalšieho volania servera.
+  let affRealData = null;
+  let affDemoOn = false;
+
+  // Ukážka sa poskladá z partnerových skutočných údajov (kód, odkaz,
+  // provízia) a z vymyslených objednávok. Nikam sa neukladá a server o nej
+  // nevie — vzniká a zaniká v prehliadači.
+  function affDemoData(real) {
+    const pct = Number(real.commissionPercent) || 20;
+    const price = 19;
+    const c = Math.round(price * pct) / 100;
+    const day = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const hold = Number(real.holdDays) || 14;
+
+    const mk = (daysAgo, customer, tail) => {
+      const paid = now - daysAgo * day;
+      const approvedAt = paid + hold * day;
+      return {
+        paidAt: paid,
+        approvedAt: approvedAt,
+        approved: approvedAt <= now,
+        customer: customer,
+        codeTail: tail,
+        workshopId: "bezpecne-financie",
+        amount: price,
+        commission: c,
+      };
+    };
+
+    const orders = [
+      mk(2, "Zuzana H.", "K7M"),
+      mk(5, "Peter M.", "R4T"),
+      mk(9, "Oľga B.", "W2X"),
+      mk(17, "Ján P.", "L9D"),
+      mk(24, "Mária K.", "T3V"),
+      mk(31, "Ivan S.", "N8C"),
+    ];
+    const pending = orders.filter((o) => !o.approved);
+    const approved = orders.filter((o) => o.approved);
+    const sum = (list) => Math.round(list.length * c * 100) / 100;
+
+    return Object.assign({}, real, {
+      totalOrders: orders.length,
+      clicksTotal: 63,
+      conversion: 9.5,
+      totalCommission: sum(orders),
+      pendingCommission: sum(pending),
+      approvedCommission: sum(approved),
+      availableToPay: sum(approved),
+      totalPaidOut: Math.round(2 * c * 100) / 100,
+      orders: orders,
+      campaigns: [
+        { name: "facebook", clicks: 38, orders: 4, conversion: 10.5, commission: Math.round(4 * c * 100) / 100 },
+        { name: "letak", clicks: 25, orders: 2, conversion: 8, commission: Math.round(2 * c * 100) / 100 },
+      ],
+      payouts: [
+        { paidAt: now - 45 * day, amount: Math.round(2 * c * 100) / 100, note: "Prevodom na účet" },
+      ],
+    });
+  }
+
+  function affShowDemo(on) {
+    if (!affRealData) return;
+    affDemoOn = on;
+    renderAffiliatePortal(on ? affDemoData(affRealData) : affRealData, on);
+    document.getElementById("affiliate-view").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function loadAffiliatePortal() {
     const body = document.getElementById("aff-orders-body");
     let d;
@@ -6151,6 +6229,17 @@ window.addEventListener("load", function () {
     }
     gate.style.display = "none";
     main.style.display = "block";
+
+    affRealData = d;
+    renderAffiliatePortal(d, false);
+  }
+
+  // Vykreslenie portálu z dát. Tie isté dáta môžu byť skutočné alebo
+  // ukážkové — portál sa v oboch prípadoch kreslí rovnako.
+  function renderAffiliatePortal(d, isDemo) {
+    const body = document.getElementById("aff-orders-body");
+    document.getElementById("aff-demo-banner").style.display = isDemo ? "block" : "none";
+    document.getElementById("aff-demo-btn").textContent = isDemo ? "Späť na moje údaje" : "Ukázať ukážku";
 
     // --- Odkaz, kód, provízia, zľava pre zákazníka
     const link = affiliateLink(d.code);
@@ -6223,7 +6312,13 @@ window.addEventListener("load", function () {
         ? "<strong style='color:var(--good);'>Máte nárok na vyplatenie.</strong> Ozvite sa nám a províziu vyplatíme."
         : "Vyplácame od <strong>" + d.minPayout.toFixed(2) + " €</strong> — do vyplatenia vám chýba <strong>" + missing.toFixed(2) + " €</strong>.");
 
-    document.getElementById("aff-payout-pdf").onclick = async () => {
+    const pdfBtn = document.getElementById("aff-payout-pdf");
+    pdfBtn.disabled = isDemo;
+    pdfBtn.title = isDemo ? "V ukážke nie je dostupné — sumy sú vymyslené." : "";
+    document.getElementById("aff-payout-pdf-result").textContent = isDemo
+      ? "V ukážke nie je dostupné — podklad by obsahoval vymyslené sumy."
+      : "";
+    pdfBtn.onclick = async () => {
       const out = document.getElementById("aff-payout-pdf-result");
       out.textContent = "Pripravujem…";
       out.style.color = "";
@@ -6259,7 +6354,10 @@ window.addEventListener("load", function () {
     document.getElementById("aff-pd-dic").value = pd.dic || "";
     document.getElementById("aff-pd-iban").value = pd.iban || "";
     document.getElementById("aff-pd-vat").checked = !!pd.isVatPayer;
-    document.getElementById("aff-pd-save").onclick = async () => {
+    const pdSave = document.getElementById("aff-pd-save");
+    pdSave.disabled = isDemo;
+    pdSave.title = isDemo ? "V ukážke sa údaje neukladajú." : "";
+    pdSave.onclick = async () => {
       const out = document.getElementById("aff-pd-result");
       out.textContent = "Ukladám…";
       out.style.color = "";
@@ -6330,7 +6428,10 @@ window.addEventListener("load", function () {
             (o.codeTail ? "…" + escapeHtml(o.codeTail) : "—") + "</td><td>" + escapeHtml(workshopTitle(o.workshopId)) +
             "</td><td>" + o.amount.toFixed(2) + " €</td><td>" + o.commission.toFixed(2) + " €</td><td>" + stav + "</td></tr>";
         }).join("")
-      : "<tr><td colspan='7' class='hint'>Zatiaľ žiadne objednávky cez váš kód.</td></tr>";
+      : "<tr><td colspan='7' class='hint'>Zatiaľ žiadne objednávky cez váš kód. " +
+        "<button class='btn btn-secondary' type='button' id='aff-demo-empty' style='margin-left:.4rem;'>Pozrieť ukážku</button></td></tr>";
+    const emptyDemoBtn = document.getElementById("aff-demo-empty");
+    if (emptyDemoBtn) emptyDemoBtn.onclick = () => affShowDemo(true);
 
     document.getElementById("aff-orders-legend").innerHTML = d.orders.length
       ? "Provízia sa uvoľní <strong>" + d.holdDays + " dní</strong> po zaplatení objednávky — dovtedy sa objednávka ešte môže vrátiť. " +
@@ -6338,6 +6439,7 @@ window.addEventListener("load", function () {
       : "";
   }
 
+  document.getElementById("aff-demo-btn").addEventListener("click", () => affShowDemo(!affDemoOn));
   document.getElementById("aff-logout-btn").addEventListener("click", () => auth.signOut());
 
   auth.onAuthStateChanged(async (user) => {
