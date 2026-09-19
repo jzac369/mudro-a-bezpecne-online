@@ -122,7 +122,15 @@
       document.getElementById("pay-amount").textContent = (d.amount || 0) + " €";
       document.getElementById("pay-iban").textContent = settings.invoiceIban || "";
       document.getElementById("pay-vs").textContent = d.variableSymbol || "";
-      document.getElementById("pay-note").textContent = d.buyerName || "";
+      // Bez diakritiky — banky pracujú so znakovou sadou SEPA, ktorá mäkčene
+      // a dĺžne nepozná, a text s nimi buď orežú, alebo odmietnu. Rovnako to
+      // posiela aj e-mail s pokynmi na úhradu, aby si obe miesta nesúperili.
+      document.getElementById("pay-note").textContent = (d.buyerName || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^\x20-\x7e]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
       if (d.instructionsSent && d.emailMasked) {
         document.getElementById("mail-address").textContent = d.emailMasked;
         document.getElementById("mail-confirm").style.display = "flex";

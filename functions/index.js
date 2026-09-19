@@ -184,6 +184,35 @@ async function issueUniqueCode() {
   throw new HttpsError("resource-exhausted", "Nepodarilo sa vygenerovať unikátny kód, skús znova.");
 }
 
+// Banky pracujú so znakovou sadou SEPA, ktorá diakritiku nepozná — text
+// s mäkčeňmi buď orežú, alebo ho odmietnu. Do poznámky pre príjemcu preto
+// posielame meno bez diakritiky, aby prišlo v čitateľnej podobe.
+function stripDiacritics(text) {
+  return String(text == null ? "" : text)
+    .normalize("NFD")                    // "š" -> "s" + mäkčeň ako samostatný znak
+    .replace(/[̀-ͯ]/g, "")     // samotné mäkčene a dĺžne preč
+    .replace(/[^\x20-\x7e]/g, "")        // čokoľvek mimo základnej ASCII preč
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// "1 deň / 2 dni / 5 dní" — bez toho vychádzali vety typu "staršie ako 3 dní".
+function dayWord(count) {
+  const n = Math.abs(Number(count) || 0);
+  if (n === 1) return "deň";
+  if (n >= 2 && n <= 4) return "dni";
+  return "dní";
+}
+
+// Dátum v tvare, ktorý sa dá prečítať — "2026-09-25" nikomu nič nepovie.
+function formatSkDate(isoDate) {
+  const m = String(isoDate || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return String(isoDate || "");
+  const months = ["januára", "februára", "marca", "apríla", "mája", "júna",
+    "júla", "augusta", "septembra", "októbra", "novembra", "decembra"];
+  return Number(m[3]) + ". " + months[Number(m[2]) - 1] + " " + m[1];
+}
+
 function fullName(firstName, lastName) {
   return [firstName, lastName].filter(Boolean).join(" ").trim();
 }
@@ -1313,7 +1342,7 @@ async function sendPaymentInstructionsEmail({ to, name, payerName, workshopTitle
     // Do poznámky patrí celé meno, nie oslovenie — podľa nej sa platba
     // v bankovom výpise dá priradiť k objednávke, keď si zákazník pomýli
     // variabilný symbol. Na stránke platba-prevodom.html je to rovnako.
-    row("Poznámka pre príjemcu", payerName || name || "") +
+    row("Poznámka pre príjemcu", stripDiacritics(payerName || name || "")) +
     '              </table>\n' +
     '              <p style="margin:22px 0 0;font-size:15px;line-height:1.65;color:' + EMAIL_COLORS.ink2 + ';">Variabilný symbol je dôležitý — podľa neho vašu platbu nájdeme a prístupový kód vám odíde automaticky. Prevod medzi bankami trvá zvyčajne do jedného pracovného dňa.</p>\n' +
     (orderUrl
@@ -1472,7 +1501,10 @@ async function runReminderSweep() {
               to: email,
               name: c.firstName || c.participantName || "",
               subject: "Pripomienka — dokončite svoj kurz",
-              message: "Váš kurz čaká na dokončenie — zostáva vám už len záverečný kvíz a certifikát. Prihláste sa rovnakým kódom a pokračujte presne tam, kde ste skončili.\n\nVáš prístupový kód: " + (c.code || doc.id),
+              // Pozor na sľuby: pripomienka chodí každému, kto zatiaľ neurobil
+              // kvíz — aj tomu, kto je len na tretej obrazovke. Veta "zostáva
+              // vám už len kvíz" by pre neho nebola pravdivá.
+              message: "Váš kurz na vás stále čaká. Prihláste sa rovnakým kódom a pokračujte presne tam, kde ste skončili — na konci vás čaká záverečný kvíz a certifikát.\n\nVáš prístupový kód: " + (c.code || doc.id),
             });
             await doc.ref.update({ unfinishedReminderSentAt: FieldValue.serverTimestamp() });
             result.unfinishedSent++;
@@ -1497,7 +1529,7 @@ async function runReminderSweep() {
         to: settings.notifyEmail,
         name: "Admin",
         subject: "Neuhradené objednávky — denný prehľad",
-        message: "Máte " + stale.length + " neuhradených objednávok starších ako " + staleDays + " dní:\n" + lines.join("\n"),
+        message: "Máte " + stale.length + " neuhradených objednávok starších ako " + staleDays + " " + dayWord(staleDays) + ":\n" + lines.join("\n"),
       });
       result.staleDigestSent = true;
       result.staleCount = stale.length;
@@ -1664,13 +1696,22 @@ exports.bookConsultation = onCall(async (request) => {
     createdAt: FieldValue.serverTimestamp(),
   });
 
+  // Bez čísla účtu nemal zákazník kam poslať peniaze — e-mail mu dovtedy
+  // hovoril "uhraďte prevodom" a IBAN bol len na stránke, ktorú už zavrel.
+  const generalSettings = await getSettings();
+  const consultIban = generalSettings.invoiceIban || "";
   await sendNotificationSmtpEmail({
     to: email,
     name,
     subject: "Rezervácia konzultácie prijatá",
     message:
-      "Rezervovali ste konzultáciu (" + durationMin + " min, " + (mode === "video" ? "video" : "telefonicky") + ") na " + date + " o " + startTime + ". " +
-      "Prosím uhraďte " + amount + " € bankovým prevodom (variabilný symbol " + variableSymbol + "), termín potvrdíme po prijatí platby.",
+      "Rezervovali ste konzultáciu (" + durationMin + " min, " + (mode === "video" ? "video" : "telefonicky") + ") na " + formatSkDate(date) + " o " + startTime + ".\n\n" +
+      "Údaje na úhradu:\n" +
+      "Suma: " + amount + " €\n" +
+      (consultIban ? "IBAN: " + consultIban + "\n" : "") +
+      "Variabilný symbol: " + variableSymbol + "\n" +
+      "Poznámka pre príjemcu: " + stripDiacritics(name) + "\n\n" +
+      "Termín potvrdíme hneď, ako platba príde na účet.",
   });
 
   return { bookingId: bookingRef.id, variableSymbol, amount, date, startTime, endTime };
@@ -1706,7 +1747,7 @@ exports.markConsultationPaid = onCall(async (request) => {
         name: b.name,
         subject: "Konzultácia potvrdená",
         message:
-          "Vaša konzultácia (" + b.duration + " min, " + (b.mode === "video" ? "video" : "telefonicky") + ") je potvrdená na " + b.date + " o " + b.startTime + "." +
+          "Vaša konzultácia (" + b.duration + " min, " + (b.mode === "video" ? "video" : "telefonicky") + ") je potvrdená na " + formatSkDate(b.date) + " o " + b.startTime + "." +
           (settings.meetingLink ? " Odkaz na hovor: " + settings.meetingLink : " V dohodnutom čase vás lektor bude kontaktovať priamo."),
       });
     } catch (emailErr) {
