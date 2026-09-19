@@ -4747,11 +4747,14 @@ window.addEventListener("load", function () {
       const x = i * slot + 2;
       const viewsH = (d.views / max) * (h - 34);
       const uniqH = (d.uniques / max) * (h - 34);
+      // Celý stĺpec je v skupine s popisom, aby sa bublina ukázala aj pri
+      // prejdení myšou nad prázdnym miestom nad stĺpcom.
+      out += '<g><rect x="' + x + '" y="0" width="' + barW + '" height="' + (h - 22) + '" fill="transparent"></rect>';
       if (d.views > 0) {
         out += '<rect x="' + x + '" y="' + (h - 22 - viewsH) + '" width="' + barW + '" height="' + Math.max(viewsH, 2) + '" fill="#e6c79a" rx="2"></rect>';
         out += '<rect x="' + x + '" y="' + (h - 22 - uniqH) + '" width="' + barW + '" height="' + Math.max(uniqH, 2) + '" fill="#1f3a3d" rx="2"></rect>';
       }
-      out += '<title>' + key + ": " + d.uniques + " návštevníkov, " + d.views + " zobrazení</title>";
+      out += '<title>' + key + ": " + d.uniques + " návštevníkov, " + d.views + " zobrazení</title></g>";
       if (i % labelEvery === 0) {
         const parts = key.split("-");
         out += '<text x="' + (x + barW / 2) + '" y="' + (h - 6) + '" font-size="9" text-anchor="middle" fill="#5c5749">' +
