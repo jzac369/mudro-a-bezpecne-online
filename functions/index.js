@@ -2116,6 +2116,7 @@ const VOUCHER_LOGO = __dirname + "/assets/logo-digistart-green.png";
 const VOUCHER_SRC_W = 1491;
 
 const V_SERIF = __dirname + "/assets/Playfair-500.ttf";
+const V_SERIF_B = __dirname + "/assets/Playfair-600.ttf";
 const V_SANS = __dirname + "/assets/NunitoSans-400.ttf";
 const V_SANS_L = __dirname + "/assets/NunitoSans-300.ttf";
 const V_SANS_B = __dirname + "/assets/NunitoSans-600.ttf";
@@ -2201,7 +2202,7 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   /* --- komu je poukaz určený --- */
   if (recipient) {
     popisok("PRE", 176);
-    const size = vFitSize(doc, V_SERIF, recipient, SIRKA_HORE, px(46));
+    const size = vFitSize(doc, V_SERIF_B, recipient, SIRKA_HORE, px(46));
     doc.fontSize(size).fillColor(V_INK)
       .text(recipient, X, ucaria(228), { baseline: "alphabetic", lineBreak: false });
   }
@@ -2225,14 +2226,14 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   /* --- kurz --- */
   popisok("ONLINE KURZ", 374);
   {
-    const size = vFitSize(doc, V_SERIF, workshop, SIRKA_DOLE, px(46));
+    const size = vFitSize(doc, V_SERIF, workshop, SIRKA_DOLE, px(39));
     doc.fontSize(size).fillColor(V_TEAL)
       .text(workshop, X, ucaria(432), { baseline: "alphabetic", lineBreak: false });
   }
   if (subtitle) {
-    const size = vFitSize(doc, V_SANS, subtitle, SIRKA_DOLE, px(24));
+    const size = vFitSize(doc, V_SANS, subtitle, SIRKA_DOLE, px(21));
     doc.fontSize(size).fillColor(V_ORANGE)
-      .text(subtitle, X, ucaria(482), { baseline: "alphabetic", lineBreak: false });
+      .text(subtitle, X, ucaria(478), { baseline: "alphabetic", lineBreak: false });
   }
 
   /* --- prihlasovací kód (vnútorné pole 545–1190, 600–690) --- */
@@ -2247,15 +2248,19 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   }
 
   /* --- QR kód: vedie na prihlásenie aj s predvyplneným kódom --- */
-  vDrawQr(doc, loginUrl, px(1273), px(571), px(124), V_INK);
+  // Biely štvorec v šablóne je 1242–1387 × 557–692; QR sa doň vystredí.
+  {
+    const velkost = px(118);
+    vDrawQr(doc, loginUrl, px((1242 + 1387) / 2) - velkost / 2, px((557 + 692) / 2) - velkost / 2, velkost, V_INK);
+  }
 
   /* --- dátum platnosti (pole 905–1104, 786–839) --- */
   {
     const text = platnostDo ? "do " + platnostDo : "bez obmedzenia";
     const size = vFitSize(doc, V_SANS_B, text, px(184), px(20));
     doc.fontSize(size).fillColor(V_INK)
-      .text(text, px(905), ucariaVStrede(786, 839, size), {
-        baseline: "alphabetic", width: px(199), align: "center", lineBreak: false,
+      .text(text, px(902), ucariaVStrede(788, 838, size), {
+        baseline: "alphabetic", width: px(202), align: "center", lineBreak: false,
       });
   }
 }
