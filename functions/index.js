@@ -35,6 +35,8 @@ const db = getFirestore();
 // Kľúče k platobnej bráne. Do kódu ani do databázy sa nikdy neukladajú —
 // nastavujú sa príkazom `firebase functions:secrets:set`.
 const STRIPE_SECRET_KEY = defineSecret("STRIPE_SECRET_KEY");
+// Najnižšia suma, akú platobná brána prijme (limit Stripe pre euro).
+const STRIPE_MIN_AMOUNT_EUR = 0.5;
 const STRIPE_WEBHOOK_SECRET = defineSecret("STRIPE_WEBHOOK_SECRET");
 // Token na CITANIE bankoveho vypisu z Fio banky (internetbanking -> Nastavenia -> API).
 const FIO_API_TOKEN = defineSecret("FIO_API_TOKEN");
@@ -3659,6 +3661,16 @@ exports.createStripeCheckout = onCall({ secrets: [STRIPE_SECRET_KEY] }, async (r
   const amount = Number(order.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new HttpsError("failed-precondition", "Objednávku nie je možné uhradiť kartou.");
+  }
+  // Stripe neprijme platbu nižšiu než 0,50 €. Bez tejto kontroly by brána
+  // vrátila chybu amount_too_small až po odoslaní a zákazník by videl len
+  // "platbu sa nepodarilo spustiť", bez vysvetlenia prečo.
+  if (amount < STRIPE_MIN_AMOUNT_EUR) {
+    throw new HttpsError(
+      "failed-precondition",
+      "Platba kartou je možná až od " + STRIPE_MIN_AMOUNT_EUR.toFixed(2).replace(".", ",") +
+      " €. Pri nižšej sume použite prosím bankový prevod podľa údajov nižšie."
+    );
   }
 
   const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();

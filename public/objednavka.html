@@ -389,7 +389,7 @@
           : "";
         document.getElementById("step-form").style.display = "none";
         document.getElementById("step-payment").style.display = "block";
-        setupPayment(result.data.orderId, result.data.cardPaymentAvailable);
+        setupPayment(result.data.orderId, result.data.cardPaymentAvailable, result.data.amount);
       } catch (err) {
         errorEl.textContent = "Objednávku sa nepodarilo vytvoriť. Skúste to prosím znova, alebo nám napíšte cez tlačidlo „Napíšte nám“ či na info@digistart.sk.";
         errorEl.style.display = "block";
@@ -401,7 +401,10 @@
 
 
   // Prepínanie medzi platbou kartou a prevodom + spustenie platby.
-  function setupPayment(orderId, cardAvailable) {
+  // Platobná brána neprijme sumu nižšiu než 0,50 € (limit Stripe pre euro).
+  const MIN_SUMA_KARTA = 0.5;
+
+  function setupPayment(orderId, cardAvailable, suma) {
     const cardLabel = document.getElementById("pay-method-card-label");
     const cardRadio = document.getElementById("pay-method-card");
     const transferRadio = document.getElementById("pay-method-transfer");
@@ -412,8 +415,11 @@
     const payBtn = document.getElementById("pay-card-btn");
     const errorEl = document.getElementById("pay-card-error");
 
-    // Kartu ponúkneme len vtedy, keď je platobná brána naozaj nastavená.
+    // Kartu ponúkneme len vtedy, keď je platobná brána naozaj nastavená
+    // a keď je suma aspoň taká, akú brána prijme. Inak by človek klikol
+    // na "Zaplatiť kartou" a dozvedel sa až potom, že to nejde.
     if (!cardAvailable) return;
+    if (Number(suma) > 0 && Number(suma) < MIN_SUMA_KARTA) return;
     cardLabel.style.display = "";
     cardRadio.checked = true;
 
@@ -473,8 +479,11 @@
         throw new Error("Chýba adresa platobnej stránky.");
       } catch (err) {
         console.error("Platbu sa nepodarilo spustiť:", err);
-        errorEl.textContent =
-          "Platbu sa nepodarilo spustiť. Skúste to prosím znova, alebo použite bankový prevod podľa údajov nižšie.";
+        // Keď server vysvetlí dôvod (napr. príliš nízka suma), povedzme ho
+        // zákazníkovi namiesto všeobecnej hlášky.
+        errorEl.textContent = err && err.code === "failed-precondition" && err.message
+          ? err.message
+          : "Platbu sa nepodarilo spustiť. Skúste to prosím znova, alebo použite bankový prevod podľa údajov nižšie.";
         errorEl.style.display = "block";
         transferDetails.style.display = "block";
         payBtn.disabled = false;
