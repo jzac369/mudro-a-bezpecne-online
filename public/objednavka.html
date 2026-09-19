@@ -139,8 +139,8 @@
       <h2 style="margin-bottom:.8rem;">Platobné údaje na prevod</h2>
       <table class="pay-table">
         <tr><td>Suma</td><td><strong id="pay-amount"></strong></td></tr>
-        <tr><td>Číslo účtu (IBAN)</td><td><strong id="pay-iban"></strong><button type="button" class="copy-btn" data-copy-from="pay-iban">Kopírovať</button></td></tr>
-        <tr><td>Variabilný symbol</td><td><strong id="pay-vs"></strong><button type="button" class="copy-btn" data-copy-from="pay-vs">Kopírovať</button></td></tr>
+        <tr><td>Číslo účtu (IBAN)</td><td><strong id="pay-iban"></strong></td></tr>
+        <tr><td>Variabilný symbol</td><td><strong id="pay-vs"></strong></td></tr>
       </table>
       <p class="hint" style="margin-top:.8rem;">Variabilný symbol nám pomáha nájsť vašu platbu rýchlejšie — nezabudnite ho prosím uviesť.</p>
 
@@ -399,28 +399,6 @@
     });
   });
 
-  // Prepisovanie 24-znakového IBAN-u do mobilu je presne to miesto, kde
-  // vznikajú preklepy — a preklep vo variabilnom symbole znamená, že platba
-  // spadne medzi nespárované a prístupový kód nepríde automaticky.
-  document.addEventListener("click", async (e) => {
-    const btn = e.target.closest("[data-copy-from]");
-    if (!btn) return;
-    const text = (document.getElementById(btn.dataset.copyFrom).textContent || "").trim();
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text.replace(/\s+/g, ""));
-      const original = btn.textContent;
-      btn.textContent = "Skopírované ✓";
-      btn.classList.add("copied");
-      setTimeout(() => { btn.textContent = original; btn.classList.remove("copied"); }, 1800);
-    } catch (err) {
-      const range = document.createRange();
-      range.selectNodeContents(document.getElementById(btn.dataset.copyFrom));
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-  });
 
   // Prepínanie medzi platbou kartou a prevodom + spustenie platby.
   function setupPayment(orderId, cardAvailable) {

@@ -256,7 +256,7 @@
         // nepozná. Rovnaká poznámka chodí aj v potvrdzovacom e-maile.
         document.getElementById("confirm-note").textContent = name
           .normalize("NFD")
-          .replace(/[̀-ͯ]/g, "")
+          .replace(/[\u0300-\u036f]/g, "")
           .replace(/[^\x20-\x7e]/g, "")
           .replace(/\s+/g, " ")
           .trim();

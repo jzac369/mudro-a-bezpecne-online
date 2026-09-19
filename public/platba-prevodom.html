@@ -62,8 +62,8 @@
       <h2 style="margin-bottom:.8rem;">Platobné údaje</h2>
       <table class="pay-table">
         <tr><td>Suma</td><td><strong id="pay-amount">—</strong></td></tr>
-        <tr><td>Číslo účtu (IBAN)</td><td><strong id="pay-iban">—</strong><button type="button" class="copy-btn" data-copy-from="pay-iban">Kopírovať</button></td></tr>
-        <tr><td>Variabilný symbol</td><td><strong id="pay-vs">—</strong><button type="button" class="copy-btn" data-copy-from="pay-vs">Kopírovať</button></td></tr>
+        <tr><td>Číslo účtu (IBAN)</td><td><strong id="pay-iban">—</strong></td></tr>
+        <tr><td>Variabilný symbol</td><td><strong id="pay-vs">—</strong></td></tr>
         <tr><td>Poznámka pre príjemcu</td><td><strong id="pay-note">—</strong></td></tr>
       </table>
       <p class="hint" style="margin-top:.9rem;">Variabilný symbol je dôležitý — podľa neho vašu platbu nájdeme a kód vám odíde automaticky.</p>
@@ -127,7 +127,7 @@
       // posiela aj e-mail s pokynmi na úhradu, aby si obe miesta nesúperili.
       document.getElementById("pay-note").textContent = (d.buyerName || "")
         .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
+        .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^\x20-\x7e]/g, "")
         .replace(/\s+/g, " ")
         .trim();
@@ -142,30 +142,6 @@
     }
   });
 
-  // Prepisovanie 24-znakového IBAN-u do mobilu je presne to miesto, kde
-  // vznikajú preklepy — a preklep vo variabilnom symbole znamená, že platba
-  // spadne medzi nespárované a kód nepríde sám.
-  document.addEventListener("click", async (e) => {
-    const btn = e.target.closest("[data-copy-from]");
-    if (!btn) return;
-    const text = (document.getElementById(btn.dataset.copyFrom).textContent || "").trim();
-    if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text.replace(/\s+/g, ""));
-      const original = btn.textContent;
-      btn.textContent = "Skopírované ✓";
-      btn.classList.add("copied");
-      setTimeout(() => { btn.textContent = original; btn.classList.remove("copied"); }, 1800);
-    } catch (err) {
-      // Bez povolenia na schránku (staršie prehliadače) aspoň text označíme,
-      // nech ho vie človek skopírovať sám.
-      const range = document.createRange();
-      range.selectNodeContents(document.getElementById(btn.dataset.copyFrom));
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-  });
 </script>
 
 </body>
