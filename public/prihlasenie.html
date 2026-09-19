@@ -98,6 +98,26 @@
     } catch (err) { /* bez predvyplnenia sa kód jednoducho zadá ručne */ }
   })();
 
+  // Meno sa nikde neoveruje, preto ho aspoň upraceme: zbytočné medzery preč
+  // a slová napísané celé malými písmenami dostanú veľké začiatočné písmeno,
+  // nech certifikát nevyzerá ako poznámka na lístku. Krátke slovká uprostred
+  // mena ("van", "de", "zo") zostávajú malé — tam malé písmeno patrí.
+  // Čokoľvek, čo už veľké písmeno obsahuje, sa nechá presne tak, ako to
+  // človek napísal.
+  function upravMeno(hodnota) {
+    return String(hodnota || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 60)
+      .split(" ")
+      .map((slovo, i) => {
+        if (!slovo || slovo !== slovo.toLowerCase()) return slovo;
+        if (i > 0 && slovo.length <= 3) return slovo;
+        return slovo.charAt(0).toUpperCase() + slovo.slice(1);
+      })
+      .join(" ");
+  }
+
   document.getElementById("login-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("name").value.trim();
@@ -119,8 +139,14 @@
       const verifyCode = firebase.app().functions("europe-west1").httpsCallable("verifyCode");
       const result = await verifyCode({ name, code });
       await firebase.auth().signInWithCustomToken(result.data.token);
-      sessionStorage.setItem("mbo_participant_name", result.data.participantName);
-      sessionStorage.setItem("mbo_participant_firstname", result.data.firstName || result.data.participantName);
+      // Kurz oslovuje človeka menom, ktoré napísal sem, nie menom
+      // uloženým pri kóde. Pri darčeku je kód vydaný na meno kupujúceho —
+      // obdarovaný by tak celý kurz počúval cudzie meno a to isté by mal
+      // predvyplnené na certifikáte. Meno zo servera zostáva ako záloha.
+      const zadaneMeno = upravMeno(name) || result.data.participantName || "";
+      sessionStorage.setItem("mbo_participant_name", zadaneMeno);
+      sessionStorage.setItem("mbo_participant_firstname",
+        zadaneMeno.split(" ")[0] || result.data.firstName || result.data.participantName || "");
       // Tlačidlo zámerne zostáva zablokované — stránka sa práve prepína na kurz.
       submitBtn.textContent = "Otváram kurz…";
       location.href = "workshop.html?w=" + encodeURIComponent(result.data.workshopId);
