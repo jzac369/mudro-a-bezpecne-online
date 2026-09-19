@@ -504,7 +504,6 @@
       <p class="hint" id="aff-welcome"></p>
     </div>
     <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
-      <button class="btn btn-secondary" id="aff-demo-btn" type="button">Ukázať ukážku</button>
       <a class="btn btn-secondary" href="../partnerske-podmienky.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">Partnerské podmienky</a>
       <button class="btn btn-secondary" id="aff-logout-btn" type="button">Odhlásiť sa</button>
     </div>
@@ -529,10 +528,19 @@
          sumy so skutočnou províziou. -->
     <div id="aff-demo-banner" style="display:none;background:var(--warn-bg,#f7e6da);border:2px solid var(--warn,#9c4a1f);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1.2rem;">
       <p style="margin:0 0 .3rem;font-weight:700;color:var(--warn,#9c4a1f);">Toto je len ukážka</p>
-      <p style="margin:0;">Čísla aj objednávky nižšie sú vymyslené a slúžia na predstavu, ako bude portál vyzerať, keď vám začnú chodiť prvé objednávky. Váš kód, odkaz aj percento provízie sú pritom skutočné. Svoje údaje si zobrazíte tlačidlom <strong>„Späť na moje údaje“</strong> hore.</p>
+      <p style="margin:0 0 .9rem;">Čísla aj objednávky nižšie sú vymyslené a slúžia na predstavu, ako bude portál vyzerať, keď vám začnú chodiť prvé objednávky. Váš kód, odkaz aj percento provízie sú pritom skutočné.</p>
+      <button class="btn btn-primary" id="aff-demo-off" type="button">Späť na moje údaje</button>
     </div>
 
     <div id="aff-announcements"></div>
+
+    <!-- Ponuka ukážky stojí nad číslami, ktorých sa týka — a vyzerá inak než
+         tlačidlá pri účte, aby sa s nimi nepliedla. -->
+    <div id="aff-demo-strip" style="display:none;border:2px dashed var(--accent,#c17a2e);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:1.2rem;display:flex;gap:.9rem;align-items:center;flex-wrap:wrap;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent,#c17a2e)" stroke-width="1.8" style="width:26px;height:26px;flex:none;" aria-hidden="true"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span style="flex:1;min-width:220px;">Zaujíma vás, ako bude portál vyzerať, keď vám začnú chodiť objednávky?</span>
+      <button class="btn btn-secondary" id="aff-demo-on" type="button" style="border-color:var(--accent,#c17a2e);color:var(--accent-deep,#8f5a1e);">Ukázať ukážku</button>
+    </div>
 
     <div class="summary-grid" style="margin-bottom:1.2rem;">
       <div class="card summary-card aff-card"><span class="aff-info" tabindex="0" aria-label="Vysvetlenie">i<span class="aff-tip">Koľko objednávok prišlo cez váš odkaz alebo kód a bolo zaplatených.</span></span><div class="num" id="aff-total-orders">—</div><div class="label">Objednávky spolu</div></div>
@@ -6239,7 +6247,7 @@ window.addEventListener("load", function () {
   function renderAffiliatePortal(d, isDemo) {
     const body = document.getElementById("aff-orders-body");
     document.getElementById("aff-demo-banner").style.display = isDemo ? "block" : "none";
-    document.getElementById("aff-demo-btn").textContent = isDemo ? "Späť na moje údaje" : "Ukázať ukážku";
+    document.getElementById("aff-demo-strip").style.display = isDemo ? "none" : "flex";
 
     // --- Odkaz, kód, provízia, zľava pre zákazníka
     const link = affiliateLink(d.code);
@@ -6439,7 +6447,8 @@ window.addEventListener("load", function () {
       : "";
   }
 
-  document.getElementById("aff-demo-btn").addEventListener("click", () => affShowDemo(!affDemoOn));
+  document.getElementById("aff-demo-on").addEventListener("click", () => affShowDemo(true));
+  document.getElementById("aff-demo-off").addEventListener("click", () => affShowDemo(false));
   document.getElementById("aff-logout-btn").addEventListener("click", () => auth.signOut());
 
   auth.onAuthStateChanged(async (user) => {
