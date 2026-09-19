@@ -2370,7 +2370,7 @@ const DEFAULT_WELCOME_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
 const DEFAULT_INVOICE_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
               <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#10322f;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">posielame Vám <strong>faktúru č. {{doc_number}}</strong> k Vašej objednávke kurzu <strong>„{{workshop_title}}“</strong>.</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">posielame vám <strong>faktúru č. {{doc_number}}</strong> k vašej objednávke kurzu <strong>„{{workshop_title}}“</strong>.</p>
             </td>
           </tr>
           <tr>
@@ -2428,7 +2428,7 @@ const DEFAULT_POZ_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
 const DEFAULT_VOUCHER_EMAIL_TEMPLATE = documentEmailShell(`          <tr>
             <td style="padding:36px 40px 8px;">
               <p style="margin:0 0 18px;font-size:17px;line-height:1.6;color:#10322f;">Dobrý deň, <strong>{{to_name}}</strong>,</p>
-              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">pripravili sme pre Vás <strong>darčekový poukaz</strong> na kurz <strong>„{{workshop_title}}“</strong>.</p>
+              <p style="margin:0 0 8px;font-size:17px;line-height:1.6;color:#10322f;">pripravili sme pre vás <strong>darčekový poukaz</strong> na kurz <strong>„{{workshop_title}}“</strong>.</p>
             </td>
           </tr>
           <tr>
