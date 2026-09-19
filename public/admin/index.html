@@ -1348,7 +1348,7 @@
 
         <div class="card" style="margin-bottom:1.5rem;">
           <h2 style="margin-bottom:.4rem;">Logo organizácie</h2>
-          <p class="hint" style="margin-bottom:.8rem;">Zobrazuje sa napr. na certifikáte. Odporúčaný formát: PNG s priehľadným alebo bielym pozadím (biele pozadie sa automaticky odstráni).</p>
+          <p class="hint" style="margin-bottom:.8rem;">Zobrazuje sa v hlavičke a pätičke stránok a na certifikáte. Stačí PNG alebo JPG — biele pozadie sa pri nahratí automaticky odstráni, obrázok sa oreže na samotné logo a zmenší na vhodnú veľkosť. Ak je logo na tmavom podklade, necháme ho tak, ako je.</p>
           <div id="logo-current" style="margin-bottom:.8rem;"></div>
           <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
             <input type="file" id="logo-file" accept=".png,.jpg,.jpeg,.svg">
@@ -2977,6 +2977,102 @@ window.addEventListener("load", function () {
     }
   }
 
+  // Príprava loga pred nahratím: z bieleho pozadia sa spraví priehľadné,
+  // obrázok sa oreže na samotné logo a zmenší na rozumnú veľkosť.
+  // Bez toho by sa logo na krémovom pozadí stránky zobrazovalo ako biely
+  // obdĺžnik — a presne to sa aj dialo, hoci text pri nahrávaní sľuboval
+  // opak. SVG sa nespracúva, to je priehľadné samo od seba.
+  const LOGO_MAX_HEIGHT = 480;
+
+  function loadImageFromFile(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Obrázok sa nepodarilo načítať.")); };
+      img.src = url;
+    });
+  }
+
+  async function prepareLogoFile(file) {
+    if (/svg/i.test(file.type) || /\.svg$/i.test(file.name)) return file;
+
+    const img = await loadImageFromFile(file);
+    const w = img.naturalWidth, h = img.naturalHeight;
+    if (!w || !h) return file;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h);
+    } catch (err) {
+      return file; // napr. pri obrázku z iného zdroja — radšej nahráme originál
+    }
+    const px = data.data;
+
+    // Spracúvame len logá, ktoré majú naozaj svetlé pozadie. Keby bolo logo
+    // zámerne na tmavom podklade, nechali by sme ho tak, ako je.
+    const corners = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]];
+    const lightCorners = corners.filter(([x, y]) => {
+      const i = (y * w + x) * 4;
+      return px[i + 3] > 200 && px[i] > 235 && px[i + 1] > 235 && px[i + 2] > 235;
+    }).length;
+    if (lightCorners < 3) return file;
+
+    // Priehľadnosť sa odvodí od toho, ako ďaleko je pixel od bielej — okraje
+    // písmen tak zostanú hladké, bez zúbkov.
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        const dist = Math.max(255 - px[i], 255 - px[i + 1], 255 - px[i + 2]);
+        let alpha = Math.round(((dist - 8) * 255) / 200);
+        alpha = alpha < 0 ? 0 : (alpha > 255 ? 255 : alpha);
+        alpha = Math.round((alpha * px[i + 3]) / 255);
+        if (alpha > 0) {
+          // Farbu popredia dopočítame, aby polopriehľadné okraje neboli vyblednuté.
+          const a = alpha / 255;
+          for (let c = 0; c < 3; c++) {
+            const v = (px[i + c] - 255 * (1 - a)) / a;
+            px[i + c] = v < 0 ? 0 : (v > 255 ? 255 : Math.round(v));
+          }
+          if (alpha > 6) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+        px[i + 3] = alpha;
+      }
+    }
+    if (maxX < 0) return file; // celý obrázok biely — nič nemeníme
+    ctx.putImageData(data, 0, 0);
+
+    // Orez na samotné logo s malým okrajom
+    const pad = 6;
+    const cx = Math.max(minX - pad, 0), cy = Math.max(minY - pad, 0);
+    const cw = Math.min(maxX + pad, w - 1) - cx + 1;
+    const ch = Math.min(maxY + pad, h - 1) - cy + 1;
+
+    const scale = ch > LOGO_MAX_HEIGHT ? LOGO_MAX_HEIGHT / ch : 1;
+    const out = document.createElement("canvas");
+    out.width = Math.max(1, Math.round(cw * scale));
+    out.height = Math.max(1, Math.round(ch * scale));
+    const octx = out.getContext("2d");
+    octx.imageSmoothingQuality = "high";
+    octx.drawImage(canvas, cx, cy, cw, ch, 0, 0, out.width, out.height);
+
+    const blob = await new Promise((resolve) => out.toBlob(resolve, "image/png"));
+    if (!blob) return file;
+    const name = file.name.replace(/\.[^.]+$/, "") + "-priehladne.png";
+    return new File([blob], name, { type: "image/png" });
+  }
+
   document.getElementById("logo-upload-btn").addEventListener("click", async () => {
     const fileInput = document.getElementById("logo-file");
     const statusEl = document.getElementById("logo-upload-status");
@@ -2984,10 +3080,17 @@ window.addEventListener("load", function () {
     const file = fileInput.files[0];
     if (!file) { statusEl.textContent = "Najprv vyberte súbor."; return; }
     btn.disabled = true;
-    statusEl.textContent = "Nahrávam…";
+    statusEl.textContent = "Spracúvam…";
     try {
-      const storageRef = adminApp.storage().ref("branding/" + Date.now() + "_" + file.name);
-      await storageRef.put(file);
+      let upload = file;
+      try {
+        upload = await prepareLogoFile(file);
+      } catch (err) {
+        upload = file; // keď sa úprava nepodarí, nahráme aspoň originál
+      }
+      statusEl.textContent = "Nahrávam…";
+      const storageRef = adminApp.storage().ref("branding/" + Date.now() + "_" + upload.name);
+      await storageRef.put(upload);
       const url = await storageRef.getDownloadURL();
       await db.collection("settings").doc("general").set({ orgLogoUrl: url }, { merge: true });
       await publishLogo(url);
