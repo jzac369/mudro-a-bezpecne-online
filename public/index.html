@@ -221,6 +221,12 @@
   /* Cena a CTA majú vlastnú zónu oddelenú linkou */
   .price-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: auto; padding: 16px 0 20px; border-top: 1px solid var(--line); }
   .price { font-family: var(--serif); font-size: calc(26px * var(--font-scale)); font-weight: 700; color: var(--ink); white-space: nowrap; }
+  /* Cena sa načítava z admin zóny, preto v značke žiadna nie je — inak by
+     sa na chvíľu ukázala stará suma a potom preskočila na platnú. Kým sa
+     načíta, drží miesto jemný sivý prúžok. */
+  [data-cena-caka] { display: inline-block; min-width: 2.6em; border-radius: 8px;
+    background: var(--line); color: transparent; opacity: .55; }
+  [data-cena-caka]::after { content: "00 €"; }
   .mini-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 20px; border-radius: var(--r-md); background: var(--green); color: #fff; border: 1.5px solid var(--green); font-family: var(--sans); font-size: var(--fs-small); font-weight: 700; line-height: 1.2; cursor: pointer; white-space: nowrap; }
   .mini-btn:hover { background: var(--green-dk); border-color: var(--green-dk); }
 
@@ -433,7 +439,7 @@
             <li>Ochránite peniaze svoje aj svojej rodiny</li>
             <li>Jednoduché kroky na overenie každej situácie</li>
           </ul>
-          <div class="price-row"><span class="price" id="price-bezpecne-financie">19 €</span><a class="mini-btn" href="kurz-ako-nenaletiet-podvodnikom.html">Zobraziť kurz →</a></div>
+          <div class="price-row"><span class="price" id="price-bezpecne-financie" data-cena-caka></span><a class="mini-btn" href="kurz-ako-nenaletiet-podvodnikom.html">Zobraziť kurz →</a></div>
         </div>
       </article>
 
@@ -701,6 +707,7 @@
 
         const el = document.getElementById("price-" + id);
         if (!el || data.price === undefined || data.price === null) continue;
+        el.removeAttribute("data-cena-caka");
         const saleActive = data.showOriginalPrice && data.originalPrice && (!data.saleEndAt || data.saleEndAt >= today);
         if (saleActive) {
           el.innerHTML =

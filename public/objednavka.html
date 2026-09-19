@@ -208,9 +208,15 @@
     }
 
     // Admin vie v admin zóne prepísať cenu (aj pôvodnú, preškrtnutú) — má prednosť.
+    // Cena v súbore data/workshops.js je len historická záloha a môže byť
+    // zastaraná; objednávku aj tak ocení server podľa hodnoty v databáze.
+    // Keď sa cenu nepodarí načítať, radšej nezobrazíme žiadnu, než takú,
+    // ktorá by sa od účtovanej líšila.
+    let cenaZnama = false;
     try {
       const snap = await db.collection("workshops").doc(workshopId).get();
       if (snap.exists) {
+        cenaZnama = snap.data().price !== undefined && snap.data().price !== null;
         const overrides = snap.data();
         Object.keys(overrides).forEach((k) => {
           if (overrides[k] !== "" && overrides[k] !== null && overrides[k] !== undefined) workshop[k] = overrides[k];
@@ -231,7 +237,9 @@
     const priceEl = document.getElementById("workshop-price");
     const today = new Date().toISOString().slice(0, 10);
     const saleActive = workshop.showOriginalPrice && workshop.originalPrice && (!workshop.saleEndAt || workshop.saleEndAt >= today);
-    if (saleActive) {
+    if (!cenaZnama) {
+      priceEl.textContent = workshop.subtitle;
+    } else if (saleActive) {
       priceEl.innerHTML =
         workshop.subtitle + " · " +
         "<span style='text-decoration:line-through;color:var(--text-mute);font-weight:400;'>" + workshop.originalPrice + " €</span> " +

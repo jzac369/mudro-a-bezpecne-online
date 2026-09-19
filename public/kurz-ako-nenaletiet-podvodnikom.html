@@ -112,6 +112,13 @@
   .ds-topbar { background: var(--paper); border-bottom: 1px solid var(--line); }
   .top-inner { display: flex; align-items: center; justify-content: space-between; gap: 28px; min-height: 78px; }
   .ds-brand { display: flex; align-items: center; gap: 12px; }
+  /* Cena sa načítava z admin zóny, preto v značke žiadna nie je — inak by
+     sa na chvíľu ukázala stará suma a potom preskočila na platnú. Kým
+     sa načíta, drží miesto jemný sivý prúžok. */
+  [data-cena-caka] { display: inline-block; min-width: 2.6em; border-radius: 6px;
+    background: var(--line); color: transparent; opacity: .55; }
+  [data-cena-caka]::after { content: "00 €"; }
+
   .ds-logo { height: 56px; width: auto; display: block; }
   @media (max-width: 560px) { .ds-logo { height: 44px; } }
 
@@ -326,7 +333,7 @@
       </div>
       <div class="hero-actions">
         <a class="buy-btn" href="#" data-purchase-link aria-label="Kúpiť kurz Ako nenaletieť podvodníkom">Kúpiť kurz <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg></a>
-        <div class="price-tag"><span data-course-price>19 €</span><small>jednorazová platba</small></div>
+        <div class="price-tag"><span data-course-price data-cena-caka></span><small>jednorazová platba</small></div>
       </div>
     </div>
     <div class="hero-photo">
@@ -367,7 +374,7 @@
       <span>Kurz vás prevedie konkrétnymi príkladmi krok za krokom a ukáže vám jednoduchý postup, ktorý si viete zapamätať.</span>
     </div>
     <div class="purchase-band-action">
-      <div class="price-tag"><span data-course-price>19 €</span><small>jednorazovo</small></div>
+      <div class="price-tag"><span data-course-price data-cena-caka></span><small>jednorazovo</small></div>
       <a class="buy-btn" href="#" data-purchase-link aria-label="Kúpiť kurz Ako nenaletieť podvodníkom">Kúpiť kurz <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg></a>
     </div>
   </div>
@@ -382,7 +389,7 @@
       <div class="course-flex-summary">Približný čas na absolvovanie je 6 hodín. Prístup ku kurzu máte 3 mesiace.</div>
       <div class="course-flex-buy">
         <a class="buy-btn" href="#" data-purchase-link aria-label="Kúpiť kurz Ako nenaletieť podvodníkom">Kúpiť kurz <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg></a>
-        <div class="buy-meta"><strong data-course-price>19 €</strong>Prístup na 3 mesiace · vlastné tempo · mobil, tablet alebo PC</div>
+        <div class="buy-meta"><strong data-course-price data-cena-caka></strong>Prístup na 3 mesiace · vlastné tempo · mobil, tablet alebo PC</div>
       </div>
     </div>
 
@@ -490,10 +497,10 @@
     <div>
       <div class="kicker on-dark">Istota prichádza s dobrým postupom</div>
       <h2>Keď nabudúce príde podozrivá správa alebo telefonát, nebudete musieť hádať, čo robiť.</h2>
-      <p>Za <span data-course-price-plain>19 €</span> získate 3-mesačný prístup ku kurzu, video s lektorom, praktické cvičenia, brožúru na stiahnutie a certifikát po dokončení.</p>
+      <p>Za <span data-course-price-plain data-cena-caka></span> získate 3-mesačný prístup ku kurzu, video s lektorom, praktické cvičenia, brožúru na stiahnutie a certifikát po dokončení.</p>
     </div>
     <div class="action">
-      <div class="price-tag"><span data-course-price>19 €</span></div>
+      <div class="price-tag"><span data-course-price data-cena-caka></span></div>
       <a class="buy-btn" href="#" data-purchase-link aria-label="Kúpiť kurz Ako nenaletieť podvodníkom">Kúpiť kurz <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M14 7l5 5-5 5"/></svg></a>
       <div class="note">Kurz nemusíte dokončiť naraz. K obsahu sa môžete počas 3 mesiacov opakovane vracať.</div>
     </div>
@@ -549,6 +556,7 @@
       const priceText = data.price + " €";
 
       document.querySelectorAll("[data-course-price]").forEach((el) => {
+        el.removeAttribute("data-cena-caka");
         el.innerHTML = saleActive
           ? "<span class='price-was'>" + data.originalPrice + " €</span>" + priceText
           : priceText;
@@ -556,6 +564,7 @@
       // Vo vete uprostred textu by prečiarknutá cena rušila — tam ide len
       // tá platná.
       document.querySelectorAll("[data-course-price-plain]").forEach((el) => {
+        el.removeAttribute("data-cena-caka");
         el.textContent = priceText;
       });
     } catch (err) {
