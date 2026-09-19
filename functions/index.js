@@ -358,8 +358,10 @@ exports.createOrder = onCall(async (request) => {
       referrer: typeof client.referrer === "string" ? client.referrer.slice(0, 500) : null,
     } : null,
     isGift: !!gift,
-    giftRecipientName: gift && typeof gift.recipientName === "string" ? gift.recipientName.slice(0, 200) : null,
-    giftMessage: gift && typeof gift.message === "string" ? gift.message.slice(0, 1000) : null,
+    // Stropy sedia s formulárom (40 / 200) a nechávajú malú rezervu.
+    // Poukaz má na oba údaje pevné miesto, dlhší text by sa naň nezmestil.
+    giftRecipientName: gift && typeof gift.recipientName === "string" ? gift.recipientName.slice(0, 60) : null,
+    giftMessage: gift && typeof gift.message === "string" ? gift.message.slice(0, 260) : null,
   });
 
   // Zľava na 100 % — pýtať za takú objednávku platbu nedáva zmysel a
@@ -2185,8 +2187,10 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
 
   doc.image(VOUCHER_TEMPLATE, 0, 0, { width: W, height: H });
 
-  const recipient = (order.giftRecipientName || "").trim();
-  const message = (order.giftMessage || "").trim();
+  // Tvrdé stropy na dĺžku: pole na meno aj na odkaz má na poukaze pevné
+  // miesto a pri veľmi dlhom texte by sa písmo zmenšilo do nečitateľna.
+  const recipient = (order.giftRecipientName || "").trim().slice(0, 42);
+  const message = (order.giftMessage || "").trim().slice(0, 220);
   const workshop = order.workshopTitleSnapshot || order.workshopId || "";
   const subtitle = order.workshopSubtitleSnapshot || "";
 
@@ -2217,11 +2221,23 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   }
 
   /* --- osobný odkaz darcu --- */
+  // Odkaz má medzi menom a vodorovnou linkou (y = 325) miesto na dva
+  // riadky. Písmo sa hľadá zhora nadol tak, aby sa doň text zmestil —
+  // jednoriadkový odkaz tak zostane pekne veľký a dlhší sa primerane
+  // zmenší, namiesto aby spadol na najmenšiu možnú veľkosť.
   if (message) {
     const text = "„" + message + "“";
-    const size = vFitSize(doc, FONT_REGULAR, text, px(510), px(21));
-    doc.fontSize(size).fillColor(V_MUTED)
-      .text(text, px(546), zvislyStred(size, px(294)), { width: px(516), lineBreak: false });
+    const sirka = px(520), vyska = px(52);
+    doc.font(FONT_REGULAR);
+    let size = px(19);
+    while (size > px(12.5)) {
+      doc.fontSize(size);
+      if (doc.heightOfString(text, { width: sirka, lineGap: px(2) }) <= vyska) break;
+      size -= px(0.6);
+    }
+    doc.fontSize(size).fillColor(V_MUTED).text(text, px(546), px(266), {
+      width: sirka, height: vyska, lineGap: px(2), ellipsis: true,
+    });
   }
 
   /* --- názov a podnadpis kurzu --- */

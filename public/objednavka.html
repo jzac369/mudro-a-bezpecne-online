@@ -77,11 +77,12 @@
       <div id="gift-fields" style="display:none;">
         <div class="field">
           <label for="gift-recipient">Meno obdarovaného (nepovinné)</label>
-          <input type="text" id="gift-recipient" placeholder="napr. mama Jarka">
+          <input type="text" id="gift-recipient" placeholder="napr. mama Jarka" maxlength="40">
         </div>
         <div class="field">
           <label for="gift-message">Osobný odkaz (nepovinné)</label>
-          <textarea id="gift-message" rows="2" style="width:100%;font:inherit;padding:.7rem;border-radius:10px;border:2px solid var(--line);"></textarea>
+          <textarea id="gift-message" rows="2" maxlength="200" style="width:100%;font:inherit;padding:.7rem;border-radius:10px;border:2px solid var(--line);"></textarea>
+          <p class="hint" style="margin-top:.4rem;">Vytlačíme ho priamo na poukaz, preto sa zmestí približne 200 znakov. <span id="gift-message-left"></span></p>
         </div>
         <p class="hint" style="margin-bottom:1rem;">Po úhrade vám e-mailom pošleme pekný darčekový poukaz. Môžete si ho vytlačiť a obdarovanému odovzdať osobne, alebo mu ho jednoducho preposlať e-mailom. Cena kurzu na poukaze uvedená nie je.</p>
       </div>
@@ -245,6 +246,19 @@
     function getParticipants() {
       return [];
     }
+
+    // Počítadlo zostávajúcich znakov — na poukaze má odkaz pevné miesto.
+    (function odpocetZnakov() {
+      const pole = document.getElementById("gift-message");
+      const info = document.getElementById("gift-message-left");
+      if (!pole || !info) return;
+      const obnov = () => {
+        const zostava = 200 - pole.value.length;
+        info.textContent = pole.value ? "Zostáva " + zostava + " znakov." : "";
+      };
+      pole.addEventListener("input", obnov);
+      obnov();
+    })();
 
     document.getElementById("is-gift").addEventListener("change", (e) => {
       document.getElementById("gift-fields").style.display = e.target.checked ? "block" : "none";
