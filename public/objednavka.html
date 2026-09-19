@@ -61,11 +61,8 @@
       <div class="field">
         <label for="email">Váš e-mail</label>
         <input type="email" id="email" name="email" required autocomplete="email">
-        <p class="hint">Na tento e-mail príde platobný pokyn aj prístupový kód (kódy).</p>
+        <p class="hint">Na tento e-mail príde platobný pokyn aj prístupový kód.</p>
       </div>
-
-      <div id="participants-wrap"></div>
-      <button class="btn btn-secondary" type="button" id="add-participant" style="margin-bottom:1.4rem;">+ Pridať ďalšieho účastníka</button>
 
       <div class="field">
         <label for="coupon">Zľavový kód (nepovinné)</label>
@@ -88,8 +85,6 @@
         </div>
         <p class="hint" style="margin-bottom:1rem;">Po úhrade vám radi pripravíme aj pekný darčekový poukaz na vytlačenie — stačí napísať do e-mailu, ktorý dostanete s pokynmi na platbu.</p>
       </div>
-
-      <p class="hint" id="price-summary" style="margin-bottom:1rem;"></p>
 
       <button class="btn btn-primary btn-block" type="submit">Pokračovať k platbe</button>
       <p id="form-error" class="hint" style="color:var(--warn);display:none;"></p>
@@ -244,44 +239,16 @@
       priceEl.textContent = workshop.subtitle + " · " + workshop.priceLabel;
     }
 
-    // ---------- Ďalší účastníci (skupinová objednávka) ----------
-    const participantsWrap = document.getElementById("participants-wrap");
-    function addParticipantRow() {
-      const row = document.createElement("div");
-      row.className = "field participant-row";
-      row.style.cssText = "display:flex;gap:1rem;align-items:flex-end;";
-      row.innerHTML =
-        "<div style='flex:1;'><label>Meno ďalšieho účastníka</label><input type='text' class='p-first' required></div>" +
-        "<div style='flex:1;'><label>Priezvisko</label><input type='text' class='p-last' required></div>" +
-        "<button type='button' class='btn btn-secondary' data-remove-participant style='padding:.7rem 1rem;'>Odobrať</button>";
-      row.querySelector("[data-remove-participant]").addEventListener("click", () => {
-        row.remove();
-        updatePriceSummary();
-      });
-      participantsWrap.appendChild(row);
-      updatePriceSummary();
+    // Objednávka je vždy pre jedného účastníka — možnosť pridať ďalších
+    // bola z formulára odstránená. Funkcia zostáva, aby zvyšok kódu aj
+    // funkcia createOrder dostávali rovnaký tvar údajov ako doteraz.
+    function getParticipants() {
+      return [];
     }
-    document.getElementById("add-participant").addEventListener("click", addParticipantRow);
 
     document.getElementById("is-gift").addEventListener("change", (e) => {
       document.getElementById("gift-fields").style.display = e.target.checked ? "block" : "none";
     });
-
-    function getParticipants() {
-      return Array.from(participantsWrap.querySelectorAll(".participant-row")).map((row) => ({
-        firstName: row.querySelector(".p-first").value.trim(),
-        lastName: row.querySelector(".p-last").value.trim(),
-      }));
-    }
-
-    function updatePriceSummary() {
-      const groupSize = 1 + getParticipants().length;
-      const summaryEl = document.getElementById("price-summary");
-      summaryEl.textContent = groupSize > 1
-        ? "Počet účastníkov: " + groupSize + " · orientačná cena spolu: " + (workshop.price * groupSize) + " € (zľavy sa prepočítajú po odoslaní)"
-        : "";
-    }
-    participantsWrap.addEventListener("input", updatePriceSummary);
 
     // ---------- UTM parametre (sledovanie zdroja registrácie) ----------
     // Kampaň z partnerského odkazu (?ref=KOD&kampan=facebook) sa uloží do
