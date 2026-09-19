@@ -84,6 +84,20 @@
     e.target.value = e.target.value.toUpperCase();
   });
 
+  // Kód z odkazu (?kod=NFMQSX) — na darčekovom poukaze je QR kód, ktorý
+  // vedie sem aj s kódom, aby ho obdarovaný nemusel prepisovať z papiera.
+  // Formulár sa zámerne neodosiela sám: meno si človek ešte musí doplniť.
+  (function predvyplnKod() {
+    try {
+      const kod = (new URLSearchParams(location.search).get("kod") || "").trim().toUpperCase();
+      if (!/^[A-Z0-9]{4,12}$/.test(kod)) return;
+      const pole = document.getElementById("code");
+      pole.value = kod;
+      const meno = document.getElementById("name");
+      if (meno && !meno.value) meno.focus();
+    } catch (err) { /* bez predvyplnenia sa kód jednoducho zadá ručne */ }
+  })();
+
   document.getElementById("login-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("name").value.trim();

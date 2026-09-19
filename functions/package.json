@@ -17,6 +17,7 @@
     "firebase-functions": "^7.3.2",
     "nodemailer": "^6.9.16",
     "pdfkit": "^0.20.1",
+    "qrcode": "^1.5.4",
     "stripe": "^17.5.0"
   },
   "private": true
