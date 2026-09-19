@@ -2166,8 +2166,13 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
     : null;
   const loginUrl = "https://kurzy.digistart.sk/prihlasenie.html?kod=" + encodeURIComponent(code);
 
-  // PDFKit kreslí text od hornej hrany riadku, nie od základne.
-  const zvislyStred = (size, yStred) => yStred - size * 0.72;
+  // Zvislé centrovanie: účaria sa položí tak, aby pás verzálok sedel presne
+  // na stred poľa. Text sa umiestňuje s voľbou baseline "alphabetic", kde
+  // zadané y JE účaria — pri predošlom odhade (veľkosť × 0,72) sedel text
+  // v poli zakaždým inak, podľa rezu a veľkosti písma.
+  // Výška verzálok je u použitých písiem 0,708 až 0,717 em.
+  const CAP = 0.71;
+  const ucaria = (yOd, yDo, size) => (px(yOd) + px(yDo)) / 2 + CAP * size / 2;
 
   /* --- logo do voľného miesta nad "Pre:" --- */
   doc.image(VOUCHER_LOGO, px(512), px(28), { height: px(62) });
@@ -2176,7 +2181,7 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
   if (recipient) {
     const size = vFitSize(doc, FONT_BOLD, recipient, px(534), px(40));
     doc.fontSize(size).fillColor(V_INK)
-      .text(recipient, px(528), zvislyStred(size, px(217)), { lineBreak: false });
+      .text(recipient, px(528), ucaria(188, 246, size), { baseline: "alphabetic", lineBreak: false });
   }
 
   /* --- osobný odkaz darcu (pole 510–1078, 258–305) ---
@@ -2192,23 +2197,25 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
       if (doc.heightOfString(text, { width: sirka, lineGap: px(1.5) }) <= vyska) break;
       size -= px(0.5);
     }
-    doc.fontSize(size).fillColor(V_MUTED).text(text, px(528), px(263), {
-      width: sirka, height: vyska, lineGap: px(1.5), ellipsis: true,
-    });
+    const vysBloku = Math.min(doc.heightOfString(text, { width: sirka, lineGap: px(1.5) }), vyska);
+    doc.fontSize(size).fillColor(V_MUTED)
+      .text(text, px(528), (px(258) + px(305)) / 2 - vysBloku / 2, {
+        width: sirka, height: vyska, lineGap: px(1.5), ellipsis: true,
+      });
   }
 
   /* --- názov kurzu (pole 510–1436, 373–442) --- */
   {
     const size = vFitSize(doc, FONT_BOLD, workshop, px(890), px(42));
     doc.fontSize(size).fillColor(V_TEAL)
-      .text(workshop, px(528), zvislyStred(size, px(407)), { width: px(896), lineBreak: false });
+      .text(workshop, px(528), ucaria(373, 442, size), { baseline: "alphabetic", width: px(896), lineBreak: false });
   }
 
   /* --- podnadpis kurzu (pole 511–1436, 452–508) --- */
   if (subtitle) {
     const size = vFitSize(doc, FONT_BOLD, subtitle, px(890), px(26));
     doc.fontSize(size).fillColor(V_ORANGE)
-      .text(subtitle, px(528), zvislyStred(size, px(480)), { width: px(896), lineBreak: false });
+      .text(subtitle, px(528), ucaria(452, 508, size), { baseline: "alphabetic", width: px(896), lineBreak: false });
   }
 
   /* --- prihlasovací kód (vnútorné pole 543–1192, 604–693) --- */
@@ -2216,7 +2223,7 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
     const text = String(code).split("").join("   ");
     const size = vFitSize(doc, FONT_BOLD, text, px(600), px(58));
     doc.fontSize(size).fillColor(V_INK)
-      .text(text, px(543), zvislyStred(size, px(648)), { width: px(650), align: "center", lineBreak: false });
+      .text(text, px(543), ucaria(604, 693, size), { baseline: "alphabetic", width: px(650), align: "center", lineBreak: false });
   }
 
   /* --- QR kód: vedie na prihlásenie aj s predvyplneným kódom --- */
@@ -2227,7 +2234,7 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
     const text = platnostDo ? "do " + platnostDo : "bez obmedzenia";
     const size = vFitSize(doc, FONT_BOLD, text, px(184), px(21));
     doc.fontSize(size).fillColor(V_INK)
-      .text(text, px(905), zvislyStred(size, px(818)), { width: px(199), align: "center", lineBreak: false });
+      .text(text, px(905), ucaria(797, 839, size), { baseline: "alphabetic", width: px(199), align: "center", lineBreak: false });
   }
 }
 

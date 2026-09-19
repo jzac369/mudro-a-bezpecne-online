@@ -15,8 +15,8 @@
     id: "bezpecne-financie",
     title: "Ako nenaletieť podvodníkom",
     subtitle: "Bezpečné financie aj s pomocou umelej inteligencie",
-    price: 19,
-    priceLabel: "19 €",
+    price: 20,
+    priceLabel: "20 €",
     description:
       "Naučíme sa rozpoznať podvodný e-mail, telefonát „z banky“, zázračnú " +
       "investíciu aj poplašnú správu zo sociálnych sietí — a ukážeme si, " +
@@ -53,8 +53,8 @@
     id: "zaciname-s-ai",
     title: "Začíname s umelou inteligenciou",
     subtitle: "Prvé kroky s AI asistentom bez obáv",
-    price: 19,
-    priceLabel: "19 €",
+    price: 20,
+    priceLabel: "20 €",
     description:
       "Vysvetlíme si zrozumiteľne, čo je umelá inteligencia, ako sa s ňou " +
       "bezpečne porozprávať a na čo všetko nám môže byť v bežnom živote " +
