@@ -463,6 +463,22 @@ async function issueCodesForOrder(orderId, paymentMethod, extra) {
       workshopId: order.workshopId,
     });
 
+    // Darčekový poukaz odchádza sám hneď po úhrade — presne to sľubuje
+    // text pri objednávke. Zámerne v try/catch: keby odoslanie poukazu
+    // zlyhalo, prístupový kód už je vydaný a e-mail s ním odoslaný,
+    // objednávku nesmieme kvôli poukazu vrátiť medzi čakajúce. Poukaz sa
+    // dá kedykoľvek poslať znova z admin zóny.
+    if (order.isGift && codes[0]) {
+      try {
+        await buildAndSendGiftVoucher(orderId, order, codes[0], null);
+      } catch (err) {
+        console.error("Automatické odoslanie darčekového poukazu zlyhalo:", err);
+        try {
+          await logOrderEvent(orderId, "Automatické odoslanie darčekového poukazu zlyhalo — pošlite ho prosím ručne.", "systém");
+        } catch (logErr) { /* zápis do logu nesmie nič zhodiť */ }
+      }
+    }
+
     return { codes, alreadyIssued: false };
   } catch (err) {
     // Objednávku vrátime medzi čakajúce, nech sa dá vydanie zopakovať.
@@ -3633,30 +3649,29 @@ exports.sendCertificateEmail = onCall({ timeoutSeconds: 60 }, async (request) =>
   return { ok: true };
 });
 
-exports.sendGiftVoucherEmail = onCall(async (request) => {
-  if (request.auth?.token?.admin !== true) {
-    throw new HttpsError("permission-denied", "Len administrátor môže odosielať darčekové poukazy.");
-  }
-  const { orderId, codeId } = request.data || {};
-  if (!orderId || !codeId) throw new HttpsError("invalid-argument", "Chýba orderId alebo kód poukazu.");
-
-  const orderRef = db.collection("orders").doc(orderId);
-  const orderSnap = await orderRef.get();
-  if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
-  const order = orderSnap.data();
-
+/**
+ * Vyrobí darčekový poukaz (PDF) a pošle ho kupujúcemu e-mailom.
+ *
+ * Používa sa z dvoch miest: automaticky pri vydaní prístupového kódu, keď
+ * je objednávka označená ako darček, a ručne z admin zóny (napr. keď si
+ * zákazník vypýta poukaz znova).
+ */
+async function buildAndSendGiftVoucher(orderId, order, codeId, sentBy) {
   const settingsSnap = await db.collection("settings").doc("general").get();
   const s = settingsSnap.exists ? settingsSnap.data() : {};
 
   const workshopSnap = await db.collection("workshops").doc(order.workshopId).get();
-  order.workshopTitleSnapshot = workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId;
-  order.workshopSubtitleSnapshot = workshopSnap.exists ? (workshopSnap.data().subtitle || "") : "";
+  const data = Object.assign({}, order, {
+    workshopTitleSnapshot: workshopSnap.exists ? (workshopSnap.data().title || order.workshopId) : order.workshopId,
+    workshopSubtitleSnapshot: workshopSnap.exists ? (workshopSnap.data().subtitle || "") : "",
+  });
 
-  const voucherCodeSnap = await db.collection("accessCodes").doc(codeId).get();
-  const voucherCodeCreatedAt = voucherCodeSnap.exists && voucherCodeSnap.data().createdAt
-    ? voucherCodeSnap.data().createdAt.toDate() : new Date();
+  const codeSnap = await db.collection("accessCodes").doc(codeId).get();
+  const codeCreatedAt = codeSnap.exists && codeSnap.data().createdAt
+    ? codeSnap.data().createdAt.toDate() : new Date();
+
   const buffer = await pdfToBuffer(
-    (doc) => drawGiftVoucherPdf(doc, { s, order, code: codeId, codeCreatedAt: voucherCodeCreatedAt, validityDays: s.codeValidityDays }),
+    (doc) => drawGiftVoucherPdf(doc, { s, order: data, code: codeId, codeCreatedAt, validityDays: s.codeValidityDays }),
     { size: "A4", layout: "landscape", margin: 0 }
   );
   const url = await uploadPdfAndGetUrl(buffer, "vouchers/" + orderId + "/" + codeId + ".pdf");
@@ -3664,19 +3679,33 @@ exports.sendGiftVoucherEmail = onCall(async (request) => {
   await sendVoucherSmtpEmail({
     to: order.email,
     name: order.firstName || order.name,
-    workshopTitle: order.workshopTitleSnapshot,
+    workshopTitle: data.workshopTitleSnapshot,
     url,
     code: codeId,
     recipientName: order.giftRecipientName || null,
     giftMessage: order.giftMessage || null,
   });
 
-  await logOrderEvent(orderId, "Darčekový poukaz odoslaný e-mailom.", request.auth.token.email);
+  await logOrderEvent(orderId, sentBy ? "Darčekový poukaz odoslaný e-mailom." : "Darčekový poukaz odoslaný automaticky po úhrade.", sentBy || "systém");
   await db.collection("orders").doc(orderId).set(
-    { lastVoucherSentAt: FieldValue.serverTimestamp(), lastVoucherSentBy: request.auth.token.email },
+    { lastVoucherSentAt: FieldValue.serverTimestamp(), lastVoucherSentBy: sentBy || "systém" },
     { merge: true }
   );
 
+  return url;
+}
+
+exports.sendGiftVoucherEmail = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor môže odosielať darčekové poukazy.");
+  }
+  const { orderId, codeId } = request.data || {};
+  if (!orderId || !codeId) throw new HttpsError("invalid-argument", "Chýba orderId alebo kód poukazu.");
+
+  const orderSnap = await db.collection("orders").doc(orderId).get();
+  if (!orderSnap.exists) throw new HttpsError("not-found", "Objednávka neexistuje.");
+
+  const url = await buildAndSendGiftVoucher(orderId, orderSnap.data(), codeId, request.auth.token.email);
   return { url };
 });
 
