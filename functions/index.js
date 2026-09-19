@@ -10,6 +10,7 @@ const { defineSecret } = require("firebase-functions/params");
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const dns = require("dns").promises;
+const crypto = require("crypto");
 const archiver = require("archiver");
 // Rovnaké dáta kurzov (vrátane správnych odpovedí kvízu), aké používa
 // prehliadač — kopírované sem z public/data/workshops.js pri každom
@@ -4153,3 +4154,269 @@ exports.ignoreBankTransaction = onCall(async (request) => {
   });
   return { status: undo ? "unmatched" : "ignored" };
 });
+
+// =====================================================================
+//  Návštevnosť verejných stránok
+// ---------------------------------------------------------------------
+//  Vlastné meranie namiesto externej služby (Google Analytics a pod.).
+//  Zámerne sa NEUKLADÁ celá IP adresa ani nič, čím by sa dal návštevník
+//  identifikovať: IP sa skráti na sieť (88.212.40.x -> 88.212.40.0),
+//  použije sa len na zistenie mesta/kraja a ďalej sa nikam nezapisuje.
+//  Návštevník dostane pseudonym (odtlačok), ktorý sa každý deň mení,
+//  takže slúži iba na spočítanie unikátnych návštev v rámci jedného dňa
+//  a nedá sa ním nikoho sledovať naprieč dňami. Do prehliadača sa
+//  neukladá žiadna cookie, preto meranie nepotrebuje súhlas s cookies
+//  a započíta všetkých návštevníkov.
+// =====================================================================
+
+const VISIT_LOG_DAYS = 90;      // dokedy sa drží zoznam jednotlivých návštev
+const VISIT_VISITOR_DAYS = 14;  // dokedy sa držia denné odtlačky návštevníkov
+const VISIT_MAX_PER_VISITOR = 200; // poistka proti zahlteniu jedným zdrojom
+
+const VISIT_BOT_RE = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|headless|phantom|lighthouse|monitor|curl|wget|python-requests|okhttp|axios|postman|uptime/i;
+
+// Dátum a hodina v slovenskom čase — aby "dnes" v admin zóne znamenalo
+// naozaj dnešný deň, nie deň podľa UTC.
+function skDateParts(date) {
+  const fmt = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Bratislava",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", hour12: false,
+  });
+  const p = {};
+  fmt.formatToParts(date).forEach((part) => { p[part.type] = part.value; });
+  const hour = p.hour === "24" ? "00" : p.hour;
+  return { day: p.year + "-" + p.month + "-" + p.day, hour };
+}
+
+// Skrátenie IP na sieť: IPv4 na /24, IPv6 na prvé štyri skupiny.
+function shortenIp(ip) {
+  const s = String(ip || "").trim();
+  if (!s) return null;
+  const v4 = s.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    if (v4.slice(1).some((n) => Number(n) > 255)) return null;
+    return v4[1] + "." + v4[2] + "." + v4[3] + ".0";
+  }
+  if (s.includes(":")) {
+    const groups = s.split(":").filter(Boolean).slice(0, 4);
+    if (groups.length < 2) return null;
+    return groups.join(":") + "::";
+  }
+  return null;
+}
+
+// Mesto/kraj zo skrátenej IP. Odpovede sa ukladajú do vlastnej vyrovnávacej
+// pamäte, takže tá istá sieť sa vonku pýta najviac raz za 30 dní.
+async function geoForNetwork(prefix) {
+  const empty = { city: null, region: null, country: null };
+  if (!prefix) return empty;
+  const ref = db.collection("geoCache").doc(prefix.replace(/[^0-9a-zA-Z]/g, "_"));
+  try {
+    const snap = await ref.get();
+    const data = snap.exists ? snap.data() : null;
+    if (data && data.fetchedAt && Date.now() - data.fetchedAt < 30 * 24 * 3600 * 1000) {
+      return data.geo || empty;
+    }
+  } catch (err) { /* výpadok vyrovnávacej pamäte nesmie zhodiť meranie */ }
+
+  let geo = empty;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(
+      "https://ipwho.is/" + encodeURIComponent(prefix) + "?fields=success,city,region,country_code",
+      { signal: controller.signal }
+    );
+    clearTimeout(timer);
+    const d = await res.json();
+    if (d && d.success) {
+      geo = {
+        city: d.city ? String(d.city).slice(0, 60) : null,
+        region: d.region ? String(d.region).slice(0, 60) : null,
+        country: d.country_code ? String(d.country_code).slice(0, 4) : null,
+      };
+    }
+  } catch (err) { /* bez polohy sa návšteva započíta ako neznáma */ }
+
+  try { await ref.set({ geo, fetchedAt: Date.now() }, { merge: true }); } catch (err) { /* nevadí */ }
+  return geo;
+}
+
+// Zo stránky spravíme krátky kľúč: /kurz-ako-nenaletiet-podvodnikom.html -> kurz-ako-nenaletiet-podvodnikom
+function visitPageKey(path) {
+  let s = String(path || "/").split("?")[0].split("#")[0];
+  s = s.replace(/^.*\//, "").replace(/\.html?$/i, "");
+  s = s.toLowerCase().replace(/[^a-z0-9-]/g, "");
+  return s || "uvod";
+}
+
+function visitSourceKey(utm, referrer) {
+  const src = String((utm && utm.source) || "").toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 40);
+  if (src) return src;
+  let host = "";
+  try { host = new URL(String(referrer || "")).hostname.toLowerCase(); } catch (err) { host = ""; }
+  if (!host) return "priamo";
+  host = host.replace(/^www\./, "");
+  if (host.endsWith("digistart.sk")) return "priamo";
+  if (host.includes("google")) return "google";
+  if (host.includes("facebook") || host.includes("fb.")) return "facebook";
+  if (host.includes("instagram")) return "instagram";
+  if (host.includes("youtube")) return "youtube";
+  if (host.includes("seznam")) return "seznam";
+  if (host.includes("bing")) return "bing";
+  return host.replace(/[^a-z0-9.-]/g, "").slice(0, 40) || "iné";
+}
+
+function parseVisitClient(ua) {
+  const s = String(ua || "");
+  let device = "Počítač";
+  if (/ipad|tablet|playbook|silk/i.test(s)) device = "Tablet";
+  else if (/mobi|iphone|ipod|android.*mobile|windows phone/i.test(s)) device = "Mobil";
+
+  let browser = "Iný";
+  if (/edg\//i.test(s)) browser = "Edge";
+  else if (/opr\/|opera/i.test(s)) browser = "Opera";
+  else if (/samsungbrowser/i.test(s)) browser = "Samsung";
+  else if (/firefox\//i.test(s)) browser = "Firefox";
+  else if (/chrome\//i.test(s)) browser = "Chrome";
+  else if (/safari\//i.test(s)) browser = "Safari";
+
+  let system = "Iný";
+  if (/windows/i.test(s)) system = "Windows";
+  else if (/iphone|ipad|ipod/i.test(s)) system = "iOS";
+  else if (/mac os x/i.test(s)) system = "macOS";
+  else if (/android/i.test(s)) system = "Android";
+  else if (/linux/i.test(s)) system = "Linux";
+
+  return { device, browser, system };
+}
+
+// Kľúč do mapy počítadiel — bez znakov, ktoré Firestore v názvoch polí
+// nemá rád, a bez prázdnej hodnoty.
+function counterKey(value, fallback) {
+  const s = String(value == null ? "" : value).replace(/[.[\]/*~`$#]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+  return s || fallback;
+}
+
+exports.recordVisit = onCall(async (request) => {
+  const data = request.data || {};
+  const raw = request.rawRequest || {};
+  const headers = raw.headers || {};
+
+  const ua = String(headers["user-agent"] || "").slice(0, 400);
+  if (!ua || VISIT_BOT_RE.test(ua)) return { ok: false };
+
+  const forwarded = String(headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const network = shortenIp(forwarded || raw.ip || "");
+
+  const now = new Date();
+  const { day, hour } = skDateParts(now);
+
+  // Denne sa meniaci pseudonym. Rovnaký návštevník má v rámci dňa rovnaký
+  // odtlačok, zajtra už úplne iný — spätne sa z neho nedá zistiť, kto to bol.
+  const fingerprint = crypto.createHash("sha256")
+    .update(day + "|" + (network || "?") + "|" + ua)
+    .digest("hex").slice(0, 32);
+
+  const visitorRef = db.collection("visitsDaily").doc(day).collection("visitors").doc(fingerprint);
+  let isNewVisitor = false;
+  try {
+    await visitorRef.create({ day, views: 1, firstAt: FieldValue.serverTimestamp() });
+    isNewVisitor = true;
+  } catch (err) {
+    const snap = await visitorRef.get();
+    const seen = (snap.exists && snap.data().views) || 0;
+    if (seen >= VISIT_MAX_PER_VISITOR) return { ok: false };
+    await visitorRef.update({ views: FieldValue.increment(1) });
+  }
+
+  const geo = await geoForNetwork(network);
+  const client = parseVisitClient(ua);
+  const page = visitPageKey(data.path);
+  const source = visitSourceKey(data.utm, data.referrer);
+  const isSlovak = !geo.country || geo.country === "SK";
+  const regionKey = isSlovak ? counterKey(geo.region, "neznámy kraj") : "zahraničie";
+  const campaign = counterKey((data.utm && data.utm.campaign) || "", "");
+
+  const inc = FieldValue.increment(1);
+  const update = {
+    day,
+    views: inc,
+    uniques: isNewVisitor ? inc : FieldValue.increment(0),
+    pages: { [page]: inc },
+    hours: { [hour]: inc },
+    sources: { [source]: inc },
+    regions: { [regionKey]: inc },
+    devices: { [client.device]: inc },
+    browsers: { [client.browser]: inc },
+    systems: { [client.system]: inc },
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  if (isSlovak && geo.city) update.cities = { [counterKey(geo.city, "neznáme")]: inc };
+  if (campaign) update.campaigns = { [campaign]: inc };
+
+  await db.collection("visitsDaily").doc(day).set(update, { merge: true });
+
+  // Zoznam posledných návštev — na nazretie "čo sa deje práve teraz".
+  // Obsahuje len skrátenú sieť, nie celú IP adresu.
+  await db.collection("visitsLog").add({
+    day,
+    at: FieldValue.serverTimestamp(),
+    page,
+    path: String(data.path || "").slice(0, 120),
+    city: isSlovak ? geo.city : null,
+    region: regionKey,
+    country: geo.country || null,
+    source,
+    campaign: campaign || null,
+    device: client.device,
+    browser: client.browser,
+    system: client.system,
+    network: network || null,
+    isNewVisitor,
+  });
+
+  return { ok: true };
+});
+
+// Denné upratovanie: staré záznamy sa mažú samé, aby databáza nerástla
+// donekonečna a aby sa údaje nedržali dlhšie, než je potrebné.
+exports.cleanupVisits = onSchedule(
+  { schedule: "35 3 * * *", timeZone: "Europe/Bratislava" },
+  async () => {
+    const dayMs = 24 * 3600 * 1000;
+    const logCutoff = new Date(Date.now() - VISIT_LOG_DAYS * dayMs);
+    let removedLog = 0;
+    for (let i = 0; i < 20; i++) {
+      const snap = await db.collection("visitsLog").where("at", "<", logCutoff).limit(400).get();
+      if (snap.empty) break;
+      const batch = db.batch();
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      removedLog += snap.size;
+      if (snap.size < 400) break;
+    }
+
+    // Denné odtlačky návštevníkov (slúžia len na spočítanie unikátnych
+    // návštev v daný deň) sa po dvoch týždňoch mažú — súhrnné čísla
+    // v dokumente dňa zostávajú.
+    const visitorCutoff = skDateParts(new Date(Date.now() - VISIT_VISITOR_DAYS * dayMs)).day;
+    const daysSnap = await db.collection("visitsDaily").get();
+    let removedVisitors = 0;
+    for (const dayDoc of daysSnap.docs) {
+      if (dayDoc.id >= visitorCutoff) continue;
+      for (let i = 0; i < 20; i++) {
+        const vis = await dayDoc.ref.collection("visitors").limit(400).get();
+        if (vis.empty) break;
+        const batch = db.batch();
+        vis.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+        removedVisitors += vis.size;
+        if (vis.size < 400) break;
+      }
+    }
+
+    console.log("cleanupVisits: zmazaných " + removedLog + " záznamov návštev, " + removedVisitors + " denných odtlačkov");
+  }
+);

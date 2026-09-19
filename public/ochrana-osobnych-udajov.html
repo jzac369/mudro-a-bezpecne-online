@@ -17,6 +17,7 @@
 <meta property="og:image" content="https://kurzy.digistart.sk/assets/logo-digistart.png">
 <meta name="twitter:card" content="summary_large_image">
 <script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.13.0/firebase-functions-compat.js"></script>
 <script defer src="assets/firebase-config.js"></script>
 <script defer src="assets/app.js"></script>
 <style>
@@ -117,6 +118,22 @@
       <li>Údaje o rezervácii konzultácie (termín, spôsob, poznámka)</li>
     </ul>
 
+    <h3>2.7 Meranie návštevnosti verejných stránok</h3>
+    <p>
+      Aby sme vedeli, či je o naše kurzy záujem a odkiaľ k nám ľudia prichádzajú, vedieme si vlastnú štatistiku návštevnosti verejných stránok. Nepoužívame na to Google Analytics ani inú externú analytickú službu a <strong>neukladáme do vášho prehliadača žiadnu cookie ani identifikátor</strong>.
+    </p>
+    <p>Pri otvorení verejnej stránky sa na našom serveri zaznamená:</p>
+    <ul>
+      <li>ktorá stránka bola otvorená, dátum a hodina</li>
+      <li>stránka, z ktorej ste prišli (referrer), prípadne UTM parametre alebo partnerský odkaz</li>
+      <li>typ zariadenia, prehliadača a operačného systému</li>
+      <li><strong>skrátená IP adresa</strong> — posledná časť sa zahodí ešte pred uložením (napr. z 88.212.40.17 zostane 88.212.40.0), takže vaše zariadenie z nej nie je možné určiť</li>
+      <li>približné mesto a kraj odvodené z tejto skrátenej adresy</li>
+    </ul>
+    <p>
+      Na spočítanie, koľko rôznych ľudí stránku za deň navštívilo, sa vytvára jednorazový technický odtlačok zo skrátenej adresy a typu prehliadača. Tento odtlačok sa <strong>každý deň mení</strong>, nedá sa z neho spätne zistiť, komu patril, a po 14 dňoch sa maže. Neumožňuje sledovať vás naprieč dňami ani spájať návštevy s vašou objednávkou či menom.
+    </p>
+
     <h2>3. Na aký účel a na akom právnom základe</h2>
     <table>
       <thead><tr><th>Účel spracúvania</th><th>Právny základ (čl. 6 ods. 1 GDPR)</th></tr></thead>
@@ -124,6 +141,7 @@
         <tr><td>Vybavenie objednávky, vystavenie prístupového kódu, poskytnutie kurzu</td><td>b) plnenie zmluvy</td></tr>
         <tr><td>Bezpečnostné logovanie prihlásení (zariadenie, IP, poloha pri prihlásení) — ochrana pred zneužitím kódu</td><td>f) oprávnený záujem prevádzkovateľa</td></tr>
         <tr><td>Marketingová štatistika regiónu registrácií (poloha pri objednávke)</td><td>a) súhlas (voliteľné cookies)</td></tr>
+        <tr><td>Anonymná štatistika návštevnosti verejných stránok (skrátená IP adresa, mesto/kraj, stránka, zariadenie)</td><td>f) oprávnený záujem prevádzkovateľa — vedieť, či je o kurzy záujem, bez identifikácie návštevníkov</td></tr>
         <tr><td>Komunikácia v chate a pri konzultáciách</td><td>b) plnenie zmluvy / predzmluvné vzťahy</td></tr>
         <tr><td>Zobrazenie referencie s vaším menom na úvodnej stránke</td><td>a) súhlas (poskytnutý pri zaslaní referencie)</td></tr>
         <tr><td>Spracovanie úhrady a jej priradenie k objednávke (vrátane automatického párovania platieb z bankového výpisu)</td><td>b) plnenie zmluvy</td></tr>
@@ -138,6 +156,7 @@
       <li><strong>Objednávky a účtovné doklady:</strong> po dobu vyžadovanú zákonom o účtovníctve a daňovými predpismi (spravidla 10 rokov).</li>
       <li><strong>Prístupové kódy, priebeh a výsledky kurzu:</strong> po dobu trvania vášho prístupu ku kurzu a primeranú dobu potom, najviac 24 mesiacov od poslednej aktivity, pokiaľ nepožiadate o skorší výmaz.</li>
       <li><strong>Záznamy o prihlásení (zariadenie, IP, poloha):</strong> najviac 24 mesiacov, následne sa anonymizujú alebo vymažú.</li>
+      <li><strong>Štatistika návštevnosti:</strong> záznamy o jednotlivých návštevách (bez celej IP adresy) najviac 90 dní, technické odtlačky na počítanie unikátnych návštevníkov 14 dní. Súhrnné čísla za deň (koľko návštev, z ktorého kraja, ktorá stránka) sú anonymné a uchovávame ich dlhodobo.</li>
       <li><strong>Údaje o platbe z bankového výpisu:</strong> ako súčasť účtovnej evidencie po dobu vyžadovanú zákonom o účtovníctve (spravidla 10 rokov).</li>
       <li><strong>História chatu:</strong> po dobu trvania vášho prístupu ku kurzu, následne sa vymaže spolu s ostatnými údajmi. Pri chate návštevníka bez zakúpeného kurzu najviac 24 mesiacov od poslednej správy.</li>
       <li><strong>Vymazané registrácie:</strong> ak registráciu na vašu žiadosť vymažeme, archivujeme len minimálny záznam (meno, e-mail, kurz, dátum a dôvod vymazania) po dobu 24 mesiacov pre účely internej kontroly, ostatné údaje (priebeh kurzu, relácie, výsledky kvízu) sa vymažú natrvalo okamžite.</li>
@@ -147,7 +166,7 @@
     <p>Vaše údaje neposkytujeme tretím stranám na ich vlastné marketingové účely. Na prevádzku portálu využívame týchto sprostredkovateľov:</p>
     <ul>
       <li><strong>Google Firebase / Google Cloud Platform</strong> (Google Ireland Limited) — hosting webu, databáza, autentifikácia a odosielanie e-mailov. Dáta môžu byť spracúvané aj mimo EÚ/EHP (napr. v USA); Google sa zaväzuje k štandardným zmluvným doložkám (SCC) schváleným Európskou komisiou.</li>
-      <li><strong>ipwho.is</strong> — služba na odvodenie približnej polohy z IP adresy (bod 2.3 a 2.4).</li>
+      <li><strong>ipwho.is</strong> — služba na odvodenie približnej polohy z IP adresy (body 2.3, 2.4 a 2.7). Pri meraní návštevnosti sa jej odovzdáva už len skrátená adresa siete, nie vaša celá IP adresa, a odpoveď si ukladáme, aby sa tá istá sieť nezisťovala opakovane.</li>
       <li><strong>Stripe Payments Europe, Ltd.</strong> — spracovanie platieb kartou. Údaje o karte zadávate priamo na stránke Stripe; my ich nevidíme ani neukladáme.</li>
       <li><strong>Fio banka, a.s.</strong> — banka, na ktorej účet prijímame úhrady bankovým prevodom. Z jej systému automaticky načítavame údaje o prichádzajúcich platbách, aby sme ich vedeli priradiť k objednávkam (bod 2.2).</li>
     </ul>

@@ -38,6 +38,47 @@
   } catch (err) { /* localStorage nemusí byť dostupný, nevadí */ }
 })();
 
+// --- Návštevnosť: jedno anonymné započítanie pri načítaní stránky ---
+// Neukladá do prehliadača žiadnu cookie ani identifikátor. Server si z toho
+// vedie len denné súhrny (koľko návštev, odkiaľ, ktorá stránka), celá IP
+// adresa sa nikam nezapisuje. Preto meranie nepotrebuje súhlas s cookies.
+(function pageVisit() {
+  try {
+    if (location.protocol === "file:") return;
+    var host = location.hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "") return;
+    // Admin zóna sa nemeria a samotný kurz tiež nie — prihlásených
+    // účastníkov už podrobnejšie sleduje prehľad relácií (sessions).
+    if (/\/admin\//.test(location.pathname)) return;
+    if (/workshop\.html$/.test(location.pathname)) return;
+
+    var params = new URLSearchParams(location.search);
+    var payload = {
+      path: location.pathname,
+      referrer: document.referrer || "",
+      utm: {
+        source: params.get("utm_source") || "",
+        medium: params.get("utm_medium") || "",
+        campaign: params.get("utm_campaign") || params.get("kampan") || "",
+      },
+    };
+    // Partnerský odkaz ?ref=KOD sa zobrazí ako vlastný zdroj návštevnosti.
+    var ref = params.get("ref");
+    if (ref && !payload.utm.source) payload.utm.source = "partner-" + ref.trim().toLowerCase();
+
+    var send = function () {
+      try {
+        firebase.app().functions("europe-west1")
+          .httpsCallable("recordVisit")(payload)
+          .catch(function () { /* meranie nesmie zdržať ani rozbiť stránku */ });
+      } catch (err) { /* Firebase ešte nemusí byť načítaný */ }
+    };
+    if (window.firebase && firebase.apps && firebase.apps.length) {
+      window.addEventListener("load", function () { setTimeout(send, 600); });
+    }
+  } catch (err) { /* meranie je vždy až druhoradé */ }
+})();
+
 // --- Veľkosť textu (A+ / A-), uložená per zariadenie ---
 (function textScale() {
   const STORAGE_KEY = "mbo_font_scale";

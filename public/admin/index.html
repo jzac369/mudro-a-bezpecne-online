@@ -655,6 +655,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></svg>
         <span class="nav-label">Prehľad</span>
       </button>
+      <button data-section="navstevnost" type="button" title="Návštevnosť">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 20h18"/><path d="M6 20v-6M11 20V8M16 20v-9M21 20V5"/></svg>
+        <span class="nav-label">Návštevnosť</span>
+      </button>
       <button data-section="registracie" class="active" type="button" title="Registrácie">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
         <span class="nav-label">Registrácie</span>
@@ -1838,6 +1842,90 @@
         </div>
       </section>
 
+      <section class="dash-section" data-section="navstevnost">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:.4rem;">
+          <h1 style="margin:0;">Návštevnosť</h1>
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <select id="vis-range" class="input" style="width:auto;">
+              <option value="1">Dnes</option>
+              <option value="7" selected>Posledných 7 dní</option>
+              <option value="30">Posledných 30 dní</option>
+              <option value="90">Posledných 90 dní</option>
+            </select>
+            <button class="btn" type="button" id="vis-refresh">Obnoviť</button>
+          </div>
+        </div>
+        <p class="hint" style="margin-bottom:1rem;">Koľko ľudí a odkiaľ navštívilo verejné stránky kurzy.digistart.sk. Meria si to systém sám, bez Google Analytics a bez cookies. IP adresa sa ukladá len skrátená na sieť (napr. 88.212.40.0) a slúži výhradne na určenie mesta a kraja. Samotný kurz po prihlásení sa sem nepočíta — ten nájdete v Registráciách.</p>
+
+        <div class="summary-grid">
+          <div class="card summary-card"><div class="num" id="vis-views">—</div><div class="label">Zobrazení stránok</div></div>
+          <div class="card summary-card"><div class="num" id="vis-uniques">—</div><div class="label">Unikátnych návštevníkov</div></div>
+          <div class="card summary-card"><div class="num" id="vis-per-day">—</div><div class="label">Priemerne za deň</div></div>
+          <div class="card summary-card"><div class="num" id="vis-pages-per">—</div><div class="label">Stránok na návštevníka</div></div>
+          <div class="card summary-card"><div class="num" id="vis-orders">—</div><div class="label">Objednávok v období</div></div>
+          <div class="card summary-card"><div class="num" id="vis-conversion">—</div><div class="label">Konverzia návšteva → objednávka</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom:.6rem;">
+          <h2 style="margin-bottom:.4rem;">Návštevy po dňoch</h2>
+          <p class="hint" style="margin-bottom:.4rem;">Tmavé stĺpce = unikátni návštevníci, svetlá časť navyše = ďalšie zobrazenia stránok.</p>
+          <svg id="vis-chart-days" class="bar-chart-svg" viewBox="0 0 560 190"></svg>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:.6rem;">
+          <div class="card">
+            <h2 style="margin-bottom:.4rem;">V ktorú hodinu chodia</h2>
+            <p class="hint" style="margin-bottom:.4rem;">Slovenský čas. Užitočné pri plánovaní príspevkov alebo dostupnosti chatu.</p>
+            <svg id="vis-chart-hours" class="bar-chart-svg" viewBox="0 0 560 170"></svg>
+          </div>
+          <div class="card">
+            <h2 style="margin-bottom:.3rem;">Najnavštevovanejšie stránky</h2>
+            <p class="hint" style="margin-bottom:.4rem;">Ktorá stránka ľudí zaujala najviac.</p>
+            <div id="vis-pages"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:.6rem;">
+          <h2 style="margin-bottom:.3rem;">Odkiaľ sú návštevníci</h2>
+          <p class="hint" style="margin-bottom:.4rem;">Podľa kraja zisteného zo skrátenej IP adresy. Tmavšia farba = viac návštev.</p>
+          <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start;">
+            <svg id="vis-map" viewBox="0 0 470 260" style="width:100%;max-width:470px;flex:1 1 300px;min-width:280px;"></svg>
+            <div style="flex:1 1 220px;min-width:220px;">
+              <h3 style="font-size:.95rem;margin-bottom:.6rem;">Top mestá</h3>
+              <div id="vis-cities"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:.6rem;">
+          <div class="card">
+            <h2 style="margin-bottom:.3rem;">Odkiaľ prišli</h2>
+            <p class="hint" style="margin-bottom:.4rem;">Priamo = napísali adresu alebo prišli z uloženého odkazu. Partnerské odkazy sú označené „partner-KOD“.</p>
+            <div id="vis-sources"></div>
+          </div>
+          <div class="card">
+            <h2 style="margin-bottom:.3rem;">Zariadenia a prehliadače</h2>
+            <p class="hint" style="margin-bottom:.4rem;">Pomáha rozhodnúť, na ktoré zobrazenie sa oplatí sústrediť.</p>
+            <div id="vis-devices" style="margin-bottom:.9rem;"></div>
+            <div id="vis-browsers"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <h2 style="margin-bottom:.3rem;">Posledné návštevy</h2>
+            <button class="btn" type="button" id="vis-log-toggle">Zobraziť</button>
+          </div>
+          <p class="hint" style="margin-bottom:.4rem;">Jednotlivé návštevy za posledných 90 dní, potom sa automaticky mažú. Bez mena, bez e-mailu a bez celej IP adresy — nikoho z toho neidentifikujete.</p>
+          <div id="vis-log-wrap" style="display:none;overflow-x:auto;">
+            <table class="dash">
+              <thead><tr><th>Čas</th><th>Stránka</th><th>Mesto</th><th>Kraj</th><th>Zdroj</th><th>Zariadenie</th><th>Sieť</th></tr></thead>
+              <tbody id="vis-log-body"><tr><td colspan="7" class="hint">Načítavam…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section class="dash-section" data-section="zalohy">
         <h1>Zálohy</h1>
         <p class="hint" style="margin-bottom:1rem;">Záloha obsahuje celú databázu (registrácie, kódy, kurzy, zľavové kódy...) a nahraté súbory (prezentácie, brožúrky, podpisy) v jednom .zip súbore, stiahnuteľnom do počítača. Frekvenciu automatickej zálohy nastavíte v sekcii Nastavenia.</p>
@@ -1904,6 +1992,7 @@ window.addEventListener("load", function () {
         loadActivityLog(false);
       }
       if (btn.dataset.section === "affiliate") loadAffiliateAdmin();
+      if (btn.dataset.section === "navstevnost") loadVisits();
       if (btn.dataset.section === "emaily" && !emailSettingsLoaded) {
         emailSettingsLoaded = true;
         loadEmailSettings();
@@ -4534,6 +4623,252 @@ window.addEventListener("load", function () {
   }
 
   // ---------- Grafy ----------
+  // ---------- Sekcia Návštevnosť ----------
+  // Číta denné súhrny, ktoré píše funkcia recordVisit. Žiadna externá
+  // služba, žiadne cookies — preto tu vidíte naozaj všetkých návštevníkov,
+  // nie len tých, čo by odklikli súhlas.
+  let visitsLogLoaded = false;
+
+  function visDayKey(date) {
+    const fmt = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Europe/Bratislava", year: "numeric", month: "2-digit", day: "2-digit",
+    });
+    const p = {};
+    fmt.formatToParts(date).forEach((x) => { p[x.type] = x.value; });
+    return p.year + "-" + p.month + "-" + p.day;
+  }
+
+  function visDayList(days) {
+    const out = [];
+    for (let i = days - 1; i >= 0; i--) {
+      out.push(visDayKey(new Date(Date.now() - i * 24 * 3600 * 1000)));
+    }
+    return out;
+  }
+
+  function visMergeMap(target, source) {
+    Object.entries(source || {}).forEach(([k, v]) => {
+      const n = Number(v) || 0;
+      if (n > 0) target[k] = (target[k] || 0) + n;
+    });
+  }
+
+  function visTop(map, limit) {
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, limit || 8);
+  }
+
+  async function loadVisits() {
+    const days = parseInt(document.getElementById("vis-range").value, 10) || 7;
+    const dayKeys = visDayList(days);
+    const startKey = dayKeys[0];
+
+    const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    ["vis-views", "vis-uniques", "vis-per-day", "vis-pages-per", "vis-orders", "vis-conversion"].forEach((id) => setText(id, "…"));
+
+    let docs = [];
+    try {
+      const snap = await db.collection("visitsDaily")
+        .where(firebase.firestore.FieldPath.documentId(), ">=", startKey)
+        .get();
+      docs = snap.docs;
+    } catch (err) {
+      setText("vis-views", "—");
+      document.getElementById("vis-pages").innerHTML = "<p class='hint'>Údaje sa nepodarilo načítať: " + escapeHtml(err.message || String(err)) + "</p>";
+      return;
+    }
+
+    const byDay = {};
+    const pages = {}, hours = {}, sources = {}, regions = {}, cities = {}, devices = {}, browsers = {};
+    let views = 0, uniques = 0;
+    docs.forEach((doc) => {
+      if (dayKeys.indexOf(doc.id) === -1) return;
+      const d = doc.data() || {};
+      byDay[doc.id] = { views: Number(d.views) || 0, uniques: Number(d.uniques) || 0 };
+      views += byDay[doc.id].views;
+      uniques += byDay[doc.id].uniques;
+      visMergeMap(pages, d.pages);
+      visMergeMap(hours, d.hours);
+      visMergeMap(sources, d.sources);
+      visMergeMap(regions, d.regions);
+      visMergeMap(cities, d.cities);
+      visMergeMap(devices, d.devices);
+      visMergeMap(browsers, d.browsers);
+    });
+
+    // Objednávky za rovnaké obdobie — kvôli konverznému pomeru.
+    let orderCount = 0;
+    try {
+      const from = new Date(startKey + "T00:00:00");
+      const os = await db.collection("orders").where("createdAt", ">=", from).get();
+      orderCount = os.size;
+    } catch (err) { orderCount = null; }
+
+    setText("vis-views", views.toLocaleString("sk-SK"));
+    setText("vis-uniques", uniques.toLocaleString("sk-SK"));
+    setText("vis-per-day", days > 0 ? Math.round(views / days).toLocaleString("sk-SK") : "—");
+    setText("vis-pages-per", uniques > 0 ? (views / uniques).toFixed(1) : "—");
+    setText("vis-orders", orderCount === null ? "—" : String(orderCount));
+    setText("vis-conversion", (orderCount === null || uniques === 0) ? "—" : ((orderCount / uniques) * 100).toFixed(1) + " %");
+
+    visRenderDayChart(dayKeys, byDay);
+    visRenderHourChart(hours);
+    renderBarList(document.getElementById("vis-pages"), visTop(pages, 10).map(([k, n]) => [visPageLabel(k), n]), "Zatiaľ žiadne návštevy v tomto období.");
+    renderBarList(document.getElementById("vis-sources"), visTop(sources, 10), "Zatiaľ žiadne údaje.");
+    renderBarList(document.getElementById("vis-devices"), visTop(devices, 5), "Zatiaľ žiadne údaje.");
+    renderBarList(document.getElementById("vis-browsers"), visTop(browsers, 6), "Zatiaľ žiadne údaje.");
+    visRenderMap(regions, cities);
+  }
+
+  const VIS_PAGE_LABELS = {
+    uvod: "Úvodná stránka",
+    "kurz-ako-nenaletiet-podvodnikom": "Kurz: Ako nenaletieť podvodníkom",
+    objednavka: "Objednávka",
+    prihlasenie: "Prihlásenie do kurzu",
+    "caste-otazky": "Časté otázky",
+    konzultacia: "Konzultácia",
+    stratenykod: "Stratený kód",
+    "platba-prevodom": "Platba prevodom",
+    "platba-uspesna": "Platba úspešná",
+    "ochrana-osobnych-udajov": "Ochrana osobných údajov",
+    "partnerske-podmienky": "Partnerské podmienky",
+  };
+  function visPageLabel(key) { return VIS_PAGE_LABELS[key] || key; }
+
+  function visRenderDayChart(dayKeys, byDay) {
+    const svg = document.getElementById("vis-chart-days");
+    if (!svg) return;
+    const w = 560, h = 190, n = dayKeys.length;
+    const slot = w / n, barW = Math.max(3, slot - 4);
+    const max = Math.max(1, ...dayKeys.map((k) => (byDay[k] ? byDay[k].views : 0)));
+    const labelEvery = Math.ceil(n / 12);
+    let out = "";
+    dayKeys.forEach((key, i) => {
+      const d = byDay[key] || { views: 0, uniques: 0 };
+      const x = i * slot + 2;
+      const viewsH = (d.views / max) * (h - 34);
+      const uniqH = (d.uniques / max) * (h - 34);
+      if (d.views > 0) {
+        out += '<rect x="' + x + '" y="' + (h - 22 - viewsH) + '" width="' + barW + '" height="' + Math.max(viewsH, 2) + '" fill="#e6c79a" rx="2"></rect>';
+        out += '<rect x="' + x + '" y="' + (h - 22 - uniqH) + '" width="' + barW + '" height="' + Math.max(uniqH, 2) + '" fill="#1f3a3d" rx="2"></rect>';
+      }
+      out += '<title>' + key + ": " + d.uniques + " návštevníkov, " + d.views + " zobrazení</title>";
+      if (i % labelEvery === 0) {
+        const parts = key.split("-");
+        out += '<text x="' + (x + barW / 2) + '" y="' + (h - 6) + '" font-size="9" text-anchor="middle" fill="#5c5749">' +
+          Number(parts[2]) + "." + Number(parts[1]) + ".</text>";
+      }
+    });
+    svg.innerHTML = out;
+  }
+
+  function visRenderHourChart(hours) {
+    const svg = document.getElementById("vis-chart-hours");
+    if (!svg) return;
+    const w = 560, h = 170, slot = w / 24, barW = slot - 5;
+    const values = [];
+    for (let i = 0; i < 24; i++) values.push(hours[String(i).padStart(2, "0")] || 0);
+    const max = Math.max(1, ...values);
+    let out = "";
+    values.forEach((v, i) => {
+      const barH = (v / max) * (h - 34);
+      const x = i * slot + 2;
+      out += '<rect x="' + x + '" y="' + (h - 22 - barH) + '" width="' + barW + '" height="' + Math.max(barH, v > 0 ? 2 : 0) + '" fill="#c17a2e" rx="2"><title>' + String(i).padStart(2, "0") + ":00 — " + v + " zobrazení</title></rect>";
+      if (i % 3 === 0) {
+        out += '<text x="' + (x + barW / 2) + '" y="' + (h - 6) + '" font-size="9" text-anchor="middle" fill="#5c5749">' + i + "</text>";
+      }
+    });
+    svg.innerHTML = out;
+  }
+
+  function visRenderMap(regions, cities) {
+    const svg = document.getElementById("vis-map");
+    if (!svg) return;
+    const counts = {};
+    let foreign = 0, unknown = 0;
+    Object.entries(regions).forEach(([name, n]) => {
+      if (name === "zahraničie") { foreign += n; return; }
+      const key = normalizeRegion(name, "");
+      if (key) counts[key] = (counts[key] || 0) + n;
+      else unknown += n;
+    });
+    const max = Math.max(1, ...Object.values(counts));
+    const tileW = 105, tileH = 75, gap = 10;
+    let html = "";
+    SK_REGIONS.forEach((r) => {
+      const x = r.col * (tileW + gap);
+      const y = r.row * (tileH + gap);
+      const count = counts[r.key] || 0;
+      const intensity = count / max;
+      const bg = count === 0 ? "var(--surface-2)" : mixColor(intensity);
+      const textColor = intensity > 0.55 ? "#fff" : "var(--ink)";
+      html +=
+        "<g class='sk-region'><rect x='" + x + "' y='" + y + "' width='" + tileW + "' height='" + tileH + "' rx='10' fill='" + bg + "'></rect>" +
+        "<text x='" + (x + tileW / 2) + "' y='" + (y + tileH / 2 - 4) + "' class='sk-region-label' fill='" + textColor + "'>" + r.name + "</text>" +
+        "<text x='" + (x + tileW / 2) + "' y='" + (y + tileH / 2 + 14) + "' class='sk-region-count' fill='" + textColor + "' style='opacity:.85;'>" + count + " návštev</text>" +
+        "<title>" + r.name + ": " + count + " návštev</title></g>";
+    });
+    if (foreign > 0 || unknown > 0) {
+      const parts = [];
+      if (foreign > 0) parts.push(foreign + " zo zahraničia");
+      if (unknown > 0) parts.push(unknown + " bez určeného kraja");
+      html += "<text x='0' y='252' font-size='12" + "' fill='#5c5749'>" + parts.join(" · ") + "</text>";
+    }
+    svg.innerHTML = html;
+
+    const el = document.getElementById("vis-cities");
+    const top = visTop(cities, 8);
+    if (top.length === 0) {
+      el.innerHTML = "<p class='hint'>Zatiaľ žiadne údaje o polohe.</p>";
+    } else {
+      renderBarList(el, top, "");
+    }
+  }
+
+  async function loadVisitsLog() {
+    const body = document.getElementById("vis-log-body");
+    body.innerHTML = "<tr><td colspan='7' class='hint'>Načítavam…</td></tr>";
+    try {
+      const snap = await db.collection("visitsLog").orderBy("at", "desc").limit(100).get();
+      if (snap.empty) {
+        body.innerHTML = "<tr><td colspan='7' class='hint'>Zatiaľ žiadne zaznamenané návštevy.</td></tr>";
+        return;
+      }
+      body.innerHTML = snap.docs.map((doc) => {
+        const v = doc.data() || {};
+        const t = v.at && v.at.toDate ? v.at.toDate() : null;
+        const when = t ? t.toLocaleString("sk-SK", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+        return "<tr>" +
+          "<td>" + escapeHtml(when) + "</td>" +
+          "<td>" + escapeHtml(visPageLabel(v.page || "")) + "</td>" +
+          "<td>" + escapeHtml(v.city || "—") + "</td>" +
+          "<td>" + escapeHtml(v.region || "—") + "</td>" +
+          "<td>" + escapeHtml(v.source || "—") + "</td>" +
+          "<td>" + escapeHtml((v.device || "—") + (v.browser ? " · " + v.browser : "")) + "</td>" +
+          "<td class='hint'>" + escapeHtml(v.network || "—") + "</td>" +
+          "</tr>";
+      }).join("");
+    } catch (err) {
+      body.innerHTML = "<tr><td colspan='7' class='hint'>Nepodarilo sa načítať: " + escapeHtml(err.message || String(err)) + "</td></tr>";
+    }
+  }
+
+  (function wireVisits() {
+    const range = document.getElementById("vis-range");
+    if (range) range.addEventListener("change", loadVisits);
+    const refresh = document.getElementById("vis-refresh");
+    if (refresh) refresh.addEventListener("click", loadVisits);
+    const toggle = document.getElementById("vis-log-toggle");
+    if (toggle) {
+      toggle.addEventListener("click", () => {
+        const wrap = document.getElementById("vis-log-wrap");
+        const open = wrap.style.display !== "none";
+        wrap.style.display = open ? "none" : "block";
+        toggle.textContent = open ? "Zobraziť" : "Skryť";
+        if (!open && !visitsLogLoaded) { visitsLogLoaded = true; loadVisitsLog(); }
+      });
+    }
+  })();
+
   function renderCharts(orders) {
     const days = [];
     for (let i = 13; i >= 0; i--) {
