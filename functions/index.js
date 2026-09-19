@@ -2096,25 +2096,39 @@ function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
 // ---------------------------------------------------------------------
 //  Darčekový poukaz
 // ---------------------------------------------------------------------
-//  Kreslí sa na hotovú grafickú šablónu (assets/poukaz-sablona.png) — celá
-//  výtvarná časť je v obrázku, kód dopĺňa len údaje, ktoré sú na každom
-//  poukaze iné. Text, kód aj QR sa kreslia vektorovo, takže zostávajú
-//  ostré aj pri tlači, nezávisle od rozlíšenia podkladu.
+//  Kreslí sa na grafickú šablónu (assets/poukaz-sablona.png). Výtvarná
+//  časť je v obrázku, kód dopĺňa údaje, ktoré sú na každom poukaze iné.
 //
-//  Súradnice nižšie sú v pixeloch pôvodnej predlohy (1491 × 1055) a
-//  prepočítavajú sa na body strany pomerom `K`. Keby sa šablóna raz
-//  vymenila za väčšiu, stačí, aby mala rovnaký pomer strán.
+//  Šablóna zámerne NEMÁ predtlačené políčka pre meno, odkaz ani kurz —
+//  text sedí priamo na papieri. Vyzerá to jemnejšie, ale znamená to, že
+//  o zvislý rytmus aj o odstup od ilustrácie sa musí postarať tento kód.
+//
+//  Písma sú tie isté, aké sú natlačené v šablóne: Playfair Display na
+//  nadpisy a Nunito Sans na popisky a údaje. Overené porovnaním tvarov
+//  písmen pri rovnakej výške verzálok — Lora ani Lato nesedeli.
+//
+//  Súradnice sú v pixeloch predlohy (1491 × 1055) a prepočítavajú sa na
+//  body strany pomerom K.
 // ---------------------------------------------------------------------
 
 const VOUCHER_TEMPLATE = __dirname + "/assets/poukaz-sablona.png";
 const VOUCHER_LOGO = __dirname + "/assets/logo-digistart-green.png";
 const VOUCHER_SRC_W = 1491;
 
+const V_SERIF = __dirname + "/assets/Playfair-500.ttf";
+const V_SANS = __dirname + "/assets/NunitoSans-400.ttf";
+const V_SANS_L = __dirname + "/assets/NunitoSans-300.ttf";
+const V_SANS_B = __dirname + "/assets/NunitoSans-600.ttf";
+
 const V_INK = "#123f37";
 const V_TEAL = "#134a40";
 const V_ORANGE = "#c9651c";
 const V_MUTED = "#8a8474";
-const V_LINE = "#ded6c6";
+const V_LABEL = "#7c8b86";
+
+// Ilustrácia notebooku a telefónu zaberá pravý horný roh (x od 1109,
+// y 139 až 331). Horný blok textu sa jej musí vyhnúť.
+const V_ILUSTRACIA_X = 1079;
 
 // QR sa kreslí ako vektor, nie ako vložený obrázok — je ostrejší pri tlači
 // a nezávisí od toho, či čítačka PDF zvládne dekódovať PNG vo vnútri.
@@ -2132,14 +2146,13 @@ function vDrawQr(doc, text, x, y, size, color) {
   doc.fill().restore();
 }
 
-// Dlhé meno ani dlhý názov kurzu nesmú pretiecť cez svoje miesto —
-// písmo sa v takom prípade primerane zmenší.
-function vFitSize(doc, font, text, maxWidth, size) {
+// Dlhé meno ani dlhý názov kurzu nesmú pretiecť — písmo sa zmenší.
+function vFitSize(doc, font, text, maxWidth, size, tracking) {
   doc.font(font);
   let s = size;
   while (s > size * 0.55) {
     doc.fontSize(s);
-    if (doc.widthOfString(text) <= maxWidth) break;
+    if (doc.widthOfString(text, { characterSpacing: tracking || 0 }) <= maxWidth) break;
     s -= size * 0.04;
   }
   return s;
@@ -2152,8 +2165,8 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
 
   doc.image(VOUCHER_TEMPLATE, 0, 0, { width: W, height: doc.page.height });
 
-  // Tvrdé stropy na dĺžku: pole na meno aj na odkaz má na poukaze pevné
-  // miesto a pri veľmi dlhom texte by sa písmo zmenšilo do nečitateľna.
+  // Tvrdé stropy na dĺžku: meno aj odkaz majú na poukaze pevné miesto
+  // a pri veľmi dlhom texte by sa písmo zmenšilo do nečitateľna.
   const recipient = (order.giftRecipientName || "").trim().slice(0, 42);
   const message = (order.giftMessage || "").trim().slice(0, 220);
   const workshop = order.workshopTitleSnapshot || order.workshopId || "";
@@ -2166,75 +2179,84 @@ function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }
     : null;
   const loginUrl = "https://kurzy.digistart.sk/prihlasenie.html?kod=" + encodeURIComponent(code);
 
-  // Zvislé centrovanie: účaria sa položí tak, aby pás verzálok sedel presne
-  // na stred poľa. Text sa umiestňuje s voľbou baseline "alphabetic", kde
-  // zadané y JE účaria — pri predošlom odhade (veľkosť × 0,72) sedel text
-  // v poli zakaždým inak, podľa rezu a veľkosti písma.
-  // Výška verzálok je u použitých písiem 0,708 až 0,717 em.
+  const X = px(512);                       // ľavý okraj textu, zhodný s poľom kódu
+  const SIRKA_HORE = px(V_ILUSTRACIA_X) - X;   // horný blok sa vyhýba ilustrácii
+  const SIRKA_DOLE = px(1438) - X;
+
+  // Text sa umiestňuje s baseline "alphabetic", kde zadané y JE účaria.
+  const ucaria = (y) => px(y);
+  // Pás verzálok na stred poľa (pre polia s pevnou výškou).
   const CAP = 0.71;
-  const ucaria = (yOd, yDo, size) => (px(yOd) + px(yDo)) / 2 + CAP * size / 2;
+  const ucariaVStrede = (yOd, yDo, size) => (px(yOd) + px(yDo)) / 2 + CAP * size / 2;
 
-  /* --- logo do voľného miesta nad "Pre:" --- */
-  doc.image(VOUCHER_LOGO, px(512), px(28), { height: px(62) });
-
-  /* --- meno obdarovaného (pole 510–1078, 188–246) --- */
-  if (recipient) {
-    const size = vFitSize(doc, FONT_BOLD, recipient, px(534), px(40));
-    doc.fontSize(size).fillColor(V_INK)
-      .text(recipient, px(528), ucaria(188, 246, size), { baseline: "alphabetic", lineBreak: false });
+  function popisok(text, y) {
+    const size = px(13);
+    doc.font(V_SANS_B).fontSize(size).fillColor(V_LABEL)
+      .text(text, X, ucaria(y), { baseline: "alphabetic", characterSpacing: px(2.6), lineBreak: false });
   }
 
-  /* --- osobný odkaz darcu (pole 510–1078, 258–305) ---
-     Veľkosť sa hľadá zhora nadol, aby krátky odkaz zostal pekne veľký
-     a dlhší sa zmenšil len primerane, namiesto skoku na najmenšiu. */
+  /* --- logo --- */
+  doc.image(VOUCHER_LOGO, X, px(40), { height: px(58) });
+
+  /* --- komu je poukaz určený --- */
+  if (recipient) {
+    popisok("PRE", 176);
+    const size = vFitSize(doc, V_SERIF, recipient, SIRKA_HORE, px(46));
+    doc.fontSize(size).fillColor(V_INK)
+      .text(recipient, X, ucaria(228), { baseline: "alphabetic", lineBreak: false });
+  }
+
+  /* --- osobný odkaz darcu --- */
   if (message) {
     const text = "„" + message + "“";
-    const sirka = px(534), vyska = px(42);
-    doc.font(FONT_REGULAR);
-    let size = px(18);
-    while (size > px(11.5)) {
+    const vyska = px(58);
+    doc.font(V_SANS_L);
+    let size = px(19);
+    while (size > px(13)) {
       doc.fontSize(size);
-      if (doc.heightOfString(text, { width: sirka, lineGap: px(1.5) }) <= vyska) break;
+      if (doc.heightOfString(text, { width: SIRKA_HORE, lineGap: px(3) }) <= vyska) break;
       size -= px(0.5);
     }
-    const vysBloku = Math.min(doc.heightOfString(text, { width: sirka, lineGap: px(1.5) }), vyska);
-    doc.fontSize(size).fillColor(V_MUTED)
-      .text(text, px(528), (px(258) + px(305)) / 2 - vysBloku / 2, {
-        width: sirka, height: vyska, lineGap: px(1.5), ellipsis: true,
+    doc.fontSize(size).fillColor(V_MUTED).text(text, X, px(recipient ? 252 : 200), {
+      width: SIRKA_HORE, height: vyska, lineGap: px(3), ellipsis: true,
+    });
+  }
+
+  /* --- kurz --- */
+  popisok("ONLINE KURZ", 374);
+  {
+    const size = vFitSize(doc, V_SERIF, workshop, SIRKA_DOLE, px(46));
+    doc.fontSize(size).fillColor(V_TEAL)
+      .text(workshop, X, ucaria(432), { baseline: "alphabetic", lineBreak: false });
+  }
+  if (subtitle) {
+    const size = vFitSize(doc, V_SANS, subtitle, SIRKA_DOLE, px(24));
+    doc.fontSize(size).fillColor(V_ORANGE)
+      .text(subtitle, X, ucaria(482), { baseline: "alphabetic", lineBreak: false });
+  }
+
+  /* --- prihlasovací kód (vnútorné pole 545–1190, 600–690) --- */
+  {
+    const text = String(code).split("").join(" ");
+    const track = px(5);
+    const size = vFitSize(doc, V_SANS, text, px(600), px(40), track);
+    doc.fontSize(size).fillColor(V_INK)
+      .text(text, px(545), ucariaVStrede(600, 690, size), {
+        baseline: "alphabetic", width: px(645), align: "center", lineBreak: false, characterSpacing: track,
       });
   }
 
-  /* --- názov kurzu (pole 510–1436, 373–442) --- */
-  {
-    const size = vFitSize(doc, FONT_BOLD, workshop, px(890), px(42));
-    doc.fontSize(size).fillColor(V_TEAL)
-      .text(workshop, px(528), ucaria(373, 442, size), { baseline: "alphabetic", width: px(896), lineBreak: false });
-  }
-
-  /* --- podnadpis kurzu (pole 511–1436, 452–508) --- */
-  if (subtitle) {
-    const size = vFitSize(doc, FONT_BOLD, subtitle, px(890), px(26));
-    doc.fontSize(size).fillColor(V_ORANGE)
-      .text(subtitle, px(528), ucaria(452, 508, size), { baseline: "alphabetic", width: px(896), lineBreak: false });
-  }
-
-  /* --- prihlasovací kód (vnútorné pole 543–1192, 604–693) --- */
-  {
-    const text = String(code).split("").join("   ");
-    const size = vFitSize(doc, FONT_BOLD, text, px(600), px(58));
-    doc.fontSize(size).fillColor(V_INK)
-      .text(text, px(543), ucaria(604, 693, size), { baseline: "alphabetic", width: px(650), align: "center", lineBreak: false });
-  }
-
   /* --- QR kód: vedie na prihlásenie aj s predvyplneným kódom --- */
-  vDrawQr(doc, loginUrl, px(1254), px(567), px(118), V_INK);
+  vDrawQr(doc, loginUrl, px(1273), px(571), px(124), V_INK);
 
-  /* --- dátum platnosti (pole 905–1104, 797–839) --- */
+  /* --- dátum platnosti (pole 905–1104, 786–839) --- */
   {
     const text = platnostDo ? "do " + platnostDo : "bez obmedzenia";
-    const size = vFitSize(doc, FONT_BOLD, text, px(184), px(21));
+    const size = vFitSize(doc, V_SANS_B, text, px(184), px(20));
     doc.fontSize(size).fillColor(V_INK)
-      .text(text, px(905), ucaria(797, 839, size), { baseline: "alphabetic", width: px(199), align: "center", lineBreak: false });
+      .text(text, px(905), ucariaVStrede(786, 839, size), {
+        baseline: "alphabetic", width: px(199), align: "center", lineBreak: false,
+      });
   }
 }
 
