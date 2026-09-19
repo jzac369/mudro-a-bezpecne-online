@@ -1293,7 +1293,7 @@ async function sendWelcomeSmtpEmail({ to, name, codes, workshopId, messageOverri
  * a zavrel okno, prišiel o IBAN aj variabilný symbol a nemal sa kam vrátiť,
  * hoci mu to formulár sľuboval.
  */
-async function sendPaymentInstructionsEmail({ to, name, workshopTitle, amount, iban, variableSymbol, orderUrl }) {
+async function sendPaymentInstructionsEmail({ to, name, payerName, workshopTitle, amount, iban, variableSymbol, orderUrl }) {
   let status = "sent";
   let errorMessage = "";
   const row = (label, value, big) =>
@@ -1310,7 +1310,10 @@ async function sendPaymentInstructionsEmail({ to, name, workshopTitle, amount, i
     row("Suma", amount + " €", true) +
     row("IBAN", iban) +
     row("Variabilný symbol", variableSymbol) +
-    row("Poznámka pre príjemcu", name || "") +
+    // Do poznámky patrí celé meno, nie oslovenie — podľa nej sa platba
+    // v bankovom výpise dá priradiť k objednávke, keď si zákazník pomýli
+    // variabilný symbol. Na stránke platba-prevodom.html je to rovnako.
+    row("Poznámka pre príjemcu", payerName || name || "") +
     '              </table>\n' +
     '              <p style="margin:22px 0 0;font-size:15px;line-height:1.65;color:' + EMAIL_COLORS.ink2 + ';">Variabilný symbol je dôležitý — podľa neho vašu platbu nájdeme a prístupový kód vám odíde automaticky. Prevod medzi bankami trvá zvyčajne do jedného pracovného dňa.</p>\n' +
     (orderUrl
@@ -1370,6 +1373,7 @@ exports.sendPaymentInstructions = onCall(async (request) => {
   await sendPaymentInstructionsEmail({
     to: order.email,
     name: order.firstName || order.name,
+    payerName: order.name || fullName(order.firstName, order.lastName),
     workshopTitle: workshop ? workshop.title : null,
     amount: order.amount,
     iban: settings.invoiceIban || "",
