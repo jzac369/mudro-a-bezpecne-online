@@ -17,7 +17,7 @@ window.COURSE_EXERCISES = [
     title: "Slovníček pojmov",
     short: "Sedemnásť cudzích slov z brožúrky — kartička po kartičke si overíte, ktoré už poznáte.",
     time: "12 minút",
-    intro: "V kurze aj v brožúrke sa objaví pár cudzích slov. Tu si ich prejdete po jednom a hneď zistíte, ktoré vám sedia. Nemusíte sa ich učiť naspamäť — úplne stačí, keď budete vedieť, kde si ich nájsť.",
+    intro: "V kurze aj v brožúrke sa objaví pár cudzích slov. Tu si ich prejdete po jednom a hneď zistíte, ktoré už poznáte a ktoré ešte nie. Nemusíte sa ich učiť naspamäť — úplne stačí, keď budete vedieť, kde si ich nájsť.",
     task: "Kartička ukáže pojem. Máte desať sekúnd, aby ste ho nahlas vysvetlili — potom sa otočí a poviete, či ste to vedeli. Na konci uvidíte, na ktoré slová sa ešte pozrieť.",
     // Skupiny slúžia už len pracovnému listu v PDF; na obrazovke idú pojmy
     // v jednom náhodnom slede. Vishing a smishing tu nie sú, tie sa preberajú
