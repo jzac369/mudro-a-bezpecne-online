@@ -471,7 +471,7 @@ window.COURSE_EXERCISES = [
         ],
       },
     ],
-    note: "Toto je len nácvik — odpovede sú pripravené vopred. Skutočný ChatGPT nájdete na chatgpt.com alebo ako aplikáciu v mobile či tablete.",
+    note: "Toto je len cvičenie — odpovede sú pripravené vopred. Skutočný ChatGPT nájdete na chatgpt.com alebo ako aplikáciu v mobile či tablete.",
   },
   {
     id: "previerka",
