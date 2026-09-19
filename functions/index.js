@@ -2094,91 +2094,46 @@ function drawPozPdf(doc, { s, order, pozNumber, invoiceNumber }) {
 // ---------------------------------------------------------------------
 //  Darčekový poukaz
 // ---------------------------------------------------------------------
-//  Na rozdiel od faktúry/POZ nejde o účtovný doklad, ale o dokument,
-//  ktorý niekto niekomu dá do ruky — preto vlastná grafika na šírku:
-//  tmavozelený panel s názvom a výhodami vľavo, praktická časť vpravo.
+//  Kreslí sa na hotovú grafickú šablónu (assets/poukaz-sablona.png) — celá
+//  výtvarná časť je v obrázku, kód dopĺňa len údaje, ktoré sú na každom
+//  poukaze iné. Text, kód aj QR sa kreslia vektorovo, takže zostávajú
+//  ostré aj pri tlači, nezávisle od rozlíšenia podkladu.
 //
-//  Logo je zámerne zabudovaný zelený súbor, nie logo z admin zóny: to
-//  môže byť nahraté aj s bielym pozadím a na tmavom paneli by svietilo
-//  ako biely obdĺžnik.
+//  Súradnice nižšie sú v pixeloch pôvodnej predlohy (1491 × 1055) a
+//  prepočítavajú sa na body strany pomerom `K`. Keby sa šablóna raz
+//  vymenila za väčšiu, stačí, aby mala rovnaký pomer strán.
 // ---------------------------------------------------------------------
 
-const FONT_SCRIPT = __dirname + "/assets/Caveat.ttf";
+const VOUCHER_TEMPLATE = __dirname + "/assets/poukaz-sablona.png";
 const VOUCHER_LOGO = __dirname + "/assets/logo-digistart-green.png";
-// Rozmery PNG sa dajú prečítať priamo z hlavičky IHDR, netreba knižnicu.
-const VOUCHER_LOGO_SIZE = (() => {
-  try {
-    const b = require("fs").readFileSync(VOUCHER_LOGO);
-    return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
-  } catch (err) {
-    return { w: 1306, h: 480 };
-  }
-})();
+const VOUCHER_SRC_W = 1491;
 
-const V_PANEL_TOP = "#0c332c";
-const V_PANEL_MID = "#134a40";
-const V_GOLD = "#d59a4e";
-const V_GOLD_DK = "#c2832f";
-const V_PAPER = "#fffdf7";
-const V_CREAM = "#fbefe0";
 const V_INK = "#123f37";
 const V_TEAL = "#134a40";
 const V_ORANGE = "#c9651c";
 const V_MUTED = "#8a8474";
-const V_LINE = "#e3dccd";
+const V_LINE = "#ded6c6";
 
-/* --- drobné ikonky, kreslené čiarou --- */
-function vIcoHome(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.09).strokeColor(c).lineJoin(1);
-  doc.moveTo(x - s / 2, y).lineTo(x, y - s * 0.55).lineTo(x + s / 2, y).stroke();
-  doc.moveTo(x - s * 0.34, y - s * 0.06).lineTo(x - s * 0.34, y + s * 0.5)
-    .lineTo(x + s * 0.34, y + s * 0.5).lineTo(x + s * 0.34, y - s * 0.06).stroke();
+/* --- ikonky v páse s parametrami (v šablóne zámerne nie sú) --- */
+function vIcoMonitor(doc, x, y, s, c) {
+  doc.lineWidth(s * 0.1).strokeColor(c);
+  doc.roundedRect(x - s * 0.5, y - s * 0.4, s, s * 0.68, s * 0.08).stroke();
+  doc.moveTo(x - s * 0.24, y + s * 0.42).lineTo(x + s * 0.24, y + s * 0.42).stroke();
 }
 function vIcoClock(doc, x, y, s, c) {
   doc.lineWidth(s * 0.09).strokeColor(c);
   doc.circle(x, y, s * 0.5).stroke();
   doc.moveTo(x, y - s * 0.28).lineTo(x, y).lineTo(x + s * 0.22, y + s * 0.1).stroke();
 }
-function vIcoPeople(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.09).strokeColor(c);
-  doc.circle(x - s * 0.22, y - s * 0.18, s * 0.17).stroke();
-  doc.circle(x + s * 0.24, y - s * 0.22, s * 0.14).stroke();
-  doc.moveTo(x - s * 0.5, y + s * 0.42).bezierCurveTo(x - s * 0.46, y + s * 0.02, x + s * 0.02, y + s * 0.02, x + s * 0.06, y + s * 0.42).stroke();
-  doc.moveTo(x + s * 0.14, y + s * 0.42).bezierCurveTo(x + s * 0.16, y + s * 0.08, x + s * 0.46, y + s * 0.06, x + s * 0.5, y + s * 0.42).stroke();
-}
-function vIcoMonitor(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.1).strokeColor(c);
-  doc.roundedRect(x - s * 0.5, y - s * 0.4, s, s * 0.68, s * 0.08).stroke();
-  doc.moveTo(x - s * 0.24, y + s * 0.42).lineTo(x + s * 0.24, y + s * 0.42).stroke();
-}
 function vIcoPerson(doc, x, y, s, c) {
   doc.lineWidth(s * 0.1).strokeColor(c);
   doc.circle(x, y - s * 0.22, s * 0.2).stroke();
-  doc.moveTo(x - s * 0.36, y + s * 0.44).bezierCurveTo(x - s * 0.34, y + s * 0.02, x + s * 0.34, y + s * 0.02, x + s * 0.36, y + s * 0.44).stroke();
-}
-function vIcoCalendar(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.09).strokeColor(c);
-  doc.roundedRect(x - s * 0.44, y - s * 0.4, s * 0.88, s * 0.82, s * 0.09).stroke();
-  doc.moveTo(x - s * 0.44, y - s * 0.14).lineTo(x + s * 0.44, y - s * 0.14).stroke();
-  doc.moveTo(x - s * 0.22, y - s * 0.52).lineTo(x - s * 0.22, y - s * 0.3).stroke();
-  doc.moveTo(x + s * 0.22, y - s * 0.52).lineTo(x + s * 0.22, y - s * 0.3).stroke();
-}
-function vIcoGlobe(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.085).strokeColor(c);
-  doc.circle(x, y, s * 0.46).stroke();
-  doc.moveTo(x - s * 0.46, y).lineTo(x + s * 0.46, y).stroke();
-  doc.ellipse(x, y, s * 0.21, s * 0.46).stroke();
-}
-function vIcoCertificate(doc, x, y, s, c) {
-  doc.lineWidth(s * 0.09).strokeColor(c);
-  doc.roundedRect(x - s * 0.42, y - s * 0.46, s * 0.84, s * 0.62, s * 0.07).stroke();
-  doc.moveTo(x - s * 0.24, y - s * 0.24).lineTo(x + s * 0.12, y - s * 0.24).stroke();
-  doc.moveTo(x - s * 0.24, y - s * 0.06).lineTo(x + s * 0.02, y - s * 0.06).stroke();
-  doc.circle(x + s * 0.24, y + s * 0.22, s * 0.16).stroke();
+  doc.moveTo(x - s * 0.36, y + s * 0.44)
+    .bezierCurveTo(x - s * 0.34, y + s * 0.02, x + s * 0.34, y + s * 0.02, x + s * 0.36, y + s * 0.44).stroke();
 }
 
-// QR sa kreslí ako vektor, nie ako vložený obrázok — je ostrejší pri
-// tlači a nezávisí od toho, či prehliadač zvládne dekódovať PNG.
+// QR sa kreslí ako vektor, nie ako vložený obrázok — je ostrejší pri tlači
+// a nezávisí od toho, či čítačka PDF zvládne dekódovať PNG vo vnútri.
 function vDrawQr(doc, text, x, y, size, color) {
   const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
   const n = qr.modules.size;
@@ -2187,67 +2142,23 @@ function vDrawQr(doc, text, x, y, size, color) {
   doc.save().fillColor(color);
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
-      if (data[r * n + c]) doc.rect(x + c * cell, y + r * cell, cell + 0.15, cell + 0.15);
+      if (data[r * n + c]) doc.rect(x + c * cell, y + r * cell, cell + 0.12, cell + 0.12);
     }
   }
   doc.fill().restore();
 }
 
-function vIlustracia(doc, x, y) {
-  doc.save();
-  doc.lineWidth(2.2).strokeColor("#dcd3c2");
-  doc.roundedRect(x, y, 120, 78, 6).stroke();
-  doc.roundedRect(x - 10, y + 78, 140, 9, 4).stroke();
-  doc.roundedRect(x + 132, y + 30, 30, 56, 6).stroke();
-  doc.moveTo(x + 140, y + 36).lineTo(x + 154, y + 36).stroke();
-  const sx = x + 60, sy = y + 14, sw = 52, sh = 62;
-  doc.lineWidth(2.6).strokeColor("#c9bfa9");
-  doc.moveTo(sx, sy).lineTo(sx + sw / 2, sy + 9).lineTo(sx + sw / 2, sy + sh * 0.52)
-    .bezierCurveTo(sx + sw / 2, sy + sh * 0.9, sx + 16, sy + sh, sx, sy + sh + 4)
-    .bezierCurveTo(sx - 16, sy + sh, sx - sw / 2, sy + sh * 0.9, sx - sw / 2, sy + sh * 0.52)
-    .lineTo(sx - sw / 2, sy + 9).closePath().fillAndStroke(V_PAPER, "#c9bfa9");
-  doc.lineWidth(2.2).strokeColor("#b8ad95");
-  doc.roundedRect(sx - 11, sy + 26, 22, 18, 3).stroke();
-  doc.moveTo(sx - 6, sy + 26).bezierCurveTo(sx - 6, sy + 16, sx + 6, sy + 16, sx + 6, sy + 26).stroke();
-  doc.lineWidth(2).strokeColor("#ddd4c3");
-  doc.moveTo(x + 16, y + 26).lineTo(x + 30, y + 26).stroke();
-  doc.moveTo(x + 18, y + 38).lineTo(x + 28, y + 38).stroke();
-  doc.moveTo(x + 16, y + 50).lineTo(x + 32, y + 50).stroke();
-  doc.restore();
-}
-
-function vVetvicka(doc, x, y, color) {
-  doc.save().lineWidth(1.6).strokeColor(color);
-  doc.moveTo(x, y).bezierCurveTo(x + 6, y - 40, x + 4, y - 80, x - 6, y - 112).stroke();
-  for (let i = 0; i < 6; i++) {
-    const t = i / 5;
-    const ly = y - 16 - t * 88;
-    const lx = x + 5 - t * 8;
-    const r = 13 - t * 4;
-    [1, -1].forEach((dir) => {
-      doc.save().rotate(dir * 32 - 12, { origin: [lx, ly] });
-      doc.ellipse(lx + dir * r * 0.85, ly, r * 0.85, r * 0.42).stroke();
-      doc.restore();
-    });
+// Dlhé meno ani dlhý názov kurzu nesmú pretiecť cez svoje miesto —
+// písmo sa v takom prípade primerane zmenší.
+function vFitSize(doc, font, text, maxWidth, size) {
+  doc.font(font);
+  let s = size;
+  while (s > size * 0.55) {
+    doc.fontSize(s);
+    if (doc.widthOfString(text) <= maxWidth) break;
+    s -= size * 0.04;
   }
-  doc.restore();
-}
-
-function vDarcek(doc, x, y, scale) {
-  const S = (v) => v * scale;
-  doc.save();
-  doc.roundedRect(x - S(52), y - S(40), S(104), S(80), S(5)).fill("#0a2b25");
-  doc.roundedRect(x - S(58), y - S(52), S(116), S(18), S(4)).fill("#0d352d");
-  doc.rect(x - S(9), y - S(52), S(18), S(92)).fill(V_GOLD);
-  doc.rect(x - S(58), y - S(48), S(116), S(11)).fill(V_GOLD_DK);
-  doc.lineWidth(S(9)).strokeColor(V_GOLD);
-  doc.moveTo(x, y - S(52)).bezierCurveTo(x - S(34), y - S(96), x - S(62), y - S(66), x - S(30), y - S(56)).stroke();
-  doc.moveTo(x, y - S(52)).bezierCurveTo(x + S(34), y - S(96), x + S(62), y - S(66), x + S(30), y - S(56)).stroke();
-  doc.circle(x, y - S(54), S(8)).fill(V_GOLD_DK);
-  doc.lineWidth(S(5)).strokeColor(V_GOLD);
-  doc.moveTo(x - S(6), y - S(48)).bezierCurveTo(x - S(40), y - S(20), x - S(70), y + S(6), x - S(96), y + S(30)).stroke();
-  doc.moveTo(x + S(4), y - S(48)).bezierCurveTo(x - S(10), y - S(10), x - S(40), y + S(20), x - S(62), y + S(44)).stroke();
-  doc.restore();
+  return s;
 }
 
 // Z počtu dní urobí text, ktorý sa dá prečítať ("90 dní" -> "3 mesiace").
@@ -2264,193 +2175,105 @@ function validityWords(days) {
   return d + " " + dayWord(d);
 }
 
+// "3 mesiace" znie v riadku s trvaním kurzu lepšie slovom.
+const VOUCHER_SLOVOM = { "1 mesiac": "jeden mesiac", "2 mesiace": "dva mesiace", "3 mesiace": "tri mesiace", "4 mesiace": "štyri mesiace" };
+
 function drawGiftVoucherPdf(doc, { s, order, code, codeCreatedAt, validityDays }) {
   const W = doc.page.width, H = doc.page.height;
-  const PW = 268;
+  const K = W / VOUCHER_SRC_W;
+  const px = (v) => v * K;
+
+  doc.image(VOUCHER_TEMPLATE, 0, 0, { width: W, height: H });
 
   const recipient = (order.giftRecipientName || "").trim();
   const message = (order.giftMessage || "").trim();
-  const workshop = order.workshopTitleSnapshot || order.workshopId;
+  const workshop = order.workshopTitleSnapshot || order.workshopId || "";
   const subtitle = order.workshopSubtitleSnapshot || "";
-  const issuer = (s.invoiceCompany || "Akadémia digitálneho vzdelávania DigiStart").toUpperCase();
 
   const dni = Number(validityDays) || 0;
-  const platnostText = validityWords(dni);
+  const platnost = validityWords(dni);
+  const platnostSlovom = VOUCHER_SLOVOM[platnost] || platnost;
   const zaklad = codeCreatedAt instanceof Date ? codeCreatedAt : new Date();
   const platnostDo = dni > 0
     ? new Date(zaklad.getTime() + dni * 24 * 3600 * 1000).toLocaleDateString("sk-SK")
     : null;
   const loginUrl = "https://kurzy.digistart.sk/prihlasenie.html?kod=" + encodeURIComponent(code);
 
-  /* ========== ĽAVÝ PANEL ========== */
-  const grad = doc.linearGradient(0, 0, PW, H);
-  grad.stop(0, V_PANEL_TOP).stop(1, V_PANEL_MID);
-  doc.rect(0, 0, PW, H).fill(grad);
+  // PDFKit kreslí text od hornej hrany riadku, nie od základne.
+  const zvislyStred = (size, yStred) => yStred - size * 0.72;
 
-  doc.save().rect(0, 0, PW, H).clip();
-  doc.lineWidth(1.2).strokeColor("#ffffff").opacity(0.05);
-  for (let r = 60; r < 420; r += 26) doc.circle(-30, -20, r).stroke();
-  for (let r = 40; r < 240; r += 22) doc.circle(PW + 40, H + 30, r).stroke();
-  doc.opacity(1).restore();
+  /* --- logo --- */
+  doc.image(VOUCHER_LOGO, px(544), px(34), { height: px(58) });
 
-  doc.rect(PW - 3, 0, 3, H).fill(V_GOLD);
-
-  doc.font(FONT_BOLD).fontSize(23).fillColor(V_GOLD)
-    .text("DARČEKOVÝ", 40, 108, { characterSpacing: 2.6, lineBreak: false });
-  doc.font(FONT_BOLD).fontSize(44).fillColor("#ffffff")
-    .text("POUKAZ", 40, 140, { characterSpacing: 1.5, lineBreak: false });
-  doc.rect(40, 206, 54, 3).fill(V_GOLD);
-  doc.font(FONT_BOLD).fontSize(14).fillColor("#ffffff")
-    .text("Darček, ktorý má zmysel.", 40, 224, { lineBreak: false });
-
-  [[vIcoHome, "z pohodlia", "domova"],
-   [vIcoClock, "vlastným", "tempom"],
-   [vIcoPeople, "vhodné aj pre", "začiatočníkov"]].forEach(([ico, l1, l2], i) => {
-    const cy = 288 + i * 64;
-    doc.lineWidth(1.1).strokeColor(V_GOLD).opacity(0.6).circle(64, cy, 21).stroke();
-    doc.opacity(1);
-    ico(doc, 64, cy, 19, V_GOLD);
-    doc.font(FONT_REGULAR).fontSize(10.5).fillColor("#ffffff").opacity(0.92)
-      .text(l1, 98, cy - 12, { lineBreak: false })
-      .text(l2, 98, cy + 2, { lineBreak: false });
-    doc.opacity(1);
-  });
-
-  doc.font(FONT_SCRIPT).fontSize(25).fillColor(V_GOLD);
-  doc.save().rotate(-6, { origin: [42, 466] });
-  doc.text("Viac istoty", 42, 452, { lineBreak: false });
-  doc.text("v digitálnom svete", 42, 478, { lineBreak: false });
-  doc.restore();
-
-  vDarcek(doc, 226, 548, 0.72);
-
-  doc.rect(40, H - 34, 16, 1.6).fill(V_GOLD);
-  doc.font(FONT_REGULAR).fontSize(9).fillColor("#ffffff").opacity(0.8)
-    .text("kurzy.digistart.sk", 64, H - 39, { lineBreak: false });
-  doc.opacity(1);
-
-  /* ========== PRAVÁ STRANA ========== */
-  doc.rect(PW, 0, W - PW, H).fill(V_PAPER);
-  doc.save().rect(PW, 0, W - PW, H).clip();
-  doc.circle(W - 130, 210, 190).fillColor("#f7f1e6").opacity(0.75).fill();
-  doc.opacity(1).restore();
-
-  const RX = PW + 44, RR = W - 44, RW = RR - RX;
-
-  vIlustracia(doc, RR - 196, 118);
-  vVetvicka(doc, RR - 26, 262, "#e6ddcb");
-
-  doc.image(VOUCHER_LOGO, RX, 34, { height: 46 });
-
-  doc.font(FONT_REGULAR).fontSize(7.5).fillColor(V_MUTED)
-    .text("ĽUDIA   |   DIGITÁLNE ZRUČNOSTI   |   BEZPEČNEJŠÍ SVET", RX, 50, { width: RW, align: "right", characterSpacing: 1.6 });
-  doc.rect(RR - 78, 66, 78, 2).fill(V_GOLD);
-
-  doc.font(FONT_REGULAR).fontSize(12.5).fillColor(V_MUTED).text("Pre:", RX, 116, { lineBreak: false });
+  /* --- meno obdarovaného --- */
   if (recipient) {
-    doc.font(FONT_BOLD).fontSize(31).fillColor(V_INK).text(recipient, RX, 134, { lineBreak: false });
+    const size = vFitSize(doc, FONT_BOLD, recipient, px(470), px(46));
+    doc.fontSize(size).fillColor(V_INK)
+      .text(recipient, px(546), zvislyStred(size, px(228)), { lineBreak: false });
   } else {
-    // Meno obdarovaného nebolo zadané — necháme miesto na dopísanie rukou.
-    doc.lineWidth(1).strokeColor(V_LINE).dash(3, { space: 3 })
-      .moveTo(RX, 166).lineTo(RX + 250, 166).stroke().undash();
+    // Darca meno nezadal — necháme mu čiaru na dopísanie rukou.
+    doc.lineWidth(px(1.6)).strokeColor(V_LINE).dash(px(5), { space: px(5) })
+      .moveTo(px(546), px(248)).lineTo(px(1010), px(248)).stroke().undash();
   }
 
-  let ry = 190;
+  /* --- osobný odkaz darcu --- */
   if (message) {
-    doc.font(FONT_REGULAR).fontSize(11.5).fillColor(V_MUTED)
-      .text("„" + message + "“", RX, 174, { width: RW - 200, lineBreak: false });
-    ry = 198;
+    const text = "„" + message + "“";
+    const size = vFitSize(doc, FONT_REGULAR, text, px(510), px(21));
+    doc.fontSize(size).fillColor(V_MUTED)
+      .text(text, px(546), zvislyStred(size, px(294)), { width: px(516), lineBreak: false });
   }
-  doc.lineWidth(1).strokeColor(V_LINE).moveTo(RX, ry).lineTo(RX + 400, ry).stroke();
 
-  doc.font(FONT_REGULAR).fontSize(12).fillColor(V_MUTED).text("Online kurz", RX, ry + 14, { lineBreak: false });
-  doc.font(FONT_BOLD).fontSize(25).fillColor(V_TEAL).text(workshop, RX, ry + 32, { width: RW, lineBreak: false });
+  /* --- názov a podnadpis kurzu --- */
+  {
+    const size = vFitSize(doc, FONT_BOLD, workshop, px(860), px(44));
+    doc.fontSize(size).fillColor(V_TEAL)
+      .text(workshop, px(546), zvislyStred(size, px(419)), { width: px(866), lineBreak: false });
+  }
   if (subtitle) {
-    doc.font(FONT_BOLD).fontSize(13).fillColor(V_ORANGE).text(subtitle, RX, ry + 66, { width: RW, lineBreak: false });
+    const size = vFitSize(doc, FONT_BOLD, subtitle, px(860), px(24));
+    doc.fontSize(size).fillColor(V_ORANGE)
+      .text(subtitle, px(546), zvislyStred(size, px(475)), { width: px(866), lineBreak: false });
   }
 
-  /* --- pás s parametrami --- */
-  const CY = 292, CH = 48;
-  doc.roundedRect(RX, CY, RW, CH, 8).fill(V_CREAM);
-
-  const boxW = 138;
-  doc.roundedRect(RR - boxW - 6, CY + 5, boxW, CH - 10, 6).fill("#fdf7ee");
-  vIcoCalendar(doc, RR - boxW + 10, CY + CH / 2, 16, V_ORANGE);
-  doc.font(FONT_REGULAR).fontSize(8.5).fillColor(V_MUTED)
-    .text("Prístup na", RR - boxW + 26, CY + 13, { lineBreak: false });
-  doc.font(FONT_BOLD).fontSize(11).fillColor(V_INK)
-    .text(platnostText, RR - boxW + 26, CY + 25, { lineBreak: false });
-
-  const chips = [
-    [vIcoMonitor, "Online"],
-    [vIcoClock, "6 hodín až " + platnostText.replace(/^3 mesiace$/, "tri mesiace")],
-    [vIcoPerson, "vlastným tempom"],
-  ];
-  doc.font(FONT_REGULAR).fontSize(9);
-  const ICO_W = 20;
-  const sirky = chips.map(([, t]) => ICO_W + doc.widthOfString(t));
-  const volne = (RR - boxW - 14) - (RX + 14) - sirky.reduce((a, b) => a + b, 0);
-  const medzera = Math.max(10, volne / (chips.length - 1));
-  let cxp = RX + 14;
-  chips.forEach(([ico, text], i) => {
-    ico(doc, cxp + 7, CY + CH / 2, 13, V_TEAL);
-    doc.font(FONT_REGULAR).fontSize(9).fillColor(V_INK)
-      .text(text, cxp + ICO_W, CY + CH / 2 - 4.5, { lineBreak: false });
-    cxp += sirky[i];
-    if (i < chips.length - 1) {
-      doc.lineWidth(0.8).strokeColor("#efe2cf")
-        .moveTo(cxp + medzera / 2, CY + 13).lineTo(cxp + medzera / 2, CY + CH - 13).stroke();
-      cxp += medzera;
-    }
+  /* --- pás s parametrami: tri sloty, obsah vystredený v každom --- */
+  const sy = px(548);
+  [[vIcoMonitor, "Online", 543, 787],
+   [vIcoClock, "6 hodín až " + platnostSlovom, 793, 1030],
+   [vIcoPerson, "vlastným tempom", 1035, 1227]].forEach(([ico, text, x0, x1]) => {
+    const size = vFitSize(doc, FONT_REGULAR, text, px(x1 - x0 - 40), px(16.5));
+    doc.fontSize(size);
+    const sirkaIkony = px(30);
+    const zaciatok = px((x0 + x1) / 2) - (sirkaIkony + doc.widthOfString(text)) / 2;
+    ico(doc, zaciatok + px(11), sy, px(22), V_TEAL);
+    doc.fillColor(V_INK).text(text, zaciatok + sirkaIkony, zvislyStred(size, sy), { lineBreak: false });
   });
 
-  /* --- kód + QR --- */
-  const KY = 352, KH = 86, qrSize = 58;
-  doc.roundedRect(RX, KY, RW, KH, 10).fill("#e6f0ea");
-  doc.font(FONT_REGULAR).fontSize(10).fillColor(V_TEAL)
-    .text("PRIHLASOVACÍ KÓD", RX + 22, KY + 12, { characterSpacing: 3, lineBreak: false });
+  /* --- hodnota v políčku "Prístup na" --- */
+  {
+    const size = vFitSize(doc, FONT_BOLD, platnost, px(180), px(19));
+    doc.fontSize(size).fillColor(V_INK)
+      .text(platnost, px(1230), zvislyStred(size, px(566)), { width: px(190), align: "center", lineBreak: false });
+  }
 
-  const innerW = RW - 44 - qrSize - 22;
-  doc.roundedRect(RX + 22, KY + 30, innerW, KH - 44, 6).fill("#f1f8f4");
-  doc.font(FONT_BOLD).fontSize(27).fillColor(V_INK)
-    .text(String(code).split("").join("   "), RX + 22, KY + 44, { width: innerW, align: "center", lineBreak: false });
+  /* --- prihlasovací kód --- */
+  {
+    const text = String(code).split("").join("   ");
+    const size = vFitSize(doc, FONT_BOLD, text, px(640), px(52));
+    doc.fontSize(size).fillColor(V_INK)
+      .text(text, px(543), zvislyStred(size, px(703)), { width: px(687), align: "center", lineBreak: false });
+  }
 
-  const qrX = RR - 22 - qrSize;
-  doc.roundedRect(qrX - 6, KY + 8, qrSize + 12, qrSize + 22, 5).fill("#ffffff");
-  vDrawQr(doc, loginUrl, qrX, KY + 13, qrSize, V_INK);
-  doc.font(FONT_REGULAR).fontSize(6.5).fillColor(V_MUTED)
-    .text("naskenujte telefónom", qrX - 6, KY + qrSize + 17, { width: qrSize + 12, align: "center", lineBreak: false });
+  /* --- QR kód: vedie na prihlásenie aj s predvyplneným kódom --- */
+  vDrawQr(doc, loginUrl, px(1268), px(628), px(130), V_INK);
 
-  /* --- praktické údaje --- */
-  const IY = 458;
-  [[vIcoGlobe, "Poukaz uplatníte na:", "kurzy.digistart.sk"],
-   [vIcoCalendar, "Platnosť poukazu:", platnostDo ? "do " + platnostDo : "bez obmedzenia"],
-   [vIcoCertificate, "Na záver získate", "certifikát"]].forEach(([ico, l1, l2], i) => {
-    const colW = RW / 3;
-    const x = RX + i * colW + 8;
-    ico(doc, x + 9, IY + 12, 19, V_GOLD_DK);
-    doc.font(FONT_REGULAR).fontSize(9.5).fillColor(V_MUTED).text(l1, x + 28, IY + 3, { lineBreak: false });
-    doc.font(FONT_BOLD).fontSize(11).fillColor(V_INK).text(l2, x + 28, IY + 16, { lineBreak: false });
-    if (i > 0) {
-      doc.lineWidth(0.8).strokeColor(V_LINE)
-        .moveTo(RX + i * colW - 6, IY).lineTo(RX + i * colW - 6, IY + 30).stroke();
-    }
-  });
-
-  /* --- päta --- */
-  doc.lineWidth(1).strokeColor(V_LINE).moveTo(RX, 508).lineTo(RR, 508).stroke();
-  doc.font(FONT_BOLD).fontSize(13).fillColor(V_INK)
-    .text("Ďakujeme, že ste vybrali darček, ktorý má zmysel.", RX, 523, { lineBreak: false });
-  doc.font(FONT_REGULAR).fontSize(7.5).fillColor(V_MUTED)
-    .text(issuer, RX, 548, { characterSpacing: 1.4, lineBreak: false });
-
-  doc.font(FONT_SCRIPT).fontSize(22).fillColor(V_GOLD);
-  doc.save().rotate(-7, { origin: [RR - 92, 524] });
-  doc.text("Vedomosti", RR - 92, 510, { lineBreak: false });
-  doc.text("chránia", RR - 76, 532, { lineBreak: false });
-  doc.restore();
-  doc.lineWidth(1.5).strokeColor(V_GOLD)
-    .moveTo(RR - 86, 560).bezierCurveTo(RR - 56, 552, RR - 28, 554, RR - 4, 547).stroke();
+  /* --- dátum platnosti --- */
+  {
+    const text = platnostDo ? "do " + platnostDo : "bez obmedzenia";
+    const size = vFitSize(doc, FONT_BOLD, text, px(200), px(21));
+    doc.fontSize(size).fillColor(V_INK)
+      .text(text, px(920), zvislyStred(size, px(856)), { lineBreak: false });
+  }
 }
 
 // Odkaz na dokument posielaný zákazníkovi (faktúra/POZ/poukaz/certifikát)
