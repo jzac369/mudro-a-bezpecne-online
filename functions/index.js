@@ -4716,9 +4716,13 @@ exports.marketingStats = onRequest({ cors: true }, async (req, res) => {
       res.status(503).json({ chyba: "Rozhranie zatiaľ nie je zapnuté. Vygenerujte kľúč v admin zóne." });
       return;
     }
-    // Porovnanie odolné voči meraniu času.
-    const a = Buffer.from(podany.padEnd(80).slice(0, 80));
-    const b = Buffer.from(ulozeny.padEnd(80).slice(0, 80));
+    // Porovnanie odolné voči meraniu času. Buffery musia mať rovnakú dĺžku,
+    // inak timingSafeEqual vyhodí výnimku — pri kľúči s viacbajtovými znakmi
+    // by sa tak namiesto čistého 401 vrátila chyba 500.
+    const a = Buffer.alloc(96);
+    const b = Buffer.alloc(96);
+    a.write(podany, "utf8");
+    b.write(ulozeny, "utf8");
     if (!podany || !crypto.timingSafeEqual(a, b)) {
       res.status(401).json({ chyba: "Neplatný kľúč." });
       return;
