@@ -4724,7 +4724,20 @@ exports.marketingStats = onRequest({ cors: true }, async (req, res) => {
     a.write(podany, "utf8");
     b.write(ulozeny, "utf8");
     if (!podany || !crypto.timingSafeEqual(a, b)) {
-      res.status(401).json({ chyba: "Neplatný kľúč." });
+      // Diagnostika, ktorá pomôže nájsť príčinu bez toho, aby prezradila
+      // kľúč: povie len ako prišiel, akú mal dĺžku a či sedí známa predpona.
+      const schema = hlavicka ? hlavicka.split(" ")[0].toLowerCase() : "(žiadna hlavička Authorization)";
+      res.status(401).json({
+        chyba: "Neplatný kľúč.",
+        diagnostika: {
+          hlavickaAuthorization: schema,
+          kluc: podany ? "prišiel" : "neprišiel žiadny",
+          dlzkaPodaneho: podany.length,
+          ocakavanaDlzka: ulozeny.length,
+          zacinaSpravne: podany.startsWith("mk_"),
+          maBieleZnaky: /\s/.test(podany),
+        },
+      });
       return;
     }
 
