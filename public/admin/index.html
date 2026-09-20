@@ -1357,6 +1357,21 @@
           </div>
         </div>
 
+        <div class="card" style="margin-bottom:1.5rem;">
+          <h2 style="margin-bottom:.4rem;">Marketingové rozhranie pre externého agenta</h2>
+          <p class="hint" style="margin-bottom:.8rem;">Umožní externému nástroju (napr. agentovi v ChatGPT) čítať súhrnné čísla o návštevnosti a predaji. Rozhranie <strong>iba číta</strong> a vydáva <strong>len súhrny</strong> — nikdy meno, e-mail, prístupový kód ani jednotlivú objednávku. Kľúč nikomu nepreposielajte; kto ho má, vidí vaše obchodné čísla.</p>
+          <div id="mkapi-stav" class="hint" style="margin-bottom:.6rem;">Načítavam…</div>
+          <div id="mkapi-kluc-box" style="display:none;margin-bottom:.8rem;">
+            <label class="hint" style="display:block;margin-bottom:.25rem;">Kľúč</label>
+            <input type="text" id="mkapi-kluc" readonly class="input" style="font-family:monospace;font-size:.85rem;">
+            <p class="hint" style="margin-top:.35rem;">Adresa rozhrania: <span id="mkapi-url" style="font-family:monospace;"></span></p>
+          </div>
+          <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-secondary" type="button" id="mkapi-generovat">Vygenerovať nový kľúč</button>
+            <span id="mkapi-vysledok" class="hint"></span>
+          </div>
+        </div>
+
         <form id="settings-form">
           <div class="card" style="margin-bottom:1.5rem;">
             <h2>Prístup a bezpečnosť</h2>
@@ -3105,6 +3120,55 @@ window.addEventListener("load", function () {
       btn.disabled = false;
     }
   });
+
+  // ---------- Marketingové rozhranie (len čítanie) ----------
+  (function marketingApi() {
+    const stav = document.getElementById("mkapi-stav");
+    const box = document.getElementById("mkapi-kluc-box");
+    const pole = document.getElementById("mkapi-kluc");
+    const urlEl = document.getElementById("mkapi-url");
+    const btn = document.getElementById("mkapi-generovat");
+    const vysledok = document.getElementById("mkapi-vysledok");
+    if (!stav || !btn) return;
+
+    const adresa = "https://europe-west1-" + (window.FIREBASE_CONFIG || {}).projectId + ".cloudfunctions.net/marketingStats";
+
+    function zobraz(d) {
+      if (!d || !d.key) {
+        stav.textContent = "Rozhranie je vypnuté — kľúč zatiaľ nebol vygenerovaný.";
+        box.style.display = "none";
+        btn.textContent = "Zapnúť a vygenerovať kľúč";
+        return;
+      }
+      const pouzity = d.lastUsedAt
+        ? "Naposledy použité " + new Date(d.lastUsedAt).toLocaleString("sk-SK") + ", volaní spolu: " + (d.callCount || 0) + "."
+        : "Zatiaľ nebolo použité.";
+      stav.textContent = "Rozhranie je zapnuté. " + pouzity;
+      pole.value = d.key;
+      urlEl.textContent = adresa;
+      box.style.display = "";
+      btn.textContent = "Vygenerovať nový kľúč";
+    }
+
+    adminApp.functions("europe-west1").httpsCallable("getMarketingApiKey")()
+      .then((r) => zobraz(r.data))
+      .catch(() => { stav.textContent = "Stav rozhrania sa nepodarilo načítať."; });
+
+    btn.addEventListener("click", async () => {
+      if (pole.value && !confirm("Vygenerovaním nového kľúča starý okamžite prestane platiť a agent sa bez neho nedostane k údajom. Pokračovať?")) return;
+      btn.disabled = true;
+      vysledok.textContent = "Generujem…";
+      try {
+        const r = await adminApp.functions("europe-west1").httpsCallable("rotateMarketingApiKey")();
+        zobraz({ key: r.data.key, callCount: 0 });
+        vysledok.textContent = "Hotovo ✓";
+      } catch (err) {
+        vysledok.textContent = "Chyba: " + (err.message || err);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  })();
 
   function buildSettingsPatch() {
     return {

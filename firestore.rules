@@ -221,6 +221,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Kľúč k marketingovému rozhraniu. Zámerne vlastná kolekcia, nie
+    // settings/ — tú smie čítať každý prihlásený účastník kurzu a pravidlá
+    // Firestore sa vyhodnocujú tak, že stačí jedno povoľujúce pravidlo.
+    // Kľúč vydáva len funkcia getMarketingApiKey po overení administrátora.
+    match /internalConfig/{docId} {
+      allow read, write: if false;
+    }
+
     // SMTP prihlasovacie údaje (vrátane hesla) na odosielanie faktúr a
     // potvrdení o zaplatení. Zámerne READ AJ WRITE VŽDY false — číta a
     // zapisuje výhradne Admin SDK cez getEmailSettings/saveEmailSettings,

@@ -1,5 +1,5 @@
 const { initializeApp } = require("firebase-admin/app");
-const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getFirestore, FieldValue, FieldPath } = require("firebase-admin/firestore");
 const { getAuth } = require("firebase-admin/auth");
 const { getStorage } = require("firebase-admin/storage");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
@@ -7,12 +7,18 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onDocumentCreated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const { defineSecret } = require("firebase-functions/params");
-const PDFDocument = require("pdfkit");
-const QRCode = require("qrcode");
-const nodemailer = require("nodemailer");
+// Ťažké knižnice sa načítavajú až pri prvom použití. Firebase má na
+// analýzu tohto súboru pri nasadení limit 10 sekúnd a so všetkými
+// načítanými hore sa doň prestávalo vojsť — nasadenie potom padalo na
+// "Cannot determine backend specification. Timeout after 10000."
+// Každá z nich sa pritom používa na jedinom mieste.
+let _pdfkit = null, _qrcode = null, _nodemailer = null, _archiver = null;
+const lazyPdfkit = () => (_pdfkit || (_pdfkit = require("pdfkit")));
+const lazyQrcode = () => (_qrcode || (_qrcode = require("qrcode")));
+const lazyNodemailer = () => (_nodemailer || (_nodemailer = require("nodemailer")));
+const lazyArchiver = () => (_archiver || (_archiver = require("archiver")));
 const dns = require("dns").promises;
 const crypto = require("crypto");
-const archiver = require("archiver");
 // Rovnaké dáta kurzov (vrátane správnych odpovedí kvízu), aké používa
 // prehliadač — kopírované sem z public/data/workshops.js pri každom
 // nasadení (pozri firebase.json "predeploy"), aby server vedel kvíz
@@ -1894,7 +1900,7 @@ async function getOrAssignInvoiceNumber(orderRef, order) {
 
 function pdfToBuffer(draw, docOptions) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument(docOptions || { size: "A4", margin: 56 });
+    const doc = new (lazyPdfkit())(docOptions || { size: "A4", margin: 56 });
     const chunks = [];
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -2137,7 +2143,7 @@ const V_ILUSTRACIA_X = 1079;
 // QR sa kreslí ako vektor, nie ako vložený obrázok — je ostrejší pri tlači
 // a nezávisí od toho, či čítačka PDF zvládne dekódovať PNG vo vnútri.
 function vDrawQr(doc, text, x, y, size, color) {
-  const qr = QRCode.create(text, { errorCorrectionLevel: "M" });
+  const qr = lazyQrcode().create(text, { errorCorrectionLevel: "M" });
   const n = qr.modules.size;
   const data = qr.modules.data;
   const cell = size / n;
@@ -2588,7 +2594,7 @@ async function getSmtpConfig() {
 
 async function getSmtpTransporter() {
   const cfg = await getSmtpConfig();
-  const transporter = nodemailer.createTransport({
+  const transporter = lazyNodemailer().createTransport({
     host: cfg.host,
     port: cfg.port || 465,
     secure: cfg.secure !== false,
@@ -3011,7 +3017,7 @@ async function generateBackupZip(auto) {
   const storagePath = "backups/" + timestamp + ".zip";
   const storageFile = bucket.file(storagePath);
 
-  const archive = archiver("zip", { zlib: { level: 9 } });
+  const archive = lazyArchiver()("zip", { zlib: { level: 9 } });
   let sizeBytes = 0;
   archive.on("data", (chunk) => { sizeBytes += chunk.length; });
 
@@ -4593,3 +4599,326 @@ exports.cleanupVisits = onSchedule(
     console.log("cleanupVisits: zmazaných " + removedLog + " záznamov návštev, " + removedVisitors + " denných odtlačkov");
   }
 );
+
+// =====================================================================
+//  Marketingové rozhranie pre externého agenta — VÝHRADNE NA ČÍTANIE
+// ---------------------------------------------------------------------
+//  Slúži na to, aby si externý nástroj (napr. agent v ChatGPT) vedel
+//  sám stiahnuť čísla o návštevnosti a predaji.
+//
+//  Zámerne vracia LEN SÚHRNY. Nikdy nie meno, e-mail, prístupový kód,
+//  IP adresu ani jednotlivú objednávku. Vďaka tomu z portálu neodchádza
+//  žiadny osobný údaj a netreba do Ochrany osobných údajov dopĺňať
+//  ďalšieho sprostredkovateľa.
+//
+//  Prístup je chránený vlastným kľúčom (settings/marketingApi), nie
+//  prihlasovacími údajmi do admin zóny. Kľúč sa dá kedykoľvek vymeniť
+//  z admin zóny a rozhranie nevie nič zapísať ani zmeniť.
+// =====================================================================
+
+// Vlastná kolekcia, nie settings/ — tú smie čítať aj prihlásený účastník.
+const MARKETING_API_COL = "internalConfig";
+const MARKETING_API_DOC = "marketingApi";
+
+function novyMarketingKluc() {
+  return "mk_" + crypto.randomBytes(24).toString("hex");
+}
+
+async function nacitajMarketingKluc() {
+  const snap = await db.collection(MARKETING_API_COL).doc(MARKETING_API_DOC).get();
+  return snap.exists ? (snap.data().key || null) : null;
+}
+
+/** Admin zóna: zobrazí aktuálny kľúč (alebo oznámi, že ešte nie je). */
+exports.getMarketingApiKey = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor.");
+  }
+  const snap = await db.collection(MARKETING_API_COL).doc(MARKETING_API_DOC).get();
+  if (!snap.exists || !snap.data().key) return { key: null };
+  const d = snap.data();
+  return {
+    key: d.key,
+    createdAt: d.createdAt ? d.createdAt.toDate().toISOString() : null,
+    lastUsedAt: d.lastUsedAt ? d.lastUsedAt.toDate().toISOString() : null,
+    callCount: d.callCount || 0,
+  };
+});
+
+/** Admin zóna: vytvorí nový kľúč. Starý tým okamžite prestane platiť. */
+exports.rotateMarketingApiKey = onCall(async (request) => {
+  if (request.auth?.token?.admin !== true) {
+    throw new HttpsError("permission-denied", "Len administrátor.");
+  }
+  const key = novyMarketingKluc();
+  await db.collection(MARKETING_API_COL).doc(MARKETING_API_DOC).set({
+    key,
+    createdAt: FieldValue.serverTimestamp(),
+    createdBy: request.auth.token.email || null,
+    lastUsedAt: null,
+    callCount: 0,
+  });
+  await db.collection("activityLog").add({
+    type: "settings",
+    note: "Vygenerovaný nový kľúč k marketingovému rozhraniu (starý prestal platiť).",
+    by: request.auth.token.email || null,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  return { key };
+});
+
+function marketingDenKluc(date) {
+  return skDateParts(date).day;
+}
+
+function zoznamDni(odDen, doDen) {
+  const out = [];
+  const d = new Date(odDen + "T12:00:00Z");
+  const koniec = new Date(doDen + "T12:00:00Z");
+  while (d <= koniec && out.length < 400) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+}
+
+function pripocitaj(ciel, zdroj) {
+  Object.entries(zdroj || {}).forEach(([k, v]) => {
+    const n = Number(v) || 0;
+    if (n > 0) ciel[k] = (ciel[k] || 0) + n;
+  });
+}
+
+function zaokruhli(n) {
+  return Math.round((Number(n) || 0) * 100) / 100;
+}
+
+function zoradene(mapa, limit) {
+  return Object.fromEntries(
+    Object.entries(mapa).sort((a, b) => b[1] - a[1]).slice(0, limit || 20)
+  );
+}
+
+exports.marketingStats = onRequest({ cors: true }, async (req, res) => {
+  try {
+    if (req.method !== "GET") {
+      res.status(405).json({ chyba: "Podporovaná je len metóda GET." });
+      return;
+    }
+
+    const hlavicka = String(req.get("authorization") || "");
+    const podany = hlavicka.toLowerCase().startsWith("bearer ")
+      ? hlavicka.slice(7).trim()
+      : String(req.query.key || "").trim();
+
+    const ulozeny = await nacitajMarketingKluc();
+    if (!ulozeny) {
+      res.status(503).json({ chyba: "Rozhranie zatiaľ nie je zapnuté. Vygenerujte kľúč v admin zóne." });
+      return;
+    }
+    // Porovnanie odolné voči meraniu času.
+    const a = Buffer.from(podany.padEnd(80).slice(0, 80));
+    const b = Buffer.from(ulozeny.padEnd(80).slice(0, 80));
+    if (!podany || !crypto.timingSafeEqual(a, b)) {
+      res.status(401).json({ chyba: "Neplatný kľúč." });
+      return;
+    }
+
+    try {
+      await enforceRateLimit("marketingStats", "agent", 120, 60);
+    } catch (err) {
+      res.status(429).json({ chyba: "Príliš veľa požiadaviek. Limit je 120 volaní za hodinu." });
+      return;
+    }
+
+    const dnes = marketingDenKluc(new Date());
+    const doDen = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.do || "")) ? String(req.query.do) : dnes;
+    const predvolenyOd = marketingDenKluc(new Date(Date.now() - 29 * 24 * 3600 * 1000));
+    const odDen = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.od || "")) ? String(req.query.od) : predvolenyOd;
+    if (odDen > doDen) {
+      res.status(400).json({ chyba: "Dátum „od“ je neskorší než „do“." });
+      return;
+    }
+    const dni = zoznamDni(odDen, doDen);
+    const odDatum = new Date(odDen + "T00:00:00+02:00");
+    const doDatum = new Date(doDen + "T23:59:59+02:00");
+
+    /* ---------- návštevnosť ---------- */
+    const navstevy = await db.collection("visitsDaily")
+      .where(FieldPath.documentId(), ">=", odDen)
+      .where(FieldPath.documentId(), "<=", doDen)
+      .get();
+
+    let zobrazenia = 0, unikatni = 0;
+    const stranky = {}, zdroje = {}, kraje = {}, mesta = {}, zariadenia = {}, hodiny = {}, kampane = {};
+    const poDnochMapa = {};
+    navstevy.docs.forEach((doc) => {
+      const d = doc.data() || {};
+      const v = Number(d.views) || 0, u = Number(d.uniques) || 0;
+      zobrazenia += v; unikatni += u;
+      poDnochMapa[doc.id] = { zobrazenia: v, unikatniNavstevnici: u };
+      pripocitaj(stranky, d.pages); pripocitaj(zdroje, d.sources);
+      pripocitaj(kraje, d.regions); pripocitaj(mesta, d.cities);
+      pripocitaj(zariadenia, d.devices); pripocitaj(hodiny, d.hours);
+      pripocitaj(kampane, d.campaigns);
+    });
+
+    /* ---------- objednávky ---------- */
+    const objednavkySnap = await db.collection("orders")
+      .where("createdAt", ">=", odDatum)
+      .where("createdAt", "<=", doDatum)
+      .get();
+
+    let uhradene = 0, cakajuce = 0, trzby = 0, darceky = 0;
+    const podlaKurzu = {}, podlaPlatby = {}, podlaZdroja = {}, kupony = {};
+    objednavkySnap.docs.forEach((doc) => {
+      const o = doc.data() || {};
+      const suma = Number(o.amount) || 0;
+      const zaplatene = o.status === "code_sent";
+      if (zaplatene) { uhradene++; trzby += suma; } else if (o.status === "pending_payment") cakajuce++;
+      if (o.isGift) darceky++;
+
+      const kurz = o.workshopId || "neznámy";
+      if (!podlaKurzu[kurz]) podlaKurzu[kurz] = { objednavky: 0, uhradene: 0, trzby: 0 };
+      podlaKurzu[kurz].objednavky++;
+      if (zaplatene) { podlaKurzu[kurz].uhradene++; podlaKurzu[kurz].trzby = zaokruhli(podlaKurzu[kurz].trzby + suma); }
+
+      if (zaplatene && o.paymentMethod) podlaPlatby[o.paymentMethod] = (podlaPlatby[o.paymentMethod] || 0) + 1;
+
+      const zdroj = (o.utm && o.utm.source) || "priamo";
+      if (!podlaZdroja[zdroj]) podlaZdroja[zdroj] = { objednavky: 0, trzby: 0 };
+      podlaZdroja[zdroj].objednavky++;
+      if (zaplatene) podlaZdroja[zdroj].trzby = zaokruhli(podlaZdroja[zdroj].trzby + suma);
+
+      if (o.couponApplied) {
+        if (!kupony[o.couponApplied]) kupony[o.couponApplied] = { pouzitia: 0, uhradene: 0, trzby: 0 };
+        kupony[o.couponApplied].pouzitia++;
+        if (zaplatene) {
+          kupony[o.couponApplied].uhradene++;
+          kupony[o.couponApplied].trzby = zaokruhli(kupony[o.couponApplied].trzby + suma);
+        }
+      }
+    });
+
+    /* ---------- zľavové kódy a partneri ---------- */
+    const kodySnap = await db.collection("discountCodes").get();
+    const kodyInfo = {};
+    kodySnap.docs.forEach((doc) => {
+      const c = doc.data() || {};
+      kodyInfo[doc.id] = {
+        partnersky: c.isAffiliate === true,
+        provizia: Number(c.commissionPercent) || 0,
+      };
+    });
+
+    const klikySnap = await db.collection("affiliateClicks")
+      .where("day", ">=", odDen).where("day", "<=", doDen).get();
+    const kliky = {};
+    klikySnap.docs.forEach((doc) => {
+      const d = doc.data() || {};
+      if (d.code) kliky[d.code] = (kliky[d.code] || 0) + (Number(d.count) || 0);
+    });
+
+    const zlavoveKody = [];
+    const partneri = [];
+    Object.entries(kupony).forEach(([kod, u]) => {
+      const info = kodyInfo[kod] || { partnersky: false, provizia: 0 };
+      const zaznam = { kod, pouzitia: u.pouzitia, uhradene: u.uhradene, trzby: zaokruhli(u.trzby) };
+      if (info.partnersky) {
+        partneri.push(Object.assign(zaznam, {
+          kliky: kliky[kod] || 0,
+          provizia: zaokruhli(u.trzby * (info.provizia / 100)),
+          provizneePercento: info.provizia,
+        }));
+      } else {
+        zlavoveKody.push(zaznam);
+      }
+    });
+    // Partner mohol mať kliky aj bez objednávky — nech to nezmizne.
+    Object.entries(kliky).forEach(([kod, pocet]) => {
+      if (partneri.some((p) => p.kod === kod)) return;
+      if (!kodyInfo[kod] || !kodyInfo[kod].partnersky) return;
+      partneri.push({
+        kod, kliky: pocet, pouzitia: 0, uhradene: 0, trzby: 0,
+        provizia: 0, provizneePercento: kodyInfo[kod].provizia,
+      });
+    });
+
+    /* ---------- kurzy: dokončenosť a hodnotenia ---------- */
+    const [kurzySnap, vysledkySnap, spatnaSnap] = await Promise.all([
+      db.collection("workshops").get(),
+      db.collection("quizResults").where("passed", "==", true).get(),
+      db.collection("feedback").where("createdAt", ">=", odDatum).where("createdAt", "<=", doDatum).get(),
+    ]);
+    const dokoncili = {};
+    vysledkySnap.docs.forEach((doc) => {
+      const w = (doc.data() || {}).workshopId || "neznámy";
+      dokoncili[w] = (dokoncili[w] || 0) + 1;
+    });
+    const hodnotenia = {};
+    spatnaSnap.docs.forEach((doc) => {
+      const f = doc.data() || {};
+      const w = f.workshopId || "neznámy";
+      const r = Number(f.rating);
+      if (!Number.isFinite(r)) return;
+      if (!hodnotenia[w]) hodnotenia[w] = { sucet: 0, pocet: 0 };
+      hodnotenia[w].sucet += r; hodnotenia[w].pocet++;
+    });
+    const kurzy = kurzySnap.docs.map((doc) => {
+      const w = doc.data() || {};
+      const h = hodnotenia[doc.id];
+      return {
+        kurz: doc.id,
+        nazov: w.title || doc.id,
+        cena: Number(w.price) || 0,
+        objednavkyVObdobi: (podlaKurzu[doc.id] || {}).objednavky || 0,
+        uhradeneVObdobi: (podlaKurzu[doc.id] || {}).uhradene || 0,
+        trzbyVObdobi: zaokruhli((podlaKurzu[doc.id] || {}).trzby || 0),
+        dokonciliCelkovo: dokoncili[doc.id] || 0,
+        priemerneHodnotenie: h ? zaokruhli(h.sucet / h.pocet) : null,
+        pocetHodnoteniVObdobi: h ? h.pocet : 0,
+      };
+    });
+
+    /* ---------- odpoveď ---------- */
+    const pocetDni = dni.length;
+    const odpoved = {
+      obdobie: { od: odDen, do: doDen, pocetDni },
+      poznamka: "Iba súhrnné čísla. Rozhranie zámerne neposkytuje mená, e-maily, prístupové kódy ani jednotlivé objednávky.",
+      navstevnost: {
+        zobrazenia,
+        unikatniNavstevnici: unikatni,
+        priemerneZobrazeniaZaDen: pocetDni ? Math.round(zobrazenia / pocetDni) : 0,
+        zobrazeniNaNavstevnika: unikatni ? zaokruhli(zobrazenia / unikatni) : null,
+        poDnoch: dni.map((d) => Object.assign({ den: d }, poDnochMapa[d] || { zobrazenia: 0, unikatniNavstevnici: 0 })),
+        zdroje: zoradene(zdroje), stranky: zoradene(stranky), kraje: zoradene(kraje),
+        mesta: zoradene(mesta, 15), zariadenia: zoradene(zariadenia), kampane: zoradene(kampane),
+        hodiny,
+      },
+      predaj: {
+        objednavkySpolu: objednavkySnap.size,
+        uhradene,
+        cakajuceNaUhradu: cakajuce,
+        trzby: zaokruhli(trzby),
+        priemernaUhradenaObjednavka: uhradene ? zaokruhli(trzby / uhradene) : null,
+        konverziaZNavstevnikaVPercentach: unikatni ? zaokruhli((objednavkySnap.size / unikatni) * 100) : null,
+        darcekoveObjednavky: darceky,
+        podlaKurzu, podlaSposobuPlatby: podlaPlatby, podlaZdroja,
+      },
+      zlavoveKody: zlavoveKody.sort((a, b) => b.trzby - a.trzby),
+      partneri: partneri.sort((a, b) => b.trzby - a.trzby),
+      kurzy,
+    };
+
+    await db.collection(MARKETING_API_COL).doc(MARKETING_API_DOC).set({
+      lastUsedAt: FieldValue.serverTimestamp(),
+      callCount: FieldValue.increment(1),
+    }, { merge: true });
+
+    res.set("Cache-Control", "no-store");
+    res.status(200).json(odpoved);
+  } catch (err) {
+    console.error("marketingStats zlyhalo:", err);
+    res.status(500).json({ chyba: "Údaje sa nepodarilo pripraviť." });
+  }
+});
