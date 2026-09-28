@@ -5212,6 +5212,30 @@ window.addEventListener("load", function () {
           ? order.paidAt.toDate().toLocaleString("sk-SK") + (order.paymentMethod ? " · " + ({ card: "karta", transfer: "prevod", cash: "hotovosť" }[order.paymentMethod] || order.paymentMethod) : "")
           : (order.status === "pending_payment" ? "zatiaľ neuhradené" : "—")) +
         "</span></div>";
+
+    // Pri neuhradenej objednávke je dôležité vedieť, kam až sa človek
+    // dostal — či odišiel hneď pri výbere platby, či si vypýtal pokyny na
+    // prevod, alebo ho odradila až samotná platobná brána. Tieto tri
+    // prípady znamenajú každý niečo iné a údaje o nich sa zapisujú už
+    // dávno, len ich dosiaľ nebolo kde vidieť.
+    if (order.status === "pending_payment") {
+      let kam, kedy = null;
+      if (order.stripeCheckoutStartedAt) {
+        kam = "Presmerovaný(á) na platbu kartou — na platobnej bráne neplatil(a)";
+        kedy = order.stripeCheckoutStartedAt;
+      } else if (order.paymentInstructionsSentAt || order.paymentMethodChosen === "transfer") {
+        kam = "Vypýtal(a) si pokyny na bankový prevod — platba zatiaľ neprišla";
+        kedy = order.paymentInstructionsSentAt || null;
+      } else {
+        kam = "Odoslal(a) formulár, spôsob platby nevybral(a)";
+      }
+      regLine +=
+        "<div class='session-row'><span>Kam sa dostal(a)</span><span style='text-align:right;'>" +
+        escapeHtml(kam) +
+        (kedy && kedy.toDate ? "<br><span class='hint'>" + kedy.toDate().toLocaleString("sk-SK") + "</span>" : "") +
+        "</span></div>";
+    }
+
     if (order.groupSize && order.groupSize > 1) {
       const others = (order.participants || []).map((p) => escapeHtml(p.firstName) + " " + escapeHtml(p.lastName)).join(", ");
       regLine += "<div class='session-row'><span>Skupinová objednávka</span><span>" + order.groupSize + " účastníci: " + others + "</span></div>";
